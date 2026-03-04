@@ -117,7 +117,7 @@
 - [x] T7.2: Electron desktop shell (Windows/Linux) *(2026-03-04)*
 - [x] T7.3: PWA service worker + manifest *(2026-03-04)*
 - [x] T7.4: Capacitor mobile project setup *(2026-03-04)*
-- [ ] T7.5: Mobile-specific UI adaptations (responsive, touch)
+- [x] T7.5: Mobile-specific UI adaptations (responsive, touch) *(2026-03-04)*
 - [ ] T7.6: Native OAuth flow for mobile
 
 ## Phase 8: Import/Export & Templates
