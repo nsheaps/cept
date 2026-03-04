@@ -5,6 +5,7 @@ on:
     branches: ['*']
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -62,6 +63,9 @@ jobs:
   test-e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     steps:
       - uses: actions/checkout@v4
 
