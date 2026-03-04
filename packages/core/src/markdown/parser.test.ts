@@ -315,4 +315,258 @@ Content here.
       expect(serialized).toContain('Content here.');
     });
   });
+
+  describe('extractText inline formatting', () => {
+    it('should preserve bold text in paragraphs', () => {
+      const blocks = parser.parseBlocks('This is **bold** text.');
+      expect(blocks[0].content).toBe('This is **bold** text.');
+    });
+
+    it('should preserve italic text in paragraphs', () => {
+      const blocks = parser.parseBlocks('This is *italic* text.');
+      expect(blocks[0].content).toBe('This is *italic* text.');
+    });
+
+    it('should preserve strikethrough text', () => {
+      const blocks = parser.parseBlocks('This is ~~deleted~~ text.');
+      expect(blocks[0].content).toBe('This is ~~deleted~~ text.');
+    });
+
+    it('should preserve inline code', () => {
+      const blocks = parser.parseBlocks('Use the `console.log` function.');
+      expect(blocks[0].content).toBe('Use the `console.log` function.');
+    });
+
+    it('should preserve links', () => {
+      const blocks = parser.parseBlocks('Visit [Example](https://example.com) for info.');
+      expect(blocks[0].content).toBe('Visit [Example](https://example.com) for info.');
+    });
+
+    it('should preserve nested inline formatting', () => {
+      const blocks = parser.parseBlocks('This is ***bold italic*** text.');
+      expect(blocks[0].content).toContain('bold italic');
+      // Should have both bold and italic markers
+      expect(blocks[0].content).toMatch(/\*+bold italic\*+/);
+    });
+
+    it('should preserve bold text in headings', () => {
+      const blocks = parser.parseBlocks('## Heading with **bold**');
+      expect(blocks[0].content).toBe('Heading with **bold**');
+    });
+
+    it('should preserve inline code in list items', () => {
+      const blocks = parser.parseBlocks('- Use `foo` here\n- And `bar` there');
+      expect(blocks[0].children[0].content).toBe('Use `foo` here');
+      expect(blocks[0].children[1].content).toBe('And `bar` there');
+    });
+
+    it('should preserve links in list items', () => {
+      const blocks = parser.parseBlocks('- Visit [Site](https://example.com)');
+      expect(blocks[0].children[0].content).toBe('Visit [Site](https://example.com)');
+    });
+  });
+
+  describe('roundtrip: all block types', () => {
+    it('should roundtrip paragraphs with inline formatting', () => {
+      const md = 'Text with **bold**, *italic*, `code`, and [link](https://example.com).';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('**bold**');
+      expect(result).toContain('*italic*');
+      expect(result).toContain('`code`');
+      expect(result).toContain('[link](https://example.com)');
+    });
+
+    it('should roundtrip all heading levels', () => {
+      const md = '# H1\n\n## H2\n\n### H3';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('# H1');
+      expect(result).toContain('## H2');
+      expect(result).toContain('### H3');
+    });
+
+    it('should roundtrip bullet lists', () => {
+      const md = '- Alpha\n- Beta\n- Gamma';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('- Alpha');
+      expect(result).toContain('- Beta');
+      expect(result).toContain('- Gamma');
+    });
+
+    it('should roundtrip numbered lists', () => {
+      const md = '1. First\n2. Second\n3. Third';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('1. First');
+      expect(result).toContain('2. Second');
+      expect(result).toContain('3. Third');
+    });
+
+    it('should roundtrip task lists', () => {
+      const md = '- [x] Done task\n- [ ] Pending task';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('- [x] Done task');
+      expect(result).toContain('- [ ] Pending task');
+    });
+
+    it('should roundtrip blockquotes', () => {
+      const md = '> This is a quote\n>\n> With two paragraphs';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('> This is a quote');
+      expect(result).toContain('> With two paragraphs');
+    });
+
+    it('should roundtrip code blocks with language', () => {
+      const md = '```python\ndef hello():\n    print("world")\n```';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('```python');
+      expect(result).toContain('def hello():');
+      expect(result).toContain('print("world")');
+      expect(result).toContain('```');
+    });
+
+    it('should roundtrip code blocks without language', () => {
+      const md = '```\nplain code\n```';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('plain code');
+    });
+
+    it('should roundtrip horizontal rules', () => {
+      const md = 'Above\n\n---\n\nBelow';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('---');
+      expect(result).toContain('Above');
+      expect(result).toContain('Below');
+    });
+
+    it('should roundtrip images', () => {
+      const md = '![A cat](https://example.com/cat.png)';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('![A cat](https://example.com/cat.png)');
+    });
+
+    it('should roundtrip tables', () => {
+      const md = '| Name | Age |\n| --- | --- |\n| Alice | 30 |\n| Bob | 25 |';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('Name');
+      expect(result).toContain('Age');
+      expect(result).toContain('Alice');
+      expect(result).toContain('Bob');
+    });
+
+    it('should roundtrip mermaid blocks', () => {
+      const md = '```mermaid\nflowchart TD\n    A --> B\n```';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('mermaid');
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('mermaid');
+      expect(result).toContain('flowchart TD');
+      expect(result).toContain('A --> B');
+    });
+
+    it('should roundtrip cept:toc', () => {
+      const md = '<!-- cept:toc -->';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('tableOfContents');
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('<!-- cept:toc -->');
+    });
+
+    it('should roundtrip cept:database', () => {
+      const md = '<!-- cept:database {"ref":".cept/databases/tasks.yaml","view":"table"} -->';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('database');
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('.cept/databases/tasks.yaml');
+      expect(result).toContain('"view"');
+    });
+
+    it('should roundtrip cept:block callout', () => {
+      const md = `<!-- cept:block {"type":"callout","icon":"💡","color":"yellow"} -->
+
+Important note here.
+
+<!-- /cept:block -->`;
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('callout');
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('<!-- cept:block');
+      expect(result).toContain('Important note here.');
+      expect(result).toContain('<!-- /cept:block -->');
+    });
+
+    it('should roundtrip strikethrough in paragraphs', () => {
+      const md = 'This has ~~strikethrough~~ text.';
+      const blocks = parser.parseBlocks(md);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('~~strikethrough~~');
+    });
+
+    it('should roundtrip multiple formatted elements in a single paragraph', () => {
+      const md = '**Bold** then *italic* then `code` then [link](https://x.com).';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks.length).toBe(1);
+      const result = parser.serializeBlocks(blocks);
+      expect(result).toContain('**Bold**');
+      expect(result).toContain('*italic*');
+      expect(result).toContain('`code`');
+      expect(result).toContain('[link](https://x.com)');
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty markdown', () => {
+      const blocks = parser.parseBlocks('');
+      expect(blocks).toEqual([]);
+    });
+
+    it('should handle whitespace-only markdown', () => {
+      const blocks = parser.parseBlocks('   \n\n   ');
+      expect(blocks.length).toBe(0);
+    });
+
+    it('should handle markdown with only front matter', () => {
+      const md = '---\ntitle: "Empty"\n---\n';
+      const blocks = parser.parseBlocks(md);
+      // Should have no content blocks (only filtered yaml)
+      expect(blocks.every((b) => b.type !== 'paragraph' || b.content !== '')).toBe(true);
+    });
+
+    it('should handle deeply nested blockquotes', () => {
+      const md = '> > > Deeply nested';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('blockquote');
+    });
+
+    it('should handle code blocks with special characters', () => {
+      const md = '```\n<div class="test">&amp;</div>\n```';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].content).toContain('<div class="test">');
+    });
+
+    it('should handle paragraphs with only inline code', () => {
+      const blocks = parser.parseBlocks('`just code`');
+      expect(blocks[0].content).toBe('`just code`');
+    });
+
+    it('should handle links with special characters in URL', () => {
+      const blocks = parser.parseBlocks('[test](https://example.com/path?q=1&b=2)');
+      expect(blocks[0].content).toContain('https://example.com/path?q=1&b=2');
+    });
+
+    it('should handle empty list items', () => {
+      const blocks = parser.parseBlocks('- \n- Item');
+      expect(blocks[0].type).toBe('bulletList');
+      expect(blocks[0].children.length).toBe(2);
+    });
+  });
 });

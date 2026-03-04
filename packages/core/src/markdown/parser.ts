@@ -449,13 +449,59 @@ export class CeptMarkdownParser {
 
   // -- Helpers --
 
+  /**
+   * Extract text from an mdast node, preserving inline Markdown formatting.
+   * This reconstructs the Markdown source for inline elements (bold, italic,
+   * links, code spans, etc.) so that roundtripping through parse→serialize
+   * does not lose formatting.
+   */
+  /**
+   * Extract text from an mdast node, preserving inline Markdown formatting.
+   * This reconstructs the Markdown source for inline elements (bold, italic,
+   * links, code spans, etc.) so that roundtripping through parse→serialize
+   * does not lose formatting.
+   */
   private extractText(node: Content): string {
+    // Handle inline formatting nodes that have both value and special meaning
+    switch (node.type) {
+      case 'inlineCode':
+        return `\`${(node as Content & { value: string }).value}\``;
+      case 'strong':
+        return `**${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}**`;
+      case 'emphasis':
+        return `*${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}*`;
+      case 'delete':
+        return `~~${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}~~`;
+      case 'link': {
+        const linkNode = node as Content & { url: string; title?: string | null; children: Content[] };
+        const text = linkNode.children.map((c) => this.extractText(c)).join('');
+        if (linkNode.title) {
+          return `[${text}](${linkNode.url} "${linkNode.title}")`;
+        }
+        return `[${text}](${linkNode.url})`;
+      }
+      case 'listItem': {
+        const children = (node as Content & { children: Content[] }).children;
+        const paragraphs = children.filter((c) => c.type === 'paragraph');
+        if (paragraphs.length > 0) {
+          return paragraphs.map((p) => this.extractText(p)).join('\n');
+        }
+        return children.map((c) => this.extractText(c)).join('');
+      }
+      default:
+        break;
+    }
+
+    // Plain text/value nodes
     if ('value' in node && typeof node.value === 'string') {
       return node.value;
     }
+
+    // Container nodes — recurse into children
     if ('children' in node && Array.isArray(node.children)) {
-      return (node.children as Content[]).map((child) => this.extractText(child)).join('');
+      return (node.children as Content[]).map((c) => this.extractText(c)).join('');
     }
+
     return '';
   }
 
