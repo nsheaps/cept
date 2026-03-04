@@ -29,3 +29,5 @@ export interface MarkdownParser {
   /** Serialize blocks to Markdown (no front matter) */
   serializeBlocks(blocks: Block[]): string;
 }
+
+export { CeptMarkdownParser } from './parser.js';

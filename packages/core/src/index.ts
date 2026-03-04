@@ -92,6 +92,7 @@ export type { TemplateEngine, TemplateMeta, TemplateType } from './templates/ind
 
 // Markdown
 export type { MarkdownParser, ParsedPage } from './markdown/index.js';
+export { CeptMarkdownParser } from './markdown/index.js';
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
