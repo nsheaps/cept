@@ -17,6 +17,7 @@ import { Toggle } from './extensions/toggle.js';
 import { ImageBlock } from './extensions/image.js';
 import { Embed } from './extensions/embed.js';
 import { Bookmark } from './extensions/bookmark.js';
+import { Columns, Column } from './extensions/columns.js';
 import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
@@ -114,10 +115,12 @@ export function CeptEditor({
       ImageBlock,
       Embed,
       Bookmark,
+      Columns,
+      Column,
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
-        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark'],
+        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns'],
       }),
       SlashCommand.configure({
         suggestion: {

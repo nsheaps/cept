@@ -8,5 +8,7 @@ export { Embed, detectProvider, toEmbedUrl } from './embed.js';
 export type { EmbedOptions } from './embed.js';
 export { Bookmark } from './bookmark.js';
 export type { BookmarkOptions } from './bookmark.js';
+export { Columns, Column } from './columns.js';
+export type { ColumnsOptions, ColumnOptions } from './columns.js';
 export { SlashCommand, defaultSlashCommands, filterSlashCommands, slashCommandPluginKey } from './slash-command.js';
 export type { SlashCommandItem, SlashCommandOptions } from './slash-command.js';

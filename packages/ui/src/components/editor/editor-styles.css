@@ -405,6 +405,22 @@
   object-fit: cover;
 }
 
+/* Column layout */
+.cept-editor .tiptap .cept-columns {
+  display: flex;
+  gap: 1rem;
+  margin: 0.75rem 0;
+}
+
+.cept-editor .tiptap .cept-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.cept-editor .tiptap .cept-column > * + * {
+  margin-top: 0.5em;
+}
+
 /* Slash command menu */
 .cept-slash-menu {
   background: white;
