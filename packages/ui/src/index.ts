@@ -58,3 +58,5 @@ export { RepoPicker } from './components/git/RepoPicker.js';
 export type { RepoPickerProps } from './components/git/RepoPicker.js';
 export { ConflictResolver } from './components/git/ConflictResolver.js';
 export type { ConflictResolverProps } from './components/git/ConflictResolver.js';
+export { HistoryViewer } from './components/git/HistoryViewer.js';
+export type { HistoryViewerProps } from './components/git/HistoryViewer.js';
