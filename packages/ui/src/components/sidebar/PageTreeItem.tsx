@@ -4,6 +4,7 @@ export interface PageTreeNode {
   id: string;
   title: string;
   icon?: string;
+  cover?: string;
   children: PageTreeNode[];
   isExpanded?: boolean;
 }

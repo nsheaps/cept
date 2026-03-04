@@ -597,6 +597,7 @@ export function App() {
                 pageId={selectedPageId}
                 title={selectedNode.title}
                 icon={selectedNode.icon}
+                cover={selectedNode.cover}
                 isFavorite={favorites.some((f) => f.id === selectedPageId)}
                 onRename={handlePageRename}
                 onDuplicate={handlePageDuplicate}
