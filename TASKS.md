@@ -53,7 +53,7 @@
 - [x] T2.1: TipTap editor setup with basic blocks (paragraph, headings, lists) *(2026-03-04)*
 - [x] T2.2: All text blocks (code, quote, callout, toggle, divider) *(2026-03-04)*
 - [x] T2.3: Media blocks (image, embed, bookmark) *(2026-03-04)*
-- [ ] T2.4: Slash command menu
+- [x] T2.4: Slash command menu *(2026-03-04)*
 - [ ] T2.5: Block drag-and-drop reordering
 - [ ] T2.6: Block actions menu
 - [ ] T2.7: Inline formatting toolbar
