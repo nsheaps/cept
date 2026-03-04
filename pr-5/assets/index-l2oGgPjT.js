@@ -166,4 +166,4 @@ https://github.com/highlightjs/highlight.js/issues/2277`),Bt=ne,ot=Ae),Fe===void
 </ol>
 <p>Start typing below to try the editor...</p>
 `,G3=!0,UT=document.getElementById("root");UT&&rO.createRoot(UT).render(me.jsx(Le.StrictMode,{children:me.jsx(V3,{demoMode:G3})}));
-//# sourceMappingURL=index-BWr-xTxc.js.map
+//# sourceMappingURL=index-l2oGgPjT.js.map
