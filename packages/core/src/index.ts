@@ -46,7 +46,12 @@ export type {
   SSHKey,
   RepoInfo,
   HttpAuth,
+  GitHubOAuthConfig,
+  TokenStore,
+  DeviceFlowVerification,
+  FetchFn,
 } from './auth/index.js';
+export { GitHubAuthProvider, MemoryTokenStore, AuthPendingError, AuthSlowDownError } from './auth/index.js';
 
 // Models
 export type {
