@@ -309,7 +309,7 @@ ElectronBridge exists (~157 LOC) with IPC channel definitions. MobileBridge inte
 - P6.7: Test Capacitor iOS + Android builds
 - P6.8: Mobile-specific UI polish (responsive UI already done, add native gestures)
 
-### Phase 7: Polish & Ecosystem (Lower Priority)
+### Phase 7: Polish, Observability & Ecosystem (Lower Priority)
 
 **Tasks:**
 - P7.1: Drag-and-drop page reordering in sidebar (real persistence)
@@ -320,6 +320,9 @@ ElectronBridge exists (~157 LOC) with IPC channel definitions. MobileBridge inte
 - P7.6: Theming (custom colors, fonts beyond light/dark)
 - P7.7: Plugin system architecture (`.cept/plugins/`)
 - P7.8: API documentation (auto-generated from TypeScript)
+- P7.9: **Sentry integration** — error tracking, performance monitoring, session replay. Use `@sentry/react` for the web/UI layer, `@sentry/node` for desktop/signaling server. Configure source maps upload in CI. Add error boundaries that report to Sentry. Gate behind an opt-in setting (respect user privacy — no tracking without consent).
+- P7.10: **Analytics** — privacy-respecting usage analytics (e.g., Plausible, Umami, or PostHog self-hosted). Track: feature adoption (which block types are used, which views are popular), storage backend distribution, crash-free session rate, editor performance metrics. Must be opt-in with clear disclosure. No PII collection.
+- P7.11: **Feature gates** — implement a feature flag system for gradual rollout. Use a simple local config (`.cept/features.yaml` or a settings key) that can be overridden by a remote config endpoint. Gate new/experimental features (e.g., collaboration, MCP server, OPFS backend) behind flags so they can be enabled per-user or per-space. Support `enabled`, `disabled`, and `preview` states. The flag check should be a simple `isFeatureEnabled('collaboration')` call usable in both `@cept/core` and `@cept/ui`.
 
 ### Phase 8: Integration & Public Rendering (New Features)
 

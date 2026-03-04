@@ -218,7 +218,7 @@
 - [ ] P6.7: Test Capacitor iOS + Android builds
 - [ ] P6.8: Mobile-specific UI polish
 
-## Phase 7: Polish & Ecosystem (Continuation)
+## Phase 7: Polish, Observability & Ecosystem (Continuation)
 
 - [ ] P7.1: Drag-and-drop page reordering (real persistence)
 - [ ] P7.2: Page cover images
@@ -228,6 +228,9 @@
 - [ ] P7.6: Theming (custom colors, fonts)
 - [ ] P7.7: Plugin system architecture
 - [ ] P7.8: API documentation
+- [ ] P7.9: Sentry integration — error tracking, performance monitoring, session replay (opt-in)
+- [ ] P7.10: Analytics — privacy-respecting usage analytics (opt-in, no PII)
+- [ ] P7.11: Feature gates — local + remote feature flag system for gradual rollout
 
 ## Phase 8: Integration & Public Rendering (Continuation)
 
