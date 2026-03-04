@@ -18,3 +18,5 @@ export { PageContextMenu } from './components/sidebar/PageContextMenu.js';
 export type { PageContextMenuProps } from './components/sidebar/PageContextMenu.js';
 export { Breadcrumbs } from './components/topbar/Breadcrumbs.js';
 export type { BreadcrumbItem, BreadcrumbsProps } from './components/topbar/Breadcrumbs.js';
+export { CommandPalette, filterCommands } from './components/command-palette/CommandPalette.js';
+export type { CommandItem, CommandPaletteProps } from './components/command-palette/CommandPalette.js';

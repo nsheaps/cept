@@ -1,9 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
 import { expandToNode, getBreadcrumbs, renameNode, removeNode, moveNode, findNode, addChild, findAncestorIds } from './sidebar/page-tree-utils.js';
 import { Breadcrumbs } from './topbar/Breadcrumbs.js';
+import { CommandPalette } from './command-palette/CommandPalette.js';
+import type { CommandItem } from './command-palette/CommandPalette.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -37,6 +39,18 @@ export function App({ demoMode }: AppProps) {
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>(
     demoMode ? 'welcome' : undefined,
   );
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -105,6 +119,11 @@ export function App({ demoMode }: AppProps) {
     setPages((prev) => moveNode(prev, id, undefined));
   }, []);
 
+  const commandItems: CommandItem[] = useMemo(() => [
+    { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
+    { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => {} },
+  ], [handlePageAdd]);
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-4">
@@ -161,6 +180,11 @@ export function App({ demoMode }: AppProps) {
           )}
         </section>
       </main>
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        items={commandItems}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
     </div>
   );
 }
