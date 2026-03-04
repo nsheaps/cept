@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findAncestorIds, expandToNode, getBreadcrumbs } from './page-tree-utils.js';
+import { findAncestorIds, expandToNode, getBreadcrumbs, renameNode, removeNode, moveNode, findNode, addChild } from './page-tree-utils.js';
 import type { PageTreeNode } from './PageTreeItem.js';
 
 const tree: PageTreeNode[] = [
@@ -102,5 +102,96 @@ describe('getBreadcrumbs', () => {
       { id: 'root-1', title: 'Root 1', icon: '\u{1F4C1}' },
       { id: 'child-2', title: 'Child 2', icon: undefined },
     ]);
+  });
+});
+
+describe('renameNode', () => {
+  it('renames a root node', () => {
+    const result = renameNode(tree, 'root-1', 'New Name');
+    expect(result[0].title).toBe('New Name');
+  });
+
+  it('renames a nested node', () => {
+    const result = renameNode(tree, 'grandchild-1', 'Updated');
+    expect(result[0].children[0].children[0].title).toBe('Updated');
+  });
+
+  it('does not change other nodes', () => {
+    const result = renameNode(tree, 'root-1', 'New Name');
+    expect(result[1].title).toBe('Root 2');
+  });
+});
+
+describe('removeNode', () => {
+  it('removes a root node', () => {
+    const { tree: result, removed } = removeNode(tree, 'root-2');
+    expect(result).toHaveLength(1);
+    expect(removed?.id).toBe('root-2');
+  });
+
+  it('removes a nested node', () => {
+    const { tree: result, removed } = removeNode(tree, 'grandchild-1');
+    expect(removed?.id).toBe('grandchild-1');
+    expect(result[0].children[0].children).toHaveLength(1);
+    expect(result[0].children[0].children[0].id).toBe('grandchild-2');
+  });
+
+  it('returns null removed for missing node', () => {
+    const { tree: result, removed } = removeNode(tree, 'missing');
+    expect(removed).toBeNull();
+    expect(result).toHaveLength(2);
+  });
+});
+
+describe('moveNode', () => {
+  it('moves a nested node to root', () => {
+    const result = moveNode(tree, 'child-1', undefined);
+    // child-1 should be at root level now
+    expect(result.find((n) => n.id === 'child-1')).toBeDefined();
+    // root-1 should no longer have child-1
+    const root1 = result.find((n) => n.id === 'root-1');
+    expect(root1?.children.find((c) => c.id === 'child-1')).toBeUndefined();
+  });
+
+  it('moves a root node under another node', () => {
+    const result = moveNode(tree, 'root-2', 'root-1');
+    expect(result).toHaveLength(1);
+    const root1 = result[0];
+    expect(root1.children.find((c) => c.id === 'root-2')).toBeDefined();
+  });
+
+  it('returns unchanged tree for missing node', () => {
+    const result = moveNode(tree, 'missing', 'root-1');
+    expect(result).toHaveLength(2);
+  });
+});
+
+describe('findNode', () => {
+  it('finds a root node', () => {
+    expect(findNode(tree, 'root-1')?.title).toBe('Root 1');
+  });
+
+  it('finds a nested node', () => {
+    expect(findNode(tree, 'grandchild-2')?.title).toBe('Grandchild 2');
+  });
+
+  it('returns null for missing node', () => {
+    expect(findNode(tree, 'missing')).toBeNull();
+  });
+});
+
+describe('addChild', () => {
+  it('adds a child to a root node', () => {
+    const child: PageTreeNode = { id: 'new', title: 'New', children: [] };
+    const result = addChild(tree, 'root-2', child);
+    expect(result[1].children).toHaveLength(1);
+    expect(result[1].children[0].id).toBe('new');
+    expect(result[1].isExpanded).toBe(true);
+  });
+
+  it('adds a child to a nested node', () => {
+    const child: PageTreeNode = { id: 'new', title: 'New', children: [] };
+    const result = addChild(tree, 'child-1', child);
+    expect(result[0].children[0].children).toHaveLength(3);
   });
 });

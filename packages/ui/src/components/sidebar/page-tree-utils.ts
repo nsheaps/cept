@@ -49,6 +49,100 @@ function expandNodes(nodes: PageTreeNode[], idsToExpand: Set<string>): PageTreeN
 }
 
 /**
+ * Rename a node in the tree.
+ */
+export function renameNode(nodes: PageTreeNode[], id: string, title: string): PageTreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === id) {
+      return { ...node, title };
+    }
+    if (node.children.length > 0) {
+      return { ...node, children: renameNode(node.children, id, title) };
+    }
+    return node;
+  });
+}
+
+/**
+ * Remove a node from the tree. Returns the updated tree and the removed node (if found).
+ */
+export function removeNode(
+  nodes: PageTreeNode[],
+  id: string,
+): { tree: PageTreeNode[]; removed: PageTreeNode | null } {
+  const filtered: PageTreeNode[] = [];
+  let removed: PageTreeNode | null = null;
+
+  for (const node of nodes) {
+    if (node.id === id) {
+      removed = node;
+    } else if (node.children.length > 0) {
+      const result = removeNode(node.children, id);
+      if (result.removed) {
+        removed = result.removed;
+        filtered.push({ ...node, children: result.tree });
+      } else {
+        filtered.push(node);
+      }
+    } else {
+      filtered.push(node);
+    }
+  }
+  return { tree: filtered, removed };
+}
+
+/**
+ * Move a node to a new parent (or to root if parentId is undefined).
+ * Returns the updated tree.
+ */
+export function moveNode(
+  nodes: PageTreeNode[],
+  nodeId: string,
+  newParentId: string | undefined,
+): PageTreeNode[] {
+  const { tree, removed } = removeNode(nodes, nodeId);
+  if (!removed) return nodes;
+
+  if (!newParentId) {
+    return [...tree, removed];
+  }
+  return addChild(tree, newParentId, removed);
+}
+
+/**
+ * Add a child node under a parent.
+ */
+export function addChild(
+  nodes: PageTreeNode[],
+  parentId: string,
+  child: PageTreeNode,
+): PageTreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === parentId) {
+      return { ...node, children: [...node.children, child], isExpanded: true };
+    }
+    if (node.children.length > 0) {
+      return { ...node, children: addChild(node.children, parentId, child) };
+    }
+    return node;
+  });
+}
+
+/**
+ * Find a node by ID.
+ */
+export function findNode(nodes: PageTreeNode[], id: string): PageTreeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children.length > 0) {
+      const found = findNode(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
  * Get the breadcrumb trail (list of nodes from root to target).
  */
 export function getBreadcrumbs(
