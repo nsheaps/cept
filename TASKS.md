@@ -122,7 +122,7 @@
 
 ## Phase 8: Import/Export & Templates
 
-- [ ] T8.1: Notion export ZIP importer
+- [x] T8.1: Notion export ZIP importer *(2026-03-04)*
 - [ ] T8.2: Obsidian vault importer
 - [ ] T8.3: Markdown/HTML/PDF exporter
 - [ ] T8.4: Built-in template library
