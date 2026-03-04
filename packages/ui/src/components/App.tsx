@@ -31,6 +31,7 @@ import { ExportDialog } from './import-export/ExportDialog.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces } from './storage/SpaceManager.js';
+import { restoreRoute, replaceRoute, pushRoute, parseRoute } from '../router.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -147,43 +148,61 @@ export function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Deep linking: read page id from URL hash on load
+  // Deep linking: restore route from URL on load (handles 404 redirect + legacy hash)
   useEffect(() => {
     if (!ready || !initializedRef.current) return;
-    const hash = window.location.hash.replace('#', '');
-    if (hash && hash !== selectedPageId) {
-      // Check if the page exists in the tree
-      const node = findNode(pages, hash);
-      if (node) {
-        setSelectedPageId(hash);
-        setPages((prev) => expandToNode(prev, hash));
+    const route = restoreRoute();
+    if (route.space === 'docs') {
+      setActiveSpace('docs');
+      if (route.pageId) setDocsSelectedPageId(route.pageId);
+    } else {
+      if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
+        // Switch to the requested space
+        void switchSpaceInBackend(backend, route.spaceId).then(() => {
+          setUserSpaceId(route.spaceId);
+        });
+      }
+      if (route.pageId && route.pageId !== selectedPageId) {
+        const node = findNode(pages, route.pageId);
+        if (node) {
+          setSelectedPageId(route.pageId);
+          setPages((prev) => expandToNode(prev, route.pageId!));
+        }
       }
     }
   }, [ready]); // only run when ready changes
 
-  // Deep linking: update URL hash when selected page changes
+  // Deep linking: update URL when selected page or space changes
   useEffect(() => {
-    if (selectedPageId && activeSpace === 'user') {
-      window.history.replaceState(null, '', `#${selectedPageId}`);
-    } else if (!selectedPageId) {
-      window.history.replaceState(null, '', window.location.pathname);
+    if (activeSpace === 'docs') {
+      replaceRoute({ space: 'docs', pageId: docsSelectedPageId });
+    } else if (selectedPageId) {
+      replaceRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
+    } else if (userSpaceId !== 'default') {
+      replaceRoute({ space: 'user', spaceId: userSpaceId });
     }
-  }, [selectedPageId, activeSpace]);
+  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId]);
 
-  // Listen for back/forward navigation
+  // Listen for back/forward navigation (popstate)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash && hash !== selectedPageId) {
-        const node = findNode(pages, hash);
-        if (node) {
-          setSelectedPageId(hash);
-          setPages((prev) => expandToNode(prev, hash));
+    const handlePopState = () => {
+      const route = parseRoute();
+      if (route.space === 'docs') {
+        setActiveSpace('docs');
+        if (route.pageId) setDocsSelectedPageId(route.pageId);
+      } else {
+        setActiveSpace('user');
+        if (route.pageId && route.pageId !== selectedPageId) {
+          const node = findNode(pages, route.pageId);
+          if (node) {
+            setSelectedPageId(route.pageId);
+            setPages((prev) => expandToNode(prev, route.pageId!));
+          }
         }
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [selectedPageId, pages]);
 
   // Persist tree state to backend (debounced) — page content is saved separately per-file
@@ -537,11 +556,13 @@ export function App() {
     setActiveSpace('docs');
     setDocsSelectedPageId('docs-index');
     setDocsPages(DOCS_PAGES);
+    pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
   const handleBackToUserSpace = useCallback(() => {
     setActiveSpace('user');
-  }, []);
+    pushRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
+  }, [userSpaceId, selectedPageId]);
 
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
