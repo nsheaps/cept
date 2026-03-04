@@ -4,6 +4,11 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Highlight from '@tiptap/extension-highlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { common, createLowlight } from 'lowlight';
@@ -15,6 +20,7 @@ import { Bookmark } from './extensions/bookmark.js';
 import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
+import { InlineToolbar } from './InlineToolbar.js';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
 const lowlight = createLowlight(common);
@@ -70,6 +76,9 @@ export function CeptEditor({
         },
         // Disable default code block in favor of lowlight version
         codeBlock: false,
+        // Disable defaults to use standalone configured versions
+        link: false,
+        underline: false,
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -87,6 +96,18 @@ export function CeptEditor({
         HTMLAttributes: {
           class: 'cept-task-item',
         },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'cept-link',
+        },
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
       }),
       Callout,
       Toggle,
@@ -170,6 +191,7 @@ export function CeptEditor({
   return (
     <div className="cept-editor" data-testid="cept-editor">
       <EditorContent editor={editor} />
+      {editable && <InlineToolbar editor={editor} />}
     </div>
   );
 }

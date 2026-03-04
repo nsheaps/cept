@@ -488,6 +488,94 @@
   color: #9ca3af;
 }
 
+/* Link styles */
+.cept-editor .tiptap a.cept-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.cept-editor .tiptap a.cept-link:hover {
+  color: #1d4ed8;
+}
+
+/* Highlight */
+.cept-editor .tiptap mark {
+  background-color: rgba(255, 212, 0, 0.4);
+  border-radius: 2px;
+  padding: 0.1em 0;
+}
+
+/* Underline */
+.cept-editor .tiptap u {
+  text-underline-offset: 2px;
+}
+
+/* Inline toolbar (bubble menu) */
+.cept-inline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  padding: 0.25rem;
+}
+
+.cept-inline-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.cept-inline-toolbar-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.cept-inline-toolbar-btn.is-active {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.cept-inline-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #e5e7eb;
+  margin: 0 2px;
+}
+
+.cept-inline-toolbar-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cept-inline-toolbar-link-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  width: 200px;
+  outline: none;
+}
+
+.cept-inline-toolbar-link-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
 /* Block actions menu */
 .cept-block-actions {
   background: white;
