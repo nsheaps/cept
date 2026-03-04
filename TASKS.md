@@ -84,7 +84,7 @@
 - [x] T4.3: Board/Kanban view with drag-and-drop *(2026-03-04)*
 - [x] T4.4: Calendar view *(2026-03-04)*
 - [x] T4.5: Map view (Leaflet + OpenStreetMap) *(2026-03-04)*
-- [ ] T4.6: Gallery view
+- [x] T4.6: Gallery view *(2026-03-04)*
 - [ ] T4.7: List view
 - [ ] T4.8: Inline database blocks (embed in pages)
 - [ ] T4.9: Linked database views (reference existing DB with custom filter)
