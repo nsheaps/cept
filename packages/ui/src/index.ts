@@ -7,6 +7,7 @@
  */
 
 export { App } from './components/App.js';
+export { StorageProvider, useStorage } from './components/storage/StorageContext.js';
 export { CeptEditor } from './components/editor/index.js';
 export type { CeptEditorProps } from './components/editor/index.js';
 export { Sidebar } from './components/sidebar/Sidebar.js';
