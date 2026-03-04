@@ -1,0 +1,117 @@
+/* Knowledge Graph */
+.cept-knowledge-graph {
+  width: 100%;
+  height: 100%;
+  background: #fafafa;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cept-knowledge-graph svg {
+  display: block;
+}
+
+.cept-graph-link {
+  opacity: 0.6;
+}
+
+.cept-graph-node circle {
+  transition: r 0.2s;
+}
+
+.cept-graph-node:hover circle {
+  r: 10;
+  stroke-width: 3;
+}
+
+.cept-graph-node text {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Graph controls */
+.cept-graph-controls {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 10;
+}
+
+.cept-graph-control-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.cept-graph-control-btn:hover {
+  background: #f3f4f6;
+}
+
+/* Depth slider */
+.cept-graph-depth-slider {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: #374151;
+  z-index: 10;
+}
+
+.cept-graph-depth-slider input[type="range"] {
+  width: 120px;
+}
+
+/* Filter panel */
+.cept-graph-filters {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  z-index: 10;
+}
+
+.cept-graph-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.cept-graph-filter-chip.is-active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.cept-graph-filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
