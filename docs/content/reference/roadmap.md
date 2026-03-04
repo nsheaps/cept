@@ -36,8 +36,8 @@ Full storage backend implementation and data management.
 
 | Feature | Status | Spec |
 |---------|--------|------|
-| IndexedDB backend (BrowserFsBackend with lightning-fs) | Planned | [storage-backends](../../specs/storage-backends.md) |
-| Local folder backend (filesystem API) | Planned | [storage-backends](../../specs/storage-backends.md) |
+| IndexedDB backend (BrowserFsBackend with lightning-fs or OPFS) | Planned | [storage-backends](../../specs/storage-backends.md) |
+| Local folder backend (File System Access API / Node fs) | Planned | [storage-backends](../../specs/storage-backends.md) |
 | Git backend (isomorphic-git) | Planned | [storage-backends](../../specs/storage-backends.md) |
 | Markdown parser/serializer (roundtrip-safe) | Planned | [markdown-parser](../../specs/markdown-parser.md) |
 | Multi-space support | Planned | — |

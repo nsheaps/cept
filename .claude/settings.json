@@ -101,5 +101,18 @@
     "FORCE_COLOR": "1",
     "NODE_ENV": "development",
     "CLAUDE_CODE_PROJECT": "cept"
+  },
+  "extraKnownMarketplaces": {
+    "nsheaps-ai-mktpl": {
+      "source": {
+        "source": "github",
+        "repo": "nsheaps/ai-mktpl"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ralph-wiggum@claude-plugins-official": true,
+    "scm-utils@nsheaps-ai-mktpl": true,
+    "git-spice@nsheaps-ai-mktpl": true
   }
 }
