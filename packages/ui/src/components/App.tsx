@@ -24,6 +24,7 @@ import {
   deletePageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
+import { FolderView } from './editor/FolderView.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -608,6 +609,12 @@ export function App() {
                 placeholder="Type '/' for commands..."
                 onUpdate={handleContentUpdate}
               />
+              {selectedNode.children.length > 0 && (
+                <FolderView
+                  children={selectedNode.children}
+                  onPageSelect={handlePageSelect}
+                />
+              )}
             </>
           ) : (
             <div className="text-center text-gray-400 mt-20">

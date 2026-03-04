@@ -820,6 +820,60 @@
   cursor: grabbing;
 }
 
+/* Folder view — child page directory listing */
+.cept-folder-view {
+  max-width: 900px;
+  margin: 1.5rem auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cept-folder-view-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: #374151;
+  transition: background-color 0.1s;
+}
+
+.cept-folder-view-item:hover {
+  background-color: #f3f4f6;
+}
+
+.cept-folder-view-icon {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.cept-folder-view-title {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cept-folder-view-count {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  flex-shrink: 0;
+}
+
 /* Focus styles */
 .cept-editor .tiptap:focus-visible {
   outline: none;
@@ -867,6 +921,9 @@
   .cept-editor .tiptap table.cept-table th.cept-table-header-cell { border-color: #404040; }
   .cept-editor .tiptap table.cept-table th.cept-table-header-cell { background-color: #1e1e1e; }
   .cept-editor .tiptap table.cept-table .selectedCell::after { background: rgba(99, 102, 241, 0.2); }
+  .cept-folder-view-item { color: #d4d4d8; }
+  .cept-folder-view-item:hover { background-color: #333; }
+  .cept-folder-view-count { color: #71717a; background: #333; }
   .cept-editor .drag-handle::after { color: #525252; }
   .cept-editor .drag-handle:hover::after { color: #71717a; }
 }
