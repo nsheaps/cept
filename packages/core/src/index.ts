@@ -12,4 +12,6 @@
  * - Auth provider abstraction
  */
 
-export type { StorageBackend, BackendCapabilities, GitStorageBackend } from './storage/backend.js';
+// Exports will be added as modules are implemented
+// See T0.3 for StorageBackend interface definitions
+export const CORE_VERSION = '0.0.0';

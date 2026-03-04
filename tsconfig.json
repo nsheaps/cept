@@ -3,11 +3,6 @@
   "compilerOptions": {
     "baseUrl": "."
   },
-  "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/ui" },
-    { "path": "./packages/web" }
-  ],
-  "include": [],
-  "exclude": ["node_modules"]
+  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.tsx"],
+  "exclude": ["node_modules", "**/dist/**"]
 }
