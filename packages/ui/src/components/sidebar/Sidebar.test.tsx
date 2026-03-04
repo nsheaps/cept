@@ -128,4 +128,60 @@ describe('Sidebar', () => {
     render(<Sidebar pages={mockPages} />);
     expect(screen.getByText('Pages')).toBeDefined();
   });
+
+  it('renders favorites section when favorites are provided', () => {
+    const favorites = [
+      { id: 'page-1', title: 'Getting Started', icon: '\u{1F680}' },
+    ];
+    render(<Sidebar pages={mockPages} favorites={favorites} />);
+    expect(screen.getByTestId('favorites-section')).toBeDefined();
+    expect(screen.getByText('Favorites')).toBeDefined();
+    expect(screen.getByTestId('favorite-page-1')).toBeDefined();
+  });
+
+  it('does not render favorites section when empty', () => {
+    render(<Sidebar pages={mockPages} favorites={[]} />);
+    expect(screen.queryByTestId('favorites-section')).toBeNull();
+  });
+
+  it('renders recent section when recent pages are provided', () => {
+    const recentPages = [
+      { id: 'page-3', title: 'Projects' },
+    ];
+    render(<Sidebar pages={mockPages} recentPages={recentPages} />);
+    expect(screen.getByTestId('recent-section')).toBeDefined();
+    expect(screen.getByText('Recent')).toBeDefined();
+    expect(screen.getByTestId('recent-page-3')).toBeDefined();
+  });
+
+  it('does not render recent section when empty', () => {
+    render(<Sidebar pages={mockPages} recentPages={[]} />);
+    expect(screen.queryByTestId('recent-section')).toBeNull();
+  });
+
+  it('calls onPageSelect when a favorite is clicked', () => {
+    const onPageSelect = vi.fn();
+    const favorites = [{ id: 'page-1', title: 'Getting Started' }];
+    render(<Sidebar pages={mockPages} favorites={favorites} onPageSelect={onPageSelect} />);
+
+    fireEvent.click(screen.getByTestId('favorite-page-1'));
+    expect(onPageSelect).toHaveBeenCalledWith('page-1');
+  });
+
+  it('calls onPageSelect when a recent page is clicked', () => {
+    const onPageSelect = vi.fn();
+    const recentPages = [{ id: 'page-3', title: 'Projects' }];
+    render(<Sidebar pages={mockPages} recentPages={recentPages} onPageSelect={onPageSelect} />);
+
+    fireEvent.click(screen.getByTestId('recent-page-3'));
+    expect(onPageSelect).toHaveBeenCalledWith('page-3');
+  });
+
+  it('highlights selected favorite', () => {
+    const favorites = [{ id: 'page-1', title: 'Getting Started' }];
+    render(<Sidebar pages={mockPages} favorites={favorites} selectedPageId="page-1" />);
+
+    const favBtn = screen.getByTestId('favorite-page-1');
+    expect(favBtn.className).toContain('is-selected');
+  });
 });

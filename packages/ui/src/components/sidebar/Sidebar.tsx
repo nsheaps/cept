@@ -2,8 +2,16 @@ import { useState, useCallback, useEffect } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
 import { PageContextMenu } from './PageContextMenu.js';
 
+export interface SidebarPageRef {
+  id: string;
+  title: string;
+  icon?: string;
+}
+
 export interface SidebarProps {
   pages: PageTreeNode[];
+  favorites?: SidebarPageRef[];
+  recentPages?: SidebarPageRef[];
   selectedPageId?: string;
   onPageSelect?: (id: string) => void;
   onPageToggle?: (id: string) => void;
@@ -12,11 +20,14 @@ export interface SidebarProps {
   onPageDuplicate?: (id: string) => void;
   onPageDelete?: (id: string) => void;
   onPageMoveToRoot?: (id: string) => void;
+  onToggleFavorite?: (id: string) => void;
   onSearch?: () => void;
 }
 
 export function Sidebar({
   pages,
+  favorites = [],
+  recentPages = [],
   selectedPageId,
   onPageSelect,
   onPageToggle,
@@ -25,6 +36,7 @@ export function Sidebar({
   onPageDuplicate,
   onPageDelete,
   onPageMoveToRoot,
+  onToggleFavorite,
   onSearch,
 }: SidebarProps) {
   const [contextMenu, setContextMenu] = useState<{
@@ -68,6 +80,48 @@ export function Sidebar({
         </button>
       </div>
 
+      {favorites.length > 0 && (
+        <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="favorites-section">
+          <div className="cept-sidebar-section-header">
+            <span>Favorites</span>
+          </div>
+          <div className="cept-sidebar-tree">
+            {favorites.map((fav) => (
+              <button
+                key={fav.id}
+                className={`cept-sidebar-item ${selectedPageId === fav.id ? 'is-selected' : ''}`}
+                onClick={() => onPageSelect?.(fav.id)}
+                data-testid={`favorite-${fav.id}`}
+              >
+                <span className="cept-sidebar-icon">{fav.icon ?? '\u{1F4C4}'}</span>
+                <span className="cept-sidebar-title">{fav.title || 'Untitled'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {recentPages.length > 0 && (
+        <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="recent-section">
+          <div className="cept-sidebar-section-header">
+            <span>Recent</span>
+          </div>
+          <div className="cept-sidebar-tree">
+            {recentPages.map((page) => (
+              <button
+                key={page.id}
+                className={`cept-sidebar-item ${selectedPageId === page.id ? 'is-selected' : ''}`}
+                onClick={() => onPageSelect?.(page.id)}
+                data-testid={`recent-${page.id}`}
+              >
+                <span className="cept-sidebar-icon">{page.icon ?? '\u{1F4C4}'}</span>
+                <span className="cept-sidebar-title">{page.title || 'Untitled'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="cept-sidebar-section">
         <div className="cept-sidebar-section-header">
           <span>Pages</span>
@@ -108,10 +162,12 @@ export function Sidebar({
           pageId={contextMenu.pageId}
           pageTitle={contextMenu.pageTitle}
           position={contextMenu.position}
+          isFavorite={favorites.some((f) => f.id === contextMenu.pageId)}
           onRename={(id, title) => onPageRename?.(id, title)}
           onDuplicate={(id) => onPageDuplicate?.(id)}
           onDelete={(id) => onPageDelete?.(id)}
           onMoveToRoot={(id) => onPageMoveToRoot?.(id)}
+          onToggleFavorite={onToggleFavorite}
           onClose={closeContextMenu}
         />
       )}
