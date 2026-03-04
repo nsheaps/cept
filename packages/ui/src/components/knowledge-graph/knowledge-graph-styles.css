@@ -215,3 +215,45 @@
   letter-spacing: 0.05em;
   color: #9ca3af;
 }
+
+/* Animation player */
+.cept-graph-animation {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cept-graph-animation-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
+}
+
+.cept-graph-animation-controls input[type="range"] {
+  flex: 1;
+  min-width: 100px;
+}
+
+.cept-graph-animation-time {
+  font-size: 0.8125rem;
+  color: #374151;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.cept-graph-animation-counter {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.cept-graph-animation-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
