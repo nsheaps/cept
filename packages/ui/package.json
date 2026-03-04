@@ -23,13 +23,12 @@
     "@tiptap/pm": "^3.20.0",
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
-    "@types/d3-force": "3.0.10",
-    "@types/d3-selection": "3.0.11",
-    "d3-force": "3.0.0",
-    "d3-selection": "3.0.0",
+    "d3": "7.9.0",
     "lowlight": "^3.3.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/d3": "7.4.3"
+  },
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
