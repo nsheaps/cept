@@ -1,0 +1,10 @@
+{
+  "name": "@cept/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test --config playwright.config.ts",
+    "test:screenshots": "playwright test --config playwright.config.ts --update-snapshots"
+  }
+}
