@@ -19,3 +19,13 @@ export type {
 
 export { ElectronBridge, IPC_CHANNELS } from './electron-bridge.js';
 export type { ElectronIPC } from './electron-bridge.js';
+
+export { AutoUpdater, compareVersions } from './auto-updater.js';
+export type {
+  UpdateInfo,
+  UpdateState,
+  UpdateEvent,
+  UpdateListener,
+  AutoUpdaterConfig,
+  FetchFunction,
+} from './auto-updater.js';
