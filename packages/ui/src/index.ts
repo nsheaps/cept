@@ -20,3 +20,5 @@ export { Breadcrumbs } from './components/topbar/Breadcrumbs.js';
 export type { BreadcrumbItem, BreadcrumbsProps } from './components/topbar/Breadcrumbs.js';
 export { CommandPalette, filterCommands } from './components/command-palette/CommandPalette.js';
 export type { CommandItem, CommandPaletteProps } from './components/command-palette/CommandPalette.js';
+export { SearchPanel } from './components/search/SearchPanel.js';
+export type { SearchResult, SearchPanelProps } from './components/search/SearchPanel.js';
