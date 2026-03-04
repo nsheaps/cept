@@ -1,0 +1,17 @@
+/**
+ * @cept/mobile — Capacitor iOS + Android mobile shell
+ *
+ * Provides the MobileBridge abstraction for accessing native mobile
+ * capabilities through Capacitor plugins. The UI accesses mobile
+ * features only through this bridge.
+ */
+
+export { WebMobileBridge } from './mobile-bridge.js';
+export type {
+  MobileBridge,
+  MobileCapabilities,
+  ShareOptions,
+  KeyboardInfo,
+  StatusBarStyle,
+  SafeAreaInsets,
+} from './mobile-bridge.js';
