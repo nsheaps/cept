@@ -292,6 +292,12 @@
   padding: 0.25rem 0;
   user-select: none;
   list-style: disclosure-closed;
+  /* Tablet/touch support */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .cept-editor .tiptap details.cept-toggle[open] > summary.cept-toggle-summary {

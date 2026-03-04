@@ -60,13 +60,19 @@ export interface SettingsModalProps {
   initialTab?: 'about' | 'settings' | 'data' | 'spaces';
   settings: CeptSettings;
   spaces: SpaceInfo[];
+  activeSpaceId?: string;
   onClose: () => void;
   onSettingsChange: (settings: CeptSettings) => void;
   onResetSettings: () => void;
   onDeleteSpace: (id: string) => void;
   onSpaceRename: (id: string, name: string) => void;
+  onCreateSpace: (name: string) => void;
+  onSwitchSpace: (id: string) => void;
   onClearAllData: () => void;
   onRecreateDemoSpace: () => void;
+  onImportNotion?: () => void;
+  onImportObsidian?: () => void;
+  onExport?: () => void;
 }
 
 export function SettingsModal({
@@ -74,17 +80,25 @@ export function SettingsModal({
   initialTab = 'settings',
   settings,
   spaces,
+  activeSpaceId,
   onClose,
   onSettingsChange,
   onResetSettings,
   onDeleteSpace,
   onSpaceRename,
+  onCreateSpace,
+  onSwitchSpace,
   onClearAllData,
   onRecreateDemoSpace,
+  onImportNotion,
+  onImportObsidian,
+  onExport,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'data' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [creatingSpace, setCreatingSpace] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState('');
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -260,22 +274,123 @@ export function SettingsModal({
                 ) : (
                   <div className="cept-settings-space-list">
                     {spaces.map((space) => (
-                      <button
-                        key={space.id}
-                        className="cept-settings-space-item"
-                        onClick={() => setSelectedSpaceId(space.id)}
-                        data-testid={`space-item-${space.id}`}
-                      >
-                        <div className="cept-settings-space-info">
-                          <span className="cept-settings-space-name">{space.name}</span>
-                          <span className="cept-settings-space-meta">{space.source} &middot; {space.pageCount} pages</span>
-                        </div>
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M6 4l4 4-4 4" />
-                        </svg>
-                      </button>
+                      <div key={space.id} className="cept-settings-space-row">
+                        <button
+                          className={`cept-settings-space-item ${space.id === activeSpaceId ? 'is-active' : ''}`}
+                          onClick={() => setSelectedSpaceId(space.id)}
+                          data-testid={`space-item-${space.id}`}
+                        >
+                          <div className="cept-settings-space-info">
+                            <span className="cept-settings-space-name">
+                              {space.name}
+                              {space.id === activeSpaceId && (
+                                <span className="cept-settings-space-badge" data-testid="active-space-badge"> (active)</span>
+                              )}
+                            </span>
+                            <span className="cept-settings-space-meta">{space.source} &middot; {space.pageCount} pages</span>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 4l4 4-4 4" />
+                          </svg>
+                        </button>
+                        {space.id !== activeSpaceId && (
+                          <button
+                            className="cept-settings-action-btn cept-settings-action-btn--small"
+                            onClick={() => { onSwitchSpace(space.id); onClose(); }}
+                            title="Switch to this space"
+                            data-testid={`switch-space-${space.id}`}
+                          >
+                            Switch
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
+                )}
+
+                <div className="cept-settings-section-divider" />
+                {creatingSpace ? (
+                  <div className="cept-settings-rename-row" data-testid="create-space-form">
+                    <input
+                      className="cept-settings-rename-input"
+                      placeholder="Space name..."
+                      value={newSpaceName}
+                      onChange={(e) => setNewSpaceName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newSpaceName.trim()) {
+                          onCreateSpace(newSpaceName.trim());
+                          setNewSpaceName('');
+                          setCreatingSpace(false);
+                        }
+                        if (e.key === 'Escape') {
+                          setCreatingSpace(false);
+                          setNewSpaceName('');
+                        }
+                      }}
+                      autoFocus
+                      data-testid="create-space-input"
+                    />
+                    <button
+                      className="cept-settings-action-btn"
+                      onClick={() => {
+                        if (newSpaceName.trim()) {
+                          onCreateSpace(newSpaceName.trim());
+                          setNewSpaceName('');
+                          setCreatingSpace(false);
+                        }
+                      }}
+                      data-testid="create-space-confirm"
+                    >
+                      Create
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={() => setCreatingSpace(true)}
+                    data-testid="create-space-btn"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M8 3v10M3 8h10" />
+                    </svg>
+                    Create new space
+                  </button>
+                )}
+
+                {(onImportNotion || onImportObsidian || onExport) && (
+                  <>
+                    <div className="cept-settings-section-divider" />
+                    <h3 className="cept-settings-section-title">Import / Export</h3>
+                    <div className="cept-settings-actions">
+                      {onImportNotion && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onImportNotion(); onClose(); }}
+                          data-testid="import-notion-btn"
+                        >
+                          Import from Notion
+                        </button>
+                      )}
+                      {onImportObsidian && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onImportObsidian(); onClose(); }}
+                          data-testid="import-obsidian-btn"
+                        >
+                          Import from Obsidian
+                        </button>
+                      )}
+                      {onExport && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onExport(); onClose(); }}
+                          data-testid="export-page-btn"
+                        >
+                          Export current page
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
