@@ -69,6 +69,7 @@ export { useResponsive } from './components/collaboration/useResponsive.js';
 export type { Breakpoint, ResponsiveState, BreakpointConfig } from './components/collaboration/useResponsive.js';
 export { MobileToolbar } from './components/collaboration/MobileToolbar.js';
 export type { MobileToolbarAction, MobileToolbarProps } from './components/collaboration/MobileToolbar.js';
+export { DatabaseProvider, useDatabaseEngine } from './components/storage/DatabaseContext.js';
 export { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 export type { ErrorBoundaryProps } from './components/shared/ErrorBoundary.js';
 export { LoadingSpinner, EmptyState } from './components/shared/LoadingSpinner.js';
