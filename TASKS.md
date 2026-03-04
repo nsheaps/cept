@@ -89,7 +89,7 @@
 - [x] T4.8: Inline database blocks (embed in pages) *(2026-03-04)*
 - [x] T4.9: Linked database views (reference existing DB with custom filter) *(2026-03-04)*
 - [x] T4.10: Relations and rollups *(2026-03-04)*
-- [ ] T4.11: Select/Multi-select dropdown editors with color
+- [x] T4.11: Select/Multi-select dropdown editors with color *(2026-03-04)*
 - [ ] T4.12: All remaining property type editors
 
 ## Phase 5: Git & Auth

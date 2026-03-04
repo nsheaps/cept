@@ -50,3 +50,5 @@ export { LinkedDatabaseView } from './components/database/LinkedDatabaseView.js'
 export type { LinkedViewConfig, LinkedViewRenderProps, LinkedDatabaseViewProps } from './components/database/LinkedDatabaseView.js';
 export { InlineDatabase, SUPPORTED_VIEW_TYPES } from './components/editor/extensions/inline-database.js';
 export type { InlineDatabaseOptions, InlineDatabaseAttrs } from './components/editor/extensions/inline-database.js';
+export { SelectEditor, MultiSelectEditor, DEFAULT_COLORS } from './components/database/SelectEditor.js';
+export type { SelectEditorProps, MultiSelectEditorProps } from './components/database/SelectEditor.js';
