@@ -4,7 +4,7 @@ Import your Obsidian vault into Cept.
 
 ## Import Process
 
-1. Open Cept and go to **Settings > Import**
+1. Open Cept and go to **Settings > Import** (coming soon)
 2. Select **Import from Obsidian**
 3. Choose your vault directory (or a ZIP of your vault)
 4. Configure import options:
@@ -24,6 +24,10 @@ Import your Obsidian vault into Cept.
 | Headings, lists | Preserved as-is |
 | Images & attachments | Imported as assets |
 | Folder structure | Page hierarchy |
+| Code blocks | Preserved with language |
+| Callouts | Cept callout blocks |
+| Mermaid diagrams | Cept mermaid blocks |
+| Math blocks | Cept math blocks |
 
 ## What's Not Imported
 
@@ -31,6 +35,7 @@ Import your Obsidian vault into Cept.
 - `.obsidian/` configuration
 - Canvas files
 - Community plugin metadata
+- Dataview queries (converted to plain text)
 
 ## Link Conversion
 
@@ -43,3 +48,7 @@ Obsidian wiki-links are converted to Cept format:
 ## Tags
 
 Tags from both front matter and inline `#tag` syntax are preserved. They appear in the imported content exactly as written.
+
+## Why Switch?
+
+See the full [Cept vs Obsidian comparison](../comparison/vs-obsidian.md) for details on what you gain by switching.

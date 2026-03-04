@@ -18,11 +18,20 @@ describe('AppMenu', () => {
     expect(screen.getByTestId('app-menu')).toBeDefined();
   });
 
-  it('has settings and about items', () => {
+  it('has settings, help, and about items', () => {
     render(<AppMenu />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();
+    expect(screen.getByTestId('app-menu-help')).toBeDefined();
     expect(screen.getByTestId('app-menu-about')).toBeDefined();
+  });
+
+  it('help item calls onOpenDocs', () => {
+    const onOpenDocs = vi.fn();
+    render(<AppMenu onOpenDocs={onOpenDocs} />);
+    fireEvent.click(screen.getByTestId('app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('app-menu-help'));
+    expect(onOpenDocs).toHaveBeenCalled();
   });
 
   it('settings item calls onOpenSettings with settings tab', () => {

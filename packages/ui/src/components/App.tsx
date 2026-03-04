@@ -10,9 +10,9 @@ import type { CommandItem } from './command-palette/CommandPalette.js';
 import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
-import { AppMenu } from './app-menu/AppMenu.js';
 import { SettingsModal, loadSettings, saveSettings, resetSettings, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
+import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO } from './docs/docs-content.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -112,6 +112,11 @@ export function App({ demoMode }: AppProps) {
   const [settings, setSettings] = useState<CeptSettings>(() => loadSettings());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
+
+  // Active space: 'user' (default) or 'docs' (built-in read-only)
+  const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
+  const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
+  const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
 
   // Track content save timeout
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -382,16 +387,42 @@ export function App({ demoMode }: AppProps) {
     setSettingsOpen(true);
   }, []);
 
+  const handleOpenDocs = useCallback(() => {
+    setActiveSpace('docs');
+    setDocsSelectedPageId('docs-index');
+    setDocsPages(DOCS_PAGES);
+  }, []);
+
+  const handleBackToUserSpace = useCallback(() => {
+    setActiveSpace('user');
+  }, []);
+
+  const handleDocsPageSelect = useCallback((id: string) => {
+    setDocsSelectedPageId(id);
+    setDocsPages((prev) => expandToNode(prev, id));
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  }, []);
+
+  const handleDocsPageToggle = useCallback((id: string) => {
+    setDocsPages((prev) => toggleNode(prev, id));
+  }, []);
+
   const spaceInfoList = useMemo((): SpaceInfo[] => {
-    if (!hasStarted && pages.length === 0) return [];
-    const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
-    return [{
-      id: 'default',
-      name: demoMode ? 'Demo Space' : 'My Space',
-      source: 'Browser (localStorage)',
-      pageCount: flattenPages(pages).length,
-      contentSize,
-    }];
+    const list: SpaceInfo[] = [];
+    if (hasStarted || pages.length > 0) {
+      const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
+      list.push({
+        id: 'default',
+        name: demoMode ? 'Demo Space' : 'My Space',
+        source: 'Browser (localStorage)',
+        pageCount: flattenPages(pages).length,
+        contentSize,
+      });
+    }
+    list.push(DOCS_SPACE_INFO);
+    return list;
   }, [hasStarted, pages, pageContents, demoMode]);
 
   const commandItems: CommandItem[] = useMemo(() => [
@@ -422,13 +453,12 @@ export function App({ demoMode }: AppProps) {
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
         )}
         <div className="ml-auto" />
-        <AppMenu onOpenSettings={handleOpenSettings} />
       </header>
       <main className="flex flex-1 min-h-0">
         {sidebarOpen && (
           <div className="cept-sidebar-backdrop" onClick={() => setSidebarOpen(false)} data-testid="sidebar-backdrop" />
         )}
-        {sidebarOpen && (
+        {sidebarOpen && activeSpace === 'user' && (
           <Sidebar
             pages={pages}
             favorites={favorites}
@@ -447,10 +477,63 @@ export function App({ demoMode }: AppProps) {
             onPermanentDelete={handlePermanentDelete}
             onEmptyTrash={handleEmptyTrash}
             onSearch={() => setSearchOpen(true)}
+            onOpenSettings={handleOpenSettings}
+            onOpenDocs={handleOpenDocs}
+            spaceName={demoMode ? 'Demo Space' : 'My Space'}
+          />
+        )}
+        {sidebarOpen && activeSpace === 'docs' && (
+          <Sidebar
+            pages={docsPages}
+            favorites={[]}
+            recentPages={[]}
+            trash={[]}
+            selectedPageId={docsSelectedPageId}
+            onPageSelect={handleDocsPageSelect}
+            onPageToggle={handleDocsPageToggle}
+            onPageAdd={() => {/* read-only */}}
+            onPageRename={() => {/* read-only */}}
+            onPageDuplicate={() => {/* read-only */}}
+            onPageDelete={() => {/* read-only */}}
+            onPageMoveToRoot={() => {/* read-only */}}
+            onToggleFavorite={() => {/* read-only */}}
+            onRestoreFromTrash={() => {/* read-only */}}
+            onPermanentDelete={() => {/* read-only */}}
+            onEmptyTrash={() => {/* read-only */}}
+            onSearch={() => setSearchOpen(true)}
+            readOnly
+            spaceName="Cept Docs"
+            onBackToSpace={handleBackToUserSpace}
           />
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
-          {showOnboarding ? (
+          {activeSpace === 'docs' ? (
+            docsSelectedPageId && DOCS_CONTENT[docsSelectedPageId] ? (
+              <>
+                <div className="cept-docs-banner" data-testid="docs-banner">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="2" y="1" width="12" height="14" rx="1" />
+                    <path d="M5 5h6M5 8h6M5 11h3" />
+                  </svg>
+                  <span>Read-only — sourced from <code>docs/</code> in the Git repository</span>
+                  <button className="cept-docs-banner-back" onClick={handleBackToUserSpace} data-testid="docs-back-to-space">
+                    Back to my space
+                  </button>
+                </div>
+                <CeptEditor
+                  key={docsSelectedPageId}
+                  content={DOCS_CONTENT[docsSelectedPageId]}
+                  placeholder=""
+                  onUpdate={() => {/* read-only */}}
+                  editable={false}
+                />
+              </>
+            ) : (
+              <div className="text-center text-gray-400 mt-20">
+                <p>Select a documentation page from the sidebar</p>
+              </div>
+            )
+          ) : showOnboarding ? (
             <div className="max-w-lg mx-auto mt-12">
               <h2 className="text-2xl font-bold mb-4">Get Started</h2>
               <p className="text-gray-600 dark:text-gray-400">
@@ -470,7 +553,7 @@ export function App({ demoMode }: AppProps) {
                 <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors opacity-50 cursor-not-allowed" disabled>
                   <strong>Open a folder</strong>
                   <span className="block text-sm text-gray-500">
-                    Local filesystem — coming soon
+                    Local filesystem ��� coming soon
                   </span>
                 </button>
                 <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors opacity-50 cursor-not-allowed" disabled>

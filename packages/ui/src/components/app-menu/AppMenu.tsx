@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 
 export interface AppMenuProps {
   onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
+  onOpenDocs?: () => void;
 }
 
-export function AppMenu({ onOpenSettings }: AppMenuProps) {
+export function AppMenu({ onOpenSettings, onOpenDocs }: AppMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +49,20 @@ export function AppMenu({ onOpenSettings }: AppMenuProps) {
               <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
             </svg>
             Settings
+          </button>
+          <button
+            className="cept-app-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onOpenDocs?.();
+            }}
+            data-testid="app-menu-help"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M6 6a2 2 0 114 0c0 1-1.5 1.5-2 2M8 11.5v.5" />
+            </svg>
+            Help &amp; Docs
           </button>
           <button
             className="cept-app-menu-item"

@@ -31,18 +31,16 @@
 | `-` or `*` + Space | Bullet list |
 | `1.` + Space | Numbered list |
 | `[]` + Space | To-do item |
-| `` ``` `` + Enter | Code block |
+| ` ``` ` + Enter | Code block |
 
 ## Navigation
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd/Ctrl + P` | Quick page switch |
-| `Cmd/Ctrl + [` | Go back |
-| `Cmd/Ctrl + ]` | Go forward |
+| `Cmd/Ctrl + K` | Command palette / quick page switch |
 | `Cmd/Ctrl + \` | Toggle sidebar |
 
-## Database
+## Database (Coming Soon)
 
 | Shortcut | Action |
 |----------|--------|
