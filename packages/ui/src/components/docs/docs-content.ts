@@ -659,6 +659,25 @@ Core infrastructure and basic editing experience.
 | Windows/Linux app (Electron) | Planned |
 | iOS/Android app (Capacitor) | Planned |
 
+## Phase 7: Polish & Ecosystem
+
+| Feature | Status |
+|---------|--------|
+| Drag-and-drop page reordering | Planned |
+| Undo/redo history | Planned |
+| Plugin system | Planned |
+| Theming (custom colors, fonts) | Planned |
+
+## Phase 8: Integration & Public Rendering
+
+| Feature | Status |
+|---------|--------|
+| MCP server for Cept spaces | Planned |
+| Read/write pages, databases, and search via MCP tools | Planned |
+| GitHub Pages renderer (pre-built JS bundle) | Planned |
+| Read-only public page rendering (like public Notion pages) | Planned |
+| Embeddable script tag for static site rendering | Planned |
+
 ## Contributing
 
 Cept is open source. Contributions are welcome! See the GitHub repository at github.com/nsheaps/cept.`;
