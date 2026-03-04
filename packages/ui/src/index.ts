@@ -6,4 +6,4 @@
  * It must NEVER import platform-specific modules.
  */
 
-export const UI_VERSION = '0.0.0';
+export { App } from './components/App.js';
