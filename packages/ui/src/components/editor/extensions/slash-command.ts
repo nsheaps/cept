@@ -147,6 +147,18 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       }
     },
   },
+  // Tables
+  {
+    title: 'Table',
+    description: 'Insert a table',
+    icon: '\u{1F5C2}',
+    category: 'Tables',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range)
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run();
+    },
+  },
   // Layout
   {
     title: '2 Columns',
