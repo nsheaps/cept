@@ -138,7 +138,7 @@ describe('optimizeForPerformance', () => {
       { id: 'a', title: 'A' },
       { id: 'b', title: 'B' },
     ];
-    const links: GraphLink[] = Array.from({ length: 5 }, (_, i) => ({
+    const links: GraphLink[] = Array.from({ length: 5 }, (_) => ({
       source: 'a',
       target: 'b',
       type: 'mention' as const,
