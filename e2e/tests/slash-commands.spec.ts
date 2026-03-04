@@ -281,6 +281,24 @@ test.describe('Slash Commands', () => {
     await captureScreenshot(page, { name: 'slash-inline-math', category: 'slash-commands' });
   });
 
+  test('table', async ({ page }) => {
+    await typeSlashCommand(page, 'table');
+    await selectFirstCommand(page);
+    await page.waitForTimeout(300);
+    // Table should be inserted with header row
+    await expect(page.locator('.cept-editor-content table')).toBeVisible();
+    await expect(page.locator('.cept-editor-content th').first()).toBeVisible();
+    // Type into the first header cell
+    await page.keyboard.type('Column A');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Column B');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Column C');
+    await page.keyboard.press('Tab');
+    await page.keyboard.type('Row 1 Data');
+    await captureScreenshot(page, { name: 'slash-table', category: 'slash-commands' });
+  });
+
   test('mermaid diagram', async ({ page }) => {
     await typeSlashCommand(page, 'mermaid');
     await selectFirstCommand(page);
