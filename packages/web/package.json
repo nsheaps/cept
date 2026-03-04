@@ -1,0 +1,18 @@
+{
+  "name": "@cept/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cept/core": "workspace:*",
+    "@cept/ui": "workspace:*"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,51 @@
+{
+  "name": "cept",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A fully-featured Notion clone backed by Git. Client-only. Offline-first. Collaborative.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "nx run-many -t dev",
+    "dev:web": "nx run @cept/web:dev",
+    "dev:desktop": "nx run @cept/desktop:dev",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "test:unit": "nx run-many -t test:unit",
+    "test:integration": "nx run-many -t test:integration",
+    "test:e2e": "nx run @cept/e2e:test",
+    "test:e2e:screenshots": "nx run @cept/e2e:test:screenshots",
+    "lint": "nx run-many -t lint",
+    "typecheck": "nx run-many -t typecheck",
+    "validate": "bun run lint && bun run typecheck && bun run test"
+  },
+  "devDependencies": {
+    "@amiceli/vitest-cucumber": "6.2.0",
+    "@playwright/test": "1.58.2",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "25.3.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@typescript-eslint/eslint-plugin": "8.56.1",
+    "@typescript-eslint/parser": "8.56.1",
+    "@vitejs/plugin-react": "5.1.4",
+    "eslint": "10.0.2",
+    "eslint-config-prettier": "10.1.8",
+    "jsdom": "28.1.0",
+    "nx": "22.5.3",
+    "prettier": "3.8.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vitest": "4.0.18"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
