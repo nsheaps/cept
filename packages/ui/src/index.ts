@@ -64,3 +64,7 @@ export { AvatarStack } from './components/collaboration/AvatarStack.js';
 export type { AvatarStackProps } from './components/collaboration/AvatarStack.js';
 export { CursorOverlay } from './components/collaboration/CursorOverlay.js';
 export type { CursorData, CursorOverlayProps } from './components/collaboration/CursorOverlay.js';
+export { useResponsive } from './components/collaboration/useResponsive.js';
+export type { Breakpoint, ResponsiveState, BreakpointConfig } from './components/collaboration/useResponsive.js';
+export { MobileToolbar } from './components/collaboration/MobileToolbar.js';
+export type { MobileToolbarAction, MobileToolbarProps } from './components/collaboration/MobileToolbar.js';
