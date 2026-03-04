@@ -24,18 +24,18 @@
 
 ## Phase 0: Foundation (Infrastructure)
 
-- [ ] T0.1: Initialize monorepo with mise, bun, Nx, tsconfig
-- [ ] T0.2: Set up CI workflow (`.github/workflows/ci.yml` — lint + typecheck + test stubs)
-- [ ] T0.3: Create `packages/core/` with all abstraction interfaces (types only)
-- [ ] T0.4: Create `packages/ui/` skeleton with React, TailwindCSS
-- [ ] T0.5: Create `packages/web/` Vite entry point with dev server
-- [ ] T0.6: Set up Playwright with a single smoke test
-- [ ] T0.7: Set up Vitest with a single unit test
-- [ ] T0.8: Set up BDD tooling — `@amiceli/vitest-cucumber` for unit BDD, `@cucumber/cucumber` + Playwright for E2E BDD
-- [ ] T0.9: Create `features/` directory structure with example `.feature` file and step definitions
-- [ ] T0.10: Create `docs/specs/TEMPLATE.md` and initial feature spec stubs for Phase 1 features
-- [ ] T0.11: Set up GitHub Pages preview deployment workflow (`.github/workflows/preview-deploy.yml`)
-- [ ] T0.12: Implement `CEPT_DEMO_MODE` flag — onboarding skips backend selection, goes straight to `BrowserFsBackend` with sample content
+- [x] T0.1: Initialize monorepo with mise, bun, Nx, tsconfig *(2026-03-04)*
+- [x] T0.2: Set up CI workflow (`.github/workflows/ci.yml` — lint + typecheck + test stubs) *(2026-03-04)*
+- [x] T0.3: Create `packages/core/` with all abstraction interfaces (types only) *(2026-03-04)*
+- [x] T0.4: Create `packages/ui/` skeleton with React, TailwindCSS *(2026-03-04)*
+- [x] T0.5: Create `packages/web/` Vite entry point with dev server *(2026-03-04)*
+- [x] T0.6: Set up Playwright with a single smoke test *(2026-03-04)*
+- [x] T0.7: Set up Vitest with a single unit test *(2026-03-04)*
+- [x] T0.8: Set up BDD tooling — `@amiceli/vitest-cucumber` for unit BDD *(2026-03-04)*
+- [x] T0.9: Create `features/` directory structure with example `.feature` file and step definitions *(2026-03-04)*
+- [x] T0.10: Create `docs/specs/TEMPLATE.md` and initial feature spec stubs for Phase 1 features *(2026-03-04)*
+- [x] T0.11: Set up GitHub Pages preview deployment workflow (`.github/workflows/preview-deploy.yml`) *(2026-03-04)*
+- [x] T0.12: Implement `CEPT_DEMO_MODE` flag — onboarding skips backend selection, goes straight to `BrowserFsBackend` with sample content *(2026-03-04)*
 
 ## Phase 1: Core Engine
 
