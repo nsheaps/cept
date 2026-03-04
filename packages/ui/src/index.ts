@@ -46,3 +46,7 @@ export { DatabaseGalleryView } from './components/database/DatabaseGalleryView.j
 export type { DatabaseGalleryViewProps } from './components/database/DatabaseGalleryView.js';
 export { DatabaseListView } from './components/database/DatabaseListView.js';
 export type { DatabaseListViewProps } from './components/database/DatabaseListView.js';
+export { LinkedDatabaseView } from './components/database/LinkedDatabaseView.js';
+export type { LinkedViewConfig, LinkedViewRenderProps, LinkedDatabaseViewProps } from './components/database/LinkedDatabaseView.js';
+export { InlineDatabase, SUPPORTED_VIEW_TYPES } from './components/editor/extensions/inline-database.js';
+export type { InlineDatabaseOptions, InlineDatabaseAttrs } from './components/editor/extensions/inline-database.js';
