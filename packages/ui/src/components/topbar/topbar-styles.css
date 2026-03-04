@@ -1,0 +1,59 @@
+/* Breadcrumbs */
+.cept-breadcrumbs {
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cept-breadcrumb-segment {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.cept-breadcrumb-separator {
+  margin: 0 0.375rem;
+  color: #d1d5db;
+  flex-shrink: 0;
+}
+
+.cept-breadcrumb-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cept-breadcrumb-link:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #374151;
+}
+
+.cept-breadcrumb-current {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  color: #111827;
+  padding: 0.125rem 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cept-breadcrumb-icon {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}

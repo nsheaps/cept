@@ -66,7 +66,7 @@
 
 - [x] T3.1: Sidebar with page tree (infinite nesting) *(2026-03-04)*
 - [x] T3.2: Current page highlighting + auto-expand in sidebar *(2026-03-04)*
-- [ ] T3.3: Breadcrumbs in topbar
+- [x] T3.3: Breadcrumbs in topbar *(2026-03-04)*
 - [ ] T3.4: Page CRUD (create, rename, move, delete, restore)
 - [ ] T3.5: Favorites and recent sections
 - [ ] T3.6: Trash with restore
