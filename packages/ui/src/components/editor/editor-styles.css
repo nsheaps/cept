@@ -143,6 +143,153 @@
   margin: 1.5rem 0;
 }
 
+/* Blockquote */
+.cept-editor .tiptap blockquote.cept-blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: #6b7280;
+}
+
+.cept-editor .tiptap blockquote.cept-blockquote p {
+  margin: 0.25rem 0;
+}
+
+/* Code block with syntax highlighting */
+.cept-editor .tiptap pre.cept-code-block {
+  background-color: #f7f6f3;
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.cept-editor .tiptap pre.cept-code-block code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Lowlight syntax highlighting colors */
+.cept-editor .tiptap pre code .hljs-comment,
+.cept-editor .tiptap pre code .hljs-quote {
+  color: #a0aec0;
+}
+
+.cept-editor .tiptap pre code .hljs-keyword,
+.cept-editor .tiptap pre code .hljs-selector-tag {
+  color: #805ad5;
+}
+
+.cept-editor .tiptap pre code .hljs-string,
+.cept-editor .tiptap pre code .hljs-addition {
+  color: #38a169;
+}
+
+.cept-editor .tiptap pre code .hljs-number,
+.cept-editor .tiptap pre code .hljs-literal {
+  color: #dd6b20;
+}
+
+.cept-editor .tiptap pre code .hljs-built_in,
+.cept-editor .tiptap pre code .hljs-type {
+  color: #d69e2e;
+}
+
+.cept-editor .tiptap pre code .hljs-title,
+.cept-editor .tiptap pre code .hljs-section {
+  color: #3182ce;
+}
+
+.cept-editor .tiptap pre code .hljs-deletion {
+  color: #e53e3e;
+}
+
+/* Callout block */
+.cept-editor .tiptap div.cept-callout {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 0.75rem 0;
+  background-color: rgba(235, 236, 233, 0.3);
+}
+
+.cept-editor .tiptap div.cept-callout[data-color="blue"] {
+  background-color: rgba(219, 234, 254, 0.5);
+}
+
+.cept-editor .tiptap div.cept-callout[data-color="green"] {
+  background-color: rgba(220, 252, 231, 0.5);
+}
+
+.cept-editor .tiptap div.cept-callout[data-color="yellow"] {
+  background-color: rgba(254, 249, 195, 0.5);
+}
+
+.cept-editor .tiptap div.cept-callout[data-color="red"] {
+  background-color: rgba(254, 226, 226, 0.5);
+}
+
+.cept-editor .tiptap div.cept-callout[data-color="purple"] {
+  background-color: rgba(243, 232, 255, 0.5);
+}
+
+.cept-editor .tiptap .cept-callout-icon {
+  font-size: 1.25rem;
+  line-height: 1.65;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.cept-editor .tiptap .cept-callout-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.cept-editor .tiptap .cept-callout-content p {
+  margin: 0;
+}
+
+/* Toggle block */
+.cept-editor .tiptap details.cept-toggle {
+  margin: 0.75rem 0;
+}
+
+.cept-editor .tiptap details.cept-toggle > summary.cept-toggle-summary {
+  cursor: pointer;
+  font-weight: 500;
+  line-height: 1.65;
+  padding: 0.25rem 0;
+  user-select: none;
+  list-style: disclosure-closed;
+}
+
+.cept-editor .tiptap details.cept-toggle[open] > summary.cept-toggle-summary {
+  list-style: disclosure-open;
+}
+
+.cept-editor .tiptap details.cept-toggle > .cept-toggle-content {
+  padding-left: 1.5rem;
+  padding-top: 0.25rem;
+}
+
+.cept-editor .tiptap details.cept-toggle > .cept-toggle-content p {
+  margin: 0.15rem 0;
+}
+
+/* Divider / Horizontal rule */
+.cept-editor .tiptap hr.cept-divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
 /* Focus styles */
 .cept-editor .tiptap:focus-visible {
   outline: none;

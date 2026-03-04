@@ -3,6 +3,12 @@ import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
+import { Callout } from './extensions/callout.js';
+import { Toggle } from './extensions/toggle.js';
+
+const lowlight = createLowlight(common);
 
 export interface CeptEditorProps {
   content?: string;
@@ -43,6 +49,24 @@ export function CeptEditor({
             class: 'cept-paragraph',
           },
         },
+        blockquote: {
+          HTMLAttributes: {
+            class: 'cept-blockquote',
+          },
+        },
+        horizontalRule: {
+          HTMLAttributes: {
+            class: 'cept-divider',
+          },
+        },
+        // Disable default code block in favor of lowlight version
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: 'cept-code-block',
+        },
       }),
       TaskList.configure({
         HTMLAttributes: {
@@ -55,6 +79,8 @@ export function CeptEditor({
           class: 'cept-task-item',
         },
       }),
+      Callout,
+      Toggle,
       Placeholder.configure({
         placeholder,
       }),
