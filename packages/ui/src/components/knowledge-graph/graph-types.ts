@@ -102,3 +102,47 @@ export function filterByDepth(
 
   return { nodes: filteredNodes, links: filteredLinks };
 }
+
+export function getGroups(data: GraphData): string[] {
+  const groups = new Set<string>();
+  for (const node of data.nodes) {
+    if (node.group) groups.add(node.group);
+  }
+  return [...groups].sort();
+}
+
+export function getLinkTypes(data: GraphData): Array<GraphLink['type']> {
+  const types = new Set<GraphLink['type']>();
+  for (const link of data.links) {
+    types.add(link.type);
+  }
+  return [...types].sort();
+}
+
+export interface GraphFilters {
+  groups?: Set<string>;
+  linkTypes?: Set<GraphLink['type']>;
+}
+
+export function filterGraph(data: GraphData, filters: GraphFilters): GraphData {
+  const { groups, linkTypes } = filters;
+
+  let filteredNodes = data.nodes;
+  if (groups && groups.size > 0) {
+    filteredNodes = data.nodes.filter((n) => !n.group || groups.has(n.group));
+  }
+
+  const nodeIds = new Set(filteredNodes.map((n) => n.id));
+
+  let filteredLinks = data.links.filter((l) => {
+    const s = typeof l.source === 'string' ? l.source : (l.source as unknown as GraphNode).id;
+    const t = typeof l.target === 'string' ? l.target : (l.target as unknown as GraphNode).id;
+    return nodeIds.has(s) && nodeIds.has(t);
+  });
+
+  if (linkTypes && linkTypes.size > 0) {
+    filteredLinks = filteredLinks.filter((l) => linkTypes.has(l.type));
+  }
+
+  return { nodes: filteredNodes, links: filteredLinks };
+}

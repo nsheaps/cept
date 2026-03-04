@@ -61,6 +61,18 @@ const sampleData: GraphData = {
   ],
 };
 
+const dataWithGroups: GraphData = {
+  nodes: [
+    { id: 'a', title: 'Node A', group: 'work' },
+    { id: 'b', title: 'Node B', group: 'personal' },
+    { id: 'c', title: 'Node C', group: 'work' },
+  ],
+  links: [
+    { source: 'a', target: 'b', type: 'parent' },
+    { source: 'b', target: 'c', type: 'mention' },
+  ],
+};
+
 describe('KnowledgeGraphView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -166,5 +178,68 @@ describe('KnowledgeGraphView', () => {
     render(<KnowledgeGraphView data={sampleData} initialMode="local" initialFocusNodeId="a" maxDepth={8} />);
     const slider = screen.getByTestId('graph-depth-slider') as HTMLInputElement;
     expect(slider.max).toBe('8');
+  });
+});
+
+describe('KnowledgeGraphView — filters', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows filter bar when groups exist', () => {
+    render(<KnowledgeGraphView data={dataWithGroups} />);
+    expect(screen.getByTestId('graph-filter-bar')).toBeDefined();
+    expect(screen.getByTestId('graph-group-filters')).toBeDefined();
+  });
+
+  it('does not show filter bar when no groups and single link type', () => {
+    const simpleData: GraphData = {
+      nodes: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }],
+      links: [{ source: 'a', target: 'b', type: 'parent' }],
+    };
+    render(<KnowledgeGraphView data={simpleData} />);
+    expect(screen.queryByTestId('graph-filter-bar')).toBeNull();
+  });
+
+  it('renders group filter chips', () => {
+    render(<KnowledgeGraphView data={dataWithGroups} />);
+    expect(screen.getByTestId('graph-filter-group-work')).toBeDefined();
+    expect(screen.getByTestId('graph-filter-group-personal')).toBeDefined();
+  });
+
+  it('toggles group filter chip active state', () => {
+    render(<KnowledgeGraphView data={dataWithGroups} />);
+    const chip = screen.getByTestId('graph-filter-group-work');
+    expect(chip.className).not.toContain('is-active');
+
+    fireEvent.click(chip);
+    expect(chip.className).toContain('is-active');
+
+    fireEvent.click(chip);
+    expect(chip.className).not.toContain('is-active');
+  });
+
+  it('shows link type filters when multiple link types exist', () => {
+    render(<KnowledgeGraphView data={sampleData} />);
+    expect(screen.getByTestId('graph-link-filters')).toBeDefined();
+    expect(screen.getByTestId('graph-filter-link-parent')).toBeDefined();
+    expect(screen.getByTestId('graph-filter-link-mention')).toBeDefined();
+  });
+
+  it('toggles link type filter chip', () => {
+    render(<KnowledgeGraphView data={sampleData} />);
+    const chip = screen.getByTestId('graph-filter-link-parent');
+    expect(chip.className).not.toContain('is-active');
+
+    fireEvent.click(chip);
+    expect(chip.className).toContain('is-active');
+  });
+
+  it('renders color dots for group chips', () => {
+    const colors = { work: '#ff0000', personal: '#00ff00' };
+    render(<KnowledgeGraphView data={dataWithGroups} colorGroups={colors} />);
+    const workChip = screen.getByTestId('graph-filter-group-work');
+    const dot = workChip.querySelector('.cept-graph-filter-dot') as HTMLElement;
+    expect(dot.style.backgroundColor).toBe('rgb(255, 0, 0)');
   });
 });
