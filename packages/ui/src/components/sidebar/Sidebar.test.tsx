@@ -251,4 +251,37 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByTestId('trash-toggle'));
     expect(screen.getByText('Trash is empty')).toBeDefined();
   });
+
+  it('renders custom space name', () => {
+    render(<Sidebar pages={mockPages} spaceName="My Workspace" />);
+    expect(screen.getByText('My Workspace')).toBeDefined();
+  });
+
+  it('renders back button when onBackToSpace is provided', () => {
+    const onBackToSpace = vi.fn();
+    render(<Sidebar pages={mockPages} onBackToSpace={onBackToSpace} />);
+    const btn = screen.getByTestId('sidebar-back-to-space');
+    expect(btn).toBeDefined();
+    fireEvent.click(btn);
+    expect(onBackToSpace).toHaveBeenCalled();
+  });
+
+  it('does not render back button when onBackToSpace is not provided', () => {
+    render(<Sidebar pages={mockPages} />);
+    expect(screen.queryByTestId('sidebar-back-to-space')).toBeNull();
+  });
+
+  it('hides add page button, trash, and app menu in readOnly mode', () => {
+    render(<Sidebar pages={mockPages} readOnly />);
+    expect(screen.queryByTestId('sidebar-add-page')).toBeNull();
+    expect(screen.queryByTestId('trash-section')).toBeNull();
+    expect(screen.queryByTestId('app-menu-trigger')).toBeNull();
+  });
+
+  it('shows add page button, trash, and app menu when not readOnly', () => {
+    render(<Sidebar pages={mockPages} />);
+    expect(screen.getByTestId('sidebar-add-page')).toBeDefined();
+    expect(screen.getByTestId('trash-section')).toBeDefined();
+    expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+  });
 });

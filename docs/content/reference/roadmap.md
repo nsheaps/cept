@@ -26,7 +26,8 @@ Core infrastructure and basic editing experience.
 | Mobile-responsive UI | Done | — |
 | GitHub Pages deployment | Done | — |
 | PWA service worker | Done | — |
-| Demo mode (`?demo`) | Done | — |
+| Auto-detected demo mode (settings-based) | Done | — |
+| Persistent space metadata & renaming | Done | — |
 | Built-in documentation space | Done | — |
 
 ## Phase 2: Storage & Persistence
@@ -120,6 +121,38 @@ Final polish and extensibility.
 | Theming (custom colors, fonts) | Planned | — |
 | Documentation site (Starlight) | Planned | — |
 | API documentation | Planned | — |
+
+## Phase 8: Integration & Public Rendering
+
+MCP server and embeddable rendering for external use.
+
+| Feature | Status | Spec |
+|---------|--------|------|
+| MCP server for Cept spaces | Planned | — |
+| Read/write pages, databases, and search via MCP tools | Planned | — |
+| MCP resources for exposing page content and metadata | Planned | — |
+| GitHub Pages renderer (pre-built JS bundle) | Planned | — |
+| Read-only public page rendering (similar to public Notion pages) | Planned | — |
+| Embeddable `<script>` tag for static site rendering | Planned | — |
+| SEO-friendly server-rendered output | Planned | — |
+| Custom domain support for published spaces | Planned | — |
+
+### MCP Server
+
+A comprehensive Model Context Protocol (MCP) server that exposes Cept spaces to AI assistants and automation tools. Capabilities include:
+
+- **Tools:** Create, read, update, and delete pages and database records. Search across spaces. Manage properties and views.
+- **Resources:** Expose page content, database schemas, and space metadata as MCP resources for context injection.
+- **Prompts:** Pre-built prompts for common tasks like "summarize this page" or "create a meeting notes page."
+
+### GitHub Pages Renderer
+
+A pre-built JavaScript bundle that renders Cept spaces as read-only public pages on any GitHub Pages deployment — similar to how Notion offers public page sharing. Features include:
+
+- Drop-in `<script>` tag that reads Cept markdown files from the repo and renders them with the full Cept UI
+- Sidebar navigation, search, and all block types rendered in read-only mode
+- Zero build step required — just add the script to your `index.html`
+- Works with any Git-backed Cept space stored in a public repository
 
 ## Contributing
 
