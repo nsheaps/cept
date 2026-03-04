@@ -74,7 +74,7 @@
 - [x] T3.8: Full-text search UI *(2026-03-04)*
 - [x] T3.9: Knowledge Graph — global view with D3 force-directed layout *(2026-03-04)*
 - [x] T3.10: Knowledge Graph — local view with depth slider *(2026-03-04)*
-- [ ] T3.11: Knowledge Graph — filters, color groups
+- [x] T3.11: Knowledge Graph — filters, color groups *(2026-03-04)*
 - [ ] T3.12: Knowledge Graph — time-lapse animation, performance optimization
 
 ## Phase 4: Databases

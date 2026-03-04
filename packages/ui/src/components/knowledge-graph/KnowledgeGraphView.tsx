@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { KnowledgeGraph } from './KnowledgeGraph.js';
-import type { GraphData, GraphViewOptions } from './graph-types.js';
+import type { GraphData, GraphLink, GraphViewOptions } from './graph-types.js';
+import { getGroups, getLinkTypes, filterGraph } from './graph-types.js';
 
 export interface KnowledgeGraphViewProps {
   data: GraphData;
@@ -29,6 +30,21 @@ export function KnowledgeGraphView({
   const [focusNodeId, setFocusNodeId] = useState<string | undefined>(initialFocusNodeId);
   const [depth, setDepth] = useState(initialDepth);
   const [showLabels, setShowLabels] = useState(true);
+  const [activeGroups, setActiveGroups] = useState<Set<string>>(new Set());
+  const [activeLinkTypes, setActiveLinkTypes] = useState<Set<GraphLink['type']>>(new Set());
+
+  const groups = useMemo(() => getGroups(data), [data]);
+  const linkTypes = useMemo(() => getLinkTypes(data), [data]);
+
+  const filteredData = useMemo(() => {
+    const hasGroupFilter = activeGroups.size > 0;
+    const hasLinkFilter = activeLinkTypes.size > 0;
+    if (!hasGroupFilter && !hasLinkFilter) return data;
+    return filterGraph(data, {
+      groups: hasGroupFilter ? activeGroups : undefined,
+      linkTypes: hasLinkFilter ? activeLinkTypes : undefined,
+    });
+  }, [data, activeGroups, activeLinkTypes]);
 
   const handleNodeClick = useCallback((nodeId: string) => {
     if (mode === 'global') {
@@ -40,6 +56,30 @@ export function KnowledgeGraphView({
 
   const handleModeToggle = useCallback(() => {
     setMode((prev) => (prev === 'global' ? 'local' : 'global'));
+  }, []);
+
+  const toggleGroup = useCallback((group: string) => {
+    setActiveGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) {
+        next.delete(group);
+      } else {
+        next.add(group);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleLinkType = useCallback((type: GraphLink['type']) => {
+    setActiveLinkTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
   }, []);
 
   const options: Partial<GraphViewOptions> = useMemo(() => ({
@@ -114,8 +154,47 @@ export function KnowledgeGraphView({
         )}
       </div>
 
+      {(groups.length > 0 || linkTypes.length > 1) && (
+        <div className="cept-graph-filter-bar" data-testid="graph-filter-bar">
+          {groups.length > 0 && (
+            <div className="cept-graph-filter-section" data-testid="graph-group-filters">
+              <span className="cept-graph-filter-label">Groups:</span>
+              {groups.map((group) => (
+                <button
+                  key={group}
+                  className={`cept-graph-filter-chip ${activeGroups.has(group) ? 'is-active' : ''}`}
+                  onClick={() => toggleGroup(group)}
+                  data-testid={`graph-filter-group-${group}`}
+                >
+                  <span
+                    className="cept-graph-filter-dot"
+                    style={{ backgroundColor: colorGroups?.[group] ?? '#6366f1' }}
+                  />
+                  {group}
+                </button>
+              ))}
+            </div>
+          )}
+          {linkTypes.length > 1 && (
+            <div className="cept-graph-filter-section" data-testid="graph-link-filters">
+              <span className="cept-graph-filter-label">Links:</span>
+              {linkTypes.map((type) => (
+                <button
+                  key={type}
+                  className={`cept-graph-filter-chip ${activeLinkTypes.has(type) ? 'is-active' : ''}`}
+                  onClick={() => toggleLinkType(type)}
+                  data-testid={`graph-filter-link-${type}`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <KnowledgeGraph
-        data={data}
+        data={filteredData}
         options={options}
         width={width}
         height={height}

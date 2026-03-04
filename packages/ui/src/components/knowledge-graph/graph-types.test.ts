@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildGraphData, filterByDepth } from './graph-types.js';
+import { buildGraphData, filterByDepth, getGroups, getLinkTypes, filterGraph } from './graph-types.js';
 import type { GraphData } from './graph-types.js';
 
 const pages = [
@@ -117,5 +117,94 @@ describe('filterByDepth', () => {
   it('works when focus node is in middle of chain', () => {
     const result = filterByDepth(graphData, 'c', 1);
     expect(result.nodes.map((n) => n.id).sort()).toEqual(['b', 'c', 'd']);
+  });
+});
+
+describe('getGroups', () => {
+  it('returns unique sorted groups', () => {
+    const data: GraphData = {
+      nodes: [
+        { id: 'a', title: 'A', group: 'work' },
+        { id: 'b', title: 'B', group: 'personal' },
+        { id: 'c', title: 'C', group: 'work' },
+        { id: 'd', title: 'D' },
+      ],
+      links: [],
+    };
+    expect(getGroups(data)).toEqual(['personal', 'work']);
+  });
+
+  it('returns empty for no groups', () => {
+    const data: GraphData = {
+      nodes: [{ id: 'a', title: 'A' }],
+      links: [],
+    };
+    expect(getGroups(data)).toEqual([]);
+  });
+});
+
+describe('getLinkTypes', () => {
+  it('returns unique sorted link types', () => {
+    const data: GraphData = {
+      nodes: [],
+      links: [
+        { source: 'a', target: 'b', type: 'mention' },
+        { source: 'b', target: 'c', type: 'parent' },
+        { source: 'c', target: 'a', type: 'mention' },
+      ],
+    };
+    expect(getLinkTypes(data)).toEqual(['mention', 'parent']);
+  });
+});
+
+describe('filterGraph', () => {
+  const data: GraphData = {
+    nodes: [
+      { id: 'a', title: 'A', group: 'work' },
+      { id: 'b', title: 'B', group: 'personal' },
+      { id: 'c', title: 'C', group: 'work' },
+      { id: 'd', title: 'D' },
+    ],
+    links: [
+      { source: 'a', target: 'b', type: 'parent' },
+      { source: 'b', target: 'c', type: 'mention' },
+      { source: 'c', target: 'd', type: 'mention' },
+    ],
+  };
+
+  it('returns all data with empty filters', () => {
+    const result = filterGraph(data, {});
+    expect(result.nodes).toHaveLength(4);
+    expect(result.links).toHaveLength(3);
+  });
+
+  it('filters nodes by group', () => {
+    const result = filterGraph(data, { groups: new Set(['work']) });
+    const ids = result.nodes.map((n) => n.id).sort();
+    // Nodes with group 'work' or no group
+    expect(ids).toEqual(['a', 'c', 'd']);
+  });
+
+  it('removes links to excluded nodes', () => {
+    const result = filterGraph(data, { groups: new Set(['work']) });
+    // b is excluded, so a->b and b->c links are dropped
+    expect(result.links).toHaveLength(1);
+    expect(result.links[0].source).toBe('c');
+    expect(result.links[0].target).toBe('d');
+  });
+
+  it('filters links by type', () => {
+    const result = filterGraph(data, { linkTypes: new Set(['parent'] as const) });
+    expect(result.links).toHaveLength(1);
+    expect(result.links[0].type).toBe('parent');
+  });
+
+  it('combines group and link type filters', () => {
+    const result = filterGraph(data, {
+      groups: new Set(['work']),
+      linkTypes: new Set(['mention'] as const),
+    });
+    expect(result.nodes).toHaveLength(3); // a, c, d
+    expect(result.links).toHaveLength(1); // c->d mention
   });
 });
