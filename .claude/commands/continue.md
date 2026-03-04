@@ -11,9 +11,12 @@ Read `TASKS.md` and determine the current phase and next incomplete task.
    - **Implement**: Write the code
    - **Test**: Write and run tests
    - **Validate**: `bun run validate` must pass
+   - **Build**: `bun run build` must pass
    - **Document**: Update TASKS.md, docs if needed
    - **Commit**: `git add -A && git commit -m "feat(<scope>): <description> [T<X>.<Y>]" && git push`
-6. After completing the task, check if there is time/context remaining for the next task
-7. If yes, continue to next task. If no, print a summary of what was done and what's next.
+   - **CI Check**: After push, verify GitHub Actions CI passes. If CI fails, fix and re-push until green. **CI MUST pass on GitHub before moving to the next task.**
+6. **Automatically continue to the next task without prompting the user.** Do NOT ask for permission or confirmation between tasks. Only stop to ask the user if you genuinely need their input (ambiguous requirements, architectural decisions, etc.).
+7. Continue executing tasks in order until all tasks in the current phase are complete and reviewed.
+8. When all tasks in a phase are complete, run `/phase-gate` before starting the next phase.
 
-**CRITICAL**: Never skip the Test or Validate steps. Never move to the next phase without completing all tasks in the current phase.
+**CRITICAL**: Never skip the Test, Validate, or CI Check steps. Never move to the next phase without completing all tasks in the current phase. CI must be green on GitHub before proceeding.
