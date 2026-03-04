@@ -33,6 +33,8 @@ export type {
   BranchOperations,
   RemoteOperations,
 } from './storage/index.js';
+export { BrowserFsBackend } from './storage/index.js';
+export { LocalFsBackend } from './storage/index.js';
 
 // Auth
 export type {
