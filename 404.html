@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cept</title>
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        var prMatch = path.match(/^\/cept\/pr-(\d+)(\/.*)?$/);
+        if (prMatch) {
+          var prBase = '/cept/pr-' + prMatch[1] + '/';
+          var prRoute = prMatch[2] || '/';
+          if (prRoute === '/') return;
+          window.location.replace(prBase + '?route=' + encodeURIComponent(prRoute + window.location.search + window.location.hash));
+          return;
+        }
+        var appMatch = path.match(/^\/cept\/app(\/.*)?$/);
+        if (appMatch) {
+          var appRoute = appMatch[1] || '/';
+          if (appRoute === '/') return;
+          window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
+          return;
+        }
+        if (path === '/cept' || path === '/cept/') {
+          window.location.replace('/cept/app/');
+          return;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Page not found. <a href="/cept/app/">Go to Cept</a></p>
+  </body>
+</html>
