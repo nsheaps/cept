@@ -115,5 +115,15 @@ export { CeptTemplateEngine } from './templates/index.js';
 export type { MarkdownParser, ParsedPage } from './markdown/index.js';
 export { CeptMarkdownParser } from './markdown/index.js';
 
+// Git
+export { AutoCommitEngine, generateCommitMessage, matchesPattern } from './git/index.js';
+export type {
+  AutoCommitConfig,
+  FileChange,
+  AutoCommitStatus,
+  AutoCommitListener,
+  AutoCommitEvent,
+} from './git/index.js';
+
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
