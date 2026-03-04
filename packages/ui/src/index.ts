@@ -54,3 +54,5 @@ export { SelectEditor, MultiSelectEditor, DEFAULT_COLORS } from './components/da
 export type { SelectEditorProps, MultiSelectEditorProps } from './components/database/SelectEditor.js';
 export { PropertyEditor } from './components/database/PropertyEditor.js';
 export type { PropertyEditorProps } from './components/database/PropertyEditor.js';
+export { RepoPicker } from './components/git/RepoPicker.js';
+export type { RepoPickerProps } from './components/git/RepoPicker.js';
