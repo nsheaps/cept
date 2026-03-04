@@ -19,6 +19,7 @@ describe('Slash Command', () => {
       expect(titles).toContain('Image');
       expect(titles).toContain('Embed');
       expect(titles).toContain('Bookmark');
+      expect(titles).toContain('Table');
     });
 
     it('has categories for all items', () => {
@@ -60,6 +61,12 @@ describe('Slash Command', () => {
     it('is case insensitive', () => {
       const result = filterSlashCommands(defaultSlashCommands, 'HEADING');
       expect(result.length).toBe(3);
+    });
+
+    it('finds table command', () => {
+      const result = filterSlashCommands(defaultSlashCommands, 'table');
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result.some((c) => c.title === 'Table')).toBe(true);
     });
 
     it('returns empty array for no matches', () => {
