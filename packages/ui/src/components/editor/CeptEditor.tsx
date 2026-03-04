@@ -7,6 +7,9 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
 import { Callout } from './extensions/callout.js';
 import { Toggle } from './extensions/toggle.js';
+import { ImageBlock } from './extensions/image.js';
+import { Embed } from './extensions/embed.js';
+import { Bookmark } from './extensions/bookmark.js';
 
 const lowlight = createLowlight(common);
 
@@ -81,6 +84,9 @@ export function CeptEditor({
       }),
       Callout,
       Toggle,
+      ImageBlock,
+      Embed,
+      Bookmark,
       Placeholder.configure({
         placeholder,
       }),
