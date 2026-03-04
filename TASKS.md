@@ -95,7 +95,7 @@
 ## Phase 5: Git & Auth
 
 - [x] T5.1: GitHub OAuth App flow *(2026-03-04)*
-- [ ] T5.2: Repo picker/creator UI
+- [x] T5.2: Repo picker/creator UI *(2026-03-04)*
 - [ ] T5.3: Auto-commit engine
 - [ ] T5.4: Auto-branch strategy
 - [ ] T5.5: Auto-merge + conflict resolution engine

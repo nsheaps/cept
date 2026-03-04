@@ -1,0 +1,242 @@
+/* ===== Repo Picker ===== */
+.cept-repo-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+  width: 100%;
+}
+
+.cept-repo-picker-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+}
+
+.cept-repo-picker-message {
+  color: #6b7280;
+  margin: 0;
+}
+
+.cept-repo-picker-signin {
+  background: #24292e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cept-repo-picker-signin:hover {
+  background: #2f363d;
+}
+
+.cept-repo-picker-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cept-repo-picker-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cept-repo-picker-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.cept-repo-picker-username {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cept-repo-picker-signout {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.cept-repo-picker-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cept-repo-picker-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.cept-repo-picker-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.cept-repo-picker-filter {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.cept-repo-picker-filter.is-active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.cept-repo-picker-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.cept-repo-picker-refresh,
+.cept-repo-picker-new,
+.cept-repo-picker-back {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cept-repo-picker-new {
+  background: #22c55e;
+  color: #fff;
+  border-color: #22c55e;
+}
+
+.cept-repo-picker-error {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.cept-repo-picker-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cept-repo-picker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.cept-repo-picker-item:hover {
+  background: #f9fafb;
+}
+
+.cept-repo-picker-item:last-child {
+  border-bottom: none;
+}
+
+.cept-repo-picker-item-name {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cept-repo-picker-badge {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.cept-repo-picker-item-desc {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.cept-repo-picker-item-meta {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.cept-repo-picker-loading,
+.cept-repo-picker-empty {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.cept-repo-picker-create {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.cept-repo-picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cept-repo-picker-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.cept-repo-picker-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.cept-repo-picker-create-btn {
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cept-repo-picker-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
