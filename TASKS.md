@@ -39,14 +39,14 @@
 
 ## Phase 1: Core Engine
 
-- [ ] T1.1: Implement `StorageBackend` interface + `BrowserFsBackend` (lightning-fs / IndexedDB) + `LocalFsBackend` (Node fs)
-- [ ] T1.2: Implement `GitBackend` extending `StorageBackend` with isomorphic-git
-- [ ] T1.3: Implement Markdown <-> Block tree parser (CommonMark + GFM + cept extensions)
-- [ ] T1.4: Implement YAML front matter parser/serializer
-- [ ] T1.5: Implement database engine (schema, CRUD, filter, sort, group)
-- [ ] T1.6: Implement formula evaluator for database formulas
-- [ ] T1.7: Implement search index (client-side full-text)
-- [ ] T1.8: Implement template engine
+- [x] T1.1: Implement `StorageBackend` interface + `BrowserFsBackend` (lightning-fs / IndexedDB) + `LocalFsBackend` (Node fs) *(2026-03-04)*
+- [x] T1.2: Implement `GitBackend` extending `StorageBackend` with isomorphic-git *(2026-03-04)*
+- [x] T1.3: Implement Markdown <-> Block tree parser (CommonMark + GFM + cept extensions) *(2026-03-04)*
+- [x] T1.4: Implement YAML front matter parser/serializer *(2026-03-04)*
+- [x] T1.5: Implement database engine (schema, CRUD, filter, sort, group) *(2026-03-04)*
+- [x] T1.6: Implement formula evaluator for database formulas *(2026-03-04)*
+- [x] T1.7: Implement search index (client-side full-text) *(2026-03-04)*
+- [x] T1.8: Implement template engine *(2026-03-04)*
 
 ## Phase 2: Editor UI
 

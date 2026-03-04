@@ -33,6 +33,10 @@ export type {
   BranchOperations,
   RemoteOperations,
 } from './storage/index.js';
+export { BrowserFsBackend } from './storage/index.js';
+export { LocalFsBackend } from './storage/index.js';
+export { GitBackend } from './storage/index.js';
+export type { GitAuth } from './storage/index.js';
 
 // Auth
 export type {
@@ -67,9 +71,11 @@ export type {
 
 // Database
 export type { DatabaseEngine, DatabaseQuery, GroupedRows } from './database/index.js';
+export { CeptDatabaseEngine } from './database/index.js';
 
 // Search
 export type { SearchIndex, SearchResult, SearchOptions } from './search/index.js';
+export { CeptSearchIndex } from './search/index.js';
 
 // Graph
 export type {
@@ -85,9 +91,11 @@ export type {
 
 // Templates
 export type { TemplateEngine, TemplateMeta, TemplateType } from './templates/index.js';
+export { CeptTemplateEngine } from './templates/index.js';
 
 // Markdown
 export type { MarkdownParser, ParsedPage } from './markdown/index.js';
+export { CeptMarkdownParser } from './markdown/index.js';
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
