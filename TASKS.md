@@ -153,7 +153,7 @@
 
 ## Phase 2: Storage & Persistence (Continuation)
 
-- [ ] P2.1: Fix known bugs — GitBackend `node:fs` hardcode, diff empty hunks, signaling server entry point
+- [x] P2.1: Fix known bugs — GitBackend `node:fs` hardcode, diff empty hunks, signaling server entry point *(2026-03-04)*
 - [ ] P2.2: Harden Markdown parser/serializer roundtrip — fuzz-test all block types, fix extractText
 - [ ] P2.3: Replace App.tsx localStorage with BrowserFsBackend (keystone task)
 - [ ] P2.4: Wire page CRUD to storage backend — readFile/writeFile for Markdown
