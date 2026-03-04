@@ -36,15 +36,18 @@ Full storage backend implementation and data management.
 
 | Feature | Status | Spec |
 |---------|--------|------|
-| IndexedDB backend (BrowserFsBackend with lightning-fs or OPFS) | Planned | [storage-backends](../../specs/storage-backends.md) |
-| Local folder backend (File System Access API / Node fs) | Planned | [storage-backends](../../specs/storage-backends.md) |
-| Git backend (isomorphic-git) | Planned | [storage-backends](../../specs/storage-backends.md) |
-| Markdown parser/serializer (roundtrip-safe) | Planned | [markdown-parser](../../specs/markdown-parser.md) |
-| Multi-space support | Planned | — |
-| Space switching | Planned | — |
-| Import from Notion (ZIP) | Planned | — |
-| Import from Obsidian (vault directory) | Planned | — |
-| Export to Markdown/HTML/PDF | Planned | — |
+| IndexedDB backend (BrowserFsBackend with lightning-fs or OPFS) | Done | [storage-backends](../../specs/storage-backends.md) |
+| Local folder backend (File System Access API / Node fs) | Done | [storage-backends](../../specs/storage-backends.md) |
+| Git backend (isomorphic-git) | Done | [storage-backends](../../specs/storage-backends.md) |
+| Markdown parser/serializer (roundtrip-safe) | Done | [markdown-parser](../../specs/markdown-parser.md) |
+| Multi-space support | Done | — |
+| Space switching (create, switch, rename, delete from Settings) | Done | — |
+| Import from Notion (ZIP) | Done | — |
+| Import from Obsidian (vault directory) | Done | — |
+| Export to Markdown/HTML/PDF | Done | — |
+| Deep linking (hash-based page URLs) | Done | — |
+| TF-IDF search index (replacing substring search) | Done | [search](../../specs/search.md) |
+| Database persistence (DatabaseContext + CeptDatabaseEngine) | Done | — |
 
 ## Phase 3: Databases
 
@@ -52,16 +55,16 @@ Structured data with multiple views.
 
 | Feature | Status | Spec |
 |---------|--------|------|
-| Database engine (CRUD, filter, sort, group) | Planned | [database-engine](../../specs/database-engine.md) |
-| 18 property types | Planned | [database-engine](../../specs/database-engine.md) |
-| Table view | Planned | — |
-| Board/Kanban view | Planned | — |
-| Calendar view | Planned | — |
-| Gallery view | Planned | — |
-| List view | Planned | — |
-| Map view | Planned | — |
-| Formulas | Planned | [database-engine](../../specs/database-engine.md) |
-| Relations & rollups | Planned | [database-engine](../../specs/database-engine.md) |
+| Database engine (CRUD, filter, sort, group) | Done | [database-engine](../../specs/database-engine.md) |
+| 18 property types | Done | [database-engine](../../specs/database-engine.md) |
+| Table view | Done | — |
+| Board/Kanban view | Done | — |
+| Calendar view | Done | — |
+| Gallery view | Done | — |
+| List view | Done | — |
+| Map view | Done | — |
+| Formulas | Done | [database-engine](../../specs/database-engine.md) |
+| Relations & rollups | Done | [database-engine](../../specs/database-engine.md) |
 
 ## Phase 4: Knowledge Graph & Templates
 
@@ -69,11 +72,11 @@ Visualization and reusable content.
 
 | Feature | Status | Spec |
 |---------|--------|------|
-| Knowledge graph (global + local view) | Planned | [knowledge-graph](../../specs/knowledge-graph.md) |
-| Graph filters and color groups | Planned | [knowledge-graph](../../specs/knowledge-graph.md) |
-| Template system (built-in + custom) | Planned | [template-system](../../specs/template-system.md) |
+| Knowledge graph (global + local view) | Done | [knowledge-graph](../../specs/knowledge-graph.md) |
+| Graph filters and color groups | Done | [knowledge-graph](../../specs/knowledge-graph.md) |
+| Template system (built-in + custom) | Done | [template-system](../../specs/template-system.md) |
 | Template gallery UI | Planned | — |
-| Wiki-links (`[[page]]`) | Planned | — |
+| Wiki-links (`[[page]]`) | Done | — |
 | Backlinks panel | Planned | — |
 
 ## Phase 5: Git & Collaboration

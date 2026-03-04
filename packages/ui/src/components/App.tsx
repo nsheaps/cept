@@ -25,7 +25,12 @@ import {
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { FolderView } from './editor/FolderView.js';
+import { ImportDialog } from './import-export/ImportDialog.js';
+import type { ImportSource } from './import-export/ImportDialog.js';
+import { ExportDialog } from './import-export/ExportDialog.js';
 import { CeptSearchIndex } from '@cept/core';
+import type { ImportedPage, PageContent } from '@cept/core';
+import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces } from './storage/SpaceManager.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -88,6 +93,10 @@ export function App() {
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importSource, setImportSource] = useState<ImportSource>('notion');
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [userSpaceId, setUserSpaceId] = useState('default');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
 
@@ -137,6 +146,45 @@ export function App() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Deep linking: read page id from URL hash on load
+  useEffect(() => {
+    if (!ready || !initializedRef.current) return;
+    const hash = window.location.hash.replace('#', '');
+    if (hash && hash !== selectedPageId) {
+      // Check if the page exists in the tree
+      const node = findNode(pages, hash);
+      if (node) {
+        setSelectedPageId(hash);
+        setPages((prev) => expandToNode(prev, hash));
+      }
+    }
+  }, [ready]); // only run when ready changes
+
+  // Deep linking: update URL hash when selected page changes
+  useEffect(() => {
+    if (selectedPageId && activeSpace === 'user') {
+      window.history.replaceState(null, '', `#${selectedPageId}`);
+    } else if (!selectedPageId) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [selectedPageId, activeSpace]);
+
+  // Listen for back/forward navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== selectedPageId) {
+        const node = findNode(pages, hash);
+        if (node) {
+          setSelectedPageId(hash);
+          setPages((prev) => expandToNode(prev, hash));
+        }
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [selectedPageId, pages]);
 
   // Persist tree state to backend (debounced) — page content is saved separately per-file
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -398,21 +446,86 @@ export function App() {
   }, [backend]);
 
   const handleSpaceRename = useCallback((id: string, name: string) => {
-    if (id === 'default') {
+    if (id === userSpaceId || id === 'default') {
       setSpaceName(name);
     }
+    void renameSpaceInBackend(backend, id, name);
+  }, [backend, userSpaceId]);
+
+  const handleDeleteSpace = useCallback((id: string) => {
+    void deleteSpaceInBackend(backend, id).then(() => {
+      if (id === userSpaceId) {
+        // Reload from the new active space
+        void loadSpaces(backend).then((manifest) => {
+          setUserSpaceId(manifest.activeSpaceId);
+          // Reset to empty state — the new space will be loaded on next persist cycle
+          setPages([]);
+          setPageContents({});
+          setSelectedPageId(undefined);
+          setFavorites([]);
+          setRecentPages([]);
+          setTrash([]);
+          setSpaceName(manifest.spaces[0]?.name ?? 'My Space');
+        });
+      }
+    });
+  }, [backend, userSpaceId]);
+
+  const handleCreateSpace = useCallback((name: string) => {
+    void createSpaceInBackend(backend, name).then((newSpace) => {
+      setUserSpaceId(newSpace.id);
+      setPages([]);
+      setPageContents({});
+      setSelectedPageId(undefined);
+      setFavorites([]);
+      setRecentPages([]);
+      setTrash([]);
+      setSpaceName(name);
+      setHasStarted(true);
+    });
+  }, [backend]);
+
+  const handleSwitchSpace = useCallback((id: string) => {
+    void switchSpaceInBackend(backend, id).then(() => {
+      setUserSpaceId(id);
+      // For now, switching reloads — a full implementation would load from the space's stored state
+      void loadSpaces(backend).then((manifest) => {
+        const space = manifest.spaces.find((s) => s.id === id);
+        if (space) {
+          setSpaceName(space.name);
+          setPages([]);
+          setPageContents({});
+          setSelectedPageId(undefined);
+          setFavorites([]);
+          setRecentPages([]);
+          setTrash([]);
+          setHasStarted(true);
+        }
+      });
+    });
+  }, [backend]);
+
+  const handleImportComplete = useCallback((importedPages: ImportedPage[]) => {
+    for (const page of importedPages) {
+      const newPage: PageTreeNode = {
+        id: page.targetPath.replace(/[^a-zA-Z0-9-_]/g, '-'),
+        title: page.title,
+        children: [],
+      };
+      setPages((prev) => [...prev, newPage]);
+      setPageContents((prev) => ({ ...prev, [newPage.id]: page.content }));
+      void writePageContent(backend, newPage.id, page.content);
+    }
+    if (!hasStarted) setHasStarted(true);
+  }, [backend, hasStarted]);
+
+  const handleOpenImport = useCallback((source: ImportSource) => {
+    setImportSource(source);
+    setImportDialogOpen(true);
   }, []);
 
-  const handleDeleteSpace = useCallback((_id: string) => {
-    // Currently only one space — delete it
-    setPages([]);
-    setPageContents({});
-    setSelectedPageId(undefined);
-    setFavorites([]);
-    setRecentPages([]);
-    setTrash([]);
-    setSpaceName('My Space');
-    setHasStarted(false);
+  const handleOpenExport = useCallback(() => {
+    setExportDialogOpen(true);
   }, []);
 
   const handleOpenSettings = useCallback((tab: 'settings' | 'about' | 'data' | 'spaces' = 'settings') => {
@@ -462,7 +575,11 @@ export function App() {
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
     { id: 'toggle-sidebar', title: 'Toggle Sidebar', icon: '\u{1F4CB}', category: 'View', action: () => { setSidebarOpen((p) => !p); setCommandPaletteOpen(false); } },
-  ], [handlePageAdd]);
+    { id: 'import-notion', title: 'Import from Notion', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('notion'); } },
+    { id: 'import-obsidian', title: 'Import from Obsidian', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('obsidian'); } },
+    { id: 'export-page', title: 'Export Current Page', icon: '\u{1F4E4}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenExport(); } },
+    { id: 'manage-spaces', title: 'Manage Spaces', icon: '\u{1F4C2}', category: 'Spaces', action: () => { setCommandPaletteOpen(false); handleOpenSettings('spaces'); } },
+  ], [handlePageAdd, handleOpenImport, handleOpenExport, handleOpenSettings]);
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
@@ -642,13 +759,34 @@ export function App() {
         initialTab={settingsTab}
         settings={settings}
         spaces={spaceInfoList}
+        activeSpaceId={userSpaceId}
         onClose={() => setSettingsOpen(false)}
         onSettingsChange={handleSettingsChange}
         onResetSettings={handleResetSettings}
         onDeleteSpace={handleDeleteSpace}
         onSpaceRename={handleSpaceRename}
+        onCreateSpace={handleCreateSpace}
+        onSwitchSpace={handleSwitchSpace}
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
+        onImportNotion={() => handleOpenImport('notion')}
+        onImportObsidian={() => handleOpenImport('obsidian')}
+        onExport={handleOpenExport}
+      />
+      <ImportDialog
+        isOpen={importDialogOpen}
+        source={importSource}
+        onClose={() => setImportDialogOpen(false)}
+        onImportComplete={handleImportComplete}
+      />
+      <ExportDialog
+        isOpen={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        page={selectedPageId && selectedNode ? {
+          title: selectedNode.title,
+          markdown: (pageContents[selectedPageId] ?? '').replace(/<[^>]+>/g, ''),
+          path: `pages/${selectedPageId}.html`,
+        } as PageContent : null}
       />
     </div>
   );
