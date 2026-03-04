@@ -11,7 +11,7 @@ Import your entire Notion workspace into Cept.
 
 ## Import into Cept
 
-1. Open Cept and go to **Settings > Import**
+1. Open Cept and go to **Settings > Import** (coming soon)
 2. Select **Import from Notion**
 3. Choose the downloaded ZIP file
 4. Configure import options:
@@ -32,6 +32,8 @@ Import your entire Notion workspace into Cept.
 | Images & attachments | Imported as assets |
 | Code blocks | Preserved with language |
 | Tables | Markdown tables |
+| Callouts | Cept callout blocks |
+| Toggle blocks | Cept toggle blocks |
 
 ## What's Not Imported
 
@@ -39,6 +41,7 @@ Import your entire Notion workspace into Cept.
 - Page permissions and sharing settings
 - Comments and discussions
 - Page analytics
+- Notion AI content
 
 ## After Import
 
@@ -46,3 +49,7 @@ Import your entire Notion workspace into Cept.
 - Check wiki-links are correctly connected
 - Verify database data imported correctly
 - Set up Git sync if desired for versioning
+
+## Why Switch?
+
+See the full [Cept vs Notion comparison](../comparison/vs-notion.md) for details on what you gain by switching.

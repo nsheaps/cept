@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
 import { PageContextMenu } from './PageContextMenu.js';
+import { AppMenu } from '../app-menu/AppMenu.js';
 
 export interface SidebarPageRef {
   id: string;
@@ -26,6 +27,11 @@ export interface SidebarProps {
   onPermanentDelete?: (id: string) => void;
   onEmptyTrash?: () => void;
   onSearch?: () => void;
+  readOnly?: boolean;
+  spaceName?: string;
+  onBackToSpace?: () => void;
+  onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
+  onOpenDocs?: () => void;
 }
 
 export function Sidebar({
@@ -46,6 +52,11 @@ export function Sidebar({
   onPermanentDelete,
   onEmptyTrash,
   onSearch,
+  readOnly,
+  spaceName,
+  onBackToSpace,
+  onOpenSettings,
+  onOpenDocs,
 }: SidebarProps) {
   const [trashExpanded, setTrashExpanded] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -75,7 +86,24 @@ export function Sidebar({
   return (
     <aside className="cept-sidebar" data-testid="sidebar">
       <div className="cept-sidebar-header">
-        <span className="cept-sidebar-workspace-name">Space</span>
+        {onBackToSpace && (
+          <button
+            className="cept-sidebar-back-btn"
+            onClick={onBackToSpace}
+            data-testid="sidebar-back-to-space"
+            title="Back to my space"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 4l-4 4 4 4" />
+            </svg>
+          </button>
+        )}
+        <span className="cept-sidebar-workspace-name">{spaceName ?? 'Space'}</span>
+        {!readOnly && (
+          <div className="cept-sidebar-header-menu">
+            <AppMenu onOpenSettings={onOpenSettings} onOpenDocs={onOpenDocs} />
+          </div>
+        )}
       </div>
 
       <div className="cept-sidebar-actions">
@@ -134,13 +162,15 @@ export function Sidebar({
       <div className="cept-sidebar-section">
         <div className="cept-sidebar-section-header">
           <span>Pages</span>
-          <button
-            className="cept-sidebar-section-add"
-            onClick={() => onPageAdd?.()}
-            data-testid="sidebar-add-page"
-          >
-            +
-          </button>
+          {!readOnly && (
+            <button
+              className="cept-sidebar-section-add"
+              onClick={() => onPageAdd?.()}
+              data-testid="sidebar-add-page"
+            >
+              +
+            </button>
+          )}
         </div>
         <div className="cept-sidebar-tree" data-testid="page-tree">
           {pages.length === 0 ? (
@@ -167,7 +197,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="trash-section">
+      {!readOnly && <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="trash-section">
         <button
           className="cept-sidebar-action-btn"
           onClick={() => setTrashExpanded((prev) => !prev)}
@@ -220,9 +250,9 @@ export function Sidebar({
             )}
           </div>
         )}
-      </div>
+      </div>}
 
-      {contextMenu && (
+      {contextMenu && !readOnly && (
         <PageContextMenu
           pageId={contextMenu.pageId}
           pageTitle={contextMenu.pageTitle}

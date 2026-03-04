@@ -190,7 +190,7 @@ describe('App', () => {
     expect(screen.getByTestId('page-title-save')).toBeDefined();
   });
 
-  it('shows app menu in header', () => {
+  it('shows app menu in sidebar', () => {
     render(<App demoMode />);
     expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
   });
@@ -200,6 +200,7 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     expect(screen.getByTestId('app-menu')).toBeDefined();
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();
+    expect(screen.getByTestId('app-menu-help')).toBeDefined();
     expect(screen.getByTestId('app-menu-about')).toBeDefined();
   });
 });
