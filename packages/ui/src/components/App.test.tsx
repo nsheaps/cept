@@ -27,20 +27,27 @@ vi.mock('d3', () => {
   };
 });
 
+/** Helper: seed settings in localStorage so showDemoContent is true */
+function enableDemoMode() {
+  localStorage.setItem('cept-settings', JSON.stringify({ autoSave: true, showDemoContent: true }));
+}
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
   });
 
-  it('renders onboarding screen when not in demo mode', () => {
+  it('renders onboarding screen when showDemoContent is false and no persisted data', () => {
+    // Default: showDemoContent defaults to false in test env (not nsheaps.github.io)
     render(<App />);
     expect(screen.getByText('Get Started')).toBeDefined();
     expect(screen.getByTestId('start-writing')).toBeDefined();
   });
 
-  it('renders demo content in demo mode', () => {
-    render(<App demoMode />);
+  it('renders demo content when showDemoContent setting is true', () => {
+    enableDemoMode();
+    render(<App />);
     expect(screen.getByText('Cept')).toBeDefined();
     expect(screen.queryByText('Get Started')).toBeNull();
   });
@@ -53,13 +60,15 @@ describe('App', () => {
   });
 
   it('creates new page via sidebar', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     // The sidebar should have page items (text appears in sidebar + breadcrumb/editor)
     expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
   });
 
   it('has working sidebar toggle on mobile', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     const toggle = screen.getByTestId('sidebar-toggle');
     expect(toggle).toBeDefined();
     // Clicking should hide sidebar
@@ -71,7 +80,8 @@ describe('App', () => {
   });
 
   it('opens command palette with keyboard shortcut', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
     });
@@ -115,7 +125,8 @@ describe('App', () => {
   });
 
   it('search opens and finds pages', async () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     // Open command palette and use search
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
@@ -134,13 +145,15 @@ describe('App', () => {
   });
 
   it('does not show reset demo button in header (moved to settings)', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     expect(screen.queryByTestId('reset-demo')).toBeNull();
   });
 
-  it('persists state in demo mode too', () => {
+  it('persists state when demo content is shown', () => {
     vi.useFakeTimers();
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
 
     act(() => {
       vi.advanceTimersByTime(500);
@@ -155,12 +168,13 @@ describe('App', () => {
   });
 
   it('demo mode shows demo content initially', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     // Should have demo pages
     expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('restores persisted state even in demo mode', () => {
+  it('restores persisted state even when showDemoContent is true', () => {
     const state = {
       pages: [{ id: 'my-page', title: 'My Saved Page', children: [] }],
       pageContents: { 'my-page': '<p>My content</p>' },
@@ -169,14 +183,16 @@ describe('App', () => {
       selectedPageId: 'my-page',
     };
     localStorage.setItem('cept-workspace', JSON.stringify(state));
+    enableDemoMode();
 
-    render(<App demoMode />);
+    render(<App />);
     // Should show persisted page, not demo content
     expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows page header with title and menu when page is selected', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     // Demo mode selects 'welcome' page by default
     expect(screen.getByTestId('page-header')).toBeDefined();
     expect(screen.getByTestId('page-title')).toBeDefined();
@@ -184,23 +200,42 @@ describe('App', () => {
   });
 
   it('page title is clickable for inline editing', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     fireEvent.click(screen.getByTestId('page-title'));
     expect(screen.getByTestId('page-title-input')).toBeDefined();
     expect(screen.getByTestId('page-title-save')).toBeDefined();
   });
 
   it('shows app menu in sidebar', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
   });
 
   it('app menu opens and has actions', () => {
-    render(<App demoMode />);
+    enableDemoMode();
+    render(<App />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     expect(screen.getByTestId('app-menu')).toBeDefined();
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();
     expect(screen.getByTestId('app-menu-help')).toBeDefined();
     expect(screen.getByTestId('app-menu-about')).toBeDefined();
+  });
+
+  it('persists space name', () => {
+    vi.useFakeTimers();
+    enableDemoMode();
+    render(<App />);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+
+    const stored = localStorage.getItem('cept-workspace');
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.spaceName).toBe('Demo Space');
   });
 });

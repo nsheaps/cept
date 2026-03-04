@@ -20,7 +20,4 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
-  define: {
-    'import.meta.env.CEPT_DEMO_MODE': JSON.stringify(process.env.CEPT_DEMO_MODE === 'true'),
-  },
 });
