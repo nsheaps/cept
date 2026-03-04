@@ -45,8 +45,8 @@
 - [x] T1.4: Implement YAML front matter parser/serializer *(2026-03-04)*
 - [x] T1.5: Implement database engine (schema, CRUD, filter, sort, group) *(2026-03-04)*
 - [x] T1.6: Implement formula evaluator for database formulas *(2026-03-04)*
-- [ ] T1.7: Implement search index (client-side full-text)
-- [ ] T1.8: Implement template engine
+- [x] T1.7: Implement search index (client-side full-text) *(2026-03-04)*
+- [x] T1.8: Implement template engine *(2026-03-04)*
 
 ## Phase 2: Editor UI
 
