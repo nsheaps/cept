@@ -226,7 +226,10 @@
 - [ ] P7.4: Undo/redo with proper history stack
 - [ ] P7.5: Keyboard shortcut customization
 - [ ] P7.6: Theming (custom colors, fonts)
-- [ ] P7.7: Plugin system architecture
+- [ ] P7.7: Plugin system architecture — extension API, lifecycle hooks, sandboxed execution
+- [ ] P7.7a: Community plugin registry — discovery, installation, versioning, and trust/verification
+- [ ] P7.7b: Community editor extensions — custom TipTap nodes, slash commands, and block types via plugins
+- [ ] P7.7c: Plugin SDK and developer documentation — templates, examples, testing harness
 - [ ] P7.8: API documentation
 - [ ] P7.9: Sentry integration — error tracking, performance monitoring, session replay (opt-in)
 - [ ] P7.10: Analytics — privacy-respecting usage analytics (opt-in, no PII)
