@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
-import { expandToNode } from './sidebar/page-tree-utils.js';
+import { expandToNode, getBreadcrumbs } from './sidebar/page-tree-utils.js';
+import { Breadcrumbs } from './topbar/Breadcrumbs.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -37,6 +38,11 @@ export function App({ demoMode }: AppProps) {
     demoMode ? 'welcome' : undefined,
   );
 
+  const breadcrumbItems = useMemo(() => {
+    if (!selectedPageId) return [];
+    return getBreadcrumbs(pages, selectedPageId) ?? [];
+  }, [pages, selectedPageId]);
+
   const handlePageSelect = useCallback((id: string) => {
     setSelectedPageId(id);
     setPages((prev) => expandToNode(prev, id));
@@ -62,8 +68,11 @@ export function App({ demoMode }: AppProps) {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <header className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <header className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-4">
         <h1 className="text-xl font-semibold">Cept</h1>
+        {breadcrumbItems.length > 0 && (
+          <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
+        )}
       </header>
       <main className="flex" style={{ height: 'calc(100vh - 49px)' }}>
         <Sidebar

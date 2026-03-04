@@ -14,3 +14,5 @@ export type { SidebarProps } from './components/sidebar/Sidebar.js';
 export { PageTreeItem } from './components/sidebar/PageTreeItem.js';
 export type { PageTreeNode, PageTreeItemProps } from './components/sidebar/PageTreeItem.js';
 export { findAncestorIds, expandToNode, getBreadcrumbs } from './components/sidebar/page-tree-utils.js';
+export { Breadcrumbs } from './components/topbar/Breadcrumbs.js';
+export type { BreadcrumbItem, BreadcrumbsProps } from './components/topbar/Breadcrumbs.js';
