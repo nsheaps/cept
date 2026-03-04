@@ -5,6 +5,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { common, createLowlight } from 'lowlight';
 import { Callout } from './extensions/callout.js';
 import { Toggle } from './extensions/toggle.js';
@@ -92,6 +93,11 @@ export function CeptEditor({
       ImageBlock,
       Embed,
       Bookmark,
+      GlobalDragHandle.configure({
+        dragHandleWidth: 24,
+        scrollTreshold: 100,
+        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark'],
+      }),
       SlashCommand.configure({
         suggestion: {
           items: ({ query }: { query: string }) =>

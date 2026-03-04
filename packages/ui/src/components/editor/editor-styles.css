@@ -488,6 +488,46 @@
   color: #9ca3af;
 }
 
+/* Drag handle */
+.cept-editor .drag-handle {
+  position: fixed;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 50;
+}
+
+.cept-editor .drag-handle::after {
+  content: '\2807';
+  font-size: 1rem;
+  color: #d1d5db;
+  line-height: 1;
+}
+
+.cept-editor .drag-handle:hover::after {
+  color: #9ca3af;
+}
+
+.cept-editor .drag-handle:active {
+  cursor: grabbing;
+}
+
+.cept-editor .drag-handle.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cept-editor .tiptap.dragging {
+  cursor: grabbing;
+}
+
 /* Focus styles */
 .cept-editor .tiptap:focus-visible {
   outline: none;
