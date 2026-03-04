@@ -158,7 +158,7 @@
 - [x] P2.3: Replace App.tsx localStorage with BrowserFsBackend (keystone task) *(2026-03-04)*
 - [x] P2.4: Wire page CRUD to storage backend — individual page files via StorageBackend *(2026-03-04)*
 - [x] P2.4a: Landing page — nice onboarding/landing page for GitHub Pages with links to getting started and "what is this app" guides; guides describe how the demo area works *(2026-03-04)*
-- [ ] P2.4b: Folder pages — directory listing of child pages; handle pages with/without index; pages should be linked
+- [x] P2.4b: Folder pages — directory listing of child pages; handle pages with/without index; pages should be linked *(2026-03-04)*
 - [ ] P2.4c: Front matter — emoji icon via YAML front matter, optional page banner (like Notion)
 - [x] P2.4d: Table rendering — fix table rendering in editor, ensure tables work in slash commands with helpful creation UI *(2026-03-04)*
 - [x] P2.4e: Table tests — unit, integration, snapshot, and E2E tests to ensure table rendering never breaks *(2026-03-04)*
