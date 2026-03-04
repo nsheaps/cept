@@ -469,4 +469,43 @@
   .cept-settings-about-logo { background: #3b82f6; }
   .cept-settings-about h3 { color: #e5e5e5; }
   .cept-settings-about p { color: #a1a1aa; }
+  .cept-settings-rename-input { background: #333; border-color: #555; color: #e5e5e5; }
+}
+
+/* Space rename in settings */
+.cept-settings-rename-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cept-settings-rename-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+}
+
+.cept-settings-rename-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.cept-settings-section-title--editable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cept-settings-section-title--editable svg {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cept-settings-section-title--editable:hover svg {
+  opacity: 0.5;
 }

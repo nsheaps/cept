@@ -15,7 +15,7 @@ import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO } from './docs/docs-content.js';
 
 interface AppProps {
-  demoMode?: boolean;
+  // No props needed — demo mode is controlled by settings
 }
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -46,6 +46,7 @@ interface PersistedState {
   favorites: SidebarPageRef[];
   recentPages: SidebarPageRef[];
   selectedPageId?: string;
+  spaceName?: string;
 }
 
 function loadPersistedState(): PersistedState | null {
@@ -81,26 +82,35 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  * Root application component.
  * Renders the main Cept workspace UI.
  */
-export function App({ demoMode }: AppProps) {
-  // Always try to load persisted state — demo mode just provides fallback data
+export function App(_props?: AppProps) {
+  // Load persisted state and settings once
   const persisted = useMemo(() => loadPersistedState(), []);
+  const initialSettings = useMemo(() => loadSettings(), []);
+
+  // Demo mode: determined by showDemoContent setting (auto-detected on nsheaps.github.io)
+  const shouldShowDemo = initialSettings.showDemoContent;
+  const hasPersisted = !!persisted;
 
   const [pages, setPages] = useState<PageTreeNode[]>(
-    persisted?.pages ?? (demoMode ? DEMO_PAGES : []),
+    persisted?.pages ?? (shouldShowDemo ? DEMO_PAGES : []),
   );
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>(
-    persisted?.selectedPageId ?? (demoMode ? 'welcome' : undefined),
+    persisted?.selectedPageId ?? (shouldShowDemo ? 'welcome' : undefined),
   );
   const [pageContents, setPageContents] = useState<Record<string, string>>(
-    persisted?.pageContents ?? (demoMode ? { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' } : {}),
+    persisted?.pageContents ?? (shouldShowDemo ? { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' } : {}),
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [hasStarted, setHasStarted] = useState(!!demoMode || !!persisted);
+  const [hasStarted, setHasStarted] = useState(shouldShowDemo || hasPersisted);
+
+  // Space name — persisted, with sensible default
+  const defaultSpaceName = shouldShowDemo && !hasPersisted ? 'Demo Space' : 'My Space';
+  const [spaceName, setSpaceName] = useState<string>(persisted?.spaceName ?? defaultSpaceName);
 
   // Trash state
-  const [trash, setTrash] = useState<SidebarPageRef[]>(persisted ? [] : []);
+  const [trash, setTrash] = useState<SidebarPageRef[]>(hasPersisted ? [] : []);
 
   // Favorites state
   const [favorites, setFavorites] = useState<SidebarPageRef[]>(persisted?.favorites ?? []);
@@ -109,7 +119,7 @@ export function App({ demoMode }: AppProps) {
   const [recentPages, setRecentPages] = useState<SidebarPageRef[]>(persisted?.recentPages ?? []);
 
   // Settings state
-  const [settings, setSettings] = useState<CeptSettings>(() => loadSettings());
+  const [settings, setSettings] = useState<CeptSettings>(() => initialSettings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
 
@@ -137,9 +147,9 @@ export function App({ demoMode }: AppProps) {
   useEffect(() => {
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
-      savePersistedState({ pages, pageContents, favorites, recentPages, selectedPageId });
+      savePersistedState({ pages, pageContents, favorites, recentPages, selectedPageId, spaceName });
     }, 300);
-  }, [pages, pageContents, favorites, recentPages, selectedPageId]);
+  }, [pages, pageContents, favorites, recentPages, selectedPageId, spaceName]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -338,12 +348,14 @@ export function App({ demoMode }: AppProps) {
   }, []);
 
   const handleResetDemo = useCallback(() => {
+    // Always recreate — if space was renamed, this creates what is effectively a duplicate
     setPages(DEMO_PAGES);
     setPageContents({ welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' });
     setSelectedPageId('welcome');
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
+    setSpaceName('Demo Space');
     setHasStarted(true);
   }, []);
 
@@ -357,6 +369,7 @@ export function App({ demoMode }: AppProps) {
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
+    setSpaceName('My Space');
     setHasStarted(false);
     setSettingsOpen(false);
   }, []);
@@ -369,6 +382,12 @@ export function App({ demoMode }: AppProps) {
   const handleResetSettings = useCallback(() => {
     resetSettings();
     setSettings({ ...DEFAULT_SETTINGS });
+  }, []);
+
+  const handleSpaceRename = useCallback((id: string, name: string) => {
+    if (id === 'default') {
+      setSpaceName(name);
+    }
   }, []);
 
   const handleDeleteSpace = useCallback((_id: string) => {
@@ -415,7 +434,7 @@ export function App({ demoMode }: AppProps) {
       const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
       list.push({
         id: 'default',
-        name: demoMode ? 'Demo Space' : 'My Space',
+        name: spaceName,
         source: 'Browser (localStorage)',
         pageCount: flattenPages(pages).length,
         contentSize,
@@ -423,7 +442,7 @@ export function App({ demoMode }: AppProps) {
     }
     list.push(DOCS_SPACE_INFO);
     return list;
-  }, [hasStarted, pages, pageContents, demoMode]);
+  }, [hasStarted, pages, pageContents, spaceName]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
@@ -433,7 +452,7 @@ export function App({ demoMode }: AppProps) {
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
-  const showOnboarding = !hasStarted && !demoMode;
+  const showOnboarding = !hasStarted;
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -479,7 +498,7 @@ export function App({ demoMode }: AppProps) {
             onSearch={() => setSearchOpen(true)}
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
-            spaceName={demoMode ? 'Demo Space' : 'My Space'}
+            spaceName={spaceName}
           />
         )}
         {sidebarOpen && activeSpace === 'docs' && (
@@ -606,11 +625,11 @@ export function App({ demoMode }: AppProps) {
         initialTab={settingsTab}
         settings={settings}
         spaces={spaceInfoList}
-        demoMode={demoMode}
         onClose={() => setSettingsOpen(false)}
         onSettingsChange={handleSettingsChange}
         onResetSettings={handleResetSettings}
         onDeleteSpace={handleDeleteSpace}
+        onSpaceRename={handleSpaceRename}
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
       />

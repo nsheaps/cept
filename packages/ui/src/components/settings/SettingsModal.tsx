@@ -2,10 +2,20 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 
 export interface CeptSettings {
   autoSave: boolean;
+  showDemoContent: boolean;
+}
+
+function isNsheapsDeployment(): boolean {
+  try {
+    return typeof window !== 'undefined' && window.location.hostname === 'nsheaps.github.io';
+  } catch {
+    return false;
+  }
 }
 
 export const DEFAULT_SETTINGS: CeptSettings = {
   autoSave: true,
+  showDemoContent: isNsheapsDeployment(),
 };
 
 const SETTINGS_KEY = 'cept-settings';
@@ -50,11 +60,11 @@ export interface SettingsModalProps {
   initialTab?: 'about' | 'settings' | 'data' | 'spaces';
   settings: CeptSettings;
   spaces: SpaceInfo[];
-  demoMode?: boolean;
   onClose: () => void;
   onSettingsChange: (settings: CeptSettings) => void;
   onResetSettings: () => void;
   onDeleteSpace: (id: string) => void;
+  onSpaceRename: (id: string, name: string) => void;
   onClearAllData: () => void;
   onRecreateDemoSpace: () => void;
 }
@@ -64,11 +74,11 @@ export function SettingsModal({
   initialTab = 'settings',
   settings,
   spaces,
-  demoMode,
   onClose,
   onSettingsChange,
   onResetSettings,
   onDeleteSpace,
+  onSpaceRename,
   onClearAllData,
   onRecreateDemoSpace,
 }: SettingsModalProps) {
@@ -204,6 +214,26 @@ export function SettingsModal({
                 </label>
 
                 <div className="cept-settings-section-divider" />
+                <h3 className="cept-settings-section-title">Content</h3>
+                <label className="cept-settings-toggle-row" data-testid="setting-show-demo">
+                  <div className="cept-settings-toggle-label">
+                    <span className="cept-settings-toggle-name">Show demo content</span>
+                    <span className="cept-settings-toggle-desc">
+                      Load a demo space with sample pages on first launch
+                    </span>
+                  </div>
+                  <button
+                    className={`cept-settings-switch ${settings.showDemoContent ? 'is-on' : ''}`}
+                    onClick={() => handleSettingChange('showDemoContent', !settings.showDemoContent)}
+                    role="switch"
+                    aria-checked={settings.showDemoContent}
+                    data-testid="setting-show-demo-toggle"
+                  >
+                    <span className="cept-settings-switch-thumb" />
+                  </button>
+                </label>
+
+                <div className="cept-settings-section-divider" />
                 <button
                   className="cept-settings-danger-btn"
                   onClick={() => {
@@ -254,6 +284,7 @@ export function SettingsModal({
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
+                onRename={(name) => onSpaceRename(selectedSpace.id, name)}
                 onDelete={() => {
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
@@ -302,7 +333,7 @@ export function SettingsModal({
                 <div className="cept-settings-section-divider" />
                 <h3 className="cept-settings-section-title">Actions</h3>
                 <div className="cept-settings-actions">
-                  {demoMode && (
+                  {settings.showDemoContent && (
                     <button
                       className="cept-settings-action-btn"
                       onClick={onRecreateDemoSpace}
@@ -334,6 +365,7 @@ export function SettingsModal({
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
+                onRename={(name) => onSpaceRename(selectedSpace.id, name)}
                 onDelete={() => {
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
@@ -364,11 +396,16 @@ function SpaceDetails({
   space,
   onBack,
   onDelete,
+  onRename,
 }: {
   space: SpaceInfo;
   onBack: () => void;
   onDelete: () => void;
+  onRename: (name: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(space.name);
+
   return (
     <div data-testid={`space-details-${space.id}`}>
       <button
@@ -381,7 +418,51 @@ function SpaceDetails({
         </svg>
         Back
       </button>
-      <h3 className="cept-settings-section-title">{space.name}</h3>
+      {editing ? (
+        <div className="cept-settings-rename-row">
+          <input
+            className="cept-settings-rename-input"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editName.trim()) {
+                onRename(editName.trim());
+                setEditing(false);
+              }
+              if (e.key === 'Escape') {
+                setEditName(space.name);
+                setEditing(false);
+              }
+            }}
+            autoFocus
+            data-testid="space-rename-input"
+          />
+          <button
+            className="cept-settings-action-btn"
+            onClick={() => {
+              if (editName.trim()) {
+                onRename(editName.trim());
+                setEditing(false);
+              }
+            }}
+            data-testid="space-rename-save"
+          >
+            Save
+          </button>
+        </div>
+      ) : (
+        <h3
+          className="cept-settings-section-title cept-settings-section-title--editable"
+          onClick={() => setEditing(true)}
+          title="Click to rename"
+          data-testid="space-details-name"
+        >
+          {space.name}
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M11.5 1.5l3 3L5 14H2v-3z" />
+          </svg>
+        </h3>
+      )}
       <div className="cept-settings-detail-grid">
         <div className="cept-settings-detail-row">
           <span className="cept-settings-detail-label">Data source</span>
