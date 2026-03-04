@@ -90,7 +90,7 @@ export function App({ demoMode }: AppProps) {
     persisted?.selectedPageId ?? (demoMode ? 'welcome' : undefined),
   );
   const [pageContents, setPageContents] = useState<Record<string, string>>(
-    persisted?.pageContents ?? (demoMode ? { welcome: DEMO_CONTENT, 'getting-started': '', features: '', notes: '' } : {}),
+    persisted?.pageContents ?? (demoMode ? { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' } : {}),
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -327,7 +327,7 @@ export function App({ demoMode }: AppProps) {
 
   const handleResetDemo = useCallback(() => {
     setPages(DEMO_PAGES);
-    setPageContents({ welcome: DEMO_CONTENT, 'getting-started': '', features: '', notes: '' });
+    setPageContents({ welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' });
     setSelectedPageId('welcome');
     setFavorites([]);
     setRecentPages([]);
@@ -498,18 +498,120 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 
 const DEMO_CONTENT = `
 <h1>Welcome to Cept</h1>
-<p>This is a demo workspace running in your browser. All data is stored in IndexedDB.</p>
+<p>This is a demo workspace running in your browser. All data is stored locally.</p>
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
 <h2>Getting Started</h2>
-<p>Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates — all stored locally in your browser.</p>
+<p>Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates \u2014 all stored locally in your browser.</p>
 <h3>Try These Features</h3>
 <ul>
-  <li>Type text to create paragraphs</li>
-  <li>Use <strong>bold</strong>, <em>italic</em>, and <s>strikethrough</s></li>
-  <li>Create nested lists by pressing Tab</li>
+  <li><p>Type text to create paragraphs</p></li>
+  <li><p>Use <strong>bold</strong>, <em>italic</em>, and <s>strikethrough</s></p></li>
+  <li><p>Create nested lists by pressing Tab</p></li>
 </ul>
 <ol>
-  <li>Numbered lists work too</li>
-  <li>Just like you'd expect</li>
+  <li><p>Numbered lists work too</p></li>
+  <li><p>Just like you\u2019d expect</p></li>
 </ol>
 <p>Start typing below to try the editor...</p>
+`;
+
+const DEMO_FEATURES_CONTENT = `
+<h1>Block Types</h1>
+<p>Cept supports a wide variety of content blocks. Type <code>/</code> in the editor to insert any of these.</p>
+
+<h2>Text Blocks</h2>
+<h3>Headings</h3>
+<p>Three levels of headings are available: H1, H2, and H3.</p>
+
+<h3>Code Block</h3>
+<pre><code class="language-javascript">function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+console.log(greet('world'));</code></pre>
+
+<h3>Blockquote</h3>
+<blockquote><p>The best way to predict the future is to invent it. \u2014 Alan Kay</p></blockquote>
+
+<h3>Divider</h3>
+<p>A horizontal rule separates sections:</p>
+<hr>
+
+<h2>Lists</h2>
+<h3>Bullet List</h3>
+<ul>
+  <li><p>First item</p></li>
+  <li><p>Second item</p></li>
+  <li><p>Third item</p></li>
+</ul>
+
+<h3>Numbered List</h3>
+<ol>
+  <li><p>Step one</p></li>
+  <li><p>Step two</p></li>
+  <li><p>Step three</p></li>
+</ol>
+
+<h3>Task List</h3>
+<ul data-type="taskList">
+  <li data-type="taskItem" data-checked="true"><p>Completed task</p></li>
+  <li data-type="taskItem" data-checked="false"><p>Pending task</p></li>
+  <li data-type="taskItem" data-checked="false"><p>Another pending task</p></li>
+</ul>
+
+<h2>Blocks</h2>
+<h3>Callout</h3>
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>This is an informational callout. Use it to highlight important notes.</p></div>
+
+<h3>Toggle</h3>
+<details data-type="toggle"><summary>Click to expand</summary><div><p>This content is hidden by default and revealed when you click the toggle.</p></div></details>
+
+<h2>Media</h2>
+<h3>Image</h3>
+<p>Use <code>/image</code> to insert an image from a URL.</p>
+
+<h3>Embed</h3>
+<p>Use <code>/embed</code> to embed YouTube, Vimeo, and other media.</p>
+
+<h3>Bookmark</h3>
+<p>Use <code>/bookmark</code> to create a rich link preview card.</p>
+
+<h2>Layout</h2>
+<h3>Columns</h3>
+<div data-type="columns" data-columns="2"><div data-type="column"><p><strong>Left column</strong></p><p>Content in the left side of a two-column layout.</p></div><div data-type="column"><p><strong>Right column</strong></p><p>Content in the right side of a two-column layout.</p></div></div>
+
+<h2>Advanced</h2>
+<h3>Math Equation</h3>
+<div data-type="math-block" data-math="E = mc^2"></div>
+<p>Inline math is also supported: The formula <span data-type="inline-math" data-math="a^2 + b^2 = c^2"></span> is the Pythagorean theorem.</p>
+
+<h3>Mermaid Diagram</h3>
+<div data-type="mermaid" data-mermaid="graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[OK]\n  B -->|No| D[Cancel]"></div>
+`;
+
+const DEMO_GETTING_STARTED_CONTENT = `
+<h1>Getting Started</h1>
+<p>Welcome to Cept! Here\u2019s how to get started with your workspace.</p>
+
+<h2>Creating Pages</h2>
+<p>Click the <strong>+</strong> button in the sidebar to create a new page. Pages can be nested inside other pages to create a hierarchy.</p>
+
+<h2>Using the Editor</h2>
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> to open the slash command menu. You can search for any block type by name.</p></div>
+
+<h2>Keyboard Shortcuts</h2>
+<ul>
+  <li><p><strong>Cmd/Ctrl + K</strong> \u2014 Open command palette</p></li>
+  <li><p><strong>Cmd/Ctrl + B</strong> \u2014 Bold text</p></li>
+  <li><p><strong>Cmd/Ctrl + I</strong> \u2014 Italic text</p></li>
+  <li><p><strong>Cmd/Ctrl + U</strong> \u2014 Underline text</p></li>
+  <li><p><strong>Cmd/Ctrl + Shift + S</strong> \u2014 Strikethrough</p></li>
+</ul>
+
+<h2>Organizing Your Workspace</h2>
+<ol>
+  <li><p><strong>Favorites</strong> \u2014 Right-click a page and add it to favorites for quick access</p></li>
+  <li><p><strong>Nested pages</strong> \u2014 Click the + on a page to create a sub-page</p></li>
+  <li><p><strong>Trash</strong> \u2014 Deleted pages go to trash and can be restored</p></li>
+</ol>
 `;
