@@ -229,7 +229,7 @@
 - [ ] P7.7: Plugin system architecture — extension API, lifecycle hooks, sandboxed execution
 - [ ] P7.7a: Community plugin registry — discovery, installation, versioning, and trust/verification
 - [ ] P7.7b: Community editor extensions — custom TipTap nodes, slash commands, and block types via plugins
-- [ ] P7.7c: Plugin SDK and developer documentation — templates, examples, testing harness
+- [ ] P7.7c: Plugin SDK and developer documentation — templates, examples, testing harness. Use the Mermaid extension (`packages/ui/src/components/editor/extensions/mermaid.ts`) as the canonical reference implementation: it demonstrates a custom TipTap node with attributes, renderHTML, slash command registration, and E2E test coverage
 - [ ] P7.8: API documentation
 - [ ] P7.9: Sentry integration — error tracking, performance monitoring, session replay (opt-in)
 - [ ] P7.10: Analytics — privacy-respecting usage analytics (opt-in, no PII)
