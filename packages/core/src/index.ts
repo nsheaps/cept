@@ -162,3 +162,11 @@ export type {
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
+export { CollaborationProvider } from './crdt/index.js';
+export type {
+  CollaborationConfig,
+  CollaborationState,
+  CollaborationEvent,
+  CollaborationListener,
+  DocumentState,
+} from './crdt/index.js';
