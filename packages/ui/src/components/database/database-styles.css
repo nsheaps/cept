@@ -741,3 +741,95 @@
   border-color: #9ca3af;
   color: #6b7280;
 }
+
+/* List View */
+.cept-list-view {
+  padding: 0.5rem 0;
+}
+
+.cept-list-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.cept-list-item {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cept-list-item.is-expanded {
+  background: #fafafa;
+}
+
+.cept-list-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.cept-list-item-header:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.cept-list-item-toggle {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.625rem;
+  color: #9ca3af;
+  padding: 0.125rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.cept-list-item-title {
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+  flex: 1;
+}
+
+.cept-list-item-title:hover {
+  color: #111827;
+}
+
+.cept-list-item-details {
+  padding: 0.25rem 0.75rem 0.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cept-list-item-property {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.cept-list-item-property-name {
+  color: #9ca3af;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.cept-list-item-property-value {
+  color: #6b7280;
+}
+
+.cept-list-add {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.cept-list-add:hover {
+  background: #f9fafb;
+  color: #6b7280;
+}
