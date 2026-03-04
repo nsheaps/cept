@@ -209,3 +209,15 @@ export type {
   ZipEntry,
   ZipReader,
 } from './importers/index.js';
+export {
+  extractTags,
+  convertObsidianLinks,
+  extractObsidianTitle,
+  importObsidianVault,
+} from './importers/index.js';
+export type {
+  ObsidianImportOptions,
+  ObsidianImportResult,
+  VaultFile,
+  VaultReader,
+} from './importers/index.js';
