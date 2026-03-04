@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs/promises';
+import * as nodeFs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { LocalFsBackend } from './local-fs.js';
@@ -16,6 +17,7 @@ describe('GitBackend', () => {
     backend = new GitBackend({
       underlying,
       dir: testDir,
+      fs: nodeFs,
       authorName: 'Test User',
       authorEmail: 'test@example.com',
     });
@@ -253,6 +255,49 @@ describe('GitBackend', () => {
 
       const result = await backend.diff(sha1, sha2);
       expect(result.files.some((f) => f.path === 'file.txt' && f.type === 'delete')).toBe(true);
+    });
+
+    it('should produce non-empty hunks for added files', async () => {
+      await backend.writeFile('first.txt', new TextEncoder().encode('first'));
+      const sha1 = await backend.commit('first', ['first.txt']);
+
+      await backend.writeFile('new.txt', new TextEncoder().encode('line1\nline2\n'));
+      const sha2 = await backend.commit('add new', ['new.txt']);
+
+      const result = await backend.diff(sha1, sha2);
+      const added = result.files.find((f) => f.path === 'new.txt');
+      expect(added).toBeDefined();
+      expect(added!.hunks.length).toBeGreaterThan(0);
+      expect(added!.hunks[0]).toContain('+line1');
+    });
+
+    it('should produce hunks with context for modified files', async () => {
+      await backend.writeFile('file.txt', new TextEncoder().encode('old content'));
+      const sha1 = await backend.commit('v1', ['file.txt']);
+
+      await backend.writeFile('file.txt', new TextEncoder().encode('new content'));
+      const sha2 = await backend.commit('v2', ['file.txt']);
+
+      const result = await backend.diff(sha1, sha2);
+      const modified = result.files.find((f) => f.path === 'file.txt');
+      expect(modified).toBeDefined();
+      expect(modified!.hunks.length).toBeGreaterThan(0);
+      expect(modified!.hunks[0]).toContain('-old content');
+      expect(modified!.hunks[0]).toContain('+new content');
+    });
+
+    it('should produce hunks for deleted files', async () => {
+      await backend.writeFile('gone.txt', new TextEncoder().encode('deleted content'));
+      const sha1 = await backend.commit('add', ['gone.txt']);
+
+      await backend.deleteFile('gone.txt');
+      const sha2 = await backend.commit('remove');
+
+      const result = await backend.diff(sha1, sha2);
+      const deleted = result.files.find((f) => f.path === 'gone.txt');
+      expect(deleted).toBeDefined();
+      expect(deleted!.hunks.length).toBeGreaterThan(0);
+      expect(deleted!.hunks[0]).toContain('-deleted content');
     });
   });
 
