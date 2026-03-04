@@ -84,13 +84,27 @@ export function PageTreeItem({
         </span>
         <span className="cept-sidebar-title">{node.title || 'Untitled'}</span>
         {hovered && (
-          <span
-            className="cept-sidebar-add"
-            onClick={handleAdd}
-            data-testid={`page-tree-add-${node.id}`}
-          >
-            +
-          </span>
+          <>
+            <span
+              className="cept-sidebar-add"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                onContextMenu?.(node.id, node.title, { x: rect.left, y: rect.bottom });
+              }}
+              title="More actions"
+              data-testid={`page-tree-menu-${node.id}`}
+            >
+              ···
+            </span>
+            <span
+              className="cept-sidebar-add"
+              onClick={handleAdd}
+              data-testid={`page-tree-add-${node.id}`}
+            >
+              +
+            </span>
+          </>
         )}
       </button>
       {isExpanded && hasChildren && (

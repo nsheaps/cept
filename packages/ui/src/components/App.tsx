@@ -78,7 +78,8 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  * Renders the main Cept workspace UI.
  */
 export function App({ demoMode }: AppProps) {
-  const persisted = useMemo(() => (demoMode ? null : loadPersistedState()), [demoMode]);
+  // Always try to load persisted state — demo mode just provides fallback data
+  const persisted = useMemo(() => loadPersistedState(), []);
 
   const [pages, setPages] = useState<PageTreeNode[]>(
     persisted?.pages ?? (demoMode ? DEMO_PAGES : []),
@@ -95,7 +96,7 @@ export function App({ demoMode }: AppProps) {
   const [hasStarted, setHasStarted] = useState(!!demoMode || !!persisted);
 
   // Trash state
-  const [trash, setTrash] = useState<SidebarPageRef[]>([]);
+  const [trash, setTrash] = useState<SidebarPageRef[]>(persisted ? [] : []);
 
   // Favorites state
   const [favorites, setFavorites] = useState<SidebarPageRef[]>(persisted?.favorites ?? []);
@@ -120,12 +121,11 @@ export function App({ demoMode }: AppProps) {
   // Persist state to localStorage (debounced)
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
-    if (demoMode) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
       savePersistedState({ pages, pageContents, favorites, recentPages, selectedPageId });
     }, 300);
-  }, [demoMode, pages, pageContents, favorites, recentPages, selectedPageId]);
+  }, [pages, pageContents, favorites, recentPages, selectedPageId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -145,6 +145,10 @@ export function App({ demoMode }: AppProps) {
     const node = findNode(pages, id);
     if (node) {
       addToRecent(id, node.title, node.icon);
+    }
+    // Close sidebar on narrow screens after selecting a page
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
     }
   }, [pages, addToRecent]);
 
@@ -319,6 +323,16 @@ export function App({ demoMode }: AppProps) {
     setSelectedPageId(firstPage.id);
   }, []);
 
+  const handleResetDemo = useCallback(() => {
+    setPages(DEMO_PAGES);
+    setPageContents({ welcome: DEMO_CONTENT, 'getting-started': '', features: '', notes: '' });
+    setSelectedPageId('welcome');
+    setFavorites([]);
+    setRecentPages([]);
+    setTrash([]);
+    setHasStarted(true);
+  }, []);
+
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
@@ -332,9 +346,10 @@ export function App({ demoMode }: AppProps) {
     <div className="h-dvh flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-4">
         <button
-          className="md:hidden p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={() => setSidebarOpen((p) => !p)}
           data-testid="sidebar-toggle"
+          title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 5h14M3 10h14M3 15h14" />
@@ -343,6 +358,16 @@ export function App({ demoMode }: AppProps) {
         <h1 className="text-xl font-semibold">Cept</h1>
         {breadcrumbItems.length > 0 && (
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
+        )}
+        <div className="ml-auto" />
+        {demoMode && (
+          <button
+            className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            onClick={handleResetDemo}
+            data-testid="reset-demo"
+          >
+            Reset Demo
+          </button>
         )}
       </header>
       <main className="flex flex-1 min-h-0">
@@ -385,7 +410,7 @@ export function App({ demoMode }: AppProps) {
                 >
                   <strong>Start writing</strong>
                   <span className="block text-sm text-gray-500">
-                    Browser storage �� zero setup, works immediately
+                    Browser storage — zero setup, works immediately
                   </span>
                 </button>
                 <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors opacity-50 cursor-not-allowed" disabled>
