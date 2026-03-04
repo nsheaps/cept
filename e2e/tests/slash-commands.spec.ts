@@ -3,12 +3,19 @@ import { captureScreenshot } from './screenshot-utils.js';
 
 /**
  * Helper: Navigate to demo mode and wait for editor.
+ * Demo mode is controlled by the showDemoContent setting in localStorage.
  */
 async function openDemoEditor(page: Page) {
-  // Clear localStorage so we get fresh demo content
-  await page.goto('/?demo');
-  await page.evaluate(() => localStorage.clear());
-  await page.goto('/?demo');
+  // Navigate first to get access to localStorage
+  await page.goto('/');
+  await page.evaluate(() => {
+    // Clear persisted workspace so demo content loads fresh
+    localStorage.removeItem('cept-workspace');
+    // Enable demo content via settings
+    localStorage.setItem('cept-settings', JSON.stringify({ autoSave: true, showDemoContent: true }));
+  });
+  // Reload so the app picks up the settings
+  await page.goto('/');
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
