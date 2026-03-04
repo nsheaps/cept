@@ -114,7 +114,7 @@
 ## Phase 7: Cross-Platform
 
 - [x] T7.1: Electrobun desktop shell (macOS) *(2026-03-04)*
-- [ ] T7.2: Electron desktop shell (Windows/Linux)
+- [x] T7.2: Electron desktop shell (Windows/Linux) *(2026-03-04)*
 - [ ] T7.3: PWA service worker + manifest
 - [ ] T7.4: Capacitor mobile project setup
 - [ ] T7.5: Mobile-specific UI adaptations (responsive, touch)
