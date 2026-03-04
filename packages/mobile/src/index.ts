@@ -15,3 +15,13 @@ export type {
   StatusBarStyle,
   SafeAreaInsets,
 } from './mobile-bridge.js';
+
+export { MobileAuthAdapter, generateState, parseCallbackUrl } from './mobile-auth.js';
+export type {
+  DeepLinkHandler,
+  MobileAuthConfig,
+  CodeExchangeFn,
+  MobileAuthState,
+  MobileAuthEvent,
+  MobileAuthListener,
+} from './mobile-auth.js';
