@@ -91,4 +91,27 @@ describe('PageHeader', () => {
     fireEvent.click(screen.getByTestId('page-menu-rename'));
     expect(screen.getByTestId('page-title-input')).toBeDefined();
   });
+
+  it('renders cover banner when cover is provided', () => {
+    render(<PageHeader {...defaultProps} cover="https://example.com/banner.jpg" />);
+    const coverEl = screen.getByTestId('page-cover');
+    expect(coverEl).toBeDefined();
+    const img = coverEl.querySelector('img');
+    expect(img).toBeTruthy();
+    expect(img?.getAttribute('src')).toBe('https://example.com/banner.jpg');
+  });
+
+  it('does not render cover banner when cover is not provided', () => {
+    render(<PageHeader {...defaultProps} />);
+    expect(screen.queryByTestId('page-cover')).toBeNull();
+  });
+
+  it('renders icon emoji in header', () => {
+    render(<PageHeader {...defaultProps} icon="\uD83D\uDE80" />);
+    const header = screen.getByTestId('page-header');
+    // The rocket emoji is rendered in the icon span
+    const iconSpan = header.querySelector('.cept-page-header-icon');
+    expect(iconSpan).toBeTruthy();
+    expect(iconSpan?.textContent?.length).toBeGreaterThan(0);
+  });
 });

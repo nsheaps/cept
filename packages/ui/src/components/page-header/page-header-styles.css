@@ -3,6 +3,20 @@
   margin-bottom: 1rem;
 }
 
+.cept-page-header-cover {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cept-page-header-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cept-page-header-title-row {
   display: flex;
   align-items: center;

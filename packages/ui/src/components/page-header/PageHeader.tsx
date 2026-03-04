@@ -4,6 +4,7 @@ export interface PageHeaderProps {
   pageId: string;
   title: string;
   icon?: string;
+  cover?: string;
   isFavorite?: boolean;
   onRename: (id: string, newTitle: string) => void;
   onDuplicate: (id: string) => void;
@@ -15,6 +16,7 @@ export function PageHeader({
   pageId,
   title,
   icon,
+  cover,
   isFavorite,
   onRename,
   onDuplicate,
@@ -73,6 +75,11 @@ export function PageHeader({
 
   return (
     <div className="cept-page-header" data-testid="page-header">
+      {cover && (
+        <div className="cept-page-header-cover" data-testid="page-cover">
+          <img src={cover} alt="" className="cept-page-header-cover-img" />
+        </div>
+      )}
       <div className="cept-page-header-title-row">
         {icon && <span className="cept-page-header-icon">{icon}</span>}
         {isEditing ? (
