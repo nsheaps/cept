@@ -6,7 +6,8 @@
   "description": "A fully-featured Notion clone backed by Git. Client-only. Offline-first. Collaborative.",
   "license": "MIT",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "docs"
   ],
   "scripts": {
     "dev": "nx run-many -t dev",

@@ -129,7 +129,7 @@
 
 ## Phase 9: Documentation & Polish
 
-- [ ] T9.1: Documentation site setup (Starlight/VitePress)
+- [x] T9.1: Documentation site setup (Starlight/VitePress) *(2026-03-04)*
 - [ ] T9.2: Write all getting-started guides
 - [ ] T9.3: Write all reference docs
 - [ ] T9.4: Write migration guides

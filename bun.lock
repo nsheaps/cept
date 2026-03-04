@@ -64,9 +64,34 @@
         "vitest": "4.0.18",
       },
     },
+    "docs": {
+      "name": "@cept/docs",
+      "version": "0.1.0",
+    },
     "packages/core": {
       "name": "@cept/core",
       "version": "0.0.0",
+    },
+    "packages/desktop": {
+      "name": "@cept/desktop",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cept/core": "workspace:*",
+      },
+    },
+    "packages/mobile": {
+      "name": "@cept/mobile",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cept/core": "workspace:*",
+      },
+    },
+    "packages/signaling-server": {
+      "name": "@cept/signaling",
+      "version": "0.0.0",
+      "dependencies": {
+        "@cept/core": "workspace:*",
+      },
     },
     "packages/ui": {
       "name": "@cept/ui",
@@ -163,6 +188,14 @@
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
 
     "@cept/core": ["@cept/core@workspace:packages/core"],
+
+    "@cept/desktop": ["@cept/desktop@workspace:packages/desktop"],
+
+    "@cept/docs": ["@cept/docs@workspace:docs"],
+
+    "@cept/mobile": ["@cept/mobile@workspace:packages/mobile"],
+
+    "@cept/signaling": ["@cept/signaling@workspace:packages/signaling-server"],
 
     "@cept/ui": ["@cept/ui@workspace:packages/ui"],
 
