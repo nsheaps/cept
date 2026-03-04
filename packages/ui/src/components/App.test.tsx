@@ -137,12 +137,15 @@ describe('App', () => {
     localStorage.clear();
   });
 
-  it('renders onboarding screen when showDemoContent is false and no persisted data', async () => {
+  it('renders landing page when showDemoContent is false and no persisted data', async () => {
     renderApp();
     await waitFor(() => {
-      expect(screen.getByText('Get Started')).toBeDefined();
+      expect(screen.getByTestId('landing-page')).toBeDefined();
     });
     expect(screen.getByTestId('start-writing')).toBeDefined();
+    expect(screen.getByTestId('try-demo')).toBeDefined();
+    expect(screen.getByTestId('feature-grid')).toBeDefined();
+    expect(screen.getByTestId('demo-info')).toBeDefined();
   });
 
   it('renders demo content when showDemoContent setting is true', async () => {
@@ -150,9 +153,9 @@ describe('App', () => {
     seedDemoMode(backend);
     renderApp(backend);
     await waitFor(() => {
-      expect(screen.queryByText('Get Started')).toBeNull();
+      expect(screen.queryByTestId('landing-page')).toBeNull();
     });
-    expect(screen.getByText('Cept')).toBeDefined();
+    expect(screen.getAllByText('Cept').length).toBeGreaterThanOrEqual(1);
   });
 
   it('"Start writing" creates initial workspace', async () => {
@@ -161,7 +164,7 @@ describe('App', () => {
       expect(screen.getByTestId('start-writing')).toBeDefined();
     });
     fireEvent.click(screen.getByTestId('start-writing'));
-    expect(screen.queryByText('Get Started')).toBeNull();
+    expect(screen.queryByTestId('landing-page')).toBeNull();
   });
 
   it('creates new page via sidebar', async () => {
@@ -314,15 +317,15 @@ describe('App', () => {
     expect(screen.getByTestId('command-palette')).toBeDefined();
   });
 
-  it('unimplemented buttons are disabled', async () => {
+  it('unimplemented storage options are disabled on landing page', async () => {
     renderApp();
     await waitFor(() => {
-      expect(screen.getByTestId('start-writing')).toBeDefined();
+      expect(screen.getByTestId('landing-page')).toBeDefined();
     });
     const buttons = screen.getAllByRole('button');
-    const openFolder = buttons.find((b) => b.textContent?.includes('Open a folder'));
-    const gitRepo = buttons.find((b) => b.textContent?.includes('Connect a Git repo'));
-    expect((openFolder as HTMLButtonElement)?.disabled).toBe(true);
+    const localFolder = buttons.find((b) => b.textContent?.includes('Local folder'));
+    const gitRepo = buttons.find((b) => b.textContent?.includes('Git repository'));
+    expect((localFolder as HTMLButtonElement)?.disabled).toBe(true);
     expect((gitRepo as HTMLButtonElement)?.disabled).toBe(true);
   });
 
