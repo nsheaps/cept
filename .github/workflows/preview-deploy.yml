@@ -1,0 +1,104 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web app
+        run: |
+          cd packages/web
+          npx vite build
+        env:
+          VITE_BASE_PATH: /cept/pr-${{ github.event.pull_request.number }}/
+          CEPT_DEMO_MODE: "true"
+
+      - name: Deploy to GitHub Pages subdirectory
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          DEPLOY_DIR="pr-${PR_NUMBER}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch gh-pages branch or create it
+          git fetch origin gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          # Clean the PR directory and copy new build
+          rm -rf "${DEPLOY_DIR}"
+          mkdir -p "${DEPLOY_DIR}"
+          cp -r packages/web/dist/* "${DEPLOY_DIR}/"
+
+          # Commit and push
+          git add "${DEPLOY_DIR}"
+          git commit -m "Deploy preview for PR #${PR_NUMBER}" --allow-empty
+          git push origin gh-pages
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://nsheaps.github.io/cept/pr-${prNumber}/`;
+            const body = `## Preview Deployment\n\nThe web app for this PR has been deployed:\n\n**[Open Preview](${previewUrl})**\n\nUse this to verify the app works correctly, especially for dependency updates.`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find(c => c.body.includes('Preview Deployment'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Remove PR preview directory
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          DEPLOY_DIR="pr-${PR_NUMBER}"
+
+          if [ -d "${DEPLOY_DIR}" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            rm -rf "${DEPLOY_DIR}"
+            git add -A
+            git commit -m "Clean up preview for PR #${PR_NUMBER}" --allow-empty
+            git push origin gh-pages
+          fi
