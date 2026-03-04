@@ -70,6 +70,7 @@ export type { Breakpoint, ResponsiveState, BreakpointConfig } from './components
 export { MobileToolbar } from './components/collaboration/MobileToolbar.js';
 export type { MobileToolbarAction, MobileToolbarProps } from './components/collaboration/MobileToolbar.js';
 export { DatabaseProvider, useDatabaseEngine } from './components/storage/DatabaseContext.js';
+export { SearchProvider, useSearchIndex } from './components/storage/SearchContext.js';
 export { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 export type { ErrorBoundaryProps } from './components/shared/ErrorBoundary.js';
 export { LoadingSpinner, EmptyState } from './components/shared/LoadingSpinner.js';

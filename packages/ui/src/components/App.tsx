@@ -25,6 +25,7 @@ import {
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { FolderView } from './editor/FolderView.js';
+import { CeptSearchIndex } from '@cept/core';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -88,6 +89,7 @@ export function App() {
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const searchIndexRef = useRef(new CeptSearchIndex());
 
   // Apply loaded state once backend is ready
   const initializedRef = useRef(false);
@@ -311,36 +313,36 @@ export function App() {
     }, 500);
   }, [selectedPageId, backend]);
 
-  const handleSearch = useCallback(async (query: string): Promise<SearchResult[]> => {
-    const q = query.toLowerCase();
-    if (!q) return [];
+  // Keep search index in sync with page content
+  const indexedRef = useRef(new Set<string>());
+  useEffect(() => {
+    const idx = searchIndexRef.current;
     const allPages = flattenPages(pages);
-    const results: SearchResult[] = [];
+    const currentIds = new Set(allPages.map((p) => p.id));
+
+    // Index pages that have content
     for (const page of allPages) {
-      const content = pageContents[page.id] ?? '';
-      const titleMatch = page.title.toLowerCase().includes(q);
-      const contentText = content.replace(/<[^>]+>/g, '');
-      const contentMatch = contentText.toLowerCase().includes(q);
-      if (titleMatch || contentMatch) {
-        let snippet = '';
-        if (contentMatch) {
-          const idx = contentText.toLowerCase().indexOf(q);
-          const start = Math.max(0, idx - 40);
-          const end = Math.min(contentText.length, idx + q.length + 40);
-          snippet = (start > 0 ? '...' : '') + contentText.slice(start, end) + (end < contentText.length ? '...' : '');
-        }
-        results.push({
-          pageId: page.id,
-          title: page.title,
-          snippet,
-          path: page.title,
-          score: titleMatch ? 2 : 1,
-          matchType: titleMatch ? 'title' : 'content',
-        });
+      const html = pageContents[page.id];
+      if (html !== undefined) {
+        const plainText = html.replace(/<[^>]+>/g, '');
+        void idx.indexPage(page.id, page.title, plainText, page.title);
+        indexedRef.current.add(page.id);
       }
     }
-    return results.sort((a, b) => b.score - a.score);
+
+    // Remove pages that no longer exist
+    for (const id of indexedRef.current) {
+      if (!currentIds.has(id)) {
+        void idx.removePage(id);
+        indexedRef.current.delete(id);
+      }
+    }
   }, [pages, pageContents]);
+
+  const handleSearch = useCallback(async (query: string): Promise<SearchResult[]> => {
+    if (!query.trim()) return [];
+    return searchIndexRef.current.search(query);
+  }, []);
 
   const handleStartWriting = useCallback(() => {
     setHasStarted(true);
