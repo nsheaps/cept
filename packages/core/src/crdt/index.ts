@@ -57,3 +57,13 @@ export type {
   DatabaseSyncListener,
   BroadcastFn,
 } from './database-sync.js';
+
+export { OfflineQueue } from './offline-queue.js';
+export type {
+  ConnectionState,
+  OfflineQueueConfig,
+  OfflineQueueEvent,
+  OfflineQueueEventType,
+  OfflineQueueListener,
+  SendFn,
+} from './offline-queue.js';

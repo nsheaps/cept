@@ -180,3 +180,12 @@ export type {
   DatabaseSyncListener,
   BroadcastFn,
 } from './crdt/index.js';
+export { OfflineQueue } from './crdt/index.js';
+export type {
+  ConnectionState,
+  OfflineQueueConfig,
+  OfflineQueueEvent,
+  OfflineQueueEventType,
+  OfflineQueueListener,
+  SendFn,
+} from './crdt/index.js';
