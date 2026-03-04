@@ -68,7 +68,7 @@
 - [x] T3.2: Current page highlighting + auto-expand in sidebar *(2026-03-04)*
 - [x] T3.3: Breadcrumbs in topbar *(2026-03-04)*
 - [x] T3.4: Page CRUD (create, rename, move, delete, restore) *(2026-03-04)*
-- [ ] T3.5: Favorites and recent sections
+- [x] T3.5: Favorites and recent sections *(2026-03-04)*
 - [ ] T3.6: Trash with restore
 - [ ] T3.7: Command palette (Cmd+K)
 - [ ] T3.8: Full-text search UI

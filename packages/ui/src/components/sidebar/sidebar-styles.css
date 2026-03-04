@@ -53,6 +53,12 @@
   padding: 0 0.5rem;
 }
 
+.cept-sidebar-section--compact {
+  flex: none;
+  padding: 0 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
 .cept-sidebar-section-header {
   display: flex;
   align-items: center;
