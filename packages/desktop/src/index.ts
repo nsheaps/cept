@@ -16,3 +16,6 @@ export type {
   MenuItem,
   NotificationOptions,
 } from './platform-bridge.js';
+
+export { ElectronBridge, IPC_CHANNELS } from './electron-bridge.js';
+export type { ElectronIPC } from './electron-bridge.js';
