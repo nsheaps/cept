@@ -105,7 +105,7 @@
 
 ## Phase 6: Collaboration
 
-- [ ] T6.1: Yjs integration with TipTap (y-prosemirror)
+- [x] T6.1: Yjs integration with TipTap (y-prosemirror) *(2026-03-04)*
 - [ ] T6.2: Signaling server implementation
 - [ ] T6.3: Presence awareness (cursors, avatar stack)
 - [ ] T6.4: Real-time sync of database changes

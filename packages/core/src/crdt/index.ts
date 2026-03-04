@@ -32,3 +32,14 @@ export interface SyncTransport {
   /** Subscribe to user presence changes */
   onUsersChange(callback: (users: AwarenessUser[]) => void): () => void;
 }
+
+export {
+  CollaborationProvider,
+} from './collaboration-provider.js';
+export type {
+  CollaborationConfig,
+  CollaborationState,
+  CollaborationEvent,
+  CollaborationListener,
+  DocumentState,
+} from './collaboration-provider.js';
