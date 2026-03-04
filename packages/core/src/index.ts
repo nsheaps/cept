@@ -150,6 +150,15 @@ export type {
   MergeAttemptResult,
   AutoMergeConfig,
 } from './git/index.js';
+export { SyncEngine } from './git/index.js';
+export type {
+  SyncConfig,
+  SyncState,
+  SyncStatus,
+  SyncEventType,
+  SyncEvent,
+  SyncListener,
+} from './git/index.js';
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';

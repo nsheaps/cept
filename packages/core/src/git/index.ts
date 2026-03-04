@@ -38,3 +38,13 @@ export type {
   MergeAttemptResult,
   AutoMergeConfig,
 } from './merge-engine.js';
+
+export { SyncEngine } from './sync-engine.js';
+export type {
+  SyncConfig,
+  SyncState,
+  SyncStatus,
+  SyncEventType,
+  SyncEvent,
+  SyncListener,
+} from './sync-engine.js';
