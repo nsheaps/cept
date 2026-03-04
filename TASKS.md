@@ -130,9 +130,9 @@
 ## Phase 9: Documentation & Polish
 
 - [x] T9.1: Documentation site setup (Starlight/VitePress) *(2026-03-04)*
-- [ ] T9.2: Write all getting-started guides
-- [ ] T9.3: Write all reference docs
-- [ ] T9.4: Write migration guides
+- [x] T9.2: Write all getting-started guides *(2026-03-04)*
+- [x] T9.3: Write all reference docs *(2026-03-04)*
+- [x] T9.4: Write migration guides *(2026-03-04)*
 - [ ] T9.5: Screenshot integration from Playwright
 - [ ] T9.6: README and CONTRIBUTING.md
 - [ ] T9.7: Polish: animations, loading states, error boundaries, empty states
