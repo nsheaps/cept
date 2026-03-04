@@ -170,3 +170,13 @@ export type {
   CollaborationListener,
   DocumentState,
 } from './crdt/index.js';
+export { DatabaseSyncAdapter, generateChangeId } from './crdt/index.js';
+export type {
+  DatabaseChange,
+  ApplyChangeCallback,
+  DatabaseSyncConfig,
+  DatabaseSyncEvent,
+  DatabaseSyncEventType,
+  DatabaseSyncListener,
+  BroadcastFn,
+} from './crdt/index.js';
