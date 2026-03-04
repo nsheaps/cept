@@ -119,6 +119,9 @@ Final polish and extensibility.
 | Keyboard shortcut customization | Planned | — |
 | Plugin system | Planned | — |
 | Theming (custom colors, fonts) | Planned | — |
+| Sentry integration (error tracking, performance, session replay) | Planned | — |
+| Privacy-respecting analytics (opt-in, no PII) | Planned | — |
+| Feature gates (local + remote feature flags) | Planned | — |
 | Documentation site (Starlight) | Planned | — |
 | API documentation | Planned | — |
 
