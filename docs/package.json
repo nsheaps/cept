@@ -1,0 +1,13 @@
+{
+  "name": "@cept/docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cept documentation site",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Documentation site dev server'",
+    "build": "echo 'Documentation site build'",
+    "lint": "echo 'No lint for docs'",
+    "typecheck": "echo 'No typecheck for docs'"
+  }
+}
