@@ -1,0 +1,149 @@
+/* CeptEditor styles — Notion-like editor appearance */
+
+.cept-editor {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cept-editor-content {
+  outline: none;
+}
+
+.cept-editor-content > * + * {
+  margin-top: 0.75em;
+}
+
+/* Headings */
+.cept-editor .tiptap h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.cept-editor .tiptap h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.cept-editor .tiptap h3 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.25rem;
+  margin-bottom: 0.3rem;
+}
+
+/* Paragraphs */
+.cept-editor .tiptap p {
+  line-height: 1.65;
+  margin-top: 0.15rem;
+  margin-bottom: 0.15rem;
+}
+
+.cept-editor .tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Lists */
+.cept-editor .tiptap ul.cept-bullet-list {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.cept-editor .tiptap ol.cept-ordered-list {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.cept-editor .tiptap li.cept-list-item {
+  line-height: 1.65;
+}
+
+.cept-editor .tiptap li.cept-list-item > p {
+  margin: 0;
+}
+
+/* Nested lists */
+.cept-editor .tiptap ul ul,
+.cept-editor .tiptap ol ol,
+.cept-editor .tiptap ul ol,
+.cept-editor .tiptap ol ul {
+  margin-top: 0.25rem;
+}
+
+/* Task list */
+.cept-editor .tiptap ul.cept-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.cept-editor .tiptap li.cept-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  line-height: 1.65;
+}
+
+.cept-editor .tiptap li.cept-task-item > label {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.cept-editor .tiptap li.cept-task-item > label > input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.cept-editor .tiptap li.cept-task-item > div {
+  flex: 1;
+}
+
+.cept-editor .tiptap li.cept-task-item[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+/* Inline formatting */
+.cept-editor .tiptap strong {
+  font-weight: 700;
+}
+
+.cept-editor .tiptap em {
+  font-style: italic;
+}
+
+.cept-editor .tiptap s {
+  text-decoration: line-through;
+}
+
+.cept-editor .tiptap code {
+  background-color: rgba(135, 131, 120, 0.15);
+  border-radius: 3px;
+  padding: 0.15em 0.35em;
+  font-size: 0.875em;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+}
+
+/* Horizontal rule */
+.cept-editor .tiptap hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+/* Focus styles */
+.cept-editor .tiptap:focus-visible {
+  outline: none;
+}
