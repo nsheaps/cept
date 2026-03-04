@@ -11,7 +11,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['packages/*/src/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'packages/*/src/**/*.{test,spec}.{ts,tsx}',
+      'features/step-definitions/**/*.steps.ts',
+    ],
     exclude: ['node_modules', 'dist', 'e2e'],
     coverage: {
       provider: 'v8',
