@@ -290,3 +290,54 @@
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
+
+/* Mobile sidebar backdrop */
+.cept-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .cept-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .cept-sidebar {
+    background: #1e1e1e;
+    border-right-color: #333;
+  }
+  .cept-sidebar-workspace-name { color: #e5e5e5; }
+  .cept-sidebar-action-btn { color: #a1a1aa; }
+  .cept-sidebar-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-sidebar-section-header { color: #71717a; }
+  .cept-sidebar-section-add { color: #71717a; }
+  .cept-sidebar-section-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+  .cept-sidebar-item { color: #d4d4d8; }
+  .cept-sidebar-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-sidebar-item.is-selected { background-color: rgba(255, 255, 255, 0.1); }
+  .cept-sidebar-toggle { color: #71717a; }
+  .cept-sidebar-toggle:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-sidebar-add { color: #71717a; }
+  .cept-sidebar-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+  .cept-sidebar-empty { color: #71717a; }
+  .cept-sidebar-badge { background: #333; color: #a1a1aa; }
+  .cept-sidebar-trash-item { color: #a1a1aa; }
+  .cept-sidebar-trash-action { color: #71717a; }
+  .cept-sidebar-trash-action:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+  .cept-sidebar-trash-action--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+  .cept-sidebar-empty-trash:hover { background-color: rgba(239, 68, 68, 0.1); }
+  .cept-context-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+  .cept-context-menu-item { color: #d4d4d8; }
+  .cept-context-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-context-menu-item--danger { color: #ef4444; }
+  .cept-context-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+  .cept-context-menu-divider { background: #404040; }
+  .cept-context-menu-rename-input { background: #333; border-color: #525252; color: #e5e5e5; }
+  .cept-context-menu-rename-input:focus { border-color: #3b82f6; }
+}

@@ -347,6 +347,9 @@ export function App({ demoMode }: AppProps) {
       </header>
       <main className="flex flex-1 min-h-0">
         {sidebarOpen && (
+          <div className="cept-sidebar-backdrop" onClick={() => setSidebarOpen(false)} data-testid="sidebar-backdrop" />
+        )}
+        {sidebarOpen && (
           <Sidebar
             pages={pages}
             favorites={favorites}

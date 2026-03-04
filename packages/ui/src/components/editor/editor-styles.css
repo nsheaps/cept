@@ -767,3 +767,45 @@
 .cept-editor .tiptap:focus-visible {
   outline: none;
 }
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .cept-editor .tiptap p.is-editor-empty:first-child::before { color: #52525b; }
+  .cept-editor .tiptap code { background-color: rgba(255, 255, 255, 0.1); }
+  .cept-editor .tiptap hr, .cept-editor .tiptap hr.cept-divider { border-top-color: #404040; }
+  .cept-editor .tiptap blockquote.cept-blockquote { border-left-color: #404040; color: #a1a1aa; }
+  .cept-editor .tiptap pre.cept-code-block { background-color: #1e1e1e; }
+  .cept-editor .tiptap .cept-mermaid { border-color: #404040; }
+  .cept-editor .tiptap .cept-mermaid-source { background-color: #1e1e1e; border-bottom-color: #404040; }
+  .cept-editor .tiptap .cept-mermaid-preview { background: #262626; }
+  .cept-editor .tiptap .cept-math-block { background-color: #1e1e1e; }
+  .cept-editor .tiptap figure.cept-image-block figcaption.cept-image-caption { color: #71717a; }
+  .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link { border-color: #404040; }
+  .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link:hover { background-color: rgba(255, 255, 255, 0.03); }
+  .cept-editor .tiptap .cept-bookmark-description { color: #a1a1aa; }
+  .cept-editor .tiptap .cept-bookmark-url { color: #71717a; }
+  .cept-editor .tiptap li.cept-task-item[data-checked="true"] > div > p { color: #52525b; }
+  .cept-editor .tiptap a.cept-link { color: #60a5fa; }
+  .cept-editor .tiptap a.cept-link:hover { color: #93bbfd; }
+  .cept-editor .tiptap mark { background-color: rgba(255, 212, 0, 0.25); }
+  .cept-slash-menu { background: #262626; border-color: #404040; }
+  .cept-slash-menu-empty { color: #71717a; }
+  .cept-slash-menu-group + .cept-slash-menu-group { border-top-color: #333; }
+  .cept-slash-menu-category { color: #71717a; }
+  .cept-slash-menu-item:hover, .cept-slash-menu-item.is-selected { background-color: #333; }
+  .cept-slash-menu-icon { background: #1e1e1e; border-color: #404040; }
+  .cept-slash-menu-title { color: #e5e5e5; }
+  .cept-slash-menu-description { color: #71717a; }
+  .cept-inline-toolbar { background: #262626; border-color: #404040; }
+  .cept-inline-toolbar-btn { color: #d4d4d8; }
+  .cept-inline-toolbar-btn:hover { background-color: #333; }
+  .cept-inline-toolbar-btn.is-active { background-color: #312e81; color: #a5b4fc; }
+  .cept-inline-toolbar-divider { background-color: #404040; }
+  .cept-inline-toolbar-link-input { background: #333; border-color: #525252; color: #e5e5e5; }
+  .cept-block-actions { background: #262626; border-color: #404040; }
+  .cept-block-action-item { color: #d4d4d8; }
+  .cept-block-action-item:hover { background-color: #333; }
+  .cept-block-action-divider { background-color: #404040; }
+  .cept-editor .drag-handle::after { color: #525252; }
+  .cept-editor .drag-handle:hover::after { color: #71717a; }
+}
