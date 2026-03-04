@@ -23,6 +23,7 @@ import {
   writePageContent,
   deletePageContent,
 } from './storage/StorageContext.js';
+import { LandingPage } from './landing/LandingPage.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -584,36 +585,11 @@ export function App() {
               </div>
             )
           ) : showOnboarding ? (
-            <div className="max-w-lg mx-auto mt-12">
-              <h2 className="text-2xl font-bold mb-4">Get Started</h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Choose how to store your space:
-              </p>
-              <div className="mt-4 space-y-3">
-                <button
-                  onClick={handleStartWriting}
-                  className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors"
-                  data-testid="start-writing"
-                >
-                  <strong>Start writing</strong>
-                  <span className="block text-sm text-gray-500">
-                    Browser storage — zero setup, works immediately
-                  </span>
-                </button>
-                <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors opacity-50 cursor-not-allowed" disabled>
-                  <strong>Open a folder</strong>
-                  <span className="block text-sm text-gray-500">
-                    Local filesystem ��� coming soon
-                  </span>
-                </button>
-                <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors opacity-50 cursor-not-allowed" disabled>
-                  <strong>Connect a Git repo</strong>
-                  <span className="block text-sm text-gray-500">
-                    Version history, collaboration — coming soon
-                  </span>
-                </button>
-              </div>
-            </div>
+            <LandingPage
+              onStartWriting={handleStartWriting}
+              onTryDemo={handleResetDemo}
+              onOpenDocs={handleOpenDocs}
+            />
           ) : selectedPageId && selectedNode ? (
             <>
               <PageHeader

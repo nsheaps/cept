@@ -167,11 +167,15 @@ Cept is a fully-featured Notion alternative that runs entirely on the client. It
 
 Cept uses a StorageBackend abstraction that supports three modes:
 
-1. **Browser** (IndexedDB) — Zero setup. Open the app and start writing.
-2. **Local folder** — Store your workspace as plain Markdown files on your computer.
-3. **Git repository** — Full versioning, sync, and collaboration via any Git host.
+1. **Browser** (IndexedDB) — Zero setup. Open the app and start writing. Each page is stored as an individual file in a virtual filesystem inside IndexedDB.
+2. **Local folder** — Store your workspace as plain Markdown files on your computer (coming soon).
+3. **Git repository** — Full versioning, sync, and collaboration via any Git host (coming soon).
 
 The full editing and database experience works identically on any backend. Git adds collaboration, history, and sync — but it's never required.
+
+## Try the Demo
+
+When you visit Cept for the first time, you can click **Try the demo** on the landing page. This creates a pre-populated workspace with sample pages showing off all block types and features. The demo runs entirely in your browser — no data leaves your device. You can edit the demo pages freely, and reset them anytime from Settings.
 
 ## Architecture
 
@@ -189,13 +193,20 @@ Get up and running with Cept in under a minute.
 
 ## Web (Fastest)
 
-1. Visit the Cept web app at your hosted URL (or the GitHub Pages demo)
-2. Click **Start writing** — you'll be dropped into a new space using browser storage
-3. Start creating pages with the block editor
+1. Visit the Cept web app at your hosted URL (or the GitHub Pages deployment)
+2. Click **Start writing** to create a new workspace in your browser
+3. Or click **Try the demo** to explore a pre-populated workspace with sample content
 
-No account required. Everything is stored locally in your browser.
+No account required. Everything is stored locally in your browser using IndexedDB.
 
-To try the demo without affecting your data, add \`?demo\` to the URL.
+## The Demo Space
+
+The demo creates a workspace pre-loaded with sample pages that showcase all of Cept's features — headings, lists, callouts, code blocks, toggles, columns, math, diagrams, and more. You can:
+
+- **Edit freely** — All changes happen in your browser and are never sent to a server
+- **Delete or add pages** — The demo is a fully functional workspace
+- **Reset anytime** — Go to Settings and click "Recreate Demo Space" to start fresh
+- **Clear everything** — Use Settings > Data > "Clear all data" to wipe your browser storage entirely
 
 ## Creating Your First Page
 
