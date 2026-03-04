@@ -39,7 +39,7 @@
 
 ## Phase 1: Core Engine
 
-- [ ] T1.1: Implement `StorageBackend` interface + `BrowserFsBackend` (lightning-fs / IndexedDB) + `LocalFsBackend` (Node fs)
+- [x] T1.1: Implement `StorageBackend` interface + `BrowserFsBackend` (lightning-fs / IndexedDB) + `LocalFsBackend` (Node fs) *(2026-03-04)*
 - [ ] T1.2: Implement `GitBackend` extending `StorageBackend` with isomorphic-git
 - [ ] T1.3: Implement Markdown <-> Block tree parser (CommonMark + GFM + cept extensions)
 - [ ] T1.4: Implement YAML front matter parser/serializer
