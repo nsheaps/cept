@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@source "../";
+@source "../../../web/src";
 @import '../components/editor/editor-styles.css';
 @import '../components/sidebar/sidebar-styles.css';
 @import '../components/topbar/topbar-styles.css';
