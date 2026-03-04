@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "bash(mise *)",
+      "bash(bun *)",
+      "bash(bunx *)",
+      "bash(npx *)",
+      "bash(nx *)",
+      "bash(git *)",
+      "bash(node *)",
+      "bash(cat *)",
+      "bash(ls *)",
+      "bash(find *)",
+      "bash(grep *)",
+      "bash(head *)",
+      "bash(tail *)",
+      "bash(wc *)",
+      "bash(sort *)",
+      "bash(mkdir *)",
+      "bash(cp *)",
+      "bash(mv *)",
+      "bash(rm *)",
+      "bash(chmod *)",
+      "bash(sed *)",
+      "bash(awk *)",
+      "bash(curl *)",
+      "bash(which *)",
+      "bash(echo *)",
+      "bash(printf *)",
+      "bash(test *)",
+      "bash(diff *)",
+      "bash(patch *)",
+      "bash(xargs *)",
+      "bash(tee *)",
+      "bash(playwright *)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "FORCE_COLOR": "1",
+    "NODE_ENV": "development",
+    "CLAUDE_CODE_PROJECT": "cept"
+  }
+}
