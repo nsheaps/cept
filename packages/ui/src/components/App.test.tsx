@@ -132,4 +132,64 @@ describe('App', () => {
     expect((openFolder as HTMLButtonElement)?.disabled).toBe(true);
     expect((gitRepo as HTMLButtonElement)?.disabled).toBe(true);
   });
+
+  it('shows reset demo button in demo mode', () => {
+    render(<App demoMode />);
+    expect(screen.getByTestId('reset-demo')).toBeDefined();
+  });
+
+  it('does not show reset demo button outside demo mode', () => {
+    render(<App />);
+    expect(screen.queryByTestId('reset-demo')).toBeNull();
+  });
+
+  it('persists state in demo mode too', () => {
+    vi.useFakeTimers();
+    render(<App demoMode />);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+
+    const stored = localStorage.getItem('cept-workspace');
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.pages).toBeDefined();
+    expect(parsed.pages.length).toBeGreaterThan(0);
+  });
+
+  it('reset demo restores initial demo content', () => {
+    vi.useFakeTimers();
+    render(<App demoMode />);
+
+    // Modify state by adding a page via sidebar
+    fireEvent.click(screen.getByTestId('sidebar-add-page'));
+
+    // Reset
+    fireEvent.click(screen.getByTestId('reset-demo'));
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    vi.useRealTimers();
+
+    // Should have demo pages restored
+    expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('restores persisted state even in demo mode', () => {
+    const state = {
+      pages: [{ id: 'my-page', title: 'My Saved Page', children: [] }],
+      pageContents: { 'my-page': '<p>My content</p>' },
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'my-page',
+    };
+    localStorage.setItem('cept-workspace', JSON.stringify(state));
+
+    render(<App demoMode />);
+    // Should show persisted page, not demo content
+    expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
+  });
 });

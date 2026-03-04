@@ -27,7 +27,6 @@ jobs:
           npx vite build
         env:
           VITE_BASE_PATH: /cept/pr-${{ github.event.pull_request.number }}/
-          CEPT_DEMO_MODE: "true"
 
       - name: Deploy to GitHub Pages subdirectory
         run: |
