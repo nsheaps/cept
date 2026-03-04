@@ -36,3 +36,5 @@ export interface TemplateEngine {
   /** Delete a template */
   deleteTemplate(templateId: string): Promise<void>;
 }
+
+export { CeptTemplateEngine } from './engine.js';
