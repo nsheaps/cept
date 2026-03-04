@@ -40,3 +40,5 @@ export { DatabaseBoardView } from './components/database/DatabaseBoardView.js';
 export type { BoardColumn, DatabaseBoardViewProps } from './components/database/DatabaseBoardView.js';
 export { DatabaseCalendarView } from './components/database/DatabaseCalendarView.js';
 export type { DatabaseCalendarViewProps } from './components/database/DatabaseCalendarView.js';
+export { DatabaseMapView } from './components/database/DatabaseMapView.js';
+export type { MapMarker, DatabaseMapViewProps } from './components/database/DatabaseMapView.js';
