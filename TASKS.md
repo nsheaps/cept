@@ -165,7 +165,7 @@
 - [x] P2.4f: Playwright CI screenshots — automated screenshots from Playwright in CI (including table usage), stored in docs/screenshots/ *(2026-03-04)*
 - [x] P2.4g: Roadmap updates — add custom emoji support as future item; add "view raw file" as roadmap item in page options *(2026-03-04)*
 - [x] P2.5: Wire database persistence to storage backend — .cept/databases/*.yaml *(2026-03-04)*
-- [ ] P2.6: Wire search index to storage backend — index real file contents
+- [x] P2.6: Wire search index to storage backend — index real file contents *(2026-03-04)*
 - [ ] P2.7: Implement LocalFsBackend using File System Access API / Node fs
 - [x] P2.8: Fix GitBackend to use injected filesystem (not hardcoded node:fs) *(2026-03-04, done in P2.1)*
 - [ ] P2.9: Multi-space support (create, switch, delete)
