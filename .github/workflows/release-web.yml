@@ -7,16 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: release-web
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,19 +35,85 @@ jobs:
         run: bun run build
         env:
           NODE_ENV: production
+          VITE_BASE_PATH: /cept/app/
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: packages/web/dist
+      - name: Deploy to GitHub Pages (app/ subdirectory)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          # Fetch gh-pages branch or create it
+          git fetch origin gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          # Clean the app directory and copy new build
+          rm -rf app
+          mkdir -p app
+          cp -r packages/web/dist/* app/
+
+          # Ensure the site-level 404.html exists at the root
+          # This routes unknown paths to the correct app subdirectory
+          cat > 404.html << 'SITE_404'
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <title>Cept</title>
+              <script>
+                // Site-level 404 router for GitHub Pages.
+                // Routes to the correct app instance based on URL prefix.
+                (function () {
+                  var path = window.location.pathname;
+
+                  // Preview deployments: /cept/pr-N/...
+                  var prMatch = path.match(/^\/cept\/pr-(\d+)(\/.*)?$/);
+                  if (prMatch) {
+                    var prBase = '/cept/pr-' + prMatch[1] + '/';
+                    var prRoute = prMatch[2] || '/';
+                    if (prRoute === '/') return; // already at root
+                    window.location.replace(prBase + '?route=' + encodeURIComponent(prRoute + window.location.search + window.location.hash));
+                    return;
+                  }
+
+                  // Production app: /cept/app/...
+                  var appMatch = path.match(/^\/cept\/app(\/.*)?$/);
+                  if (appMatch) {
+                    var appRoute = appMatch[1] || '/';
+                    if (appRoute === '/') return; // already at root
+                    window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
+                    return;
+                  }
+
+                  // Bare /cept/ or /cept — redirect to app
+                  if (path === '/cept' || path === '/cept/') {
+                    window.location.replace('/cept/app/');
+                    return;
+                  }
+                })();
+              </script>
+            </head>
+            <body>
+              <p>Page not found. <a href="/cept/app/">Go to Cept</a></p>
+            </body>
+          </html>
+          SITE_404
+
+          # Also create/update a root index.html that redirects to /cept/app/
+          cat > index.html << 'ROOT_INDEX'
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh" content="0;url=/cept/app/" />
+              <title>Cept</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="/cept/app/">Cept</a>...</p>
+            </body>
+          </html>
+          ROOT_INDEX
+
+          # Commit and push
+          git add app/ 404.html index.html
+          git commit -m "Deploy production app ($(git describe --tags --always))" --allow-empty
+          git push origin gh-pages

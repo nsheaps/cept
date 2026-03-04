@@ -79,7 +79,7 @@ export { ExportDialog } from './components/import-export/ExportDialog.js';
 export type { ExportDialogProps } from './components/import-export/ExportDialog.js';
 export { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 export type { ErrorBoundaryProps } from './components/shared/ErrorBoundary.js';
-export { parseRoute, buildPath, pushRoute, replaceRoute, restoreRoute } from './router.js';
+export { parseRoute, buildPath, pushRoute, replaceRoute, restoreRoute, setBasePath } from './router.js';
 export type { AppRoute } from './router.js';
 export { LoadingSpinner, EmptyState } from './components/shared/LoadingSpinner.js';
 export type { LoadingSpinnerProps, EmptyStateProps } from './components/shared/LoadingSpinner.js';

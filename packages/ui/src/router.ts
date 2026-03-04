@@ -22,11 +22,25 @@ export interface AppRoute {
 
 const DEFAULT_ROUTE: AppRoute = { space: 'user', spaceId: 'default', pageId: undefined };
 
+/** Override for testing. When set, getBasePath() returns this value. */
+let basePathOverride: string | null = null;
+
+/**
+ * Set a custom base path (for testing). Pass null to reset.
+ */
+export function setBasePath(base: string | null): void {
+  basePathOverride = base;
+}
+
 /**
  * Detect the base path from Vite's import.meta.env.BASE_URL
  * or fall back to '/'.
  */
 function getBasePath(): string {
+  if (basePathOverride !== null) {
+    const b = basePathOverride;
+    return b.endsWith('/') ? b : b + '/';
+  }
   try {
     // Vite injects import.meta.env.BASE_URL at build time
     const meta = import.meta as unknown as { env?: { BASE_URL?: string } };
