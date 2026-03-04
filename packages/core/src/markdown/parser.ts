@@ -455,12 +455,6 @@ export class CeptMarkdownParser {
    * links, code spans, etc.) so that roundtripping through parse→serialize
    * does not lose formatting.
    */
-  /**
-   * Extract text from an mdast node, preserving inline Markdown formatting.
-   * This reconstructs the Markdown source for inline elements (bold, italic,
-   * links, code spans, etc.) so that roundtripping through parse→serialize
-   * does not lose formatting.
-   */
   private extractText(node: Content): string {
     // Handle inline formatting nodes that have both value and special meaning
     switch (node.type) {
