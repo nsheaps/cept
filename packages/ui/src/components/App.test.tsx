@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { App } from './App.js';
 import { StorageProvider } from './storage/StorageContext.js';
-import type { StorageBackend, BackendCapabilities, DirEntry, FileStat, FsEvent, Unsubscribe, WorkspaceConfig } from '@cept/core';
+import { MemoryBackend } from './storage/test-helpers.js';
 
 // Mock d3 for KnowledgeGraph (transitive dep)
 vi.mock('d3', () => {
@@ -28,84 +28,6 @@ vi.mock('d3', () => {
     drag: vi.fn(() => ({ on: vi.fn().mockReturnThis() })),
   };
 });
-
-/** In-memory StorageBackend for testing */
-class MemoryBackend implements StorageBackend {
-  readonly type = 'browser' as const;
-  readonly capabilities: BackendCapabilities = {
-    history: false,
-    collaboration: false,
-    sync: false,
-    branching: false,
-    externalEditing: false,
-    watchForExternalChanges: false,
-  };
-
-  private files = new Map<string, Uint8Array>();
-
-  async readFile(path: string): Promise<Uint8Array | null> {
-    return this.files.get(this.normalize(path)) ?? null;
-  }
-
-  async writeFile(path: string, data: Uint8Array): Promise<void> {
-    this.files.set(this.normalize(path), data);
-  }
-
-  async deleteFile(path: string): Promise<void> {
-    const normalized = this.normalize(path);
-    for (const key of [...this.files.keys()]) {
-      if (key === normalized || key.startsWith(normalized + '/')) {
-        this.files.delete(key);
-      }
-    }
-  }
-
-  async listDirectory(_path: string): Promise<DirEntry[]> {
-    return [];
-  }
-
-  async exists(path: string): Promise<boolean> {
-    return this.files.has(this.normalize(path));
-  }
-
-  watch(_path: string, _callback: (event: FsEvent) => void): Unsubscribe {
-    return () => {};
-  }
-
-  async stat(_path: string): Promise<FileStat | null> {
-    return null;
-  }
-
-  async initialize(_config: WorkspaceConfig): Promise<void> {}
-
-  async close(): Promise<void> {}
-
-  private normalize(path: string): string {
-    return path.startsWith('/') ? path : `/${path}`;
-  }
-
-  /** Helper to seed JSON state for tests */
-  seedFile(path: string, data: unknown): void {
-    this.files.set(this.normalize(path), new TextEncoder().encode(JSON.stringify(data)));
-  }
-
-  /** Helper to seed raw text content (e.g. page HTML) */
-  seedText(path: string, text: string): void {
-    this.files.set(this.normalize(path), new TextEncoder().encode(text));
-  }
-
-  /** Helper to read text from a file */
-  async readText(path: string): Promise<string | null> {
-    const data = await this.readFile(path);
-    if (!data) return null;
-    return new TextDecoder().decode(data);
-  }
-
-  /** Helper to check if a file path exists */
-  hasFile(path: string): boolean {
-    return this.files.has(this.normalize(path));
-  }
-}
 
 function renderApp(backend?: MemoryBackend) {
   const b = backend ?? new MemoryBackend();
