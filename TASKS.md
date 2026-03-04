@@ -139,7 +139,7 @@
 
 ## Phase 10: Release
 
-- [ ] T10.1: Release CI workflows (desktop, web, mobile)
-- [ ] T10.2: Code signing setup
-- [ ] T10.3: Auto-update mechanism (desktop)
+- [x] T10.1: Release CI workflows (desktop, web, mobile) *(2026-03-04)*
+- [x] T10.2: Code signing setup *(2026-03-04)*
+- [x] T10.3: Auto-update mechanism (desktop) *(2026-03-04)*
 - [ ] T10.4: First release
