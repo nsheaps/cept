@@ -33,6 +33,25 @@
   font-size: 0.875rem;
   color: #111827;
   flex: 1;
+  cursor: default;
+}
+
+.cept-sidebar-workspace-name-input {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 1px 4px;
+  outline: none;
+  background: white;
+  min-width: 0;
+}
+
+.cept-sidebar-workspace-name-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 .cept-sidebar-header-menu {
@@ -352,6 +371,7 @@
     border-right-color: #333;
   }
   .cept-sidebar-workspace-name { color: #e5e5e5; }
+  .cept-sidebar-workspace-name-input { background: #333; border-color: #555; color: #e5e5e5; }
   .cept-sidebar-action-btn { color: #a1a1aa; }
   .cept-sidebar-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
   .cept-sidebar-section-header { color: #71717a; }
