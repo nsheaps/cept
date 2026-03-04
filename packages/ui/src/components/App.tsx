@@ -1,27 +1,76 @@
+import { useState, useCallback } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
+import { Sidebar } from './sidebar/Sidebar.js';
+import type { PageTreeNode } from './sidebar/PageTreeItem.js';
 
 interface AppProps {
   demoMode?: boolean;
 }
+
+const DEMO_PAGES: PageTreeNode[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to Cept',
+    icon: '\u{1F44B}',
+    isExpanded: true,
+    children: [
+      { id: 'getting-started', title: 'Getting Started', icon: '\u{1F680}', children: [] },
+      { id: 'features', title: 'Features', icon: '\u2728', children: [] },
+    ],
+  },
+  {
+    id: 'notes',
+    title: 'Notes',
+    icon: '\u{1F4DD}',
+    children: [],
+  },
+];
 
 /**
  * Root application component.
  * Renders the main Cept workspace UI.
  */
 export function App({ demoMode }: AppProps) {
+  const [pages, setPages] = useState<PageTreeNode[]>(demoMode ? DEMO_PAGES : []);
+  const [selectedPageId, setSelectedPageId] = useState<string | undefined>(
+    demoMode ? 'welcome' : undefined,
+  );
+
+  const handlePageToggle = useCallback((id: string) => {
+    setPages((prev) => toggleNode(prev, id));
+  }, []);
+
+  const handlePageAdd = useCallback((parentId?: string) => {
+    const newPage: PageTreeNode = {
+      id: `page-${Date.now()}`,
+      title: 'Untitled',
+      children: [],
+    };
+    if (parentId) {
+      setPages((prev) => addChildNode(prev, parentId, newPage));
+    } else {
+      setPages((prev) => [...prev, newPage]);
+    }
+    setSelectedPageId(newPage.id);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <h1 className="text-xl font-semibold">Cept</h1>
       </header>
-      <main className="flex">
-        <aside className="w-64 border-r border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-sm text-gray-500">Sidebar (coming soon)</p>
-        </aside>
-        <section className="flex-1 p-8">
-          {demoMode ? (
+      <main className="flex" style={{ height: 'calc(100vh - 49px)' }}>
+        <Sidebar
+          pages={pages}
+          selectedPageId={selectedPageId}
+          onPageSelect={setSelectedPageId}
+          onPageToggle={handlePageToggle}
+          onPageAdd={handlePageAdd}
+        />
+        <section className="flex-1 p-8 overflow-y-auto">
+          {demoMode || selectedPageId ? (
             <CeptEditor
-              content={DEMO_CONTENT}
+              content={demoMode ? DEMO_CONTENT : ''}
               placeholder="Type '/' for commands..."
             />
           ) : (
@@ -56,6 +105,30 @@ export function App({ demoMode }: AppProps) {
       </main>
     </div>
   );
+}
+
+function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === id) {
+      return { ...node, isExpanded: !node.isExpanded };
+    }
+    if (node.children.length > 0) {
+      return { ...node, children: toggleNode(node.children, id) };
+    }
+    return node;
+  });
+}
+
+function addChildNode(nodes: PageTreeNode[], parentId: string, child: PageTreeNode): PageTreeNode[] {
+  return nodes.map((node) => {
+    if (node.id === parentId) {
+      return { ...node, children: [...node.children, child], isExpanded: true };
+    }
+    if (node.children.length > 0) {
+      return { ...node, children: addChildNode(node.children, parentId, child) };
+    }
+    return node;
+  });
 }
 
 const DEMO_CONTENT = `

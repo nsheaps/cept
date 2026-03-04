@@ -64,7 +64,7 @@
 
 ## Phase 3: Navigation & Page Management
 
-- [ ] T3.1: Sidebar with page tree (infinite nesting)
+- [x] T3.1: Sidebar with page tree (infinite nesting) *(2026-03-04)*
 - [ ] T3.2: Current page highlighting + auto-expand in sidebar
 - [ ] T3.3: Breadcrumbs in topbar
 - [ ] T3.4: Page CRUD (create, rename, move, delete, restore)
