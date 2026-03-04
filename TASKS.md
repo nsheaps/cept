@@ -154,7 +154,7 @@
 ## Phase 2: Storage & Persistence (Continuation)
 
 - [x] P2.1: Fix known bugs — GitBackend `node:fs` hardcode, diff empty hunks, signaling server entry point *(2026-03-04)*
-- [ ] P2.2: Harden Markdown parser/serializer roundtrip — fuzz-test all block types, fix extractText
+- [x] P2.2: Harden Markdown parser/serializer roundtrip — fuzz-test all block types, fix extractText *(2026-03-04)*
 - [ ] P2.3: Replace App.tsx localStorage with BrowserFsBackend (keystone task)
 - [ ] P2.4: Wire page CRUD to storage backend — readFile/writeFile for Markdown
 - [ ] P2.5: Wire database persistence to storage backend — .cept/databases/*.yaml
