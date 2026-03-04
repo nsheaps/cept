@@ -14,9 +14,6 @@ import { SettingsModal, loadSettings, saveSettings, resetSettings, DEFAULT_SETTI
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl } from './docs/docs-content.js';
 
-interface AppProps {
-  // No props needed — demo mode is controlled by settings
-}
 
 const DEMO_PAGES: PageTreeNode[] = [
   {
@@ -82,7 +79,7 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  * Root application component.
  * Renders the main Cept workspace UI.
  */
-export function App(_props?: AppProps) {
+export function App() {
   // Load persisted state and settings once
   const persisted = useMemo(() => loadPersistedState(), []);
   const initialSettings = useMemo(() => loadSettings(), []);
@@ -398,6 +395,7 @@ export function App(_props?: AppProps) {
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
+    setSpaceName('My Space');
     setHasStarted(false);
   }, []);
 
@@ -499,6 +497,7 @@ export function App(_props?: AppProps) {
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
             spaceName={spaceName}
+            onSpaceRename={(name) => handleSpaceRename('default', name)}
           />
         )}
         {sidebarOpen && activeSpace === 'docs' && (

@@ -29,6 +29,7 @@ export interface SidebarProps {
   onSearch?: () => void;
   readOnly?: boolean;
   spaceName?: string;
+  onSpaceRename?: (name: string) => void;
   onBackToSpace?: () => void;
   onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
   onOpenDocs?: () => void;
@@ -54,11 +55,14 @@ export function Sidebar({
   onSearch,
   readOnly,
   spaceName,
+  onSpaceRename,
   onBackToSpace,
   onOpenSettings,
   onOpenDocs,
 }: SidebarProps) {
   const [trashExpanded, setTrashExpanded] = useState(false);
+  const [editingSpaceName, setEditingSpaceName] = useState(false);
+  const [editSpaceNameValue, setEditSpaceNameValue] = useState(spaceName ?? 'Space');
   const [contextMenu, setContextMenu] = useState<{
     pageId: string;
     pageTitle: string;
@@ -98,7 +102,44 @@ export function Sidebar({
             </svg>
           </button>
         )}
-        <span className="cept-sidebar-workspace-name">{spaceName ?? 'Space'}</span>
+        {editingSpaceName && !readOnly && onSpaceRename ? (
+          <input
+            className="cept-sidebar-workspace-name-input"
+            value={editSpaceNameValue}
+            onChange={(e) => setEditSpaceNameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editSpaceNameValue.trim()) {
+                onSpaceRename(editSpaceNameValue.trim());
+                setEditingSpaceName(false);
+              }
+              if (e.key === 'Escape') {
+                setEditSpaceNameValue(spaceName ?? 'Space');
+                setEditingSpaceName(false);
+              }
+            }}
+            onBlur={() => {
+              if (editSpaceNameValue.trim() && editSpaceNameValue.trim() !== (spaceName ?? 'Space')) {
+                onSpaceRename(editSpaceNameValue.trim());
+              }
+              setEditingSpaceName(false);
+            }}
+            autoFocus
+            data-testid="sidebar-space-name-input"
+          />
+        ) : (
+          <span
+            className="cept-sidebar-workspace-name"
+            onDoubleClick={() => {
+              if (!readOnly && onSpaceRename) {
+                setEditSpaceNameValue(spaceName ?? 'Space');
+                setEditingSpaceName(true);
+              }
+            }}
+            data-testid="sidebar-space-name"
+          >
+            {spaceName ?? 'Space'}
+          </span>
+        )}
         {!readOnly && (
           <div className="cept-sidebar-header-menu">
             <AppMenu onOpenSettings={onOpenSettings} onOpenDocs={onOpenDocs} />
