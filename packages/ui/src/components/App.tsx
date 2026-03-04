@@ -10,9 +10,16 @@ import type { CommandItem } from './command-palette/CommandPalette.js';
 import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
-import { SettingsModal, loadSettings, saveSettings, resetSettings, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
+import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl } from './docs/docs-content.js';
+import {
+  useStorage,
+  useWorkspacePersistence,
+  saveSettingsToBackend,
+  resetSettingsOnBackend,
+  clearAllData,
+} from './storage/StorageContext.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -35,34 +42,6 @@ const DEMO_PAGES: PageTreeNode[] = [
 ];
 
 const MAX_RECENT = 10;
-const STORAGE_KEY = 'cept-workspace';
-
-interface PersistedState {
-  pages: PageTreeNode[];
-  pageContents: Record<string, string>;
-  favorites: SidebarPageRef[];
-  recentPages: SidebarPageRef[];
-  selectedPageId?: string;
-  spaceName?: string;
-}
-
-function loadPersistedState(): PersistedState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
-  } catch {
-    return null;
-  }
-}
-
-function savePersistedState(state: PersistedState): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Storage full or unavailable — silently ignore
-  }
-}
 
 function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
   const result: SidebarPageRef[] = [];
@@ -80,53 +59,56 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  * Renders the main Cept workspace UI.
  */
 export function App() {
-  // Load persisted state and settings once
-  const persisted = useMemo(() => loadPersistedState(), []);
-  const initialSettings = useMemo(() => loadSettings(), []);
+  const backend = useStorage();
+  const { state: persisted, settings: initialSettings, ready, save } = useWorkspacePersistence(backend);
 
   // Demo mode: determined by showDemoContent setting (auto-detected on nsheaps.github.io)
   const shouldShowDemo = initialSettings.showDemoContent;
-  const hasPersisted = !!persisted;
 
-  const [pages, setPages] = useState<PageTreeNode[]>(
-    persisted?.pages ?? (shouldShowDemo ? DEMO_PAGES : []),
-  );
-  const [selectedPageId, setSelectedPageId] = useState<string | undefined>(
-    persisted?.selectedPageId ?? (shouldShowDemo ? 'welcome' : undefined),
-  );
-  const [pageContents, setPageContents] = useState<Record<string, string>>(
-    persisted?.pageContents ?? (shouldShowDemo ? { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' } : {}),
-  );
+  const [pages, setPages] = useState<PageTreeNode[]>([]);
+  const [selectedPageId, setSelectedPageId] = useState<string | undefined>(undefined);
+  const [pageContents, setPageContents] = useState<Record<string, string>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [hasStarted, setHasStarted] = useState(shouldShowDemo || hasPersisted);
-
-  // Space name — persisted, with sensible default
-  const defaultSpaceName = shouldShowDemo && !hasPersisted ? 'Demo Space' : 'My Space';
-  const [spaceName, setSpaceName] = useState<string>(persisted?.spaceName ?? defaultSpaceName);
-
-  // Trash state
-  const [trash, setTrash] = useState<SidebarPageRef[]>(hasPersisted ? [] : []);
-
-  // Favorites state
-  const [favorites, setFavorites] = useState<SidebarPageRef[]>(persisted?.favorites ?? []);
-
-  // Recent pages state
-  const [recentPages, setRecentPages] = useState<SidebarPageRef[]>(persisted?.recentPages ?? []);
-
-  // Settings state
-  const [settings, setSettings] = useState<CeptSettings>(() => initialSettings);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [spaceName, setSpaceName] = useState<string>('My Space');
+  const [trash, setTrash] = useState<SidebarPageRef[]>([]);
+  const [favorites, setFavorites] = useState<SidebarPageRef[]>([]);
+  const [recentPages, setRecentPages] = useState<SidebarPageRef[]>([]);
+  const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
-
-  // Active space: 'user' (default) or 'docs' (built-in read-only)
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
-
-  // Track content save timeout
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Apply loaded state once backend is ready
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (!ready || initializedRef.current) return;
+    initializedRef.current = true;
+
+    setSettings(initialSettings);
+
+    if (persisted) {
+      setPages(persisted.pages);
+      setSelectedPageId(persisted.selectedPageId);
+      setPageContents(persisted.pageContents);
+      setFavorites(persisted.favorites ?? []);
+      setRecentPages(persisted.recentPages ?? []);
+      setSpaceName(persisted.spaceName ?? 'My Space');
+      setHasStarted(true);
+      setTrash([]);
+    } else if (shouldShowDemo) {
+      setPages(DEMO_PAGES);
+      setSelectedPageId('welcome');
+      setPageContents({ welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' });
+      setSpaceName('Demo Space');
+      setHasStarted(true);
+    }
+  }, [ready, persisted, initialSettings, shouldShowDemo]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -139,14 +121,15 @@ export function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Persist state to localStorage (debounced)
+  // Persist state to backend (debounced)
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
+    if (!initializedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
-      savePersistedState({ pages, pageContents, favorites, recentPages, selectedPageId, spaceName });
+      save({ pages, pageContents, favorites, recentPages, selectedPageId, spaceName });
     }, 300);
-  }, [pages, pageContents, favorites, recentPages, selectedPageId, spaceName]);
+  }, [pages, pageContents, favorites, recentPages, selectedPageId, spaceName, save]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -357,8 +340,7 @@ export function App() {
   }, []);
 
   const handleClearAllData = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    resetSettings();
+    void clearAllData(backend);
     setSettings({ ...DEFAULT_SETTINGS });
     setPages([]);
     setPageContents({});
@@ -369,17 +351,17 @@ export function App() {
     setSpaceName('My Space');
     setHasStarted(false);
     setSettingsOpen(false);
-  }, []);
+  }, [backend]);
 
   const handleSettingsChange = useCallback((updated: CeptSettings) => {
     setSettings(updated);
-    saveSettings(updated);
-  }, []);
+    void saveSettingsToBackend(backend, updated);
+  }, [backend]);
 
   const handleResetSettings = useCallback(() => {
-    resetSettings();
+    void resetSettingsOnBackend(backend);
     setSettings({ ...DEFAULT_SETTINGS });
-  }, []);
+  }, [backend]);
 
   const handleSpaceRename = useCallback((id: string, name: string) => {
     if (id === 'default') {
@@ -433,7 +415,7 @@ export function App() {
       list.push({
         id: 'default',
         name: spaceName,
-        source: 'Browser (localStorage)',
+        source: `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`,
         pageCount: flattenPages(pages).length,
         contentSize,
       });
@@ -451,6 +433,15 @@ export function App() {
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
+
+  // Show loading state while backend loads persisted data
+  if (!ready) {
+    return (
+      <div className="h-dvh flex items-center justify-center bg-white dark:bg-gray-900 text-gray-500" data-testid="app-loading">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
