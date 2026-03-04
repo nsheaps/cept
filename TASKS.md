@@ -108,7 +108,7 @@
 - [x] T6.1: Yjs integration with TipTap (y-prosemirror) *(2026-03-04)*
 - [x] T6.2: Signaling server implementation *(2026-03-04)*
 - [x] T6.3: Presence awareness (cursors, avatar stack) *(2026-03-04)*
-- [ ] T6.4: Real-time sync of database changes
+- [x] T6.4: Real-time sync of database changes *(2026-03-04)*
 - [ ] T6.5: Offline queue + reconnect sync
 
 ## Phase 7: Cross-Platform

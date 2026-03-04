@@ -43,3 +43,17 @@ export type {
   CollaborationListener,
   DocumentState,
 } from './collaboration-provider.js';
+
+export {
+  DatabaseSyncAdapter,
+  generateChangeId,
+} from './database-sync.js';
+export type {
+  DatabaseChange,
+  ApplyChangeCallback,
+  DatabaseSyncConfig,
+  DatabaseSyncEvent,
+  DatabaseSyncEventType,
+  DatabaseSyncListener,
+  BroadcastFn,
+} from './database-sync.js';
