@@ -26,3 +26,5 @@ export { KnowledgeGraph } from './components/knowledge-graph/KnowledgeGraph.js';
 export type { KnowledgeGraphProps } from './components/knowledge-graph/KnowledgeGraph.js';
 export { buildGraphData, filterByDepth } from './components/knowledge-graph/graph-types.js';
 export type { GraphNode, GraphLink, GraphData, GraphViewOptions } from './components/knowledge-graph/graph-types.js';
+export { KnowledgeGraphView } from './components/knowledge-graph/KnowledgeGraphView.js';
+export type { KnowledgeGraphViewProps } from './components/knowledge-graph/KnowledgeGraphView.js';
