@@ -21,6 +21,9 @@ async function openDemoEditor(page: Page) {
 
 /**
  * Helper: Click into the editor, go to end, and type a slash command.
+ * NOTE: Tiptap's Suggestion plugin does not allow spaces in queries,
+ * so commandName must not contain spaces. Use description keywords
+ * (e.g. "large" for Heading 1) to uniquely match commands.
  */
 async function typeSlashCommand(page: Page, commandName: string) {
   const editor = page.locator('.cept-editor-content');
@@ -103,7 +106,8 @@ test.describe('Slash Commands', () => {
   });
 
   test('heading 1', async ({ page }) => {
-    await typeSlashCommand(page, 'heading 1');
+    // "large" uniquely matches Heading 1 via description "Large heading"
+    await typeSlashCommand(page, 'large');
     await selectFirstCommand(page);
     await page.keyboard.type('This is Heading 1');
     await expect(page.locator('.cept-editor-content h1')).toContainText('This is Heading 1');
@@ -111,7 +115,8 @@ test.describe('Slash Commands', () => {
   });
 
   test('heading 2', async ({ page }) => {
-    await typeSlashCommand(page, 'heading 2');
+    // "medium" uniquely matches Heading 2 via description "Medium heading"
+    await typeSlashCommand(page, 'medium');
     await selectFirstCommand(page);
     await page.keyboard.type('This is Heading 2');
     await expect(page.locator('.cept-editor-content h2')).toContainText('This is Heading 2');
@@ -119,7 +124,8 @@ test.describe('Slash Commands', () => {
   });
 
   test('heading 3', async ({ page }) => {
-    await typeSlashCommand(page, 'heading 3');
+    // "small" uniquely matches Heading 3 via description "Small heading"
+    await typeSlashCommand(page, 'small');
     await selectFirstCommand(page);
     await page.keyboard.type('This is Heading 3');
     await expect(page.locator('.cept-editor-content h3')).toContainText('This is Heading 3');
@@ -215,7 +221,9 @@ test.describe('Slash Commands', () => {
     await page.evaluate(() => {
       window.prompt = () => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     });
-    await typeSlashCommand(page, 'embed');
+    // "vimeo" uniquely matches Embed via description "Embed YouTube, Vimeo, etc."
+    // (typing "embed" also matches Image description "Upload or embed an image")
+    await typeSlashCommand(page, 'vimeo');
     await selectFirstCommand(page);
     await page.waitForTimeout(500);
     await expect(page.locator('.cept-editor-content .cept-embed')).toBeVisible();
@@ -234,26 +242,26 @@ test.describe('Slash Commands', () => {
   });
 
   test('2 columns', async ({ page }) => {
-    await typeSlashCommand(page, '2 columns');
+    // "two" uniquely matches 2 Columns via description "Split into two columns"
+    await typeSlashCommand(page, 'two');
     await selectFirstCommand(page);
-    await page.keyboard.type('Left column content');
     await expect(page.locator('.cept-editor-content .cept-columns')).toBeVisible();
     await captureScreenshot(page, { name: 'slash-2-columns', category: 'slash-commands' });
   });
 
   test('3 columns', async ({ page }) => {
-    await typeSlashCommand(page, '3 columns');
+    // "three" uniquely matches 3 Columns via description "Split into three columns"
+    await typeSlashCommand(page, 'three');
     await selectFirstCommand(page);
-    await page.keyboard.type('First column');
     await expect(page.locator('.cept-editor-content .cept-columns')).toBeVisible();
     await captureScreenshot(page, { name: 'slash-3-columns', category: 'slash-commands' });
   });
 
   test('math equation', async ({ page }) => {
-    await typeSlashCommand(page, 'math equation');
+    // "math" matches Math Equation first (before Inline Math in the list)
+    await typeSlashCommand(page, 'math');
     await selectFirstCommand(page);
-    await page.waitForTimeout(200);
-    await page.keyboard.type('E = mc^2');
+    // mathBlock is an atom node — default content "E = mc^2" is set by the extension
     await expect(page.locator('.cept-editor-content .cept-math-block')).toBeVisible();
     await captureScreenshot(page, { name: 'slash-math-block', category: 'slash-commands' });
   });
@@ -262,14 +270,13 @@ test.describe('Slash Commands', () => {
     const editor = page.locator('.cept-editor-content');
     await editor.click();
     await page.keyboard.type('The formula is ');
-    // Now use slash command for inline math
+    // "inline" uniquely matches Inline Math (no spaces in query)
     await page.keyboard.type('/');
     await page.waitForTimeout(300);
-    await page.keyboard.type('inline math');
+    await page.keyboard.type('inline');
     await page.waitForTimeout(200);
     await selectFirstCommand(page);
-    await page.waitForTimeout(200);
-    await page.keyboard.type('x^2 + y^2 = r^2');
+    // inlineMath is an atom node — default content "x^2" is set by the extension
     await expect(page.locator('.cept-editor-content .cept-inline-math')).toBeVisible();
     await captureScreenshot(page, { name: 'slash-inline-math', category: 'slash-commands' });
   });
@@ -277,8 +284,7 @@ test.describe('Slash Commands', () => {
   test('mermaid diagram', async ({ page }) => {
     await typeSlashCommand(page, 'mermaid');
     await selectFirstCommand(page);
-    await page.waitForTimeout(200);
-    await page.keyboard.type('graph TD\n  A --> B');
+    // mermaid is an atom node — default flowchart content is set by the extension
     await expect(page.locator('.cept-editor-content .cept-mermaid')).toBeVisible();
     await captureScreenshot(page, { name: 'slash-mermaid', category: 'slash-commands' });
   });
@@ -314,12 +320,13 @@ test.describe('App Menu', () => {
     await captureScreenshot(page, { name: 'app-menu-open', category: 'features' });
   });
 
-  test('about dialog displays', async ({ page }) => {
+  test('about panel displays via settings', async ({ page }) => {
     await openDemoEditor(page);
     await page.getByTestId('app-menu-trigger').click();
     await page.getByTestId('app-menu-about').click();
-    await expect(page.getByTestId('about-dialog')).toBeVisible();
-    await captureScreenshot(page, { name: 'about-dialog', category: 'features' });
+    // About is now a tab in the Settings modal
+    await expect(page.getByTestId('settings-panel-about')).toBeVisible();
+    await captureScreenshot(page, { name: 'about-panel', category: 'features' });
   });
 });
 
