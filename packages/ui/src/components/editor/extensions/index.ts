@@ -14,5 +14,7 @@ export { PageMention, PersonMention, DateMention, filterMentionItems, getDefault
 export type { MentionType, MentionSuggestionItem } from './mention.js';
 export { MathBlock, InlineMath, renderKatex } from './math.js';
 export type { MathBlockOptions, InlineMathOptions } from './math.js';
+export { Mermaid, defaultMermaidContent, mermaidExamples } from './mermaid.js';
+export type { MermaidOptions } from './mermaid.js';
 export { SlashCommand, defaultSlashCommands, filterSlashCommands, slashCommandPluginKey } from './slash-command.js';
 export type { SlashCommandItem, SlashCommandOptions } from './slash-command.js';

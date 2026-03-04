@@ -185,6 +185,15 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       editor?.chain().focus().deleteRange(range).setInlineMath().run();
     },
   },
+  {
+    title: 'Mermaid Diagram',
+    description: 'Flowcharts, sequences, and more',
+    icon: '\u{1F4CA}',
+    category: 'Advanced',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setMermaid().run();
+    },
+  },
 ];
 
 export function filterSlashCommands(

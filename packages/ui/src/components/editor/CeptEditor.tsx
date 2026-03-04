@@ -19,6 +19,7 @@ import { Embed } from './extensions/embed.js';
 import { Bookmark } from './extensions/bookmark.js';
 import { Columns, Column } from './extensions/columns.js';
 import { MathBlock, InlineMath } from './extensions/math.js';
+import { Mermaid } from './extensions/mermaid.js';
 import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
@@ -120,10 +121,11 @@ export function CeptEditor({
       Column,
       MathBlock,
       InlineMath,
+      Mermaid,
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
-        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns', 'mathBlock'],
+        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns', 'mathBlock', 'mermaid'],
       }),
       SlashCommand.configure({
         suggestion: {
