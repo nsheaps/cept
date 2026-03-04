@@ -165,3 +165,60 @@
   color: #9ca3af;
   text-align: center;
 }
+
+/* Context menu */
+.cept-context-menu {
+  position: fixed;
+  z-index: 100;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.25rem;
+  min-width: 160px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.cept-context-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #374151;
+  text-align: left;
+}
+
+.cept-context-menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.cept-context-menu-item--danger {
+  color: #dc2626;
+}
+
+.cept-context-menu-item--danger:hover {
+  background-color: #fef2f2;
+}
+
+.cept-context-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
+.cept-context-menu-rename-input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.cept-context-menu-rename-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}

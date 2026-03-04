@@ -1,4 +1,6 @@
+import { useState, useCallback, useEffect } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
+import { PageContextMenu } from './PageContextMenu.js';
 
 export interface SidebarProps {
   pages: PageTreeNode[];
@@ -6,6 +8,10 @@ export interface SidebarProps {
   onPageSelect?: (id: string) => void;
   onPageToggle?: (id: string) => void;
   onPageAdd?: (parentId?: string) => void;
+  onPageRename?: (id: string, title: string) => void;
+  onPageDuplicate?: (id: string) => void;
+  onPageDelete?: (id: string) => void;
+  onPageMoveToRoot?: (id: string) => void;
   onSearch?: () => void;
 }
 
@@ -15,8 +21,36 @@ export function Sidebar({
   onPageSelect,
   onPageToggle,
   onPageAdd,
+  onPageRename,
+  onPageDuplicate,
+  onPageDelete,
+  onPageMoveToRoot,
   onSearch,
 }: SidebarProps) {
+  const [contextMenu, setContextMenu] = useState<{
+    pageId: string;
+    pageTitle: string;
+    position: { x: number; y: number };
+  } | null>(null);
+
+  const handleContextMenu = useCallback(
+    (id: string, title: string, position: { x: number; y: number }) => {
+      setContextMenu({ pageId: id, pageTitle: title, position });
+    },
+    [],
+  );
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [contextMenu]);
+
   return (
     <aside className="cept-sidebar" data-testid="sidebar">
       <div className="cept-sidebar-header">
@@ -63,11 +97,24 @@ export function Sidebar({
                 onSelect={onPageSelect}
                 onToggle={onPageToggle}
                 onAdd={(parentId) => onPageAdd?.(parentId)}
+                onContextMenu={handleContextMenu}
               />
             ))
           )}
         </div>
       </div>
+      {contextMenu && (
+        <PageContextMenu
+          pageId={contextMenu.pageId}
+          pageTitle={contextMenu.pageTitle}
+          position={contextMenu.position}
+          onRename={(id, title) => onPageRename?.(id, title)}
+          onDuplicate={(id) => onPageDuplicate?.(id)}
+          onDelete={(id) => onPageDelete?.(id)}
+          onMoveToRoot={(id) => onPageMoveToRoot?.(id)}
+          onClose={closeContextMenu}
+        />
+      )}
     </aside>
   );
 }

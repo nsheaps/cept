@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
-import { expandToNode, getBreadcrumbs } from './sidebar/page-tree-utils.js';
+import { expandToNode, getBreadcrumbs, renameNode, removeNode, moveNode, findNode, addChild, findAncestorIds } from './sidebar/page-tree-utils.js';
 import { Breadcrumbs } from './topbar/Breadcrumbs.js';
 
 interface AppProps {
@@ -59,11 +59,50 @@ export function App({ demoMode }: AppProps) {
       children: [],
     };
     if (parentId) {
-      setPages((prev) => addChildNode(prev, parentId, newPage));
+      setPages((prev) => addChild(prev, parentId, newPage));
     } else {
       setPages((prev) => [...prev, newPage]);
     }
     setSelectedPageId(newPage.id);
+  }, []);
+
+  const handlePageRename = useCallback((id: string, title: string) => {
+    setPages((prev) => renameNode(prev, id, title));
+  }, []);
+
+  const handlePageDelete = useCallback((id: string) => {
+    setPages((prev) => {
+      const { tree } = removeNode(prev, id);
+      return tree;
+    });
+    setSelectedPageId((prev) => (prev === id ? undefined : prev));
+  }, []);
+
+  const handlePageDuplicate = useCallback((id: string) => {
+    setPages((prev) => {
+      const original = findNode(prev, id);
+      if (!original) return prev;
+      const duplicate: PageTreeNode = {
+        ...structuredClone(original),
+        id: `page-${Date.now()}`,
+        title: `${original.title} (copy)`,
+      };
+      // Insert after the original at the same level
+      const ancestors = findAncestorIds(prev, id);
+      if (!ancestors || ancestors.length === 0) {
+        // Root level
+        const idx = prev.findIndex((n) => n.id === id);
+        const result = [...prev];
+        result.splice(idx + 1, 0, duplicate);
+        return result;
+      }
+      const parentId = ancestors[ancestors.length - 1];
+      return addChild(prev, parentId, duplicate);
+    });
+  }, []);
+
+  const handlePageMoveToRoot = useCallback((id: string) => {
+    setPages((prev) => moveNode(prev, id, undefined));
   }, []);
 
   return (
@@ -81,6 +120,10 @@ export function App({ demoMode }: AppProps) {
           onPageSelect={handlePageSelect}
           onPageToggle={handlePageToggle}
           onPageAdd={handlePageAdd}
+          onPageRename={handlePageRename}
+          onPageDuplicate={handlePageDuplicate}
+          onPageDelete={handlePageDelete}
+          onPageMoveToRoot={handlePageMoveToRoot}
         />
         <section className="flex-1 p-8 overflow-y-auto">
           {demoMode || selectedPageId ? (
@@ -134,17 +177,6 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
   });
 }
 
-function addChildNode(nodes: PageTreeNode[], parentId: string, child: PageTreeNode): PageTreeNode[] {
-  return nodes.map((node) => {
-    if (node.id === parentId) {
-      return { ...node, children: [...node.children, child], isExpanded: true };
-    }
-    if (node.children.length > 0) {
-      return { ...node, children: addChildNode(node.children, parentId, child) };
-    }
-    return node;
-  });
-}
 
 const DEMO_CONTENT = `
 <h1>Welcome to Cept</h1>

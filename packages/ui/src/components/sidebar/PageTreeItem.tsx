@@ -15,6 +15,7 @@ export interface PageTreeItemProps {
   onSelect?: (id: string) => void;
   onToggle?: (id: string) => void;
   onAdd?: (parentId: string) => void;
+  onContextMenu?: (id: string, title: string, position: { x: number; y: number }) => void;
 }
 
 export function PageTreeItem({
@@ -24,6 +25,7 @@ export function PageTreeItem({
   onSelect,
   onToggle,
   onAdd,
+  onContextMenu,
 }: PageTreeItemProps) {
   const [hovered, setHovered] = useState(false);
   const hasChildren = node.children.length > 0;
@@ -50,12 +52,22 @@ export function PageTreeItem({
     [node.id, onAdd],
   );
 
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onContextMenu?.(node.id, node.title, { x: e.clientX, y: e.clientY });
+    },
+    [node.id, node.title, onContextMenu],
+  );
+
   return (
     <div data-testid={`page-tree-item-${node.id}`}>
       <button
         className={`cept-sidebar-item ${isSelected ? 'is-selected' : ''}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         data-testid={`page-tree-button-${node.id}`}
@@ -92,6 +104,7 @@ export function PageTreeItem({
               onSelect={onSelect}
               onToggle={onToggle}
               onAdd={onAdd}
+              onContextMenu={onContextMenu}
             />
           ))}
         </div>
