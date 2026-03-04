@@ -136,6 +136,30 @@
   font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
 }
 
+/* Mentions */
+.cept-editor .tiptap .cept-mention {
+  background-color: rgba(35, 131, 226, 0.1);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+  color: #2383e2;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cept-editor .tiptap .cept-mention:hover {
+  background-color: rgba(35, 131, 226, 0.2);
+}
+
+.cept-editor .tiptap .cept-mention-date {
+  color: #e16b20;
+  background-color: rgba(225, 107, 32, 0.1);
+}
+
+.cept-editor .tiptap .cept-mention-date:hover {
+  background-color: rgba(225, 107, 32, 0.2);
+}
+
 /* Horizontal rule */
 .cept-editor .tiptap hr {
   border: none;
