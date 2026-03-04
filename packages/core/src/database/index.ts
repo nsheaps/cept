@@ -66,3 +66,16 @@ export interface DatabaseEngine {
 }
 
 export { CeptDatabaseEngine } from './engine.js';
+export {
+  resolveRelation,
+  getRelatedValues,
+  computeRollup,
+  addReverseRelation,
+  removeReverseRelation,
+} from './relations.js';
+export type {
+  RelationValue,
+  RollupFunction,
+  RelationConfig,
+  RollupConfig,
+} from './relations.js';

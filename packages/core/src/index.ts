@@ -72,6 +72,19 @@ export type {
 // Database
 export type { DatabaseEngine, DatabaseQuery, GroupedRows } from './database/index.js';
 export { CeptDatabaseEngine } from './database/index.js';
+export {
+  resolveRelation,
+  getRelatedValues,
+  computeRollup,
+  addReverseRelation,
+  removeReverseRelation,
+} from './database/index.js';
+export type {
+  RelationValue,
+  RollupFunction,
+  RelationConfig,
+  RollupConfig,
+} from './database/index.js';
 
 // Search
 export type { SearchIndex, SearchResult, SearchOptions } from './search/index.js';
