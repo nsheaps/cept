@@ -9,3 +9,7 @@
 export { App } from './components/App.js';
 export { CeptEditor } from './components/editor/index.js';
 export type { CeptEditorProps } from './components/editor/index.js';
+export { Sidebar } from './components/sidebar/Sidebar.js';
+export type { SidebarProps } from './components/sidebar/Sidebar.js';
+export { PageTreeItem } from './components/sidebar/PageTreeItem.js';
+export type { PageTreeNode, PageTreeItemProps } from './components/sidebar/PageTreeItem.js';
