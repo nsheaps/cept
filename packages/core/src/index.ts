@@ -110,6 +110,15 @@ export type {
 // Templates
 export type { TemplateEngine, TemplateMeta, TemplateType } from './templates/index.js';
 export { CeptTemplateEngine } from './templates/index.js';
+export {
+  getBuiltInTemplates,
+  getTemplatesByCategory,
+  getBuiltInTemplate,
+  getTemplateCategories,
+  applyTemplateVariables,
+  searchTemplates,
+} from './templates/index.js';
+export type { BuiltInTemplate, TemplateCategory } from './templates/index.js';
 
 // Markdown
 export type { MarkdownParser, ParsedPage } from './markdown/index.js';
