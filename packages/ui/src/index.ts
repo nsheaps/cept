@@ -34,3 +34,5 @@ export { buildAnimationFrames, optimizeForPerformance } from './components/knowl
 export type { TimestampedNode, AnimationFrame, PerformanceOptions } from './components/knowledge-graph/graph-animation.js';
 export { DatabaseSchemaEditor } from './components/database/DatabaseSchemaEditor.js';
 export type { SchemaProperty, DatabaseSchemaEditorProps } from './components/database/DatabaseSchemaEditor.js';
+export { DatabaseTableView } from './components/database/DatabaseTableView.js';
+export type { DatabaseTableViewProps } from './components/database/DatabaseTableView.js';
