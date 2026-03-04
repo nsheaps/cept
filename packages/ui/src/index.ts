@@ -60,3 +60,7 @@ export { ConflictResolver } from './components/git/ConflictResolver.js';
 export type { ConflictResolverProps } from './components/git/ConflictResolver.js';
 export { HistoryViewer } from './components/git/HistoryViewer.js';
 export type { HistoryViewerProps } from './components/git/HistoryViewer.js';
+export { AvatarStack } from './components/collaboration/AvatarStack.js';
+export type { AvatarStackProps } from './components/collaboration/AvatarStack.js';
+export { CursorOverlay } from './components/collaboration/CursorOverlay.js';
+export type { CursorData, CursorOverlayProps } from './components/collaboration/CursorOverlay.js';
