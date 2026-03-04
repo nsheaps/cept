@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+import fs from 'fs';
 
 /**
  * Provide empty stubs for Node.js built-in modules.
@@ -53,8 +54,30 @@ function nodeStubs(): Plugin {
   };
 }
 
+/**
+ * Post-build plugin that injects the base path into 404.html so the
+ * SPA redirect hack works for both production and preview deploys.
+ */
+function inject404BasePath(): Plugin {
+  let resolvedBase = '/';
+  return {
+    name: 'inject-404-base-path',
+    configResolved(config) {
+      resolvedBase = config.base;
+    },
+    closeBundle() {
+      const notFoundPath = path.resolve(__dirname, 'dist/404.html');
+      if (fs.existsSync(notFoundPath)) {
+        let html = fs.readFileSync(notFoundPath, 'utf-8');
+        html = html.replace('__VITE_BASE_PATH__', resolvedBase);
+        fs.writeFileSync(notFoundPath, html);
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [tailwindcss(), react(), nodeStubs()],
+  plugins: [tailwindcss(), react(), nodeStubs(), inject404BasePath()],
   base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     alias: {
