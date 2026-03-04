@@ -73,6 +73,10 @@ export { DatabaseProvider, useDatabaseEngine } from './components/storage/Databa
 export { SearchProvider, useSearchIndex } from './components/storage/SearchContext.js';
 export { loadSpaces, saveSpaces, createSpace, switchSpace, deleteSpace, renameSpace, spaceWorkspaceFile, spacePagesDir } from './components/storage/SpaceManager.js';
 export type { SpaceMeta, SpacesManifest } from './components/storage/SpaceManager.js';
+export { ImportDialog } from './components/import-export/ImportDialog.js';
+export type { ImportDialogProps, ImportSource } from './components/import-export/ImportDialog.js';
+export { ExportDialog } from './components/import-export/ExportDialog.js';
+export type { ExportDialogProps } from './components/import-export/ExportDialog.js';
 export { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 export type { ErrorBoundaryProps } from './components/shared/ErrorBoundary.js';
 export { LoadingSpinner, EmptyState } from './components/shared/LoadingSpinner.js';

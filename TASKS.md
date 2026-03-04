@@ -168,10 +168,10 @@
 - [x] P2.6: Wire search index to storage backend — index real file contents *(2026-03-04)*
 - [x] P2.7: Implement LocalFsBackend using File System Access API / Node fs *(2026-03-04)*
 - [x] P2.8: Fix GitBackend to use injected filesystem (not hardcoded node:fs) *(2026-03-04, done in P2.1)*
-- [ ] P2.9: Multi-space support (create, switch, delete)
-- [ ] P2.10: Wire Notion importer UI
-- [ ] P2.11: Wire Obsidian importer UI
-- [ ] P2.12: Wire exporter UI
+- [x] P2.9: Multi-space support (create, switch, delete) *(2026-03-04)*
+- [x] P2.10: Wire Notion importer UI *(2026-03-04)*
+- [x] P2.11: Wire Obsidian importer UI *(2026-03-04)*
+- [x] P2.12: Wire exporter UI *(2026-03-04)*
 
 ## Phase 3: Databases (Continuation)
 
