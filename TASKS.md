@@ -57,7 +57,7 @@
 - [x] T2.5: Block drag-and-drop reordering *(2026-03-04)*
 - [x] T2.6: Block actions menu *(2026-03-04)*
 - [x] T2.7: Inline formatting toolbar *(2026-03-04)*
-- [ ] T2.8: Column layout blocks
+- [x] T2.8: Column layout blocks *(2026-03-04)*
 - [ ] T2.9: Mentions (page, person, date)
 - [ ] T2.10: Math equations (KaTeX)
 - [ ] T2.11: Mermaid diagram block — custom TipTap node with live preview, all 20+ diagram types, SVG/PNG export

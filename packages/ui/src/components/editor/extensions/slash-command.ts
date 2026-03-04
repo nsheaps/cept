@@ -147,6 +147,25 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       }
     },
   },
+  // Layout
+  {
+    title: '2 Columns',
+    description: 'Split into two columns',
+    icon: '\u2016',
+    category: 'Layout',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setColumns(2).run();
+    },
+  },
+  {
+    title: '3 Columns',
+    description: 'Split into three columns',
+    icon: '\u2980',
+    category: 'Layout',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setColumns(3).run();
+    },
+  },
 ];
 
 export function filterSlashCommands(
