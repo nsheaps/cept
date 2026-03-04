@@ -1,0 +1,160 @@
+/* Database Schema Editor */
+.cept-schema-editor {
+  padding: 0.75rem;
+}
+
+.cept-schema-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cept-schema-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cept-schema-add-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #6366f1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.cept-schema-add-btn:hover {
+  background: #eef2ff;
+}
+
+.cept-schema-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cept-schema-property {
+  border-radius: 4px;
+  transition: background-color 0.1s;
+}
+
+.cept-schema-property.is-dragging {
+  opacity: 0.5;
+}
+
+.cept-schema-property-view {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.cept-schema-property-view:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cept-schema-drag-handle {
+  cursor: grab;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cept-schema-property-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: #374151;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cept-schema-property-type {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  flex-shrink: 0;
+  padding: 0.125rem 0.375rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.cept-schema-property-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.cept-schema-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.cept-schema-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.cept-schema-select {
+  padding: 0.25rem 0.375rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  background: white;
+  outline: none;
+}
+
+.cept-schema-select:focus {
+  border-color: #6366f1;
+}
+
+.cept-schema-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cept-schema-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.cept-schema-btn--save {
+  color: #6366f1;
+}
+
+.cept-schema-btn--save:hover {
+  background: #eef2ff;
+}
+
+.cept-schema-btn--danger {
+  color: #dc2626;
+}
+
+.cept-schema-btn--danger:hover {
+  background: #fef2f2;
+}
+
+.cept-schema-add-form {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px dashed #d1d5db;
+}

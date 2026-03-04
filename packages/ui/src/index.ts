@@ -32,3 +32,5 @@ export { GraphAnimationPlayer } from './components/knowledge-graph/GraphAnimatio
 export type { GraphAnimationPlayerProps } from './components/knowledge-graph/GraphAnimationPlayer.js';
 export { buildAnimationFrames, optimizeForPerformance } from './components/knowledge-graph/graph-animation.js';
 export type { TimestampedNode, AnimationFrame, PerformanceOptions } from './components/knowledge-graph/graph-animation.js';
+export { DatabaseSchemaEditor } from './components/database/DatabaseSchemaEditor.js';
+export type { SchemaProperty, DatabaseSchemaEditorProps } from './components/database/DatabaseSchemaEditor.js';
