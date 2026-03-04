@@ -124,6 +124,20 @@ export type {
   AutoCommitListener,
   AutoCommitEvent,
 } from './git/index.js';
+export {
+  BranchStrategyManager,
+  generateBranchName,
+  isCeptBranch,
+  parseBranchName,
+  listCeptBranches,
+  generateDeviceId,
+  generateSessionId,
+} from './git/index.js';
+export type {
+  BranchStrategyType,
+  BranchStrategyConfig,
+  BranchInfo,
+} from './git/index.js';
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
