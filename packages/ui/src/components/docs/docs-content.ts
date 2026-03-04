@@ -625,10 +625,12 @@ Core infrastructure and basic editing experience.
 
 | Feature | Status |
 |---------|--------|
-| IndexedDB backend (BrowserFsBackend) | Planned |
+| IndexedDB backend (BrowserFsBackend) | Done |
+| Individual page file storage | Done |
+| Markdown parser/serializer | Done |
+| GitBackend injectable filesystem | Done |
 | Local folder backend | Planned |
-| Git backend (isomorphic-git) | Planned |
-| Markdown parser/serializer | Planned |
+| Git backend wiring | Planned |
 | Multi-space support | Planned |
 | Import from Notion | Planned |
 | Import from Obsidian | Planned |
@@ -678,6 +680,8 @@ Core infrastructure and basic editing experience.
 | Undo/redo history | Planned |
 | Plugin system | Planned |
 | Theming (custom colors, fonts) | Planned |
+| Custom emoji support (upload custom icons for pages) | Planned |
+| View raw file (see underlying Markdown/HTML in page options) | Planned |
 
 ## Phase 8: Integration & Public Rendering
 

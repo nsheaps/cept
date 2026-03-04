@@ -9,6 +9,10 @@ import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { common, createLowlight } from 'lowlight';
@@ -121,6 +125,27 @@ export function CeptEditor({
       Column,
       MathBlock,
       InlineMath,
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'cept-table',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'cept-table-row',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'cept-table-cell',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'cept-table-header-cell',
+        },
+      }),
       Mermaid,
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
