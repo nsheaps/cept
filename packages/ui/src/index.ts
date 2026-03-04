@@ -28,3 +28,7 @@ export { buildGraphData, filterByDepth, getGroups, getLinkTypes, filterGraph } f
 export type { GraphNode, GraphLink, GraphData, GraphViewOptions, GraphFilters } from './components/knowledge-graph/graph-types.js';
 export { KnowledgeGraphView } from './components/knowledge-graph/KnowledgeGraphView.js';
 export type { KnowledgeGraphViewProps } from './components/knowledge-graph/KnowledgeGraphView.js';
+export { GraphAnimationPlayer } from './components/knowledge-graph/GraphAnimationPlayer.js';
+export type { GraphAnimationPlayerProps } from './components/knowledge-graph/GraphAnimationPlayer.js';
+export { buildAnimationFrames, optimizeForPerformance } from './components/knowledge-graph/graph-animation.js';
+export type { TimestampedNode, AnimationFrame, PerformanceOptions } from './components/knowledge-graph/graph-animation.js';

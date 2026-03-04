@@ -75,7 +75,7 @@
 - [x] T3.9: Knowledge Graph — global view with D3 force-directed layout *(2026-03-04)*
 - [x] T3.10: Knowledge Graph — local view with depth slider *(2026-03-04)*
 - [x] T3.11: Knowledge Graph — filters, color groups *(2026-03-04)*
-- [ ] T3.12: Knowledge Graph — time-lapse animation, performance optimization
+- [x] T3.12: Knowledge Graph — time-lapse animation, performance optimization *(2026-03-04)*
 
 ## Phase 4: Databases
 
