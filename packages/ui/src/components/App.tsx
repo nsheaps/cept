@@ -9,6 +9,8 @@ import { CommandPalette } from './command-palette/CommandPalette.js';
 import type { CommandItem } from './command-palette/CommandPalette.js';
 import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
+import { PageHeader } from './page-header/PageHeader.js';
+import { AppMenu } from './app-menu/AppMenu.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -333,6 +335,17 @@ export function App({ demoMode }: AppProps) {
     setHasStarted(true);
   }, []);
 
+  const handleClearCache = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    setPages([]);
+    setPageContents({});
+    setSelectedPageId(undefined);
+    setFavorites([]);
+    setRecentPages([]);
+    setTrash([]);
+    setHasStarted(false);
+  }, []);
+
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
@@ -340,6 +353,7 @@ export function App({ demoMode }: AppProps) {
   ], [handlePageAdd]);
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
+  const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted && !demoMode;
 
   return (
@@ -360,6 +374,7 @@ export function App({ demoMode }: AppProps) {
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
         )}
         <div className="ml-auto" />
+        <AppMenu onClearCache={handleClearCache} />
         {demoMode && (
           <button
             className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
@@ -427,13 +442,25 @@ export function App({ demoMode }: AppProps) {
                 </button>
               </div>
             </div>
-          ) : selectedPageId ? (
-            <CeptEditor
-              key={selectedPageId}
-              content={currentContent}
-              placeholder="Type '/' for commands..."
-              onUpdate={handleContentUpdate}
-            />
+          ) : selectedPageId && selectedNode ? (
+            <>
+              <PageHeader
+                pageId={selectedPageId}
+                title={selectedNode.title}
+                icon={selectedNode.icon}
+                isFavorite={favorites.some((f) => f.id === selectedPageId)}
+                onRename={handlePageRename}
+                onDuplicate={handlePageDuplicate}
+                onDelete={handlePageDelete}
+                onToggleFavorite={handleToggleFavorite}
+              />
+              <CeptEditor
+                key={selectedPageId}
+                content={currentContent}
+                placeholder="Type '/' for commands..."
+                onUpdate={handleContentUpdate}
+              />
+            </>
           ) : (
             <div className="text-center text-gray-400 mt-20">
               <p>Select a page or create a new one</p>

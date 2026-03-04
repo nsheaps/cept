@@ -8,3 +8,5 @@
 @import '../components/search/search-styles.css';
 @import '../components/knowledge-graph/knowledge-graph-styles.css';
 @import '../components/database/database-styles.css';
+@import '../components/page-header/page-header-styles.css';
+@import '../components/app-menu/app-menu-styles.css';

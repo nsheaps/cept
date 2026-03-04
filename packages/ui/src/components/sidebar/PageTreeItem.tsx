@@ -31,6 +31,7 @@ export function PageTreeItem({
   const hasChildren = node.children.length > 0;
   const isSelected = selectedId === node.id;
   const isExpanded = node.isExpanded ?? false;
+  const showActions = hovered || isSelected;
 
   const handleClick = useCallback(() => {
     onSelect?.(node.id);
@@ -83,7 +84,7 @@ export function PageTreeItem({
           {node.icon ?? '\u{1F4C4}'}
         </span>
         <span className="cept-sidebar-title">{node.title || 'Untitled'}</span>
-        {hovered && (
+        {showActions && (
           <>
             <span
               className="cept-sidebar-add"

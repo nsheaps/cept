@@ -56,6 +56,10 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+.cept-sidebar-action-btn:active {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
 .cept-sidebar-action-icon {
   font-size: 0.875rem;
 }
@@ -118,10 +122,15 @@
   line-height: 1.4;
   color: #374151;
   text-align: left;
+  transition: background-color 0.12s;
 }
 
 .cept-sidebar-item:hover {
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.cept-sidebar-item:active {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .cept-sidebar-item.is-selected {
@@ -170,6 +179,7 @@
   cursor: pointer;
   border-radius: 2px;
   padding: 0 4px;
+  transition: background-color 0.12s, color 0.12s;
 }
 
 .cept-sidebar-add:hover {
@@ -261,6 +271,10 @@
 
 .cept-context-menu-item:hover {
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.cept-context-menu-item:active {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 .cept-context-menu-item--danger {

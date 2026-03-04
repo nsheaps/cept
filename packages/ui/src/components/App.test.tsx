@@ -192,4 +192,32 @@ describe('App', () => {
     // Should show persisted page, not demo content
     expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('shows page header with title and menu when page is selected', () => {
+    render(<App demoMode />);
+    // Demo mode selects 'welcome' page by default
+    expect(screen.getByTestId('page-header')).toBeDefined();
+    expect(screen.getByTestId('page-title')).toBeDefined();
+    expect(screen.getByTestId('page-menu-btn')).toBeDefined();
+  });
+
+  it('page title is clickable for inline editing', () => {
+    render(<App demoMode />);
+    fireEvent.click(screen.getByTestId('page-title'));
+    expect(screen.getByTestId('page-title-input')).toBeDefined();
+    expect(screen.getByTestId('page-title-save')).toBeDefined();
+  });
+
+  it('shows app menu in header', () => {
+    render(<App demoMode />);
+    expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+  });
+
+  it('app menu opens and has actions', () => {
+    render(<App demoMode />);
+    fireEvent.click(screen.getByTestId('app-menu-trigger'));
+    expect(screen.getByTestId('app-menu')).toBeDefined();
+    expect(screen.getByTestId('app-menu-about')).toBeDefined();
+    expect(screen.getByTestId('app-menu-clear-cache')).toBeDefined();
+  });
 });
