@@ -71,6 +71,7 @@ export type {
 
 // Database
 export type { DatabaseEngine, DatabaseQuery, GroupedRows } from './database/index.js';
+export { CeptDatabaseEngine } from './database/index.js';
 
 // Search
 export type { SearchIndex, SearchResult, SearchOptions } from './search/index.js';

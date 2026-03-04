@@ -64,3 +64,5 @@ export interface DatabaseEngine {
   /** Evaluate a formula for a row */
   evaluateFormula(expression: string, row: DatabaseRow, schema: DatabaseSchema): unknown;
 }
+
+export { CeptDatabaseEngine } from './engine.js';

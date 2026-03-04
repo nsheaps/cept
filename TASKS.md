@@ -43,7 +43,7 @@
 - [x] T1.2: Implement `GitBackend` extending `StorageBackend` with isomorphic-git *(2026-03-04)*
 - [x] T1.3: Implement Markdown <-> Block tree parser (CommonMark + GFM + cept extensions) *(2026-03-04)*
 - [x] T1.4: Implement YAML front matter parser/serializer *(2026-03-04)*
-- [ ] T1.5: Implement database engine (schema, CRUD, filter, sort, group)
+- [x] T1.5: Implement database engine (schema, CRUD, filter, sort, group) *(2026-03-04)*
 - [ ] T1.6: Implement formula evaluator for database formulas
 - [ ] T1.7: Implement search index (client-side full-text)
 - [ ] T1.8: Implement template engine
