@@ -404,8 +404,24 @@
   font-size: 0.75rem;
 }
 
-.cept-docs-banner-back {
+.cept-docs-banner-link {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #bae6fd;
+  background: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #0369a1;
+  white-space: nowrap;
+  text-decoration: none;
   margin-left: auto;
+}
+
+.cept-docs-banner-link:hover {
+  background: #e0f2fe;
+}
+
+.cept-docs-banner-back {
   padding: 0.25rem 0.5rem;
   border: 1px solid #bae6fd;
   background: white;
@@ -428,6 +444,15 @@
   }
   .cept-docs-banner code {
     background: rgba(125, 211, 252, 0.1);
+  }
+  .cept-docs-banner-link {
+    background: #1e3a5f;
+    border-color: #1e4d6e;
+    color: #7dd3fc;
+    text-decoration: none;
+  }
+  .cept-docs-banner-link:hover {
+    background: #264d73;
   }
   .cept-docs-banner-back {
     background: #1e3a5f;
