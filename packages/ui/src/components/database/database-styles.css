@@ -585,3 +585,66 @@
   opacity: 1;
   color: #9ca3af;
 }
+
+/* Map View */
+.cept-map-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cept-map-container {
+  flex: 1;
+  min-height: 300px;
+}
+
+.cept-map-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  min-height: 300px;
+  color: #9ca3af;
+}
+
+.cept-map-placeholder-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.cept-map-placeholder-count {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.cept-map-marker-list {
+  border-top: 1px solid #e5e7eb;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.cept-map-marker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cept-map-marker-item:hover {
+  background: #f9fafb;
+}
+
+.cept-map-marker-title {
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.cept-map-marker-coords {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
