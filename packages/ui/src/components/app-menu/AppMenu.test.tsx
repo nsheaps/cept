@@ -18,44 +18,26 @@ describe('AppMenu', () => {
     expect(screen.getByTestId('app-menu')).toBeDefined();
   });
 
-  it('has about, settings, clear cache, import, export items', () => {
+  it('has settings and about items', () => {
     render(<AppMenu />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    expect(screen.getByTestId('app-menu-about')).toBeDefined();
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();
-    expect(screen.getByTestId('app-menu-clear-cache')).toBeDefined();
-    expect(screen.getByTestId('app-menu-import')).toBeDefined();
-    expect(screen.getByTestId('app-menu-export')).toBeDefined();
+    expect(screen.getByTestId('app-menu-about')).toBeDefined();
   });
 
-  it('settings is disabled with "Soon" badge', () => {
-    render(<AppMenu />);
+  it('settings item calls onOpenSettings with settings tab', () => {
+    const onOpenSettings = vi.fn();
+    render(<AppMenu onOpenSettings={onOpenSettings} />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    const settingsBtn = screen.getByTestId('app-menu-settings') as HTMLButtonElement;
-    expect(settingsBtn.disabled).toBe(true);
+    fireEvent.click(screen.getByTestId('app-menu-settings'));
+    expect(onOpenSettings).toHaveBeenCalledWith('settings');
   });
 
-  it('clear cache calls onClearCache', () => {
-    const onClearCache = vi.fn();
-    render(<AppMenu onClearCache={onClearCache} />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    fireEvent.click(screen.getByTestId('app-menu-clear-cache'));
-    expect(onClearCache).toHaveBeenCalled();
-  });
-
-  it('opens about dialog', () => {
-    render(<AppMenu />);
+  it('about item calls onOpenSettings with about tab', () => {
+    const onOpenSettings = vi.fn();
+    render(<AppMenu onOpenSettings={onOpenSettings} />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     fireEvent.click(screen.getByTestId('app-menu-about'));
-    expect(screen.getByTestId('about-dialog')).toBeDefined();
-    expect(screen.getByText('About Cept')).toBeDefined();
-  });
-
-  it('closes about dialog', () => {
-    render(<AppMenu />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    fireEvent.click(screen.getByTestId('app-menu-about'));
-    fireEvent.click(screen.getByTestId('about-close'));
-    expect(screen.queryByTestId('about-dialog')).toBeNull();
+    expect(onOpenSettings).toHaveBeenCalledWith('about');
   });
 });

@@ -133,13 +133,8 @@ describe('App', () => {
     expect((gitRepo as HTMLButtonElement)?.disabled).toBe(true);
   });
 
-  it('shows reset demo button in demo mode', () => {
+  it('does not show reset demo button in header (moved to settings)', () => {
     render(<App demoMode />);
-    expect(screen.getByTestId('reset-demo')).toBeDefined();
-  });
-
-  it('does not show reset demo button outside demo mode', () => {
-    render(<App />);
     expect(screen.queryByTestId('reset-demo')).toBeNull();
   });
 
@@ -159,22 +154,9 @@ describe('App', () => {
     expect(parsed.pages.length).toBeGreaterThan(0);
   });
 
-  it('reset demo restores initial demo content', () => {
-    vi.useFakeTimers();
+  it('demo mode shows demo content initially', () => {
     render(<App demoMode />);
-
-    // Modify state by adding a page via sidebar
-    fireEvent.click(screen.getByTestId('sidebar-add-page'));
-
-    // Reset
-    fireEvent.click(screen.getByTestId('reset-demo'));
-
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    vi.useRealTimers();
-
-    // Should have demo pages restored
+    // Should have demo pages
     expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -217,7 +199,7 @@ describe('App', () => {
     render(<App demoMode />);
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     expect(screen.getByTestId('app-menu')).toBeDefined();
+    expect(screen.getByTestId('app-menu-settings')).toBeDefined();
     expect(screen.getByTestId('app-menu-about')).toBeDefined();
-    expect(screen.getByTestId('app-menu-clear-cache')).toBeDefined();
   });
 });

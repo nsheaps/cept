@@ -75,7 +75,7 @@ export function Sidebar({
   return (
     <aside className="cept-sidebar" data-testid="sidebar">
       <div className="cept-sidebar-header">
-        <span className="cept-sidebar-workspace-name">Workspace</span>
+        <span className="cept-sidebar-workspace-name">Space</span>
       </div>
 
       <div className="cept-sidebar-actions">

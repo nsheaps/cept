@@ -1,0 +1,424 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+
+export interface CeptSettings {
+  autoSave: boolean;
+}
+
+export const DEFAULT_SETTINGS: CeptSettings = {
+  autoSave: true,
+};
+
+const SETTINGS_KEY = 'cept-settings';
+
+export function loadSettings(): CeptSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function saveSettings(settings: CeptSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // silently ignore
+  }
+}
+
+export function resetSettings(): void {
+  try {
+    localStorage.removeItem(SETTINGS_KEY);
+  } catch {
+    // silently ignore
+  }
+}
+
+export interface SpaceInfo {
+  id: string;
+  name: string;
+  source: string;
+  pageCount: number;
+  contentSize: number;
+  createdAt?: string;
+}
+
+export interface SettingsModalProps {
+  isOpen: boolean;
+  initialTab?: 'about' | 'settings' | 'data' | 'spaces';
+  settings: CeptSettings;
+  spaces: SpaceInfo[];
+  demoMode?: boolean;
+  onClose: () => void;
+  onSettingsChange: (settings: CeptSettings) => void;
+  onResetSettings: () => void;
+  onDeleteSpace: (id: string) => void;
+  onClearAllData: () => void;
+  onRecreateDemoSpace: () => void;
+}
+
+export function SettingsModal({
+  isOpen,
+  initialTab = 'settings',
+  settings,
+  spaces,
+  demoMode,
+  onClose,
+  onSettingsChange,
+  onResetSettings,
+  onDeleteSpace,
+  onClearAllData,
+  onRecreateDemoSpace,
+}: SettingsModalProps) {
+  const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'data' | 'spaces'>(initialTab);
+  const [savedIndicator, setSavedIndicator] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+      setSelectedSpaceId(null);
+    }
+  }, [isOpen, initialTab]);
+
+  const flashSaved = useCallback(() => {
+    setSavedIndicator(true);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSavedIndicator(false), 1500);
+  }, []);
+
+  const handleSettingChange = useCallback(
+    <K extends keyof CeptSettings>(key: K, value: CeptSettings[K]) => {
+      const updated = { ...settings, [key]: value };
+      onSettingsChange(updated);
+      flashSaved();
+    },
+    [settings, onSettingsChange, flashSaved],
+  );
+
+  if (!isOpen) return null;
+
+  const selectedSpace = selectedSpaceId
+    ? spaces.find((s) => s.id === selectedSpaceId)
+    : null;
+
+  return (
+    <div className="cept-settings-overlay" data-testid="settings-modal">
+      <div className="cept-settings-dialog">
+        <div className="cept-settings-header">
+          <h2>Settings</h2>
+          {savedIndicator && (
+            <span className="cept-settings-saved" data-testid="settings-saved-indicator">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3,8 7,12 13,4" />
+              </svg>
+              Saved
+            </span>
+          )}
+          <button
+            className="cept-settings-close"
+            onClick={onClose}
+            data-testid="settings-close"
+            title="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="cept-settings-body">
+          <nav className="cept-settings-tabs" data-testid="settings-tabs">
+            <button
+              className={`cept-settings-tab ${activeTab === 'settings' ? 'is-active' : ''}`}
+              onClick={() => { setActiveTab('settings'); setSelectedSpaceId(null); }}
+              data-testid="settings-tab-settings"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="8" cy="8" r="2.5" />
+                <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+              </svg>
+              Settings
+            </button>
+            <button
+              className={`cept-settings-tab ${activeTab === 'spaces' ? 'is-active' : ''}`}
+              onClick={() => { setActiveTab('spaces'); setSelectedSpaceId(null); }}
+              data-testid="settings-tab-spaces"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="2" width="5" height="5" rx="1" />
+                <rect x="9" y="2" width="5" height="5" rx="1" />
+                <rect x="2" y="9" width="5" height="5" rx="1" />
+                <rect x="9" y="9" width="5" height="5" rx="1" />
+              </svg>
+              Spaces
+            </button>
+            <button
+              className={`cept-settings-tab ${activeTab === 'data' ? 'is-active' : ''}`}
+              onClick={() => { setActiveTab('data'); setSelectedSpaceId(null); }}
+              data-testid="settings-tab-data"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <ellipse cx="8" cy="4" rx="6" ry="2.5" />
+                <path d="M2 4v4c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V4" />
+                <path d="M2 8v4c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V8" />
+              </svg>
+              Data &amp; Cache
+            </button>
+            <button
+              className={`cept-settings-tab ${activeTab === 'about' ? 'is-active' : ''}`}
+              onClick={() => { setActiveTab('about'); setSelectedSpaceId(null); }}
+              data-testid="settings-tab-about"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="8" cy="8" r="6.5" />
+                <path d="M8 7v4M8 4.5v.5" />
+              </svg>
+              About
+            </button>
+          </nav>
+
+          <div className="cept-settings-content">
+            {activeTab === 'settings' && (
+              <div data-testid="settings-panel-settings">
+                <h3 className="cept-settings-section-title">Editor</h3>
+                <label className="cept-settings-toggle-row" data-testid="setting-auto-save">
+                  <div className="cept-settings-toggle-label">
+                    <span className="cept-settings-toggle-name">Auto-save</span>
+                    <span className="cept-settings-toggle-desc">
+                      Automatically save changes when you stop editing
+                    </span>
+                  </div>
+                  <button
+                    className={`cept-settings-switch ${settings.autoSave ? 'is-on' : ''}`}
+                    onClick={() => handleSettingChange('autoSave', !settings.autoSave)}
+                    role="switch"
+                    aria-checked={settings.autoSave}
+                    data-testid="setting-auto-save-toggle"
+                  >
+                    <span className="cept-settings-switch-thumb" />
+                  </button>
+                </label>
+
+                <div className="cept-settings-section-divider" />
+                <button
+                  className="cept-settings-danger-btn"
+                  onClick={() => {
+                    onResetSettings();
+                    flashSaved();
+                  }}
+                  data-testid="reset-settings-btn"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
+                    <polyline points="2,3 2,6.5 5.5,6.5" />
+                    <polyline points="14,13 14,9.5 10.5,9.5" />
+                  </svg>
+                  Reset settings to defaults
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'spaces' && !selectedSpace && (
+              <div data-testid="settings-panel-spaces">
+                <h3 className="cept-settings-section-title">Your Spaces</h3>
+                {spaces.length === 0 ? (
+                  <p className="cept-settings-empty">No spaces yet.</p>
+                ) : (
+                  <div className="cept-settings-space-list">
+                    {spaces.map((space) => (
+                      <button
+                        key={space.id}
+                        className="cept-settings-space-item"
+                        onClick={() => setSelectedSpaceId(space.id)}
+                        data-testid={`space-item-${space.id}`}
+                      >
+                        <div className="cept-settings-space-info">
+                          <span className="cept-settings-space-name">{space.name}</span>
+                          <span className="cept-settings-space-meta">{space.source} &middot; {space.pageCount} pages</span>
+                        </div>
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M6 4l4 4-4 4" />
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'spaces' && selectedSpace && (
+              <SpaceDetails
+                space={selectedSpace}
+                onBack={() => setSelectedSpaceId(null)}
+                onDelete={() => {
+                  onDeleteSpace(selectedSpace.id);
+                  setSelectedSpaceId(null);
+                }}
+              />
+            )}
+
+            {activeTab === 'data' && !selectedSpace && (
+              <div data-testid="settings-panel-data">
+                <h3 className="cept-settings-section-title">Spaces</h3>
+                {spaces.length === 0 ? (
+                  <p className="cept-settings-empty">No spaces.</p>
+                ) : (
+                  <div className="cept-settings-space-list">
+                    {spaces.map((space) => (
+                      <div key={space.id} className="cept-settings-data-row" data-testid={`data-space-${space.id}`}>
+                        <button
+                          className="cept-settings-space-item"
+                          onClick={() => setSelectedSpaceId(space.id)}
+                        >
+                          <div className="cept-settings-space-info">
+                            <span className="cept-settings-space-name">{space.name}</span>
+                            <span className="cept-settings-space-meta">
+                              {space.source} &middot; {formatBytes(space.contentSize)}
+                            </span>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 4l4 4-4 4" />
+                          </svg>
+                        </button>
+                        <button
+                          className="cept-settings-icon-btn cept-settings-icon-btn--danger"
+                          onClick={() => onDeleteSpace(space.id)}
+                          title="Delete space"
+                          data-testid={`delete-space-${space.id}`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="cept-settings-section-divider" />
+                <h3 className="cept-settings-section-title">Actions</h3>
+                <div className="cept-settings-actions">
+                  {demoMode && (
+                    <button
+                      className="cept-settings-action-btn"
+                      onClick={onRecreateDemoSpace}
+                      data-testid="recreate-demo-btn"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
+                        <polyline points="2,3 2,6.5 5.5,6.5" />
+                        <polyline points="14,13 14,9.5 10.5,9.5" />
+                      </svg>
+                      Recreate demo space
+                    </button>
+                  )}
+                  <button
+                    className="cept-settings-danger-btn"
+                    onClick={onClearAllData}
+                    data-testid="clear-all-data-btn"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                    </svg>
+                    Clear all data (includes settings)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'data' && selectedSpace && (
+              <SpaceDetails
+                space={selectedSpace}
+                onBack={() => setSelectedSpaceId(null)}
+                onDelete={() => {
+                  onDeleteSpace(selectedSpace.id);
+                  setSelectedSpaceId(null);
+                }}
+              />
+            )}
+
+            {activeTab === 'about' && (
+              <div className="cept-settings-about" data-testid="settings-panel-about">
+                <div className="cept-settings-about-logo">C</div>
+                <h3>Cept</h3>
+                <p>A Notion-inspired app that runs entirely in your browser.</p>
+                <p className="cept-settings-about-version">Version 0.1.0</p>
+                <div className="cept-settings-section-divider" />
+                <p className="cept-settings-about-footer">
+                  Built with React, TipTap, and love.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SpaceDetails({
+  space,
+  onBack,
+  onDelete,
+}: {
+  space: SpaceInfo;
+  onBack: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div data-testid={`space-details-${space.id}`}>
+      <button
+        className="cept-settings-back-btn"
+        onClick={onBack}
+        data-testid="space-details-back"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10 4l-4 4 4 4" />
+        </svg>
+        Back
+      </button>
+      <h3 className="cept-settings-section-title">{space.name}</h3>
+      <div className="cept-settings-detail-grid">
+        <div className="cept-settings-detail-row">
+          <span className="cept-settings-detail-label">Data source</span>
+          <span className="cept-settings-detail-value">{space.source}</span>
+        </div>
+        <div className="cept-settings-detail-row">
+          <span className="cept-settings-detail-label">Pages</span>
+          <span className="cept-settings-detail-value">{space.pageCount}</span>
+        </div>
+        <div className="cept-settings-detail-row">
+          <span className="cept-settings-detail-label">Storage used</span>
+          <span className="cept-settings-detail-value">{formatBytes(space.contentSize)}</span>
+        </div>
+        {space.createdAt && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Created</span>
+            <span className="cept-settings-detail-value">{space.createdAt}</span>
+          </div>
+        )}
+      </div>
+      <div className="cept-settings-section-divider" />
+      <button
+        className="cept-settings-danger-btn"
+        onClick={onDelete}
+        data-testid="space-details-delete"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+        </svg>
+        Delete this space
+      </button>
+    </div>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

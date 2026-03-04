@@ -11,6 +11,8 @@ import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
 import { AppMenu } from './app-menu/AppMenu.js';
+import { SettingsModal, loadSettings, saveSettings, resetSettings, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
+import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -105,6 +107,11 @@ export function App({ demoMode }: AppProps) {
 
   // Recent pages state
   const [recentPages, setRecentPages] = useState<SidebarPageRef[]>(persisted?.recentPages ?? []);
+
+  // Settings state
+  const [settings, setSettings] = useState<CeptSettings>(() => loadSettings());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
 
   // Track content save timeout
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -335,8 +342,32 @@ export function App({ demoMode }: AppProps) {
     setHasStarted(true);
   }, []);
 
-  const handleClearCache = useCallback(() => {
+  const handleClearAllData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    resetSettings();
+    setSettings({ ...DEFAULT_SETTINGS });
+    setPages([]);
+    setPageContents({});
+    setSelectedPageId(undefined);
+    setFavorites([]);
+    setRecentPages([]);
+    setTrash([]);
+    setHasStarted(false);
+    setSettingsOpen(false);
+  }, []);
+
+  const handleSettingsChange = useCallback((updated: CeptSettings) => {
+    setSettings(updated);
+    saveSettings(updated);
+  }, []);
+
+  const handleResetSettings = useCallback(() => {
+    resetSettings();
+    setSettings({ ...DEFAULT_SETTINGS });
+  }, []);
+
+  const handleDeleteSpace = useCallback((_id: string) => {
+    // Currently only one space — delete it
     setPages([]);
     setPageContents({});
     setSelectedPageId(undefined);
@@ -345,6 +376,23 @@ export function App({ demoMode }: AppProps) {
     setTrash([]);
     setHasStarted(false);
   }, []);
+
+  const handleOpenSettings = useCallback((tab: 'settings' | 'about' | 'data' | 'spaces' = 'settings') => {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+  }, []);
+
+  const spaceInfoList = useMemo((): SpaceInfo[] => {
+    if (!hasStarted && pages.length === 0) return [];
+    const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
+    return [{
+      id: 'default',
+      name: demoMode ? 'Demo Space' : 'My Space',
+      source: 'Browser (localStorage)',
+      pageCount: flattenPages(pages).length,
+      contentSize,
+    }];
+  }, [hasStarted, pages, pageContents, demoMode]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
@@ -374,16 +422,7 @@ export function App({ demoMode }: AppProps) {
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
         )}
         <div className="ml-auto" />
-        <AppMenu onClearCache={handleClearCache} />
-        {demoMode && (
-          <button
-            className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
-            onClick={handleResetDemo}
-            data-testid="reset-demo"
-          >
-            Reset Demo
-          </button>
-        )}
+        <AppMenu onOpenSettings={handleOpenSettings} />
       </header>
       <main className="flex flex-1 min-h-0">
         {sidebarOpen && (
@@ -415,7 +454,7 @@ export function App({ demoMode }: AppProps) {
             <div className="max-w-lg mx-auto mt-12">
               <h2 className="text-2xl font-bold mb-4">Get Started</h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Choose how to store your workspace:
+                Choose how to store your space:
               </p>
               <div className="mt-4 space-y-3">
                 <button
@@ -479,6 +518,19 @@ export function App({ demoMode }: AppProps) {
         onSearch={handleSearch}
         onResultSelect={(pageId) => { handlePageSelect(pageId); setSearchOpen(false); }}
       />
+      <SettingsModal
+        isOpen={settingsOpen}
+        initialTab={settingsTab}
+        settings={settings}
+        spaces={spaceInfoList}
+        demoMode={demoMode}
+        onClose={() => setSettingsOpen(false)}
+        onSettingsChange={handleSettingsChange}
+        onResetSettings={handleResetSettings}
+        onDeleteSpace={handleDeleteSpace}
+        onClearAllData={handleClearAllData}
+        onRecreateDemoSpace={handleResetDemo}
+      />
     </div>
   );
 }
@@ -498,7 +550,7 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 
 const DEMO_CONTENT = `
 <h1>Welcome to Cept</h1>
-<p>This is a demo workspace running in your browser. All data is stored locally.</p>
+<p>This is a demo space running in your browser. All data is stored locally.</p>
 <div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
 <h2>Getting Started</h2>
 <p>Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates \u2014 all stored locally in your browser.</p>
@@ -591,7 +643,7 @@ console.log(greet('world'));</code></pre>
 
 const DEMO_GETTING_STARTED_CONTENT = `
 <h1>Getting Started</h1>
-<p>Welcome to Cept! Here\u2019s how to get started with your workspace.</p>
+<p>Welcome to Cept! Here\u2019s how to get started with your space.</p>
 
 <h2>Creating Pages</h2>
 <p>Click the <strong>+</strong> button in the sidebar to create a new page. Pages can be nested inside other pages to create a hierarchy.</p>
@@ -608,7 +660,7 @@ const DEMO_GETTING_STARTED_CONTENT = `
   <li><p><strong>Cmd/Ctrl + Shift + S</strong> \u2014 Strikethrough</p></li>
 </ul>
 
-<h2>Organizing Your Workspace</h2>
+<h2>Organizing Your Space</h2>
 <ol>
   <li><p><strong>Favorites</strong> \u2014 Right-click a page and add it to favorites for quick access</p></li>
   <li><p><strong>Nested pages</strong> \u2014 Click the + on a page to create a sub-page</p></li>
