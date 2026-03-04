@@ -189,3 +189,23 @@ export type {
   OfflineQueueListener,
   SendFn,
 } from './crdt/index.js';
+
+// Importers
+export {
+  cleanNotionFilename,
+  convertNotionLinks,
+  extractTitle,
+  getMimeType,
+  importNotionZip,
+} from './importers/index.js';
+export type {
+  NotionImportOptions,
+  ImportedPage,
+  ImportedAsset,
+  NotionImportResult,
+  ImportError,
+  ImportProgress,
+  ProgressCallback,
+  ZipEntry,
+  ZipReader,
+} from './importers/index.js';
