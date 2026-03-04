@@ -36,3 +36,5 @@ export { DatabaseSchemaEditor } from './components/database/DatabaseSchemaEditor
 export type { SchemaProperty, DatabaseSchemaEditorProps } from './components/database/DatabaseSchemaEditor.js';
 export { DatabaseTableView } from './components/database/DatabaseTableView.js';
 export type { DatabaseTableViewProps } from './components/database/DatabaseTableView.js';
+export { DatabaseBoardView } from './components/database/DatabaseBoardView.js';
+export type { BoardColumn, DatabaseBoardViewProps } from './components/database/DatabaseBoardView.js';

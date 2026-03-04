@@ -81,7 +81,7 @@
 
 - [x] T4.1: Database schema UI (add/edit/reorder properties) *(2026-03-04)*
 - [x] T4.2: Table view with sortable, filterable, resizable columns *(2026-03-04)*
-- [ ] T4.3: Board/Kanban view with drag-and-drop
+- [x] T4.3: Board/Kanban view with drag-and-drop *(2026-03-04)*
 - [ ] T4.4: Calendar view
 - [ ] T4.5: Map view (Leaflet + OpenStreetMap)
 - [ ] T4.6: Gallery view
