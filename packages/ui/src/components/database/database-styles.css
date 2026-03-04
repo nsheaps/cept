@@ -1074,3 +1074,70 @@
   color: #9ca3af;
   text-align: center;
 }
+
+/* Property Editors */
+.cept-prop-editor-input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  outline: none;
+  color: #374151;
+}
+
+.cept-prop-editor-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.cept-prop-editor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+}
+
+.cept-prop-editor-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.cept-prop-editor-checkbox-label {
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.cept-prop-editor-url {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cept-prop-editor-url .cept-prop-editor-input {
+  flex: 1;
+}
+
+.cept-prop-editor-url-link {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.cept-prop-editor-readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background: #f9fafb;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+}
+
+.cept-prop-editor-readonly-label {
+  color: #9ca3af;
+}
+
+.cept-prop-editor-readonly-value {
+  color: #6b7280;
+}

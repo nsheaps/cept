@@ -52,3 +52,5 @@ export { InlineDatabase, SUPPORTED_VIEW_TYPES } from './components/editor/extens
 export type { InlineDatabaseOptions, InlineDatabaseAttrs } from './components/editor/extensions/inline-database.js';
 export { SelectEditor, MultiSelectEditor, DEFAULT_COLORS } from './components/database/SelectEditor.js';
 export type { SelectEditorProps, MultiSelectEditorProps } from './components/database/SelectEditor.js';
+export { PropertyEditor } from './components/database/PropertyEditor.js';
+export type { PropertyEditorProps } from './components/database/PropertyEditor.js';
