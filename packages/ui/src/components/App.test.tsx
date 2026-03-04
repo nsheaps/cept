@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { App } from './App.js';
+import { StorageProvider } from './storage/StorageContext.js';
+import type { StorageBackend, BackendCapabilities, DirEntry, FileStat, FsEvent, Unsubscribe, WorkspaceConfig } from '@cept/core';
 
 // Mock d3 for KnowledgeGraph (transitive dep)
 vi.mock('d3', () => {
@@ -27,9 +29,84 @@ vi.mock('d3', () => {
   };
 });
 
-/** Helper: seed settings in localStorage so showDemoContent is true */
-function enableDemoMode() {
-  localStorage.setItem('cept-settings', JSON.stringify({ autoSave: true, showDemoContent: true }));
+/** In-memory StorageBackend for testing */
+class MemoryBackend implements StorageBackend {
+  readonly type = 'browser' as const;
+  readonly capabilities: BackendCapabilities = {
+    history: false,
+    collaboration: false,
+    sync: false,
+    branching: false,
+    externalEditing: false,
+    watchForExternalChanges: false,
+  };
+
+  private files = new Map<string, Uint8Array>();
+
+  async readFile(path: string): Promise<Uint8Array | null> {
+    return this.files.get(this.normalize(path)) ?? null;
+  }
+
+  async writeFile(path: string, data: Uint8Array): Promise<void> {
+    this.files.set(this.normalize(path), data);
+  }
+
+  async deleteFile(path: string): Promise<void> {
+    const normalized = this.normalize(path);
+    for (const key of [...this.files.keys()]) {
+      if (key === normalized || key.startsWith(normalized + '/')) {
+        this.files.delete(key);
+      }
+    }
+  }
+
+  async listDirectory(_path: string): Promise<DirEntry[]> {
+    return [];
+  }
+
+  async exists(path: string): Promise<boolean> {
+    return this.files.has(this.normalize(path));
+  }
+
+  watch(_path: string, _callback: (event: FsEvent) => void): Unsubscribe {
+    return () => {};
+  }
+
+  async stat(_path: string): Promise<FileStat | null> {
+    return null;
+  }
+
+  async initialize(_config: WorkspaceConfig): Promise<void> {}
+
+  async close(): Promise<void> {}
+
+  private normalize(path: string): string {
+    return path.startsWith('/') ? path : `/${path}`;
+  }
+
+  /** Helper to seed state for tests */
+  seedFile(path: string, data: unknown): void {
+    this.files.set(this.normalize(path), new TextEncoder().encode(JSON.stringify(data)));
+  }
+}
+
+function renderApp(backend?: MemoryBackend) {
+  const b = backend ?? new MemoryBackend();
+  return render(
+    <StorageProvider backend={b}>
+      <App />
+    </StorageProvider>,
+  );
+}
+
+/** Helper: seed workspace state in the backend */
+function seedWorkspace(backend: MemoryBackend, state: Record<string, unknown>) {
+  backend.seedFile('.cept/workspace-state.json', state);
+}
+
+/** Helper: seed settings in the backend so showDemoContent is true */
+function seedDemoMode(backend: MemoryBackend) {
+  backend.seedFile('.cept/settings.json', { autoSave: true, showDemoContent: true });
 }
 
 describe('App', () => {
@@ -38,105 +115,129 @@ describe('App', () => {
     localStorage.clear();
   });
 
-  it('renders onboarding screen when showDemoContent is false and no persisted data', () => {
-    // Default: showDemoContent defaults to false in test env (not nsheaps.github.io)
-    render(<App />);
-    expect(screen.getByText('Get Started')).toBeDefined();
+  it('renders onboarding screen when showDemoContent is false and no persisted data', async () => {
+    renderApp();
+    await waitFor(() => {
+      expect(screen.getByText('Get Started')).toBeDefined();
+    });
     expect(screen.getByTestId('start-writing')).toBeDefined();
   });
 
-  it('renders demo content when showDemoContent setting is true', () => {
-    enableDemoMode();
-    render(<App />);
+  it('renders demo content when showDemoContent setting is true', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.queryByText('Get Started')).toBeNull();
+    });
     expect(screen.getByText('Cept')).toBeDefined();
-    expect(screen.queryByText('Get Started')).toBeNull();
   });
 
-  it('"Start writing" creates initial workspace', () => {
-    render(<App />);
+  it('"Start writing" creates initial workspace', async () => {
+    renderApp();
+    await waitFor(() => {
+      expect(screen.getByTestId('start-writing')).toBeDefined();
+    });
     fireEvent.click(screen.getByTestId('start-writing'));
-    // Should show editor now, not onboarding
     expect(screen.queryByText('Get Started')).toBeNull();
   });
 
-  it('creates new page via sidebar', () => {
-    enableDemoMode();
-    render(<App />);
-    // The sidebar should have page items (text appears in sidebar + breadcrumb/editor)
-    expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+  it('creates new page via sidebar', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
-  it('has working sidebar toggle on mobile', () => {
-    enableDemoMode();
-    render(<App />);
+  it('has working sidebar toggle on mobile', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getByTestId('sidebar-toggle')).toBeDefined();
+    });
     const toggle = screen.getByTestId('sidebar-toggle');
-    expect(toggle).toBeDefined();
-    // Clicking should hide sidebar
     fireEvent.click(toggle);
-    // Sidebar should be hidden now (no sidebar element)
     expect(screen.queryByText('Pages')).toBeNull();
-    // Click again to show
     fireEvent.click(toggle);
   });
 
-  it('opens command palette with keyboard shortcut', () => {
-    enableDemoMode();
-    render(<App />);
+  it('opens command palette with keyboard shortcut', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.queryByTestId('app-loading')).toBeNull();
+    });
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
     });
     expect(screen.getByTestId('command-palette')).toBeDefined();
   });
 
-  it('persists state to localStorage', () => {
+  it('persists state to backend', async () => {
     vi.useFakeTimers();
-    render(<App />);
-    fireEvent.click(screen.getByTestId('start-writing'));
+    const backend = new MemoryBackend();
+    renderApp(backend);
 
-    // Wait for debounced persist (300ms debounce in App.tsx)
-    act(() => {
-      vi.advanceTimersByTime(500);
+    // Wait for loading to complete
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    // Click start writing
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('start-writing'));
+    });
+
+    // Wait for debounced persist (300ms)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
     });
     vi.useRealTimers();
 
-    const stored = localStorage.getItem('cept-workspace');
+    const stored = await backend.readFile('.cept/workspace-state.json');
     expect(stored).not.toBeNull();
-    const parsed = JSON.parse(stored!);
+    const parsed = JSON.parse(new TextDecoder().decode(stored!));
     expect(parsed.pages).toBeDefined();
     expect(parsed.pages.length).toBeGreaterThan(0);
   });
 
-  it('restores state from localStorage on reload', () => {
-    // Pre-populate localStorage
-    const state = {
+  it('restores state from backend on reload', async () => {
+    const backend = new MemoryBackend();
+    seedWorkspace(backend, {
       pages: [{ id: 'test-page', title: 'Persisted Page', children: [] }],
       pageContents: { 'test-page': '<p>Saved content</p>' },
       favorites: [],
       recentPages: [],
       selectedPageId: 'test-page',
-    };
-    localStorage.setItem('cept-workspace', JSON.stringify(state));
-
-    render(<App />);
-    // Should NOT show onboarding since we have persisted state
-    expect(screen.queryByText('Get Started')).toBeNull();
-    // Should show the persisted page (appears in sidebar + possibly breadcrumb)
-    expect(screen.getAllByText('Persisted Page').length).toBeGreaterThanOrEqual(1);
+    });
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('Persisted Page').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   it('search opens and finds pages', async () => {
-    enableDemoMode();
-    render(<App />);
-    // Open command palette and use search
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.queryByTestId('app-loading')).toBeNull();
+    });
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
     });
-    // Command palette should be open
     expect(screen.getByTestId('command-palette')).toBeDefined();
   });
 
-  it('unimplemented buttons are disabled', () => {
-    render(<App />);
+  it('unimplemented buttons are disabled', async () => {
+    renderApp();
+    await waitFor(() => {
+      expect(screen.getByTestId('start-writing')).toBeDefined();
+    });
     const buttons = screen.getAllByRole('button');
     const openFolder = buttons.find((b) => b.textContent?.includes('Open a folder'));
     const gitRepo = buttons.find((b) => b.textContent?.includes('Connect a Git repo'));
@@ -144,78 +245,103 @@ describe('App', () => {
     expect((gitRepo as HTMLButtonElement)?.disabled).toBe(true);
   });
 
-  it('does not show reset demo button in header (moved to settings)', () => {
-    enableDemoMode();
-    render(<App />);
+  it('does not show reset demo button in header (moved to settings)', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.queryByTestId('app-loading')).toBeNull();
+    });
     expect(screen.queryByTestId('reset-demo')).toBeNull();
   });
 
-  it('persists state when demo content is shown', () => {
+  it('persists state when demo content is shown', async () => {
     vi.useFakeTimers();
-    enableDemoMode();
-    render(<App />);
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
 
-    act(() => {
-      vi.advanceTimersByTime(500);
+    // Flush the async useEffect that loads persisted state
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    // Now wait for the debounced persist (300ms)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
     });
     vi.useRealTimers();
 
-    const stored = localStorage.getItem('cept-workspace');
+    const stored = await backend.readFile('.cept/workspace-state.json');
     expect(stored).not.toBeNull();
-    const parsed = JSON.parse(stored!);
+    const parsed = JSON.parse(new TextDecoder().decode(stored!));
     expect(parsed.pages).toBeDefined();
     expect(parsed.pages.length).toBeGreaterThan(0);
   });
 
-  it('demo mode shows demo content initially', () => {
-    enableDemoMode();
-    render(<App />);
-    // Should have demo pages
-    expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+  it('demo mode shows demo content initially', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
-  it('restores persisted state even when showDemoContent is true', () => {
-    const state = {
+  it('restores persisted state even when showDemoContent is true', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    seedWorkspace(backend, {
       pages: [{ id: 'my-page', title: 'My Saved Page', children: [] }],
       pageContents: { 'my-page': '<p>My content</p>' },
       favorites: [],
       recentPages: [],
       selectedPageId: 'my-page',
-    };
-    localStorage.setItem('cept-workspace', JSON.stringify(state));
-    enableDemoMode();
-
-    render(<App />);
-    // Should show persisted page, not demo content
-    expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
+    });
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
-  it('shows page header with title and menu when page is selected', () => {
-    enableDemoMode();
-    render(<App />);
-    // Demo mode selects 'welcome' page by default
-    expect(screen.getByTestId('page-header')).toBeDefined();
+  it('shows page header with title and menu when page is selected', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getByTestId('page-header')).toBeDefined();
+    });
     expect(screen.getByTestId('page-title')).toBeDefined();
     expect(screen.getByTestId('page-menu-btn')).toBeDefined();
   });
 
-  it('page title is clickable for inline editing', () => {
-    enableDemoMode();
-    render(<App />);
+  it('page title is clickable for inline editing', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getByTestId('page-title')).toBeDefined();
+    });
     fireEvent.click(screen.getByTestId('page-title'));
     expect(screen.getByTestId('page-title-input')).toBeDefined();
     expect(screen.getByTestId('page-title-save')).toBeDefined();
   });
 
-  it('shows app menu in sidebar', () => {
-    enableDemoMode();
-    render(<App />);
-    expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+  it('shows app menu in sidebar', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+    });
   });
 
-  it('app menu opens and has actions', () => {
-    enableDemoMode();
-    render(<App />);
+  it('app menu opens and has actions', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+    });
     fireEvent.click(screen.getByTestId('app-menu-trigger'));
     expect(screen.getByTestId('app-menu')).toBeDefined();
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();
@@ -223,19 +349,50 @@ describe('App', () => {
     expect(screen.getByTestId('app-menu-about')).toBeDefined();
   });
 
-  it('persists space name', () => {
+  it('persists space name', async () => {
     vi.useFakeTimers();
-    enableDemoMode();
-    render(<App />);
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
 
-    act(() => {
-      vi.advanceTimersByTime(500);
+    // Flush the async useEffect that loads persisted state
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    // Now wait for the debounced persist
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
     });
     vi.useRealTimers();
 
-    const stored = localStorage.getItem('cept-workspace');
+    const stored = await backend.readFile('.cept/workspace-state.json');
     expect(stored).not.toBeNull();
-    const parsed = JSON.parse(stored!);
+    const parsed = JSON.parse(new TextDecoder().decode(stored!));
     expect(parsed.spaceName).toBe('Demo Space');
+  });
+
+  it('migrates from legacy localStorage on first load', async () => {
+    const legacyState = {
+      pages: [{ id: 'legacy-page', title: 'Legacy Page', children: [] }],
+      pageContents: { 'legacy-page': '<p>Old data</p>' },
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'legacy-page',
+    };
+    localStorage.setItem('cept-workspace', JSON.stringify(legacyState));
+
+    const backend = new MemoryBackend();
+    renderApp(backend);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Legacy Page').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Legacy data should be cleaned up from localStorage
+    expect(localStorage.getItem('cept-workspace')).toBeNull();
+
+    // Data should be in the backend
+    const stored = await backend.readFile('.cept/workspace-state.json');
+    expect(stored).not.toBeNull();
   });
 });
