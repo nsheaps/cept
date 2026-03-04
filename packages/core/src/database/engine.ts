@@ -15,6 +15,7 @@ import type {
   ViewConfig,
 } from '../models/index.js';
 import type { DatabaseQuery, GroupedRows } from './index.js';
+import { evaluateFormula as formulaEvaluate } from './formula.js';
 
 /** Raw YAML database file structure */
 interface DatabaseFile {
@@ -167,11 +168,9 @@ export class CeptDatabaseEngine {
   evaluateFormula(
     expression: string,
     row: DatabaseRow,
-    _schema: DatabaseSchema,
+    schema: DatabaseSchema,
   ): unknown {
-    // Basic formula evaluator — handles property references and simple operations
-    // Full formula evaluator is in T1.6
-    return evaluateExpression(expression, row.properties);
+    return formulaEvaluate(expression, row, schema);
   }
 
   // -- Filtering --
@@ -282,32 +281,3 @@ function compareValues(a: unknown, b: unknown): number {
   return String(a).localeCompare(String(b));
 }
 
-// -- Basic expression evaluator --
-
-function evaluateExpression(
-  expression: string,
-  properties: Record<string, unknown>,
-): unknown {
-  // Handle property references: prop("name")
-  const propRefRegex = /prop\("([^"]+)"\)/g;
-  let resolved = expression;
-  let match: RegExpExecArray | null;
-
-  while ((match = propRefRegex.exec(expression)) !== null) {
-    const propName = match[1];
-    const propValue = properties[propName];
-    resolved = resolved.replace(match[0], JSON.stringify(propValue ?? null));
-  }
-
-  // Handle simple arithmetic
-  try {
-    // Only allow safe expressions (numbers, basic operators, parens)
-    if (/^[\d\s+\-*/().]+$/.test(resolved)) {
-      return new Function(`return (${resolved})`)() as unknown;
-    }
-  } catch {
-    // Invalid expression
-  }
-
-  return resolved;
-}
