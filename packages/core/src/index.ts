@@ -35,6 +35,8 @@ export type {
 } from './storage/index.js';
 export { BrowserFsBackend } from './storage/index.js';
 export { LocalFsBackend } from './storage/index.js';
+export { GitBackend } from './storage/index.js';
+export type { GitAuth } from './storage/index.js';
 
 // Auth
 export type {
