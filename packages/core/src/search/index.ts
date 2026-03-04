@@ -37,3 +37,5 @@ export interface SearchIndex {
   /** Rebuild the entire index */
   rebuild(): Promise<void>;
 }
+
+export { CeptSearchIndex } from './engine.js';

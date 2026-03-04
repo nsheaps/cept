@@ -75,6 +75,7 @@ export { CeptDatabaseEngine } from './database/index.js';
 
 // Search
 export type { SearchIndex, SearchResult, SearchOptions } from './search/index.js';
+export { CeptSearchIndex } from './search/index.js';
 
 // Graph
 export type {
