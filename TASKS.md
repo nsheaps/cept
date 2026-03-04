@@ -101,7 +101,7 @@
 - [x] T5.5: Auto-merge + conflict resolution engine *(2026-03-04)*
 - [x] T5.6: Conflict notification + resolution UI *(2026-03-04)*
 - [x] T5.7: Page history viewer (Git log + diff) *(2026-03-04)*
-- [ ] T5.8: Sync engine (pull/push cycle)
+- [x] T5.8: Sync engine (pull/push cycle) *(2026-03-04)*
 
 ## Phase 6: Collaboration
 
