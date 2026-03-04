@@ -84,9 +84,26 @@ class MemoryBackend implements StorageBackend {
     return path.startsWith('/') ? path : `/${path}`;
   }
 
-  /** Helper to seed state for tests */
+  /** Helper to seed JSON state for tests */
   seedFile(path: string, data: unknown): void {
     this.files.set(this.normalize(path), new TextEncoder().encode(JSON.stringify(data)));
+  }
+
+  /** Helper to seed raw text content (e.g. page HTML) */
+  seedText(path: string, text: string): void {
+    this.files.set(this.normalize(path), new TextEncoder().encode(text));
+  }
+
+  /** Helper to read text from a file */
+  async readText(path: string): Promise<string | null> {
+    const data = await this.readFile(path);
+    if (!data) return null;
+    return new TextDecoder().decode(data);
+  }
+
+  /** Helper to check if a file path exists */
+  hasFile(path: string): boolean {
+    return this.files.has(this.normalize(path));
   }
 }
 
@@ -99,9 +116,14 @@ function renderApp(backend?: MemoryBackend) {
   );
 }
 
-/** Helper: seed workspace state in the backend */
+/** Helper: seed workspace tree state (no pageContents — individual files instead) */
 function seedWorkspace(backend: MemoryBackend, state: Record<string, unknown>) {
   backend.seedFile('.cept/workspace-state.json', state);
+}
+
+/** Helper: seed a single page's content as an individual file */
+function seedPageContent(backend: MemoryBackend, pageId: string, html: string) {
+  backend.seedText(`pages/${pageId}.html`, html);
 }
 
 /** Helper: seed settings in the backend so showDemoContent is true */
@@ -177,7 +199,7 @@ describe('App', () => {
     expect(screen.getByTestId('command-palette')).toBeDefined();
   });
 
-  it('persists state to backend', async () => {
+  it('persists tree state to backend (without pageContents)', async () => {
     vi.useFakeTimers();
     const backend = new MemoryBackend();
     renderApp(backend);
@@ -203,21 +225,80 @@ describe('App', () => {
     const parsed = JSON.parse(new TextDecoder().decode(stored!));
     expect(parsed.pages).toBeDefined();
     expect(parsed.pages.length).toBeGreaterThan(0);
+    // pageContents should NOT be in the workspace state anymore
+    expect(parsed.pageContents).toBeUndefined();
   });
 
-  it('restores state from backend on reload', async () => {
+  it('"Start writing" writes page content to individual file', async () => {
+    vi.useFakeTimers();
+    const backend = new MemoryBackend();
+    renderApp(backend);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('start-writing'));
+    });
+
+    // Wait for debounced persist (300ms) and async writes
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    vi.useRealTimers();
+
+    // The workspace-state should have the page tree
+    const stored = await backend.readFile('.cept/workspace-state.json');
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(new TextDecoder().decode(stored!));
+    const pageId = parsed.pages[0].id as string;
+
+    // Page content should be in its own file
+    const pageContent = await backend.readText(`pages/${pageId}.html`);
+    expect(pageContent).not.toBeNull();
+    expect(pageContent).toContain('Welcome to Cept');
+  });
+
+  it('restores state from backend on reload (individual page files)', async () => {
     const backend = new MemoryBackend();
     seedWorkspace(backend, {
       pages: [{ id: 'test-page', title: 'Persisted Page', children: [] }],
-      pageContents: { 'test-page': '<p>Saved content</p>' },
       favorites: [],
       recentPages: [],
       selectedPageId: 'test-page',
     });
+    seedPageContent(backend, 'test-page', '<p>Saved content</p>');
     renderApp(backend);
     await waitFor(() => {
       expect(screen.getAllByText('Persisted Page').length).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  it('migrates pageContents from blob to individual files', async () => {
+    const backend = new MemoryBackend();
+    // Seed the old format with pageContents in the workspace state
+    seedWorkspace(backend, {
+      pages: [{ id: 'old-page', title: 'Old Page', children: [] }],
+      pageContents: { 'old-page': '<p>Migrated content</p>' },
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'old-page',
+    });
+    renderApp(backend);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Old Page').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // After migration, page content should be in individual file
+    const pageContent = await backend.readText('pages/old-page.html');
+    expect(pageContent).toBe('<p>Migrated content</p>');
+
+    // workspace-state.json should no longer contain pageContents
+    const state = await backend.readFile('.cept/workspace-state.json');
+    const parsed = JSON.parse(new TextDecoder().decode(state!));
+    expect(parsed.pageContents).toBeUndefined();
   });
 
   it('search opens and finds pages', async () => {
@@ -255,7 +336,7 @@ describe('App', () => {
     expect(screen.queryByTestId('reset-demo')).toBeNull();
   });
 
-  it('persists state when demo content is shown', async () => {
+  it('persists tree state when demo content is shown', async () => {
     vi.useFakeTimers();
     const backend = new MemoryBackend();
     seedDemoMode(backend);
@@ -278,6 +359,26 @@ describe('App', () => {
     expect(parsed.pages.length).toBeGreaterThan(0);
   });
 
+  it('demo mode writes page content to individual files', async () => {
+    vi.useFakeTimers();
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    renderApp(backend);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    vi.useRealTimers();
+
+    // Demo pages should have individual files
+    const welcomeContent = await backend.readText('pages/welcome.html');
+    expect(welcomeContent).not.toBeNull();
+    expect(welcomeContent).toContain('Welcome to Cept');
+  });
+
   it('demo mode shows demo content initially', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
@@ -292,11 +393,11 @@ describe('App', () => {
     seedDemoMode(backend);
     seedWorkspace(backend, {
       pages: [{ id: 'my-page', title: 'My Saved Page', children: [] }],
-      pageContents: { 'my-page': '<p>My content</p>' },
       favorites: [],
       recentPages: [],
       selectedPageId: 'my-page',
     });
+    seedPageContent(backend, 'my-page', '<p>My content</p>');
     renderApp(backend);
     await waitFor(() => {
       expect(screen.getAllByText('My Saved Page').length).toBeGreaterThanOrEqual(1);
@@ -394,5 +495,9 @@ describe('App', () => {
     // Data should be in the backend
     const stored = await backend.readFile('.cept/workspace-state.json');
     expect(stored).not.toBeNull();
+
+    // Page content should be migrated to individual file
+    const pageContent = await backend.readText('pages/legacy-page.html');
+    expect(pageContent).toBe('<p>Old data</p>');
   });
 });
