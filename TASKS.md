@@ -55,7 +55,7 @@
 - [x] T2.3: Media blocks (image, embed, bookmark) *(2026-03-04)*
 - [x] T2.4: Slash command menu *(2026-03-04)*
 - [x] T2.5: Block drag-and-drop reordering *(2026-03-04)*
-- [ ] T2.6: Block actions menu
+- [x] T2.6: Block actions menu *(2026-03-04)*
 - [ ] T2.7: Inline formatting toolbar
 - [ ] T2.8: Column layout blocks
 - [ ] T2.9: Mentions (page, person, date)
