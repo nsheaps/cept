@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 
 export interface AppMenuProps {
-  onClearCache?: () => void;
+  onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
 }
 
-export function AppMenu({ onClearCache }: AppMenuProps) {
+export function AppMenu({ onOpenSettings }: AppMenuProps) {
   const [open, setOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,63 +37,32 @@ export function AppMenu({ onClearCache }: AppMenuProps) {
         <div className="cept-app-menu" data-testid="app-menu">
           <button
             className="cept-app-menu-item"
-            onClick={() => { setOpen(false); setAboutOpen(true); }}
-            data-testid="app-menu-about"
-          >
-            About Cept
-          </button>
-          <div className="cept-app-menu-divider" />
-          <button
-            className="cept-app-menu-item"
-            disabled
+            onClick={() => {
+              setOpen(false);
+              onOpenSettings?.('settings');
+            }}
             data-testid="app-menu-settings"
           >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="2.5" />
+              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+            </svg>
             Settings
-            <span className="cept-app-menu-badge">Soon</span>
           </button>
           <button
             className="cept-app-menu-item"
             onClick={() => {
-              onClearCache?.();
               setOpen(false);
+              onOpenSettings?.('about');
             }}
-            data-testid="app-menu-clear-cache"
+            data-testid="app-menu-about"
           >
-            Clear data &amp; cache
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M8 7v4M8 4.5v.5" />
+            </svg>
+            About Cept
           </button>
-          <div className="cept-app-menu-divider" />
-          <button
-            className="cept-app-menu-item"
-            disabled
-            data-testid="app-menu-import"
-          >
-            Import
-            <span className="cept-app-menu-badge">Soon</span>
-          </button>
-          <button
-            className="cept-app-menu-item"
-            disabled
-            data-testid="app-menu-export"
-          >
-            Export
-            <span className="cept-app-menu-badge">Soon</span>
-          </button>
-        </div>
-      )}
-      {aboutOpen && (
-        <div className="cept-about-overlay" data-testid="about-dialog">
-          <div className="cept-about-dialog">
-            <h2>About Cept</h2>
-            <p>A Notion-inspired workspace that runs entirely in your browser.</p>
-            <p className="cept-about-version">Version 0.1.0</p>
-            <button
-              className="cept-about-close"
-              onClick={() => setAboutOpen(false)}
-              data-testid="about-close"
-            >
-              Close
-            </button>
-          </div>
         </div>
       )}
     </div>

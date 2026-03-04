@@ -93,8 +93,11 @@ export function PageHeader({
                 handleSave();
               }}
               data-testid="page-title-save"
+              title="Save"
             >
-              Save
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3,8 7,12 13,4" />
+              </svg>
             </button>
           </div>
         ) : (

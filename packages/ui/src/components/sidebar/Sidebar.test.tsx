@@ -46,9 +46,9 @@ describe('Sidebar', () => {
     expect(screen.getByTestId('sidebar')).toBeDefined();
   });
 
-  it('renders workspace name', () => {
+  it('renders space name', () => {
     render(<Sidebar pages={mockPages} />);
-    expect(screen.getByText('Workspace')).toBeDefined();
+    expect(screen.getByText('Space')).toBeDefined();
   });
 
   it('renders search button', () => {
