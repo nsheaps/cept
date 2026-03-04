@@ -22,3 +22,7 @@ export { CommandPalette, filterCommands } from './components/command-palette/Com
 export type { CommandItem, CommandPaletteProps } from './components/command-palette/CommandPalette.js';
 export { SearchPanel } from './components/search/SearchPanel.js';
 export type { SearchResult, SearchPanelProps } from './components/search/SearchPanel.js';
+export { KnowledgeGraph } from './components/knowledge-graph/KnowledgeGraph.js';
+export type { KnowledgeGraphProps } from './components/knowledge-graph/KnowledgeGraph.js';
+export { buildGraphData, filterByDepth } from './components/knowledge-graph/graph-types.js';
+export type { GraphNode, GraphLink, GraphData, GraphViewOptions } from './components/knowledge-graph/graph-types.js';
