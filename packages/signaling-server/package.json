@@ -4,11 +4,18 @@
   "private": true,
   "type": "module",
   "main": "src/index.ts",
+  "bin": {
+    "cept-signaling": "src/server.ts"
+  },
   "scripts": {
+    "start": "bun run src/server.ts",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@cept/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
   }
 }
