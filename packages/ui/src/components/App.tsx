@@ -34,6 +34,33 @@ const DEMO_PAGES: PageTreeNode[] = [
 ];
 
 const MAX_RECENT = 10;
+const STORAGE_KEY = 'cept-workspace';
+
+interface PersistedState {
+  pages: PageTreeNode[];
+  pageContents: Record<string, string>;
+  favorites: SidebarPageRef[];
+  recentPages: SidebarPageRef[];
+  selectedPageId?: string;
+}
+
+function loadPersistedState(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedState(state: PersistedState): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+}
 
 function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
   const result: SidebarPageRef[] = [];
@@ -51,26 +78,30 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  * Renders the main Cept workspace UI.
  */
 export function App({ demoMode }: AppProps) {
-  const [pages, setPages] = useState<PageTreeNode[]>(demoMode ? DEMO_PAGES : []);
+  const persisted = useMemo(() => (demoMode ? null : loadPersistedState()), [demoMode]);
+
+  const [pages, setPages] = useState<PageTreeNode[]>(
+    persisted?.pages ?? (demoMode ? DEMO_PAGES : []),
+  );
   const [selectedPageId, setSelectedPageId] = useState<string | undefined>(
-    demoMode ? 'welcome' : undefined,
+    persisted?.selectedPageId ?? (demoMode ? 'welcome' : undefined),
   );
   const [pageContents, setPageContents] = useState<Record<string, string>>(
-    demoMode ? { welcome: DEMO_CONTENT, 'getting-started': '', features: '', notes: '' } : {},
+    persisted?.pageContents ?? (demoMode ? { welcome: DEMO_CONTENT, 'getting-started': '', features: '', notes: '' } : {}),
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [hasStarted, setHasStarted] = useState(!!demoMode);
+  const [hasStarted, setHasStarted] = useState(!!demoMode || !!persisted);
 
   // Trash state
   const [trash, setTrash] = useState<SidebarPageRef[]>([]);
 
   // Favorites state
-  const [favorites, setFavorites] = useState<SidebarPageRef[]>([]);
+  const [favorites, setFavorites] = useState<SidebarPageRef[]>(persisted?.favorites ?? []);
 
   // Recent pages state
-  const [recentPages, setRecentPages] = useState<SidebarPageRef[]>([]);
+  const [recentPages, setRecentPages] = useState<SidebarPageRef[]>(persisted?.recentPages ?? []);
 
   // Track content save timeout
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -85,6 +116,16 @@ export function App({ demoMode }: AppProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Persist state to localStorage (debounced)
+  const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    if (demoMode) return;
+    if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+    persistTimeoutRef.current = setTimeout(() => {
+      savePersistedState({ pages, pageContents, favorites, recentPages, selectedPageId });
+    }, 300);
+  }, [demoMode, pages, pageContents, favorites, recentPages, selectedPageId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];

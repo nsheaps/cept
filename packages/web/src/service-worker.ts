@@ -7,12 +7,17 @@
  */
 
 // Service worker type declarations (this file runs in SW context, not DOM)
-/* eslint-disable @typescript-eslint/no-explicit-any */
-interface SWExtendableEvent extends Event { waitUntil(p: Promise<any>): void; }
+interface SWExtendableEvent extends Event { waitUntil(p: Promise<unknown>): void; }
 interface SWFetchEvent extends SWExtendableEvent { readonly request: Request; respondWith(r: Response | Promise<Response>): void; }
-interface SWMessageEvent extends SWExtendableEvent { readonly data: any; }
-interface SWGlobalScope { readonly location: Location; readonly clients: { claim(): Promise<void> }; skipWaiting(): Promise<void>; addEventListener(type: string, listener: (event: any) => void): void; }
-/* eslint-enable @typescript-eslint/no-explicit-any */
+interface SWMessageEvent extends SWExtendableEvent { readonly data: { type?: string } & Record<string, unknown>; }
+interface SWGlobalScope {
+  readonly location: Location;
+  readonly clients: { claim(): Promise<void> };
+  skipWaiting(): Promise<void>;
+  addEventListener(type: 'install' | 'activate', listener: (event: SWExtendableEvent) => void): void;
+  addEventListener(type: 'fetch', listener: (event: SWFetchEvent) => void): void;
+  addEventListener(type: 'message', listener: (event: SWMessageEvent) => void): void;
+}
 
 declare const self: SWGlobalScope;
 
