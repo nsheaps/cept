@@ -12,7 +12,7 @@ import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, loadSettings, saveSettings, resetSettings, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
-import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO } from './docs/docs-content.js';
+import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl } from './docs/docs-content.js';
 
 interface AppProps {
   // No props needed — demo mode is controlled by settings
@@ -535,6 +535,17 @@ export function App(_props?: AppProps) {
                     <path d="M5 5h6M5 8h6M5 11h3" />
                   </svg>
                   <span>Read-only — sourced from <code>docs/</code> in the Git repository</span>
+                  {getDocsSourceUrl(docsSelectedPageId) && (
+                    <a
+                      className="cept-docs-banner-link"
+                      href={getDocsSourceUrl(docsSelectedPageId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="docs-source-link"
+                    >
+                      View source
+                    </a>
+                  )}
                   <button className="cept-docs-banner-back" onClick={handleBackToUserSpace} data-testid="docs-back-to-space">
                     Back to my space
                   </button>

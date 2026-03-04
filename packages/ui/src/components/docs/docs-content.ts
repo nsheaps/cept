@@ -676,7 +676,35 @@ export const DOCS_CONTENT: Record<string, string> = {
   'docs-from-obsidian': mdToHtml(MD_FROM_OBSIDIAN),
   'docs-keyboard-shortcuts': mdToHtml(MD_KEYBOARD_SHORTCUTS),
   'docs-roadmap': mdToHtml(MD_ROADMAP),
+  // Folder pages — auto-generated index content for parent nodes
+  'docs-getting-started': mdToHtml(`# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`),
+  'docs-guides': mdToHtml(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Platform Support** — Supported platforms and browsers`),
+  'docs-comparison': mdToHtml(`# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`),
+  'docs-migration': mdToHtml(`# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`),
+  'docs-reference': mdToHtml(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Product Roadmap** — What's built and what's coming next`),
 };
+
+/** Map of docs page IDs to their source file path in the GitHub repo */
+export const DOCS_SOURCE_PATHS: Record<string, string> = {
+  'docs-index': 'docs/content/index.md',
+  'docs-introduction': 'docs/content/getting-started/introduction.md',
+  'docs-quick-start': 'docs/content/getting-started/quick-start.md',
+  'docs-features': 'docs/content/guides/features.md',
+  'docs-platform-support': 'docs/content/guides/platform-support.md',
+  'docs-vs-notion': 'docs/content/comparison/vs-notion.md',
+  'docs-vs-obsidian': 'docs/content/comparison/vs-obsidian.md',
+  'docs-from-notion': 'docs/content/migration/from-notion.md',
+  'docs-from-obsidian': 'docs/content/migration/from-obsidian.md',
+  'docs-keyboard-shortcuts': 'docs/content/reference/keyboard-shortcuts.md',
+  'docs-roadmap': 'docs/content/reference/roadmap.md',
+};
+
+const GITHUB_BASE = 'https://github.com/nsheaps/cept/blob/main/';
+
+export function getDocsSourceUrl(pageId: string): string | undefined {
+  const path = DOCS_SOURCE_PATHS[pageId];
+  return path ? `${GITHUB_BASE}${path}` : undefined;
+}
 
 export const DOCS_SPACE_INFO = {
   id: 'cept-docs',
