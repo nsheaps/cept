@@ -97,7 +97,7 @@
 - [x] T5.1: GitHub OAuth App flow *(2026-03-04)*
 - [x] T5.2: Repo picker/creator UI *(2026-03-04)*
 - [x] T5.3: Auto-commit engine *(2026-03-04)*
-- [ ] T5.4: Auto-branch strategy
+- [x] T5.4: Auto-branch strategy *(2026-03-04)*
 - [ ] T5.5: Auto-merge + conflict resolution engine
 - [ ] T5.6: Conflict notification + resolution UI
 - [ ] T5.7: Page history viewer (Git log + diff)
