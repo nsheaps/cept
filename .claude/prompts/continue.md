@@ -507,7 +507,16 @@ For EVERY task, follow this loop rigorously. **Do not skip steps. Do not batch m
 │     • git push to preserve work                  │
 │     • Update TASKS.md to mark task complete      │
 ├─────────────────────────────────────────────────┤
-│  8. NEXT TASK — loop back to step 1              │
+│  8. CI CHECK                                     │
+│     • Wait for GitHub Actions CI to complete     │
+│     • CI MUST pass before moving to next task    │
+│     • If CI fails, fix and re-push until green   │
+├─────────────────────────────────────────────────┤
+│  9. NEXT TASK — loop back to step 1              │
+│     • Automatically continue to the next task    │
+│     • Do NOT prompt the user between tasks       │
+│     • Only stop to ask if you need user input    │
+│     • Continue until all tasks are complete      │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -555,7 +564,11 @@ Every task must pass before moving to the next:
 bun run lint       # Zero errors
 bun run typecheck  # Zero errors
 bun run test       # All tests pass, no regressions
+bun run build      # Build succeeds (no bundler errors)
+# After push: GitHub Actions CI must pass
 ```
+
+**CRITICAL:** CI must pass on GitHub before moving to the next task. If CI fails after push, investigate the failure, fix it locally, and re-push until CI is green. Do NOT proceed to the next task with a red CI.
 
 ### 7.2 Per-Phase Gate
 
