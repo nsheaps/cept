@@ -18,6 +18,7 @@ import { ImageBlock } from './extensions/image.js';
 import { Embed } from './extensions/embed.js';
 import { Bookmark } from './extensions/bookmark.js';
 import { Columns, Column } from './extensions/columns.js';
+import { MathBlock, InlineMath } from './extensions/math.js';
 import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
@@ -117,10 +118,12 @@ export function CeptEditor({
       Bookmark,
       Columns,
       Column,
+      MathBlock,
+      InlineMath,
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
-        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns'],
+        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns', 'mathBlock'],
       }),
       SlashCommand.configure({
         suggestion: {

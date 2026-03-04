@@ -429,6 +429,26 @@
   object-fit: cover;
 }
 
+/* Math blocks */
+.cept-editor .tiptap .cept-math-block {
+  margin: 0.75rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.cept-editor .tiptap .cept-inline-math {
+  padding: 0 0.2em;
+}
+
+.cept-editor .tiptap .cept-math-error {
+  color: #e53e3e;
+  font-family: 'SFMono-Regular', 'Consolas', monospace;
+  font-size: 0.875em;
+}
+
 /* Column layout */
 .cept-editor .tiptap .cept-columns {
   display: flex;
