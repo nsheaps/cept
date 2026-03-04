@@ -11,16 +11,33 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: [
-      'packages/*/src/**/*.{test,spec}.{ts,tsx}',
-      'features/step-definitions/**/*.steps.ts',
-    ],
-    exclude: ['node_modules', 'dist', 'e2e'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['packages/*/src/**/*.{ts,tsx}'],
       exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/index.ts'],
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: [
+            'packages/*/src/**/*.{test,spec}.{ts,tsx}',
+          ],
+          exclude: ['node_modules', 'dist', 'e2e'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: [
+            'features/step-definitions/**/*.steps.ts',
+          ],
+          exclude: ['node_modules', 'dist', 'e2e'],
+        },
+      },
+    ],
   },
 });
