@@ -156,11 +156,11 @@
 - [x] P2.1: Fix known bugs — GitBackend `node:fs` hardcode, diff empty hunks, signaling server entry point *(2026-03-04)*
 - [x] P2.2: Harden Markdown parser/serializer roundtrip — fuzz-test all block types, fix extractText *(2026-03-04)*
 - [x] P2.3: Replace App.tsx localStorage with BrowserFsBackend (keystone task) *(2026-03-04)*
-- [ ] P2.4: Wire page CRUD to storage backend — readFile/writeFile for Markdown
+- [x] P2.4: Wire page CRUD to storage backend — individual page files via StorageBackend *(2026-03-04)*
 - [ ] P2.5: Wire database persistence to storage backend — .cept/databases/*.yaml
 - [ ] P2.6: Wire search index to storage backend — index real file contents
 - [ ] P2.7: Implement LocalFsBackend using File System Access API / Node fs
-- [ ] P2.8: Fix GitBackend to use injected filesystem (not hardcoded node:fs)
+- [x] P2.8: Fix GitBackend to use injected filesystem (not hardcoded node:fs) *(2026-03-04, done in P2.1)*
 - [ ] P2.9: Multi-space support (create, switch, delete)
 - [ ] P2.10: Wire Notion importer UI
 - [ ] P2.11: Wire Obsidian importer UI

@@ -17,7 +17,8 @@ import type { CeptSettings } from '../settings/SettingsModal.js';
 /** Shape of the persisted workspace state stored via the backend */
 export interface PersistedState {
   pages: PageTreeNode[];
-  pageContents: Record<string, string>;
+  /** @deprecated Page contents are now stored as individual files. Kept for migration only. */
+  pageContents?: Record<string, string>;
   favorites: SidebarPageRef[];
   recentPages: SidebarPageRef[];
   selectedPageId?: string;
@@ -25,6 +26,7 @@ export interface PersistedState {
 }
 
 const WORKSPACE_FILE = '.cept/workspace-state.json';
+const PAGES_DIR = 'pages';
 const SETTINGS_FILE = '.cept/settings.json';
 const LEGACY_STORAGE_KEY = 'cept-workspace';
 const LEGACY_SETTINGS_KEY = 'cept-settings';
@@ -67,12 +69,17 @@ function decode<T>(data: Uint8Array | null): T | null {
 /**
  * Load persisted workspace state from the storage backend.
  * Falls back to legacy localStorage if backend has no data (migration).
+ * Migrates pageContents from the JSON blob to individual page files.
  */
 export async function loadPersistedState(backend: StorageBackend): Promise<PersistedState | null> {
   // Try loading from backend
   const data = await backend.readFile(WORKSPACE_FILE);
   if (data) {
-    return decode<PersistedState>(data);
+    const state = decode<PersistedState>(data);
+    if (state) {
+      await migratePageContentsToFiles(backend, state);
+      return state;
+    }
   }
 
   // Migrate from localStorage if available
@@ -81,6 +88,7 @@ export async function loadPersistedState(backend: StorageBackend): Promise<Persi
       const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
       if (raw) {
         const state = JSON.parse(raw) as PersistedState;
+        await migratePageContentsToFiles(backend, state);
         // Save to backend for future loads
         await backend.writeFile(WORKSPACE_FILE, encode(state));
         // Clean up legacy storage
@@ -93,6 +101,24 @@ export async function loadPersistedState(backend: StorageBackend): Promise<Persi
   }
 
   return null;
+}
+
+/**
+ * Migrate pageContents from the PersistedState blob to individual page files.
+ * After migration, removes pageContents from the state and re-saves the workspace file.
+ */
+async function migratePageContentsToFiles(backend: StorageBackend, state: PersistedState): Promise<void> {
+  if (!state.pageContents || Object.keys(state.pageContents).length === 0) return;
+
+  // Write each page's content to its own file
+  const writes = Object.entries(state.pageContents).map(([pageId, html]) =>
+    writePageContent(backend, pageId, html),
+  );
+  await Promise.all(writes);
+
+  // Remove pageContents from state and re-save the workspace file
+  delete state.pageContents;
+  await backend.writeFile(WORKSPACE_FILE, encode(state));
 }
 
 /** Save workspace state to the storage backend */
@@ -149,6 +175,27 @@ export async function resetSettingsOnBackend(backend: StorageBackend): Promise<v
   }
 }
 
+/** Read a single page's content from the backend */
+export async function readPageContent(backend: StorageBackend, pageId: string): Promise<string | null> {
+  const data = await backend.readFile(`${PAGES_DIR}/${pageId}.html`);
+  if (!data) return null;
+  return new TextDecoder().decode(data);
+}
+
+/** Write a single page's content to the backend */
+export async function writePageContent(backend: StorageBackend, pageId: string, html: string): Promise<void> {
+  await backend.writeFile(`${PAGES_DIR}/${pageId}.html`, new TextEncoder().encode(html));
+}
+
+/** Delete a single page's content from the backend */
+export async function deletePageContent(backend: StorageBackend, pageId: string): Promise<void> {
+  try {
+    await backend.deleteFile(`${PAGES_DIR}/${pageId}.html`);
+  } catch {
+    // Ignore if file doesn't exist
+  }
+}
+
 /** Clear all workspace data from the backend */
 export async function clearAllData(backend: StorageBackend): Promise<void> {
   try {
@@ -158,6 +205,11 @@ export async function clearAllData(backend: StorageBackend): Promise<void> {
   }
   try {
     await backend.deleteFile(SETTINGS_FILE);
+  } catch {
+    // Ignore
+  }
+  try {
+    await backend.deleteFile(PAGES_DIR);
   } catch {
     // Ignore
   }

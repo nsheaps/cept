@@ -19,6 +19,9 @@ import {
   saveSettingsToBackend,
   resetSettingsOnBackend,
   clearAllData,
+  readPageContent,
+  writePageContent,
+  deletePageContent,
 } from './storage/StorageContext.js';
 
 
@@ -95,20 +98,30 @@ export function App() {
     if (persisted) {
       setPages(persisted.pages);
       setSelectedPageId(persisted.selectedPageId);
-      setPageContents(persisted.pageContents);
       setFavorites(persisted.favorites ?? []);
       setRecentPages(persisted.recentPages ?? []);
       setSpaceName(persisted.spaceName ?? 'My Space');
       setHasStarted(true);
       setTrash([]);
+      // Load selected page content from backend
+      if (persisted.selectedPageId) {
+        void readPageContent(backend, persisted.selectedPageId).then((content) => {
+          if (content !== null) {
+            setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content }));
+          }
+        });
+      }
     } else if (shouldShowDemo) {
       setPages(DEMO_PAGES);
       setSelectedPageId('welcome');
-      setPageContents({ welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' });
+      const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+      setPageContents(demoContents);
       setSpaceName('Demo Space');
       setHasStarted(true);
+      // Write demo content to individual files
+      void Promise.all(Object.entries(demoContents).map(([id, html]) => writePageContent(backend, id, html)));
     }
-  }, [ready, persisted, initialSettings, shouldShowDemo]);
+  }, [ready, persisted, initialSettings, shouldShowDemo, backend]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -121,15 +134,15 @@ export function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Persist state to backend (debounced)
+  // Persist tree state to backend (debounced) — page content is saved separately per-file
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (!initializedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
-      save({ pages, pageContents, favorites, recentPages, selectedPageId, spaceName });
+      save({ pages, favorites, recentPages, selectedPageId, spaceName });
     }, 300);
-  }, [pages, pageContents, favorites, recentPages, selectedPageId, spaceName, save]);
+  }, [pages, favorites, recentPages, selectedPageId, spaceName, save]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -150,11 +163,19 @@ export function App() {
     if (node) {
       addToRecent(id, node.title, node.icon);
     }
+    // Load page content from backend if not already cached
+    if (!pageContents[id]) {
+      void readPageContent(backend, id).then((content) => {
+        if (content !== null) {
+          setPageContents((prev) => ({ ...prev, [id]: content }));
+        }
+      });
+    }
     // Close sidebar on narrow screens after selecting a page
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
-  }, [pages, addToRecent]);
+  }, [pages, addToRecent, pageContents, backend]);
 
   const handlePageToggle = useCallback((id: string) => {
     setPages((prev) => toggleNode(prev, id));
@@ -173,8 +194,9 @@ export function App() {
     }
     setPageContents((prev) => ({ ...prev, [newPage.id]: '' }));
     setSelectedPageId(newPage.id);
+    void writePageContent(backend, newPage.id, '');
     if (!hasStarted) setHasStarted(true);
-  }, [hasStarted]);
+  }, [hasStarted, backend]);
 
   const handlePageRename = useCallback((id: string, title: string) => {
     setPages((prev) => renameNode(prev, id, title));
@@ -217,7 +239,8 @@ export function App() {
       delete next[id];
       return next;
     });
-  }, []);
+    void deletePageContent(backend, id);
+  }, [backend]);
 
   const handleEmptyTrash = useCallback(() => {
     setTrash((prev) => {
@@ -227,10 +250,11 @@ export function App() {
           delete next[item.id];
           return next;
         });
+        void deletePageContent(backend, item.id);
       }
       return [];
     });
-  }, []);
+  }, [backend]);
 
   const handleToggleFavorite = useCallback((id: string) => {
     setFavorites((prev) => {
@@ -255,7 +279,9 @@ export function App() {
         title: `${original.title} (copy)`,
       };
       // Copy content
-      setPageContents((pc) => ({ ...pc, [duplicateId]: pc[id] ?? '' }));
+      const content = pageContents[id] ?? '';
+      setPageContents((pc) => ({ ...pc, [duplicateId]: content }));
+      void writePageContent(backend, duplicateId, content);
       const ancestors = findAncestorIds(prev, id);
       if (!ancestors || ancestors.length === 0) {
         const idx = prev.findIndex((n) => n.id === id);
@@ -266,7 +292,7 @@ export function App() {
       const parentId = ancestors[ancestors.length - 1];
       return addChild(prev, parentId, duplicate);
     });
-  }, []);
+  }, [pageContents, backend]);
 
   const handlePageMoveToRoot = useCallback((id: string) => {
     setPages((prev) => moveNode(prev, id, undefined));
@@ -276,12 +302,12 @@ export function App() {
     if (!selectedPageId) return;
     setPageContents((prev) => ({ ...prev, [selectedPageId]: html }));
 
-    // Debounced save indication (for future persistence)
+    // Debounced write to backend
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      // Future: backend.writeFile(...)
+      void writePageContent(backend, selectedPageId, html);
     }, 500);
-  }, [selectedPageId]);
+  }, [selectedPageId, backend]);
 
   const handleSearch = useCallback(async (query: string): Promise<SearchResult[]> => {
     const q = query.toLowerCase();
@@ -322,22 +348,26 @@ export function App() {
       icon: '\u{1F44B}',
       children: [],
     };
+    const content = '<h1>Welcome to Cept</h1><p>Start typing here...</p>';
     setPages([firstPage]);
-    setPageContents({ [firstPage.id]: '<h1>Welcome to Cept</h1><p>Start typing here...</p>' });
+    setPageContents({ [firstPage.id]: content });
     setSelectedPageId(firstPage.id);
-  }, []);
+    void writePageContent(backend, firstPage.id, content);
+  }, [backend]);
 
   const handleResetDemo = useCallback(() => {
     // Always recreate — if space was renamed, this creates what is effectively a duplicate
     setPages(DEMO_PAGES);
-    setPageContents({ welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' });
+    const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+    setPageContents(demoContents);
     setSelectedPageId('welcome');
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
     setSpaceName('Demo Space');
     setHasStarted(true);
-  }, []);
+    void Promise.all(Object.entries(demoContents).map(([id, html]) => writePageContent(backend, id, html)));
+  }, [backend]);
 
   const handleClearAllData = useCallback(() => {
     void clearAllData(backend);
