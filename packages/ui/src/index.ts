@@ -13,3 +13,4 @@ export { Sidebar } from './components/sidebar/Sidebar.js';
 export type { SidebarProps } from './components/sidebar/Sidebar.js';
 export { PageTreeItem } from './components/sidebar/PageTreeItem.js';
 export type { PageTreeNode, PageTreeItemProps } from './components/sidebar/PageTreeItem.js';
+export { findAncestorIds, expandToNode, getBreadcrumbs } from './components/sidebar/page-tree-utils.js';

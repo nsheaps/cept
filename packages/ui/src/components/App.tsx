@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
+import { expandToNode } from './sidebar/page-tree-utils.js';
 
 interface AppProps {
   demoMode?: boolean;
@@ -36,6 +37,11 @@ export function App({ demoMode }: AppProps) {
     demoMode ? 'welcome' : undefined,
   );
 
+  const handlePageSelect = useCallback((id: string) => {
+    setSelectedPageId(id);
+    setPages((prev) => expandToNode(prev, id));
+  }, []);
+
   const handlePageToggle = useCallback((id: string) => {
     setPages((prev) => toggleNode(prev, id));
   }, []);
@@ -63,7 +69,7 @@ export function App({ demoMode }: AppProps) {
         <Sidebar
           pages={pages}
           selectedPageId={selectedPageId}
-          onPageSelect={setSelectedPageId}
+          onPageSelect={handlePageSelect}
           onPageToggle={handlePageToggle}
           onPageAdd={handlePageAdd}
         />
