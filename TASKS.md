@@ -59,7 +59,7 @@
 - [x] T2.7: Inline formatting toolbar *(2026-03-04)*
 - [x] T2.8: Column layout blocks *(2026-03-04)*
 - [x] T2.9: Mentions (page, person, date) *(2026-03-04)*
-- [ ] T2.10: Math equations (KaTeX)
+- [x] T2.10: Math equations (KaTeX) *(2026-03-04)*
 - [ ] T2.11: Mermaid diagram block — custom TipTap node with live preview, all 20+ diagram types, SVG/PNG export
 
 ## Phase 3: Navigation & Page Management

@@ -166,6 +166,25 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       editor?.chain().focus().deleteRange(range).setColumns(3).run();
     },
   },
+  // Advanced
+  {
+    title: 'Math Equation',
+    description: 'LaTeX math block',
+    icon: '\u{1D70B}',
+    category: 'Advanced',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setMathBlock().run();
+    },
+  },
+  {
+    title: 'Inline Math',
+    description: 'Inline LaTeX equation',
+    icon: '\u{1D465}',
+    category: 'Advanced',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setInlineMath().run();
+    },
+  },
 ];
 
 export function filterSlashCommands(
