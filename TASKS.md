@@ -69,7 +69,7 @@
 - [x] T3.3: Breadcrumbs in topbar *(2026-03-04)*
 - [x] T3.4: Page CRUD (create, rename, move, delete, restore) *(2026-03-04)*
 - [x] T3.5: Favorites and recent sections *(2026-03-04)*
-- [ ] T3.6: Trash with restore
+- [x] T3.6: Trash with restore *(2026-03-04)*
 - [ ] T3.7: Command palette (Cmd+K)
 - [ ] T3.8: Full-text search UI
 - [ ] T3.9: Knowledge Graph — global view with D3 force-directed layout
