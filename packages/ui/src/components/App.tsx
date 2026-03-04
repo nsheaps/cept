@@ -20,9 +20,23 @@ export function App({ demoMode }: AppProps) {
           {demoMode ? (
             <div>
               <h2 className="text-2xl font-bold mb-4">Welcome to Cept</h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Start writing — your workspace is ready.
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                This is a demo workspace running in your browser. All data is stored in IndexedDB.
               </p>
+              <div className="prose dark:prose-invert max-w-none">
+                <h3>Getting Started</h3>
+                <p>
+                  Cept is a fully-featured Notion clone that works offline. You can create pages,
+                  databases, and templates — all stored locally in your browser.
+                </p>
+                <h3>Sample Content</h3>
+                <ul>
+                  <li>Try creating a new page with the sidebar</li>
+                  <li>Use slash commands (/) to insert different block types</li>
+                  <li>Create a database to organize your data</li>
+                  <li>Explore the knowledge graph to see connections</li>
+                </ul>
+              </div>
             </div>
           ) : (
             <div>
