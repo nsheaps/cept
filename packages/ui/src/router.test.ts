@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseRoute, buildPath, restoreRoute } from './router.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { parseRoute, buildPath, restoreRoute, setBasePath } from './router.js';
 
-// Mock import.meta.env.BASE_URL
-vi.stubGlobal('import', { meta: { env: { BASE_URL: '/' } } });
+afterEach(() => {
+  setBasePath(null);
+});
 
-describe('parseRoute', () => {
+describe('parseRoute (base=/)', () => {
+  beforeEach(() => setBasePath('/'));
+
   it('returns default route for root', () => {
     const route = parseRoute('/');
     expect(route).toEqual({ space: 'user', spaceId: 'default', pageId: undefined });
@@ -47,7 +50,9 @@ describe('parseRoute', () => {
   });
 });
 
-describe('buildPath', () => {
+describe('buildPath (base=/)', () => {
+  beforeEach(() => setBasePath('/'));
+
   it('builds root for default space no page', () => {
     expect(buildPath({ space: 'user', spaceId: 'default' })).toBe('/');
   });
@@ -75,7 +80,7 @@ describe('buildPath', () => {
 
 describe('restoreRoute', () => {
   beforeEach(() => {
-    // Reset window.location
+    setBasePath('/');
     Object.defineProperty(window, 'location', {
       writable: true,
       value: {
@@ -84,7 +89,6 @@ describe('restoreRoute', () => {
         hash: '',
       },
     });
-    // Mock history.replaceState
     window.history.replaceState = vi.fn();
   });
 
@@ -140,5 +144,76 @@ describe('restoreRoute', () => {
     });
     const route = restoreRoute();
     expect(route).toEqual({ space: 'docs', spaceId: 'docs', pageId: 'getting-started' });
+  });
+});
+
+describe('parseRoute with /cept/app/ base', () => {
+  beforeEach(() => setBasePath('/cept/app/'));
+
+  it('strips base to parse space route', () => {
+    const route = parseRoute('/cept/app/s/work/page-1');
+    expect(route).toEqual({ space: 'user', spaceId: 'work', pageId: 'page-1' });
+  });
+
+  it('strips base to parse docs route', () => {
+    const route = parseRoute('/cept/app/docs/getting-started');
+    expect(route).toEqual({ space: 'docs', spaceId: 'docs', pageId: 'getting-started' });
+  });
+
+  it('returns default for base root', () => {
+    const route = parseRoute('/cept/app/');
+    expect(route).toEqual({ space: 'user', spaceId: 'default', pageId: undefined });
+  });
+
+  it('returns default for base without trailing slash', () => {
+    const route = parseRoute('/cept/app');
+    expect(route).toEqual({ space: 'user', spaceId: 'default', pageId: undefined });
+  });
+});
+
+describe('buildPath with /cept/app/ base', () => {
+  beforeEach(() => setBasePath('/cept/app/'));
+
+  it('builds space + page path with base', () => {
+    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe('/cept/app/s/work/page-1');
+  });
+
+  it('builds docs path with base', () => {
+    expect(buildPath({ space: 'docs', pageId: 'api-ref' })).toBe('/cept/app/docs/api-ref');
+  });
+
+  it('builds root with base for default space', () => {
+    expect(buildPath({ space: 'user', spaceId: 'default' })).toBe('/cept/app/');
+  });
+});
+
+describe('parseRoute with /cept/pr-42/ base (preview)', () => {
+  beforeEach(() => setBasePath('/cept/pr-42/'));
+
+  it('strips preview base to parse space route', () => {
+    const route = parseRoute('/cept/pr-42/s/work/page-1');
+    expect(route).toEqual({ space: 'user', spaceId: 'work', pageId: 'page-1' });
+  });
+
+  it('strips preview base to parse docs route', () => {
+    const route = parseRoute('/cept/pr-42/docs');
+    expect(route).toEqual({ space: 'docs', spaceId: 'docs', pageId: undefined });
+  });
+
+  it('returns default for preview base root', () => {
+    const route = parseRoute('/cept/pr-42/');
+    expect(route).toEqual({ space: 'user', spaceId: 'default', pageId: undefined });
+  });
+});
+
+describe('buildPath with /cept/pr-42/ base (preview)', () => {
+  beforeEach(() => setBasePath('/cept/pr-42/'));
+
+  it('builds space + page path with preview base', () => {
+    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe('/cept/pr-42/s/work/page-1');
+  });
+
+  it('builds docs path with preview base', () => {
+    expect(buildPath({ space: 'docs' })).toBe('/cept/pr-42/docs');
   });
 });
