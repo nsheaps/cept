@@ -1,3 +1,5 @@
+import { CeptEditor } from './editor/CeptEditor.js';
+
 interface AppProps {
   demoMode?: boolean;
 }
@@ -18,26 +20,10 @@ export function App({ demoMode }: AppProps) {
         </aside>
         <section className="flex-1 p-8">
           {demoMode ? (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Welcome to Cept</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                This is a demo workspace running in your browser. All data is stored in IndexedDB.
-              </p>
-              <div className="prose dark:prose-invert max-w-none">
-                <h3>Getting Started</h3>
-                <p>
-                  Cept is a fully-featured Notion clone that works offline. You can create pages,
-                  databases, and templates — all stored locally in your browser.
-                </p>
-                <h3>Sample Content</h3>
-                <ul>
-                  <li>Try creating a new page with the sidebar</li>
-                  <li>Use slash commands (/) to insert different block types</li>
-                  <li>Create a database to organize your data</li>
-                  <li>Explore the knowledge graph to see connections</li>
-                </ul>
-              </div>
-            </div>
+            <CeptEditor
+              content={DEMO_CONTENT}
+              placeholder="Type '/' for commands..."
+            />
           ) : (
             <div>
               <h2 className="text-2xl font-bold mb-4">Get Started</h2>
@@ -71,3 +57,21 @@ export function App({ demoMode }: AppProps) {
     </div>
   );
 }
+
+const DEMO_CONTENT = `
+<h1>Welcome to Cept</h1>
+<p>This is a demo workspace running in your browser. All data is stored in IndexedDB.</p>
+<h2>Getting Started</h2>
+<p>Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates — all stored locally in your browser.</p>
+<h3>Try These Features</h3>
+<ul>
+  <li>Type text to create paragraphs</li>
+  <li>Use <strong>bold</strong>, <em>italic</em>, and <s>strikethrough</s></li>
+  <li>Create nested lists by pressing Tab</li>
+</ul>
+<ol>
+  <li>Numbered lists work too</li>
+  <li>Just like you'd expect</li>
+</ol>
+<p>Start typing below to try the editor...</p>
+`;

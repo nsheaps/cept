@@ -7,3 +7,5 @@
  */
 
 export { App } from './components/App.js';
+export { CeptEditor } from './components/editor/index.js';
+export type { CeptEditorProps } from './components/editor/index.js';
