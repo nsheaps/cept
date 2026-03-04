@@ -12,6 +12,7 @@ export interface SidebarProps {
   pages: PageTreeNode[];
   favorites?: SidebarPageRef[];
   recentPages?: SidebarPageRef[];
+  trash?: SidebarPageRef[];
   selectedPageId?: string;
   onPageSelect?: (id: string) => void;
   onPageToggle?: (id: string) => void;
@@ -21,6 +22,9 @@ export interface SidebarProps {
   onPageDelete?: (id: string) => void;
   onPageMoveToRoot?: (id: string) => void;
   onToggleFavorite?: (id: string) => void;
+  onRestoreFromTrash?: (id: string) => void;
+  onPermanentDelete?: (id: string) => void;
+  onEmptyTrash?: () => void;
   onSearch?: () => void;
 }
 
@@ -28,6 +32,7 @@ export function Sidebar({
   pages,
   favorites = [],
   recentPages = [],
+  trash = [],
   selectedPageId,
   onPageSelect,
   onPageToggle,
@@ -37,8 +42,12 @@ export function Sidebar({
   onPageDelete,
   onPageMoveToRoot,
   onToggleFavorite,
+  onRestoreFromTrash,
+  onPermanentDelete,
+  onEmptyTrash,
   onSearch,
 }: SidebarProps) {
+  const [trashExpanded, setTrashExpanded] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     pageId: string;
     pageTitle: string;
@@ -157,6 +166,62 @@ export function Sidebar({
           )}
         </div>
       </div>
+
+      <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="trash-section">
+        <button
+          className="cept-sidebar-action-btn"
+          onClick={() => setTrashExpanded((prev) => !prev)}
+          data-testid="trash-toggle"
+        >
+          <span className="cept-sidebar-action-icon">{'\u{1F5D1}'}</span>
+          <span>Trash</span>
+          {trash.length > 0 && (
+            <span className="cept-sidebar-badge" data-testid="trash-count">
+              {trash.length}
+            </span>
+          )}
+        </button>
+        {trashExpanded && (
+          <div className="cept-sidebar-tree" data-testid="trash-list">
+            {trash.length === 0 ? (
+              <div className="cept-sidebar-empty">Trash is empty</div>
+            ) : (
+              <>
+                {trash.map((item) => (
+                  <div key={item.id} className="cept-sidebar-trash-item" data-testid={`trash-item-${item.id}`}>
+                    <span className="cept-sidebar-icon">{item.icon ?? '\u{1F4C4}'}</span>
+                    <span className="cept-sidebar-title">{item.title || 'Untitled'}</span>
+                    <button
+                      className="cept-sidebar-trash-action"
+                      onClick={() => onRestoreFromTrash?.(item.id)}
+                      title="Restore"
+                      data-testid={`trash-restore-${item.id}`}
+                    >
+                      {'\u21A9'}
+                    </button>
+                    <button
+                      className="cept-sidebar-trash-action cept-sidebar-trash-action--danger"
+                      onClick={() => onPermanentDelete?.(item.id)}
+                      title="Delete permanently"
+                      data-testid={`trash-delete-${item.id}`}
+                    >
+                      {'\u2715'}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="cept-sidebar-action-btn cept-sidebar-empty-trash"
+                  onClick={onEmptyTrash}
+                  data-testid="empty-trash"
+                >
+                  Empty trash
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {contextMenu && (
         <PageContextMenu
           pageId={contextMenu.pageId}

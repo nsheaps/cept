@@ -184,4 +184,71 @@ describe('Sidebar', () => {
     const favBtn = screen.getByTestId('favorite-page-1');
     expect(favBtn.className).toContain('is-selected');
   });
+
+  it('renders trash section', () => {
+    render(<Sidebar pages={mockPages} />);
+    expect(screen.getByTestId('trash-section')).toBeDefined();
+    expect(screen.getByTestId('trash-toggle')).toBeDefined();
+  });
+
+  it('shows trash items when expanded', () => {
+    const trash = [
+      { id: 'deleted-1', title: 'Deleted Page' },
+    ];
+    render(<Sidebar pages={mockPages} trash={trash} />);
+
+    // Trash is initially collapsed
+    expect(screen.queryByTestId('trash-list')).toBeNull();
+
+    // Expand trash
+    fireEvent.click(screen.getByTestId('trash-toggle'));
+    expect(screen.getByTestId('trash-list')).toBeDefined();
+    expect(screen.getByTestId('trash-item-deleted-1')).toBeDefined();
+  });
+
+  it('shows trash count badge', () => {
+    const trash = [
+      { id: 'd1', title: 'Page 1' },
+      { id: 'd2', title: 'Page 2' },
+    ];
+    render(<Sidebar pages={mockPages} trash={trash} />);
+    expect(screen.getByTestId('trash-count').textContent).toBe('2');
+  });
+
+  it('calls onRestoreFromTrash when restore clicked', () => {
+    const onRestoreFromTrash = vi.fn();
+    const trash = [{ id: 'd1', title: 'Deleted' }];
+    render(<Sidebar pages={mockPages} trash={trash} onRestoreFromTrash={onRestoreFromTrash} />);
+
+    fireEvent.click(screen.getByTestId('trash-toggle'));
+    fireEvent.click(screen.getByTestId('trash-restore-d1'));
+    expect(onRestoreFromTrash).toHaveBeenCalledWith('d1');
+  });
+
+  it('calls onPermanentDelete when permanent delete clicked', () => {
+    const onPermanentDelete = vi.fn();
+    const trash = [{ id: 'd1', title: 'Deleted' }];
+    render(<Sidebar pages={mockPages} trash={trash} onPermanentDelete={onPermanentDelete} />);
+
+    fireEvent.click(screen.getByTestId('trash-toggle'));
+    fireEvent.click(screen.getByTestId('trash-delete-d1'));
+    expect(onPermanentDelete).toHaveBeenCalledWith('d1');
+  });
+
+  it('calls onEmptyTrash when empty trash clicked', () => {
+    const onEmptyTrash = vi.fn();
+    const trash = [{ id: 'd1', title: 'Deleted' }];
+    render(<Sidebar pages={mockPages} trash={trash} onEmptyTrash={onEmptyTrash} />);
+
+    fireEvent.click(screen.getByTestId('trash-toggle'));
+    fireEvent.click(screen.getByTestId('empty-trash'));
+    expect(onEmptyTrash).toHaveBeenCalled();
+  });
+
+  it('shows empty trash message when trash is empty', () => {
+    render(<Sidebar pages={mockPages} trash={[]} />);
+
+    fireEvent.click(screen.getByTestId('trash-toggle'));
+    expect(screen.getByText('Trash is empty')).toBeDefined();
+  });
 });

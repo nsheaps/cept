@@ -172,6 +172,56 @@
   text-align: center;
 }
 
+/* Trash */
+.cept-sidebar-badge {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  line-height: 1.5;
+}
+
+.cept-sidebar-trash-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.cept-sidebar-trash-action {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  padding: 0.125rem 0.25rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cept-sidebar-trash-action:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #6b7280;
+}
+
+.cept-sidebar-trash-action--danger:hover {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.cept-sidebar-empty-trash {
+  color: #dc2626;
+  font-size: 0.75rem;
+}
+
+.cept-sidebar-empty-trash:hover {
+  background-color: #fef2f2;
+}
+
 /* Context menu */
 .cept-context-menu {
   position: fixed;
