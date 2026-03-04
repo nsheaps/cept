@@ -25,3 +25,16 @@ export type {
   BranchStrategyConfig,
   BranchInfo,
 } from './branch-strategy.js';
+
+export {
+  parseConflictMarkers,
+  threeWayMerge,
+  autoResolve,
+} from './merge-engine.js';
+export type {
+  MergeConflict,
+  ResolutionStrategy,
+  ResolvedConflict,
+  MergeAttemptResult,
+  AutoMergeConfig,
+} from './merge-engine.js';

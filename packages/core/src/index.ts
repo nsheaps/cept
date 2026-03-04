@@ -138,6 +138,18 @@ export type {
   BranchStrategyConfig,
   BranchInfo,
 } from './git/index.js';
+export {
+  parseConflictMarkers,
+  threeWayMerge,
+  autoResolve,
+} from './git/index.js';
+export type {
+  MergeConflict,
+  ResolutionStrategy,
+  ResolvedConflict,
+  MergeAttemptResult,
+  AutoMergeConfig,
+} from './git/index.js';
 
 // CRDT
 export type { SyncTransport, AwarenessUser } from './crdt/index.js';
