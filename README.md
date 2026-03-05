@@ -2,11 +2,11 @@
 
 A fully-featured Notion clone backed by Git. Client-only. Offline-first. Collaborative.
 
+[![Open App](https://img.shields.io/badge/Open_App-nsheaps.github.io%2Fcept-blue?style=for-the-badge&logo=github)](https://nsheaps.github.io/cept/app/)
+
 [![CI](https://github.com/nsheaps/cept/actions/workflows/ci.yml/badge.svg)](https://github.com/nsheaps/cept/actions/workflows/ci.yml)
 [![Deploy](https://github.com/nsheaps/cept/actions/workflows/release-web.yml/badge.svg)](https://github.com/nsheaps/cept/actions/workflows/release-web.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**[Live Demo](https://nsheaps.github.io/cept/app/)**
 
 ## What is Cept?
 
