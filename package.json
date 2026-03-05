@@ -22,11 +22,16 @@
     "test:e2e:screenshots": "nx run @cept/e2e:test:screenshots",
     "lint": "nx run-many -t lint",
     "typecheck": "nx run-many -t typecheck",
-    "validate": "bun run lint && bun run typecheck && bun run test"
+    "validate": "bun run lint && bun run typecheck && bun run test",
+    "release": "release-it",
+    "release:ci": "release-it --ci",
+    "release:dry-run": "release-it --dry-run"
   },
   "devDependencies": {
     "@amiceli/vitest-cucumber": "6.2.0",
     "@playwright/test": "1.58.2",
+    "@release-it/bumper": "7.0.5",
+    "@release-it/conventional-changelog": "10.0.5",
     "@tailwindcss/vite": "4.2.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
@@ -47,6 +52,7 @@
     "prettier": "3.8.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "release-it": "19.2.4",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vite": "7.3.1",
