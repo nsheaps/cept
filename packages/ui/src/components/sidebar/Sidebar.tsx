@@ -227,7 +227,7 @@ export function Sidebar({
             {recentPages.map((page) => (
               <button
                 key={page.id}
-                className={`cept-sidebar-item ${selectedPageId === page.id ? 'is-selected' : ''}`}
+                className="cept-sidebar-item"
                 onClick={() => onPageSelect?.(page.id)}
                 data-testid={`recent-${page.id}`}
               >
