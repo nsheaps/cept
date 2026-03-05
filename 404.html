@@ -4,25 +4,38 @@
     <meta charset="utf-8" />
     <title>Cept</title>
     <script>
+      // Site-level 404 router for GitHub Pages.
+      // Routes to the correct app instance based on URL prefix.
       (function () {
         var path = window.location.pathname;
+
+        // Preview deployments: /cept/pr-N/...
         var prMatch = path.match(/^\/cept\/pr-(\d+)(\/.*)?$/);
         if (prMatch) {
           var prBase = '/cept/pr-' + prMatch[1] + '/';
           var prRoute = prMatch[2] || '/';
-          if (prRoute === '/') return;
+          if (prRoute === '/') return; // already at root
           window.location.replace(prBase + '?route=' + encodeURIComponent(prRoute + window.location.search + window.location.hash));
           return;
         }
+
+        // Production app: /cept/app/...
         var appMatch = path.match(/^\/cept\/app(\/.*)?$/);
         if (appMatch) {
           var appRoute = appMatch[1] || '/';
-          if (appRoute === '/') return;
+          if (appRoute === '/') return; // already at root
           window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
           return;
         }
-        if (path === '/cept' || path === '/cept/') {
-          window.location.replace('/cept/app/');
+
+        // Any other /cept/... path — redirect to app with route preserved
+        if (path.indexOf('/cept') === 0) {
+          var remaining = path.slice('/cept'.length) || '/';
+          if (remaining === '/') {
+            window.location.replace('/cept/app/');
+          } else {
+            window.location.replace('/cept/app/?route=' + encodeURIComponent(remaining + window.location.search + window.location.hash));
+          }
           return;
         }
       })();
