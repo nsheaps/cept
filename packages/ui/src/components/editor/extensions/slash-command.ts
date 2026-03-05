@@ -58,8 +58,8 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     },
   },
   {
-    title: 'Task List',
-    description: 'Checklist with checkboxes',
+    title: 'To-do / Checkbox',
+    description: 'Task list with checkboxes',
     icon: '\u2611',
     category: 'Lists',
     command: ({ editor, range }) => {

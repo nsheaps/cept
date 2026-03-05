@@ -107,6 +107,7 @@ export function CeptEditor({
       Underline,
       Link.configure({
         openOnClick: false,
+        autolink: false,
         HTMLAttributes: {
           class: 'cept-link',
         },
@@ -217,6 +218,7 @@ export function CeptEditor({
     editorProps: {
       attributes: {
         class: 'cept-editor-content',
+        spellcheck: 'false',
       },
     },
   });

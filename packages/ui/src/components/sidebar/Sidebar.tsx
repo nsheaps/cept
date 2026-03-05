@@ -6,6 +6,7 @@ export interface SidebarPageRef {
   id: string;
   title: string;
   icon?: string;
+  parentId?: string;
 }
 
 export interface SidebarProps {

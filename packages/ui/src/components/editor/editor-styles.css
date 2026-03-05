@@ -67,10 +67,25 @@
 
 .cept-editor .tiptap li.cept-list-item {
   line-height: 1.65;
+  border-style: none;
+  border-width: 0;
+  text-decoration: none;
+  box-shadow: none;
+  background-image: none;
 }
 
 .cept-editor .tiptap li.cept-list-item > p {
   margin: 0;
+  border-style: none;
+  border-width: 0;
+  text-decoration: none;
+}
+
+/* Prevent any inherited borders on list containers */
+.cept-editor .tiptap ul.cept-bullet-list,
+.cept-editor .tiptap ol.cept-ordered-list {
+  border-style: none;
+  border-width: 0;
 }
 
 /* Nested lists */
