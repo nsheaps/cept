@@ -30,10 +30,18 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      - name: Authenticate as GitHub App
+        id: auth
+        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.auth.outputs.token }}
 
       - name: Install mise
         uses: jdx/mise-action@v2
@@ -46,11 +54,20 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
 
+      - name: Debug release-it state
+        run: |
+          echo "=== Current version ==="
+          node -p "require('./package.json').version"
+          echo ""
+          echo "=== Latest tags ==="
+          git tag --sort=-v:refname | head -10 || echo "No tags found"
+          echo ""
+          echo "=== Increment: ${{ inputs.increment }} ==="
+          echo "=== Dry run: ${{ inputs.dry-run }} ==="
+
       - name: Release
-        run: bun run release:ci -- --increment ${{ inputs.increment }} ${{ inputs.dry-run && '--dry-run' || '' }}
+        run: bun run release:ci -- --increment ${{ inputs.increment }} ${{ inputs.dry-run && '--dry-run' || '' }} --verbose
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
