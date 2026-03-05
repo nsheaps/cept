@@ -8,13 +8,22 @@ import { captureResponsiveScreenshots, captureScreenshot } from './screenshot-ut
 
 /**
  * Helper: Enter demo mode from the landing page.
- * Waits for the landing page to render, then clicks "Try the demo".
+ * Waits for the landing page to render, clicks "Try the demo", then ensures the
+ * editor is visible. On narrow viewports the sidebar is fixed-position and covers
+ * the editor, so we close it first.
  */
 async function enterDemoMode(page: import('@playwright/test').Page) {
   await page.goto('/');
-  // Wait for the landing page to fully render
   await expect(page.getByTestId('landing-page')).toBeVisible();
   await page.getByTestId('try-demo').click();
+  // Wait for the landing page to disappear (proves we entered demo mode)
+  await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+  // On narrow viewports, close the sidebar so the editor is uncovered
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 768) {
+    await page.getByTestId('sidebar-toggle').click();
+    await page.waitForTimeout(200);
+  }
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
@@ -29,6 +38,13 @@ test.describe('Responsive: Onboarding / Landing', () => {
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();
     await page.getByTestId('start-writing').click();
+    await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+    // On narrow viewports, close the sidebar so the editor is uncovered
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
   });
 });
@@ -115,13 +131,14 @@ test.describe('Responsive: Search', () => {
   });
 
   test('search panel works at all viewports', async ({ page }) => {
-    // Open search via command palette
+    // Open search via command palette and type to filter
     await page.keyboard.press('Control+k');
     await expect(page.getByTestId('command-palette')).toBeVisible();
-    const searchItem = page.getByText('Search').first();
-    if (await searchItem.isVisible()) {
-      await searchItem.click();
-    }
+    // Type "search" to filter to the Search command, then press Enter
+    await page.keyboard.type('Search');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
   });
 });
 
@@ -138,11 +155,16 @@ test.describe('Responsive: Deep Linking', () => {
   test('loading a URL with hash selects the correct page', async ({ page }) => {
     await enterDemoMode(page);
 
-    // Navigate to features page via sidebar
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      // Wait a moment for the URL to update
+    // Navigate to features page via sidebar — first open sidebar if closed
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(300);
+    }
+    // Use the specific test-id for the features page in the sidebar tree
+    const featuresBtn = page.getByTestId('page-tree-button-features');
+    if (await featuresBtn.isVisible()) {
+      await featuresBtn.click();
       await page.waitForTimeout(500);
     }
   });
@@ -196,7 +218,7 @@ test.describe('Responsive: Full-page Screenshots', () => {
 
     // Demo mode
     await page.getByTestId('try-demo').click();
-    await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
 
     await captureScreenshot(page, {
       name: 'editor-desktop',

@@ -18,19 +18,26 @@ test.describe('Smoke Tests', () => {
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();
     await page.getByTestId('try-demo').click();
-    // On narrow viewports the sidebar may cover the editor, so check for
-    // the editor OR the sidebar-toggle (which proves we left the landing page)
-    await expect(
-      page.locator('.cept-editor').or(page.getByTestId('sidebar-toggle')),
-    ).first().toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+    // On narrow viewports, close the sidebar so the editor is uncovered
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
+    await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
   });
 
   test('start writing creates a new page', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();
     await page.getByTestId('start-writing').click();
-    await expect(
-      page.locator('.cept-editor').or(page.getByTestId('sidebar-toggle')),
-    ).first().toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
+    await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
   });
 });
