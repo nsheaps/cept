@@ -24,6 +24,7 @@ import {
   deletePageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
+import { AppMenu } from './app-menu/AppMenu.js';
 import { FolderView } from './editor/FolderView.js';
 import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
@@ -148,6 +149,7 @@ export function App() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
 
   // Deep linking: restore route from URL on load (handles 404 redirect + legacy hash)
   // Runs exactly once after initialization has populated pages.
@@ -430,7 +432,7 @@ export function App() {
       icon: '\u{1F44B}',
       children: [],
     };
-    const content = '<h1>Welcome to Cept</h1><p>Start typing here...</p>';
+    const content = '<p>Start typing here...</p>';
     setPages([firstPage]);
     setPageContents({ [firstPage.id]: content });
     setSelectedPageId(firstPage.id);
@@ -607,9 +609,11 @@ export function App() {
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
     { id: 'toggle-sidebar', title: 'Toggle Sidebar', icon: '\u{1F4CB}', category: 'View', action: () => { setSidebarOpen((p) => !p); setCommandPaletteOpen(false); } },
+    { id: 'import-notion', title: 'Import from Notion', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('notion'); } },
+    { id: 'import-obsidian', title: 'Import from Obsidian', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('obsidian'); } },
     { id: 'export-page', title: 'Export Current Page', icon: '\u{1F4E4}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenExport(); } },
     { id: 'manage-spaces', title: 'Manage Spaces', icon: '\u{1F4C2}', category: 'Spaces', action: () => { setCommandPaletteOpen(false); handleOpenSettings('spaces'); } },
-  ], [handlePageAdd, handleOpenExport, handleOpenSettings]);
+  ], [handlePageAdd, handleOpenExport, handleOpenSettings, handleOpenImport]);
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
@@ -642,6 +646,10 @@ export function App() {
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
         )}
         <div className="ml-auto" />
+        <AppMenu
+          onOpenSettings={handleOpenSettings}
+          onOpenDocs={handleOpenDocs}
+        />
       </header>
       <main className="flex flex-1 min-h-0">
         {sidebarOpen && (
@@ -895,7 +903,6 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 
 
 const DEMO_CONTENT = `
-<h1>Welcome to Cept</h1>
 <p>This is a demo space running in your browser. All data is stored locally.</p>
 <div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
 <h2>Getting Started</h2>
@@ -914,7 +921,6 @@ const DEMO_CONTENT = `
 `;
 
 const DEMO_FEATURES_CONTENT = `
-<h1>Block Types</h1>
 <p>Cept supports a wide variety of content blocks. Type <code>/</code> in the editor to insert any of these.</p>
 
 <h2>Text Blocks</h2>
@@ -988,7 +994,6 @@ console.log(greet('world'));</code></pre>
 `;
 
 const DEMO_GETTING_STARTED_CONTENT = `
-<h1>Getting Started</h1>
 <p>Welcome to Cept! Here\u2019s how to get started with your space.</p>
 
 <h2>Creating Pages</h2>

@@ -9,7 +9,7 @@ import { captureResponsiveScreenshots, captureScreenshot } from './screenshot-ut
 test.describe('Responsive: Onboarding / Landing', () => {
   test('landing page renders at all viewports', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Get Started')).toBeVisible();
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     await captureResponsiveScreenshots(page, 'onboarding', 'getting-started');
   });
 
@@ -89,7 +89,7 @@ test.describe('Responsive: Settings Modal', () => {
     await page.keyboard.press('Escape');
 
     // Try clicking the settings button in sidebar if visible
-    const settingsBtn = page.locator('[data-testid="sidebar-settings"]');
+    const settingsBtn = page.locator('[data-testid="app-menu-settings"]');
     if (await settingsBtn.isVisible()) {
       await settingsBtn.click();
     }
@@ -192,7 +192,7 @@ test.describe('Responsive: Full-page Screenshots', () => {
   test('capture full documentation screenshots', async ({ page }) => {
     // Onboarding
     await page.goto('/');
-    await expect(page.getByText('Get Started')).toBeVisible();
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     await captureScreenshot(page, {
       name: 'landing-desktop',
       category: 'overview',

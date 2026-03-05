@@ -63,8 +63,8 @@ test.describe('Demo Mode', () => {
     await page.getByTestId('page-tree-button-features').click();
     await page.waitForTimeout(500);
 
-    // Check for various block types in the features page
-    await expect(page.locator('.cept-editor-content h1')).toContainText('Block Types');
+    // Check page header shows the features page title
+    await expect(page.getByTestId('page-title')).toContainText('Features');
     await captureScreenshot(page, { name: 'demo-features-top', category: 'demo' });
 
     // Scroll to see more blocks
@@ -82,7 +82,7 @@ test.describe('Demo Mode', () => {
     await openDemoEditor(page);
     await page.getByTestId('page-tree-button-getting-started').click();
     await page.waitForTimeout(500);
-    await expect(page.locator('.cept-editor-content h1')).toContainText('Getting Started');
+    await expect(page.getByTestId('page-title')).toContainText('Getting Started');
     await captureScreenshot(page, { name: 'demo-getting-started', category: 'demo' });
   });
 });

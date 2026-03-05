@@ -182,7 +182,7 @@ describe('App', () => {
     // Page content should be in its own file
     const pageContent = await backend.readText(`pages/${pageId}.html`);
     expect(pageContent).not.toBeNull();
-    expect(pageContent).toContain('Welcome to Cept');
+    expect(pageContent).toContain('Start typing here');
   });
 
   it('restores state from backend on reload (individual page files)', async () => {
@@ -301,7 +301,7 @@ describe('App', () => {
     // Demo pages should have individual files
     const welcomeContent = await backend.readText('pages/welcome.html');
     expect(welcomeContent).not.toBeNull();
-    expect(welcomeContent).toContain('Welcome to Cept');
+    expect(welcomeContent).toContain('demo space');
   });
 
   it('demo mode shows demo content initially', async () => {
