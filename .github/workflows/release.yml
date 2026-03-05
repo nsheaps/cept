@@ -54,12 +54,7 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
 
       - name: Debug release-it state
         run: |
