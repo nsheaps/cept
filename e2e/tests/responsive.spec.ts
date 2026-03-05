@@ -88,10 +88,14 @@ test.describe('Responsive: Settings Modal', () => {
     // Look for a settings or gear button in sidebar instead
     await page.keyboard.press('Escape');
 
-    // Try clicking the settings button in sidebar if visible
-    const settingsBtn = page.locator('[data-testid="app-menu-settings"]');
-    if (await settingsBtn.isVisible()) {
-      await settingsBtn.click();
+    // Try clicking the app menu trigger in sidebar if visible
+    const appMenuTrigger = page.locator('[data-testid="sidebar-app-menu-trigger"]');
+    if (await appMenuTrigger.isVisible()) {
+      await appMenuTrigger.click();
+      const settingsBtn = page.locator('[data-testid="sidebar-app-menu-settings"]');
+      if (await settingsBtn.isVisible()) {
+        await settingsBtn.click();
+      }
     }
   });
 
