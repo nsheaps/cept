@@ -135,7 +135,7 @@ export function App() {
       setSpaceName('Demo Space');
       setHasStarted(true);
       // Write demo content to individual files
-      void Promise.all(Object.entries(demoContents).map(([id, html]) => writePageContent(backend, id, html)));
+      void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
     }
   }, [ready, persisted, initialSettings, shouldShowDemo, backend]);
 
@@ -390,14 +390,14 @@ export function App() {
     setPages((prev) => moveNode(prev, id, undefined));
   }, []);
 
-  const handleContentUpdate = useCallback((html: string) => {
+  const handleContentUpdate = useCallback((markdown: string) => {
     if (!selectedPageId) return;
-    setPageContents((prev) => ({ ...prev, [selectedPageId]: html }));
+    setPageContents((prev) => ({ ...prev, [selectedPageId]: markdown }));
 
     // Debounced write to backend
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      void writePageContent(backend, selectedPageId, html);
+      void writePageContent(backend, selectedPageId, markdown);
     }, 500);
   }, [selectedPageId, backend]);
 
@@ -410,9 +410,9 @@ export function App() {
 
     // Index pages that have content
     for (const page of allPages) {
-      const html = pageContents[page.id];
-      if (html !== undefined) {
-        const plainText = html.replace(/<[^>]+>/g, '');
+      const md = pageContents[page.id];
+      if (md !== undefined) {
+        const plainText = md.replace(/[#*_~`>\[\]()|-]/g, '');
         void idx.indexPage(page.id, page.title, plainText, page.title);
         indexedRef.current.add(page.id);
       }
@@ -458,7 +458,7 @@ export function App() {
     setTrash([]);
     setSpaceName('Demo Space');
     setHasStarted(true);
-    void Promise.all(Object.entries(demoContents).map(([id, html]) => writePageContent(backend, id, html)));
+    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
   }, [backend]);
 
   const handleClearAllData = useCallback(() => {
@@ -914,8 +914,8 @@ export function App() {
         onClose={() => setExportDialogOpen(false)}
         page={selectedPageId && selectedNode ? {
           title: selectedNode.title,
-          markdown: (pageContents[selectedPageId] ?? '').replace(/<[^>]+>/g, ''),
-          path: `pages/${selectedPageId}.html`,
+          markdown: pageContents[selectedPageId] ?? '',
+          path: `pages/${selectedPageId}.md`,
         } as PageContent : null}
       />
     </div>
@@ -935,123 +935,148 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 }
 
 
-const DEMO_CONTENT = `
-<p>This is a demo space running in your browser. All data is stored locally.</p>
-<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
-<h2>Getting Started</h2>
-<p>Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates \u2014 all stored locally in your browser.</p>
-<h3>Try These Features</h3>
-<ul>
-  <li><p>Type text to create paragraphs</p></li>
-  <li><p>Use <strong>bold</strong>, <em>italic</em>, and <s>strikethrough</s></p></li>
-  <li><p>Create nested lists by pressing Tab</p></li>
-</ul>
-<ol>
-  <li><p>Numbered lists work too</p></li>
-  <li><p>Just like you\u2019d expect</p></li>
-</ol>
-<p>Start typing below to try the editor...</p>
+const DEMO_CONTENT = `This is a demo space running in your browser. All data is stored locally.
+
+> 💡 Type \`/\` anywhere to see all available block types. Try it now!
+
+## Getting Started
+
+Cept is a fully-featured Notion clone that works offline. You can create pages, databases, and templates — all stored locally in your browser.
+
+### Try These Features
+
+- Type text to create paragraphs
+- Use **bold**, *italic*, and ~~strikethrough~~
+- Create nested lists by pressing Tab
+
+1. Numbered lists work too
+2. Just like you'd expect
+
+Start typing below to try the editor...
 `;
 
-const DEMO_FEATURES_CONTENT = `
-<p>Cept supports a wide variety of content blocks. Type <code>/</code> in the editor to insert any of these.</p>
+const DEMO_FEATURES_CONTENT = `Cept supports a wide variety of content blocks. Type \`/\` in the editor to insert any of these.
 
-<h2>Text Blocks</h2>
-<h3>Headings</h3>
-<p>Three levels of headings are available: H1, H2, and H3.</p>
+## Text Blocks
 
-<h3>Code Block</h3>
-<pre><code class="language-javascript">function greet(name) {
+### Headings
+
+Three levels of headings are available: H1, H2, and H3.
+
+### Code Block
+
+\`\`\`javascript
+function greet(name) {
   return \`Hello, \${name}!\`;
 }
 
-console.log(greet('world'));</code></pre>
+console.log(greet('world'));
+\`\`\`
 
-<h3>Blockquote</h3>
-<blockquote><p>The best way to predict the future is to invent it. \u2014 Alan Kay</p></blockquote>
+### Blockquote
 
-<h3>Divider</h3>
-<p>A horizontal rule separates sections:</p>
-<hr>
+> The best way to predict the future is to invent it. — Alan Kay
 
-<h2>Lists</h2>
-<h3>Bullet List</h3>
-<ul>
-  <li><p>First item</p></li>
-  <li><p>Second item</p></li>
-  <li><p>Third item</p></li>
-</ul>
+### Divider
 
-<h3>Numbered List</h3>
-<ol>
-  <li><p>Step one</p></li>
-  <li><p>Step two</p></li>
-  <li><p>Step three</p></li>
-</ol>
+A horizontal rule separates sections:
 
-<h3>Task List</h3>
-<ul data-type="taskList">
-  <li data-type="taskItem" data-checked="true"><p>Completed task</p></li>
-  <li data-type="taskItem" data-checked="false"><p>Pending task</p></li>
-  <li data-type="taskItem" data-checked="false"><p>Another pending task</p></li>
-</ul>
+---
 
-<h2>Blocks</h2>
-<h3>Callout</h3>
-<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>This is an informational callout. Use it to highlight important notes.</p></div>
+## Lists
 
-<h3>Toggle</h3>
-<details data-type="toggle"><summary>Click to expand</summary><div><p>This content is hidden by default and revealed when you click the toggle.</p></div></details>
+### Bullet List
 
-<h2>Media</h2>
-<h3>Image</h3>
-<p>Use <code>/image</code> to insert an image from a URL.</p>
+- First item
+- Second item
+- Third item
 
-<h3>Embed</h3>
-<p>Use <code>/embed</code> to embed YouTube, Vimeo, and other media.</p>
+### Numbered List
 
-<h3>Bookmark</h3>
-<p>Use <code>/bookmark</code> to create a rich link preview card.</p>
+1. Step one
+2. Step two
+3. Step three
 
-<h2>Layout</h2>
-<h3>Columns</h3>
-<div data-type="columns" data-columns="2"><div data-type="column"><p><strong>Left column</strong></p><p>Content in the left side of a two-column layout.</p></div><div data-type="column"><p><strong>Right column</strong></p><p>Content in the right side of a two-column layout.</p></div></div>
+### Task List
 
-<h2>Tables</h2>
-<h3>Simple Table</h3>
-<table><thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead><tbody><tr><td>Rich text editing</td><td>Complete</td><td>Full inline formatting</td></tr><tr><td>Slash commands</td><td>Complete</td><td>Type / to insert blocks</td></tr><tr><td>Drag &amp; drop</td><td>Complete</td><td>Reorder blocks freely</td></tr></tbody></table>
+- [x] Completed task
+- [ ] Pending task
+- [ ] Another pending task
 
-<h2>Advanced</h2>
-<h3>Math Equation</h3>
-<div data-type="math-block" data-math="E = mc^2"></div>
-<p>Inline math is also supported: The formula <span data-type="inline-math" data-math="a^2 + b^2 = c^2"></span> is the Pythagorean theorem.</p>
+## Blocks
 
-<h3>Mermaid Diagram</h3>
-<div data-type="mermaid" data-mermaid="graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[OK]\n  B -->|No| D[Cancel]"></div>
+### Callout
+
+> 💡 This is an informational callout. Use it to highlight important notes.
+
+### Toggle
+
+Click to expand — toggles are created with the \`/toggle\` slash command.
+
+## Media
+
+### Image
+
+Use \`/image\` to insert an image from a URL.
+
+### Embed
+
+Use \`/embed\` to embed YouTube, Vimeo, and other media.
+
+### Bookmark
+
+Use \`/bookmark\` to create a rich link preview card.
+
+## Layout
+
+### Columns
+
+Columns are created with the \`/columns\` slash command to split content side by side.
+
+## Tables
+
+### Simple Table
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Rich text editing | Complete | Full inline formatting |
+| Slash commands | Complete | Type / to insert blocks |
+| Drag & drop | Complete | Reorder blocks freely |
+
+## Advanced
+
+### Math Equation
+
+Use \`/math\` to insert a math equation block (e.g. $E = mc^2$).
+
+Inline math is also supported: The formula $a^2 + b^2 = c^2$ is the Pythagorean theorem.
+
+### Mermaid Diagram
+
+Use \`/mermaid\` to insert a Mermaid diagram block.
 `;
 
-const DEMO_GETTING_STARTED_CONTENT = `
-<p>Welcome to Cept! Here\u2019s how to get started with your space.</p>
+const DEMO_GETTING_STARTED_CONTENT = `Welcome to Cept! Here's how to get started with your space.
 
-<h2>Creating Pages</h2>
-<p>Click the <strong>+</strong> button in the sidebar to create a new page. Pages can be nested inside other pages to create a hierarchy.</p>
+## Creating Pages
 
-<h2>Using the Editor</h2>
-<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> to open the slash command menu. You can search for any block type by name.</p></div>
+Click the **+** button in the sidebar to create a new page. Pages can be nested inside other pages to create a hierarchy.
 
-<h2>Keyboard Shortcuts</h2>
-<ul>
-  <li><p><strong>Cmd/Ctrl + K</strong> \u2014 Open command palette</p></li>
-  <li><p><strong>Cmd/Ctrl + B</strong> \u2014 Bold text</p></li>
-  <li><p><strong>Cmd/Ctrl + I</strong> \u2014 Italic text</p></li>
-  <li><p><strong>Cmd/Ctrl + U</strong> \u2014 Underline text</p></li>
-  <li><p><strong>Cmd/Ctrl + Shift + S</strong> \u2014 Strikethrough</p></li>
-</ul>
+## Using the Editor
 
-<h2>Organizing Your Space</h2>
-<ol>
-  <li><p><strong>Favorites</strong> \u2014 Right-click a page and add it to favorites for quick access</p></li>
-  <li><p><strong>Nested pages</strong> \u2014 Click the + on a page to create a sub-page</p></li>
-  <li><p><strong>Trash</strong> \u2014 Deleted pages go to trash and can be restored</p></li>
-</ol>
+> 💡 Type \`/\` to open the slash command menu. You can search for any block type by name.
+
+## Keyboard Shortcuts
+
+- **Cmd/Ctrl + K** — Open command palette
+- **Cmd/Ctrl + B** — Bold text
+- **Cmd/Ctrl + I** — Italic text
+- **Cmd/Ctrl + U** — Underline text
+- **Cmd/Ctrl + Shift + S** — Strikethrough
+
+## Organizing Your Space
+
+1. **Favorites** — Right-click a page and add it to favorites for quick access
+2. **Nested pages** — Click the + on a page to create a sub-page
+3. **Trash** — Deleted pages go to trash and can be restored
 `;

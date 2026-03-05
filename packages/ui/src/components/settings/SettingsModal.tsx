@@ -423,7 +423,7 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
-                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
               />
             )}
 
@@ -513,7 +513,7 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
-                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
               />
             )}
 
