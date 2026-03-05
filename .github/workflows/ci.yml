@@ -2,20 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/pages/**'
-      - 'LICENSE'
-      - '.vscode/**'
+    branches: 
+      - main
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/pages/**'
-      - 'LICENSE'
-      - '.vscode/**'
 
 concurrency:
   group: ci-${{ github.ref }}
