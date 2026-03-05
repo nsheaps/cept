@@ -9,6 +9,13 @@ async function openDemoEditor(page: Page) {
   await page.goto('/');
   await expect(page.getByTestId('landing-page')).toBeVisible();
   await page.getByTestId('try-demo').click();
+  await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+  // On narrow viewports, close the sidebar so the editor is uncovered
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 768) {
+    await page.getByTestId('sidebar-toggle').click();
+    await page.waitForTimeout(200);
+  }
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
@@ -45,13 +52,19 @@ async function selectFirstCommand(page: Page) {
 test.describe('Demo Mode', () => {
   test('loads demo content with all block types', async ({ page }) => {
     await openDemoEditor(page);
-    // Welcome page should show the callout
-    await expect(page.locator('.cept-callout')).toBeVisible();
+    // Welcome page should show a blockquote (the demo content uses > with emoji)
+    await expect(page.locator('.cept-editor-content blockquote, .cept-editor-content .cept-blockquote, .cept-editor-content .cept-callout').first()).toBeVisible();
     await captureScreenshot(page, { name: 'demo-welcome', category: 'demo' });
   });
 
   test('features page shows all block type demos', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     // Navigate to Features page
     await page.getByTestId('page-tree-button-features').click();
     await page.waitForTimeout(500);
@@ -73,6 +86,12 @@ test.describe('Demo Mode', () => {
 
   test('getting started page renders', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     await page.getByTestId('page-tree-button-getting-started').click();
     await page.waitForTimeout(500);
     await expect(page.getByTestId('page-title')).toContainText('Getting Started');
@@ -83,9 +102,20 @@ test.describe('Demo Mode', () => {
 test.describe('Slash Commands', () => {
   test.beforeEach(async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     // Navigate to Notes page (empty) for testing
     await page.getByTestId('page-tree-button-notes').click();
     await page.waitForTimeout(500);
+    // Close sidebar on mobile after navigation
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
   });
 
   test('slash menu appears when typing /', async ({ page }) => {
@@ -326,6 +356,12 @@ test.describe('Page Header', () => {
 test.describe('App Menu', () => {
   test('sidebar app menu opens with settings, help, about', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     await page.getByTestId('sidebar-app-menu-trigger').click();
     await expect(page.getByTestId('sidebar-app-menu')).toBeVisible();
     await captureScreenshot(page, { name: 'sidebar-app-menu-open', category: 'features' });
@@ -333,6 +369,12 @@ test.describe('App Menu', () => {
 
   test('about panel displays via sidebar app menu', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     await page.getByTestId('sidebar-app-menu-trigger').click();
     await page.getByTestId('sidebar-app-menu-about').click();
     // About is now a tab in the Settings modal
@@ -344,6 +386,12 @@ test.describe('App Menu', () => {
 test.describe('Sidebar Actions', () => {
   test('selected page shows action buttons', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     // The welcome page is selected, should show ··· and + buttons
     const menuBtn = page.getByTestId('page-tree-menu-welcome');
     await expect(menuBtn).toBeVisible();
@@ -352,6 +400,12 @@ test.describe('Sidebar Actions', () => {
 
   test('context menu opens from sidebar triple-dot', async ({ page }) => {
     await openDemoEditor(page);
+    // Open sidebar if closed (mobile)
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await page.getByTestId('sidebar-toggle').click();
+      await page.waitForTimeout(200);
+    }
     await page.getByTestId('page-tree-menu-welcome').click();
     await expect(page.getByTestId('page-context-menu')).toBeVisible();
     await captureScreenshot(page, { name: 'sidebar-context-menu', category: 'features' });
