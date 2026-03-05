@@ -696,10 +696,10 @@ export function App() {
             onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename('default', name)}
-            spaces={[...spaceInfoList.map((s) => ({ id: s.id, name: s.name })), { id: '__docs__', name: 'Cept Docs' }]}
+            spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
             activeSpaceId={userSpaceId}
             onSwitchSpace={(id) => {
-              if (id === '__docs__') {
+              if (id === 'cept-docs') {
                 handleOpenDocs();
               } else {
                 handleSwitchSpace(id);
