@@ -27,6 +27,7 @@ jobs:
           npx vite build
         env:
           VITE_BASE_PATH: /cept/pr-${{ github.event.pull_request.number }}/
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
       - name: Deploy to GitHub Pages subdirectory
         run: |

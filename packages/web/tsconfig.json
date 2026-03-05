@@ -3,6 +3,6 @@
   "compilerOptions": {
     "baseUrl": "../.."
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../ui/src/globals.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
