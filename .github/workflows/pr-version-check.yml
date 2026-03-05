@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install mise
         uses: jdx/mise-action@v2
@@ -29,6 +30,8 @@ jobs:
         run: |
           set +e
           CURRENT_VERSION=$(node -p "require('./package.json').version")
+          # Set up tracking branch so release-it doesn't complain about upstream
+          git branch --set-upstream-to=origin/${{ github.event.pull_request.head.ref }} 2>/dev/null || true
           NEXT_VERSION=$(bunx release-it --release-version --ci 2>&1)
           EXIT_CODE=$?
           set -e
