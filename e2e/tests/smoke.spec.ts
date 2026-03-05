@@ -2,14 +2,16 @@ import { test, expect } from '@playwright/test';
 
 /**
  * On mobile viewports the sidebar opens by default with a fixed backdrop
- * that covers the landing page buttons. Close it before interacting.
+ * (z-index 40) that covers the landing page buttons. The sidebar itself
+ * (z-index 50) also covers the header toggle button, so we close by
+ * clicking the backdrop (visible to the right of the 260px sidebar).
  */
 async function closeSidebarOnMobile(page: import('@playwright/test').Page) {
   const viewport = page.viewportSize();
   if (viewport && viewport.width < 768) {
-    const toggle = page.getByTestId('sidebar-toggle');
-    if (await toggle.isVisible()) {
-      await toggle.click();
+    const backdrop = page.getByTestId('sidebar-backdrop');
+    if (await backdrop.isVisible()) {
+      await backdrop.click({ position: { x: viewport.width - 20, y: viewport.height / 2 } });
       await page.waitForTimeout(200);
     }
   }
