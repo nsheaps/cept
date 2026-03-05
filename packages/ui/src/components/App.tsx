@@ -292,7 +292,9 @@ export function App() {
   const handlePageDelete = useCallback((id: string) => {
     const node = findNode(pages, id);
     if (node) {
-      setTrash((prev) => [...prev, { id: node.id, title: node.title, icon: node.icon }]);
+      const ancestors = findAncestorIds(pages, id);
+      const parentId = ancestors && ancestors.length > 0 ? ancestors[ancestors.length - 1] : undefined;
+      setTrash((prev) => [...prev, { id: node.id, title: node.title, icon: node.icon, parentId }]);
     }
     setPages((prev) => {
       const { tree } = removeNode(prev, id);
@@ -313,8 +315,12 @@ export function App() {
       icon: item.icon,
       children: [],
     };
-    setPages((prev) => [...prev, restoredPage]);
-  }, [trash]);
+    if (item.parentId && findNode(pages, item.parentId)) {
+      setPages((prev) => addChild(prev, item.parentId!, restoredPage));
+    } else {
+      setPages((prev) => [...prev, restoredPage]);
+    }
+  }, [trash, pages]);
 
   const handlePermanentDelete = useCallback((id: string) => {
     setTrash((prev) => prev.filter((t) => t.id !== id));
@@ -358,11 +364,13 @@ export function App() {
       if (!original) return prev;
       const duplicateId = `page-${Date.now()}`;
       const duplicate: PageTreeNode = {
-        ...structuredClone(original),
         id: duplicateId,
         title: `${original.title} (copy)`,
+        icon: original.icon,
+        cover: original.cover,
+        children: [],
       };
-      // Copy content
+      // Copy content only (not children)
       const content = pageContents[id] ?? '';
       setPageContents((pc) => ({ ...pc, [duplicateId]: content }));
       void writePageContent(backend, duplicateId, content);
@@ -616,6 +624,8 @@ export function App() {
   ], [handlePageAdd, handleOpenExport, handleOpenSettings, handleOpenImport]);
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
+  const contentLoaded = selectedPageId ? (selectedPageId in pageContents) : false;
+  const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
 
@@ -686,9 +696,15 @@ export function App() {
             onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename('default', name)}
-            spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
+            spaces={[...spaceInfoList.map((s) => ({ id: s.id, name: s.name })), { id: '__docs__', name: 'Cept Docs' }]}
             activeSpaceId={userSpaceId}
-            onSwitchSpace={handleSwitchSpace}
+            onSwitchSpace={(id) => {
+              if (id === '__docs__') {
+                handleOpenDocs();
+              } else {
+                handleSwitchSpace(id);
+              }
+            }}
           />
         )}
         {sidebarOpen && activeSpace === 'docs' && (
@@ -747,6 +763,12 @@ export function App() {
                   onUpdate={() => {/* read-only */}}
                   editable={false}
                 />
+                {docsSelectedNode && docsSelectedNode.children.length > 0 && (
+                  <FolderView
+                    children={docsSelectedNode.children}
+                    onPageSelect={handleDocsPageSelect}
+                  />
+                )}
               </>
             ) : (
               <div className="text-center text-gray-400 mt-20">
@@ -816,12 +838,16 @@ export function App() {
                 onDelete={handlePageDelete}
                 onToggleFavorite={handleToggleFavorite}
               />
-              <CeptEditor
-                key={selectedPageId}
-                content={currentContent}
-                placeholder="Type '/' for commands..."
-                onUpdate={handleContentUpdate}
-              />
+              {contentLoaded ? (
+                <CeptEditor
+                  key={selectedPageId}
+                  content={currentContent}
+                  placeholder="Type '/' for commands..."
+                  onUpdate={handleContentUpdate}
+                />
+              ) : (
+                <div className="text-center text-gray-400 mt-8" data-testid="page-loading">Loading...</div>
+              )}
               {selectedNode.children.length > 0 && (
                 <FolderView
                   children={selectedNode.children}
@@ -990,6 +1016,10 @@ console.log(greet('world'));</code></pre>
 <h2>Layout</h2>
 <h3>Columns</h3>
 <div data-type="columns" data-columns="2"><div data-type="column"><p><strong>Left column</strong></p><p>Content in the left side of a two-column layout.</p></div><div data-type="column"><p><strong>Right column</strong></p><p>Content in the right side of a two-column layout.</p></div></div>
+
+<h2>Tables</h2>
+<h3>Simple Table</h3>
+<table><thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead><tbody><tr><td>Rich text editing</td><td>Complete</td><td>Full inline formatting</td></tr><tr><td>Slash commands</td><td>Complete</td><td>Type / to insert blocks</td></tr><tr><td>Drag &amp; drop</td><td>Complete</td><td>Reorder blocks freely</td></tr></tbody></table>
 
 <h2>Advanced</h2>
 <h3>Math Equation</h3>
