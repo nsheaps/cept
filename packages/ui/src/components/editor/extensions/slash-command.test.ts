@@ -10,7 +10,7 @@ describe('Slash Command', () => {
       expect(titles).toContain('Heading 3');
       expect(titles).toContain('Bullet List');
       expect(titles).toContain('Numbered List');
-      expect(titles).toContain('Task List');
+      expect(titles).toContain('To-do / Checkbox');
       expect(titles).toContain('Code Block');
       expect(titles).toContain('Blockquote');
       expect(titles).toContain('Divider');

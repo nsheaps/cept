@@ -101,8 +101,8 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
   }, [backend, currentPath, loadDirectory, selectedFile]);
 
   const handleJumpToPage = useCallback((entry: FileEntry) => {
-    // Extract page ID from path like "pages/my-page.html"
-    const match = entry.path.match(/\/pages\/(.+)\.html$/);
+    // Extract page ID from path like "pages/my-page.md"
+    const match = entry.path.match(/\/pages\/(.+)\.(?:md|html)$/);
     if (match && onNavigateToPage) {
       onNavigateToPage(match[1]);
       onClose();
@@ -202,7 +202,7 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
                 )}
               </button>
               <div className="cept-fb-entry-actions">
-                {!entry.isDirectory && entry.path.match(/\/pages\/.+\.html$/) && onNavigateToPage && (
+                {!entry.isDirectory && entry.path.match(/\/pages\/.+\.(?:md|html)$/) && onNavigateToPage && (
                   <button
                     className="cept-fb-action-btn"
                     onClick={() => handleJumpToPage(entry)}

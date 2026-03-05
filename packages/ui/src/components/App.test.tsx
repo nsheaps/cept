@@ -44,8 +44,8 @@ function seedWorkspace(backend: MemoryBackend, state: Record<string, unknown>) {
 }
 
 /** Helper: seed a single page's content as an individual file */
-function seedPageContent(backend: MemoryBackend, pageId: string, html: string) {
-  backend.seedText(`pages/${pageId}.html`, html);
+function seedPageContent(backend: MemoryBackend, pageId: string, content: string) {
+  backend.seedText(`pages/${pageId}.md`, content);
 }
 
 /** Helper: seed settings in the backend so showDemoContent is true */
@@ -180,7 +180,7 @@ describe('App', () => {
     const pageId = parsed.pages[0].id as string;
 
     // Page content should be in its own file
-    const pageContent = await backend.readText(`pages/${pageId}.html`);
+    const pageContent = await backend.readText(`pages/${pageId}.md`);
     expect(pageContent).not.toBeNull();
     expect(pageContent).toContain('Start typing here');
   });
@@ -217,7 +217,7 @@ describe('App', () => {
     });
 
     // After migration, page content should be in individual file
-    const pageContent = await backend.readText('pages/old-page.html');
+    const pageContent = await backend.readText('pages/old-page.md');
     expect(pageContent).toBe('<p>Migrated content</p>');
 
     // workspace-state.json should no longer contain pageContents
@@ -299,7 +299,7 @@ describe('App', () => {
     vi.useRealTimers();
 
     // Demo pages should have individual files
-    const welcomeContent = await backend.readText('pages/welcome.html');
+    const welcomeContent = await backend.readText('pages/welcome.md');
     expect(welcomeContent).not.toBeNull();
     expect(welcomeContent).toContain('demo space');
   });
@@ -419,7 +419,7 @@ describe('App', () => {
     expect(stored).not.toBeNull();
 
     // Page content should be migrated to individual file
-    const pageContent = await backend.readText('pages/legacy-page.html');
+    const pageContent = await backend.readText('pages/legacy-page.md');
     expect(pageContent).toBe('<p>Old data</p>');
   });
 });

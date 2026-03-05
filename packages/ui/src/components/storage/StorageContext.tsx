@@ -111,8 +111,8 @@ async function migratePageContentsToFiles(backend: StorageBackend, state: Persis
   if (!state.pageContents || Object.keys(state.pageContents).length === 0) return;
 
   // Write each page's content to its own file
-  const writes = Object.entries(state.pageContents).map(([pageId, html]) =>
-    writePageContent(backend, pageId, html),
+  const writes = Object.entries(state.pageContents).map(([pageId, content]) =>
+    writePageContent(backend, pageId, content),
   );
   await Promise.all(writes);
 
@@ -177,22 +177,36 @@ export async function resetSettingsOnBackend(backend: StorageBackend): Promise<v
 
 /** Read a single page's content from the backend */
 export async function readPageContent(backend: StorageBackend, pageId: string): Promise<string | null> {
-  const data = await backend.readFile(`${PAGES_DIR}/${pageId}.html`);
-  if (!data) return null;
-  return new TextDecoder().decode(data);
+  // Try .md first, fall back to legacy .html
+  const mdData = await backend.readFile(`${PAGES_DIR}/${pageId}.md`);
+  if (mdData) return new TextDecoder().decode(mdData);
+  const htmlData = await backend.readFile(`${PAGES_DIR}/${pageId}.html`);
+  if (htmlData) return new TextDecoder().decode(htmlData);
+  return null;
 }
 
 /** Write a single page's content to the backend */
-export async function writePageContent(backend: StorageBackend, pageId: string, html: string): Promise<void> {
-  await backend.writeFile(`${PAGES_DIR}/${pageId}.html`, new TextEncoder().encode(html));
+export async function writePageContent(backend: StorageBackend, pageId: string, content: string): Promise<void> {
+  await backend.writeFile(`${PAGES_DIR}/${pageId}.md`, new TextEncoder().encode(content));
+  // Clean up legacy .html file if it exists
+  try {
+    await backend.deleteFile(`${PAGES_DIR}/${pageId}.html`);
+  } catch {
+    // Ignore — legacy file may not exist
+  }
 }
 
 /** Delete a single page's content from the backend */
 export async function deletePageContent(backend: StorageBackend, pageId: string): Promise<void> {
   try {
-    await backend.deleteFile(`${PAGES_DIR}/${pageId}.html`);
+    await backend.deleteFile(`${PAGES_DIR}/${pageId}.md`);
   } catch {
     // Ignore if file doesn't exist
+  }
+  try {
+    await backend.deleteFile(`${PAGES_DIR}/${pageId}.html`);
+  } catch {
+    // Ignore legacy file
   }
 }
 
