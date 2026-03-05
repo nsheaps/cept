@@ -2,20 +2,31 @@ import { test, expect, type Page } from '@playwright/test';
 import { captureScreenshot } from './screenshot-utils.js';
 
 /**
+ * On mobile viewports the sidebar opens by default with a fixed backdrop
+ * (z-index 40) that covers the landing page buttons. Close it before interacting.
+ */
+async function closeSidebarOnMobile(page: Page) {
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 768) {
+    const toggle = page.getByTestId('sidebar-toggle');
+    if (await toggle.isVisible()) {
+      await toggle.click();
+      await page.waitForTimeout(200);
+    }
+  }
+}
+
+/**
  * Helper: Navigate to demo mode by clicking "Try the demo" on the landing page.
  * This is the most reliable way — it mirrors how a real user would enter demo mode.
  */
 async function openDemoEditor(page: Page) {
   await page.goto('/');
   await expect(page.getByTestId('landing-page')).toBeVisible();
+  await closeSidebarOnMobile(page);
   await page.getByTestId('try-demo').click();
   await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
-  // On narrow viewports, close the sidebar so the editor is uncovered
-  const viewport = page.viewportSize();
-  if (viewport && viewport.width < 768) {
-    await page.getByTestId('sidebar-toggle').click();
-    await page.waitForTimeout(200);
-  }
+  await closeSidebarOnMobile(page);
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
