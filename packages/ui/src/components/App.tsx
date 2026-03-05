@@ -149,39 +149,48 @@ export function App() {
   }, []);
 
   // Deep linking: restore route from URL on load (handles 404 redirect + legacy hash)
+  // Runs exactly once after initialization has populated pages.
+  const routeRestoredRef = useRef(false);
   useEffect(() => {
-    if (!ready || !initializedRef.current) return;
+    if (!initializedRef.current || routeRestoredRef.current) return;
+    // Wait until pages are actually populated (or we confirmed there are none)
+    if (!hasStarted && !persisted) return;
+    routeRestoredRef.current = true;
+
     const route = restoreRoute();
     if (route.space === 'docs') {
       setActiveSpace('docs');
       if (route.pageId) setDocsSelectedPageId(route.pageId);
-    } else {
+    } else if (route.pageId) {
+      const node = findNode(pages, route.pageId);
+      if (node) {
+        setSelectedPageId(route.pageId);
+        setPages((prev) => expandToNode(prev, route.pageId!));
+      }
       if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
-        // Switch to the requested space
         void switchSpaceInBackend(backend, route.spaceId).then(() => {
           setUserSpaceId(route.spaceId);
         });
       }
-      if (route.pageId && route.pageId !== selectedPageId) {
-        const node = findNode(pages, route.pageId);
-        if (node) {
-          setSelectedPageId(route.pageId);
-          setPages((prev) => expandToNode(prev, route.pageId!));
-        }
-      }
     }
-  }, [ready]); // only run when ready changes
+  }, [hasStarted, pages, persisted, backend, userSpaceId]);
 
-  // Deep linking: update URL when selected page or space changes
+  // Deep linking: update URL when selected page or space changes.
+  // Guarded: never fires during initial render or on the landing page.
   useEffect(() => {
+    if (!initializedRef.current || !routeRestoredRef.current) return;
+    if (!hasStarted) return;
+
     if (activeSpace === 'docs') {
       replaceRoute({ space: 'docs', pageId: docsSelectedPageId });
     } else if (selectedPageId) {
       replaceRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
     } else if (userSpaceId !== 'default') {
       replaceRoute({ space: 'user', spaceId: userSpaceId });
+    } else {
+      replaceRoute({ space: 'user', spaceId: 'default' });
     }
-  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId]);
+  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId, hasStarted]);
 
   // Listen for back/forward navigation (popstate)
   useEffect(() => {
