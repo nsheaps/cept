@@ -84,7 +84,7 @@ export default defineConfig({
   plugins: [tailwindcss(), react(), nodeStubs(), inject404BasePath()],
   base: process.env.VITE_BASE_PATH || '/',
   define: {
-    __APP_VERSION__: JSON.stringify(rootPkg.version),
+    __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || rootPkg.version),
     __COMMIT_SHA__: JSON.stringify(process.env.COMMIT_SHA || ''),
   },
   resolve: {
