@@ -3,16 +3,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { CeptEditor } from './CeptEditor.js';
 
 describe('CeptEditor — table blocks', () => {
-  it('renders a table from HTML content', async () => {
+  it('renders a table from markdown content', async () => {
     render(
       <CeptEditor
-        content={`
-          <table>
-            <tr><th>Name</th><th>Age</th></tr>
-            <tr><td>Alice</td><td>30</td></tr>
-            <tr><td>Bob</td><td>25</td></tr>
-          </table>
-        `}
+        content={`| Name | Age |
+| --- | --- |
+| Alice | 30 |
+| Bob | 25 |`}
       />
     );
     await waitFor(() => {
@@ -27,12 +24,9 @@ describe('CeptEditor — table blocks', () => {
   it('renders header cells as th elements', async () => {
     render(
       <CeptEditor
-        content={`
-          <table>
-            <tr><th>Header 1</th><th>Header 2</th></tr>
-            <tr><td>Cell 1</td><td>Cell 2</td></tr>
-          </table>
-        `}
+        content={`| Header 1 | Header 2 |
+| --- | --- |
+| Cell 1 | Cell 2 |`}
       />
     );
     await waitFor(() => {
@@ -47,12 +41,9 @@ describe('CeptEditor — table blocks', () => {
   it('renders data cells as td elements', async () => {
     render(
       <CeptEditor
-        content={`
-          <table>
-            <tr><th>Col A</th><th>Col B</th></tr>
-            <tr><td>Data A</td><td>Data B</td></tr>
-          </table>
-        `}
+        content={`| Col A | Col B |
+| --- | --- |
+| Data A | Data B |`}
       />
     );
     await waitFor(() => {
@@ -67,14 +58,11 @@ describe('CeptEditor — table blocks', () => {
   it('renders a table with multiple rows', async () => {
     render(
       <CeptEditor
-        content={`
-          <table>
-            <tr><th>ID</th><th>Name</th><th>Status</th></tr>
-            <tr><td>1</td><td>Task A</td><td>Done</td></tr>
-            <tr><td>2</td><td>Task B</td><td>In Progress</td></tr>
-            <tr><td>3</td><td>Task C</td><td>Pending</td></tr>
-          </table>
-        `}
+        content={`| ID | Name | Status |
+| --- | --- | --- |
+| 1 | Task A | Done |
+| 2 | Task B | In Progress |
+| 3 | Task C | Pending |`}
       />
     );
     await waitFor(() => {
@@ -88,15 +76,15 @@ describe('CeptEditor — table blocks', () => {
   it('renders table alongside other content', async () => {
     render(
       <CeptEditor
-        content={`
-          <h2>Project Status</h2>
-          <p>Here is the current task breakdown:</p>
-          <table>
-            <tr><th>Task</th><th>Status</th></tr>
-            <tr><td>Design</td><td>Complete</td></tr>
-          </table>
-          <p>More details below.</p>
-        `}
+        content={`## Project Status
+
+Here is the current task breakdown:
+
+| Task | Status |
+| --- | --- |
+| Design | Complete |
+
+More details below.`}
       />
     );
     await waitFor(() => {
@@ -108,23 +96,18 @@ describe('CeptEditor — table blocks', () => {
     });
   });
 
-  it('preserves table structure on getHTML roundtrip', async () => {
+  it('preserves table structure on roundtrip', async () => {
     render(
       <CeptEditor
-        content={`
-          <table>
-            <tr><th>X</th><th>Y</th></tr>
-            <tr><td>1</td><td>2</td></tr>
-          </table>
-        `}
+        content={`| X | Y |
+| --- | --- |
+| 1 | 2 |`}
       />
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.querySelector('table')).toBeTruthy();
     });
-    // Even without changes, editor should maintain table structure
-    // Re-render with emitted HTML if available, or check initial state
     const editor = screen.getByTestId('cept-editor');
     const table = editor.querySelector('table');
     expect(table).toBeTruthy();

@@ -15,6 +15,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
+import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
 import { common, createLowlight } from 'lowlight';
 import { Callout } from './extensions/callout.js';
 import { Toggle } from './extensions/toggle.js';
@@ -36,7 +37,7 @@ export interface CeptEditorProps {
   content?: string;
   editable?: boolean;
   placeholder?: string;
-  onUpdate?: (html: string) => void;
+  onUpdate?: (markdown: string) => void;
 }
 
 export function CeptEditor({
@@ -206,6 +207,11 @@ export function CeptEditor({
           },
         },
       }),
+      Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
       Placeholder.configure({
         placeholder,
       }),
@@ -213,7 +219,8 @@ export function CeptEditor({
     content,
     editable,
     onUpdate: ({ editor: ed }) => {
-      onUpdate?.(ed.getHTML());
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      onUpdate?.((ed.storage as unknown as { markdown: MarkdownStorage }).markdown.getMarkdown());
     },
     editorProps: {
       attributes: {

@@ -59,54 +59,13 @@ export const DOCS_PAGES: PageTreeNode[] = [
   },
 ];
 
-// Simple markdown-to-HTML converter for bundled docs
-function mdToHtml(md: string): string {
-  let html = md;
-  // Remove YAML front matter
-  html = html.replace(/^---[\s\S]*?---\n*/m, '');
-  // Tables
-  html = html.replace(/^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)*)/gm, (_match, headerRow: string, _sep: string, bodyRows: string) => {
-    const headers = headerRow.split('|').filter((c: string) => c.trim()).map((c: string) => `<th>${c.trim()}</th>`).join('');
-    const rows = bodyRows.trim().split('\n').map((row: string) => {
-      const cells = row.split('|').filter((c: string) => c.trim()).map((c: string) => `<td>${c.trim()}</td>`).join('');
-      return `<tr>${cells}</tr>`;
-    }).join('');
-    return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>\n`;
-  });
-  // Code blocks (``` ... ```)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/gm, (_match, lang: string, code: string) => {
-    const cls = lang ? ` class="language-${lang}"` : '';
-    return `<pre><code${cls}>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
-  });
-  // Headers
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  // Bold and italic (order matters)
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  // Horizontal rule
-  html = html.replace(/^---$/gm, '<hr>');
-  // Unordered list items
-  html = html.replace(/^- (.+)$/gm, '<li><p>$1</p></li>');
-  // Ordered list items
-  html = html.replace(/^\d+\. (.+)$/gm, '<li><p>$1</p></li>');
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/((?:<li><p>[\s\S]*?<\/p><\/li>\n?)+)/g, '<ul>$1</ul>');
-  // Paragraphs for remaining text lines
-  html = html.replace(/^(?!<[a-z/])(.+)$/gm, '<p>$1</p>');
-  // Clean up
-  html = html.replace(/<p>\s*<\/p>/g, '');
-  html = html.replace(/<p>\\?\*\s/g, '');
-  return html.trim();
+/** Strip YAML front matter from markdown content */
+function stripFrontMatter(md: string): string {
+  return md.replace(/^---[\s\S]*?---\n*/m, '');
 }
 
 // --- Inline documentation content ---
-// These are the rendered versions of the markdown files in docs/content/
+// These are the markdown files from docs/content/
 
 const MD_INDEX = `# Cept Documentation
 
@@ -699,23 +658,23 @@ Cept is open source. Contributions are welcome! See the GitHub repository at git
 
 // Pre-converted HTML content for each docs page
 export const DOCS_CONTENT: Record<string, string> = {
-  'docs-index': mdToHtml(MD_INDEX),
-  'docs-introduction': mdToHtml(MD_INTRODUCTION),
-  'docs-quick-start': mdToHtml(MD_QUICK_START),
-  'docs-features': mdToHtml(MD_FEATURES),
-  'docs-platform-support': mdToHtml(MD_PLATFORM_SUPPORT),
-  'docs-vs-notion': mdToHtml(MD_VS_NOTION),
-  'docs-vs-obsidian': mdToHtml(MD_VS_OBSIDIAN),
-  'docs-from-notion': mdToHtml(MD_FROM_NOTION),
-  'docs-from-obsidian': mdToHtml(MD_FROM_OBSIDIAN),
-  'docs-keyboard-shortcuts': mdToHtml(MD_KEYBOARD_SHORTCUTS),
-  'docs-roadmap': mdToHtml(MD_ROADMAP),
+  'docs-index': stripFrontMatter(MD_INDEX),
+  'docs-introduction': stripFrontMatter(MD_INTRODUCTION),
+  'docs-quick-start': stripFrontMatter(MD_QUICK_START),
+  'docs-features': stripFrontMatter(MD_FEATURES),
+  'docs-platform-support': stripFrontMatter(MD_PLATFORM_SUPPORT),
+  'docs-vs-notion': stripFrontMatter(MD_VS_NOTION),
+  'docs-vs-obsidian': stripFrontMatter(MD_VS_OBSIDIAN),
+  'docs-from-notion': stripFrontMatter(MD_FROM_NOTION),
+  'docs-from-obsidian': stripFrontMatter(MD_FROM_OBSIDIAN),
+  'docs-keyboard-shortcuts': stripFrontMatter(MD_KEYBOARD_SHORTCUTS),
+  'docs-roadmap': stripFrontMatter(MD_ROADMAP),
   // Folder pages — auto-generated index content for parent nodes
-  'docs-getting-started': mdToHtml(`# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`),
-  'docs-guides': mdToHtml(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Platform Support** — Supported platforms and browsers`),
-  'docs-comparison': mdToHtml(`# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`),
-  'docs-migration': mdToHtml(`# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`),
-  'docs-reference': mdToHtml(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Product Roadmap** — What's built and what's coming next`),
+  'docs-getting-started': stripFrontMatter(`# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`),
+  'docs-guides': stripFrontMatter(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Platform Support** — Supported platforms and browsers`),
+  'docs-comparison': stripFrontMatter(`# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`),
+  'docs-migration': stripFrontMatter(`# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`),
+  'docs-reference': stripFrontMatter(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Product Roadmap** — What's built and what's coming next`),
 };
 
 /** Map of docs page IDs to their source file path in the GitHub repo */
