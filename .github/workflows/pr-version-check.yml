@@ -1,0 +1,139 @@
+name: PR Version Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  version-check:
+    name: Check Version Bump
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Determine version bump
+        id: version
+        run: |
+          set +e
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          NEXT_VERSION=$(bunx release-it --release-version --ci 2>&1)
+          EXIT_CODE=$?
+          set -e
+
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
+            echo "error=true" >> $GITHUB_OUTPUT
+            echo "error_message<<EOF" >> $GITHUB_OUTPUT
+            echo "$NEXT_VERSION" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "error=false" >> $GITHUB_OUTPUT
+            echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+            # Determine bump type by comparing versions
+            CURRENT_MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+            CURRENT_MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+            CURRENT_PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+            NEXT_MAJOR=$(echo "$NEXT_VERSION" | cut -d. -f1)
+            NEXT_MINOR=$(echo "$NEXT_VERSION" | cut -d. -f2)
+            NEXT_PATCH=$(echo "$NEXT_VERSION" | cut -d. -f3)
+
+            if [ "$NEXT_MAJOR" != "$CURRENT_MAJOR" ]; then
+              echo "bump_type=major" >> $GITHUB_OUTPUT
+            elif [ "$NEXT_MINOR" != "$CURRENT_MINOR" ]; then
+              echo "bump_type=minor" >> $GITHUB_OUTPUT
+            elif [ "$NEXT_PATCH" != "$CURRENT_PATCH" ]; then
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            else
+              echo "bump_type=none" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentVersion = '${{ steps.version.outputs.current_version }}';
+            const hasError = '${{ steps.version.outputs.error }}' === 'true';
+            const nextVersion = '${{ steps.version.outputs.next_version }}';
+            const bumpType = '${{ steps.version.outputs.bump_type }}';
+            const errorMessage = `${{ steps.version.outputs.error_message }}`;
+
+            let body;
+            if (hasError) {
+              body = [
+                '## Release Version Check',
+                '',
+                '> **Error determining version bump**',
+                '',
+                `Current version: \`${currentVersion}\``,
+                '',
+                'Error details:',
+                '```',
+                errorMessage,
+                '```',
+                '',
+                'This PR may not trigger an automatic release when merged. Ensure commits follow [Conventional Commits](https://www.conventionalcommits.org/) format.',
+              ].join('\n');
+            } else if (bumpType === 'none' || !nextVersion) {
+              body = [
+                '## Release Version Check',
+                '',
+                `> **No version bump detected**`,
+                '',
+                `Current version: \`${currentVersion}\``,
+                '',
+                'This PR will **not** trigger an automatic release when merged.',
+                'To trigger a release, use [Conventional Commits](https://www.conventionalcommits.org/) prefixes like `feat:`, `fix:`, etc.',
+              ].join('\n');
+            } else {
+              const bumpEmoji = { major: '🔴', minor: '🟡', patch: '🟢' }[bumpType] || '📦';
+              body = [
+                '## Release Version Check',
+                '',
+                `> ${bumpEmoji} **${bumpType.toUpperCase()}** version bump`,
+                '',
+                `| | Version |`,
+                `|---|---|`,
+                `| Current | \`${currentVersion}\` |`,
+                `| Next | \`${nextVersion}\` |`,
+                '',
+                'This version will be released automatically when this PR is merged to `main`.',
+              ].join('\n');
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.find(c => c.body.includes('Release Version Check'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }

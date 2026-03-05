@@ -1,6 +1,8 @@
 name: Release Desktop
 
 on:
+  release:
+    types: [published]
   push:
     tags:
       - 'v*'
