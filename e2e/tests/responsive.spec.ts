@@ -7,23 +7,34 @@ import { test, expect } from '@playwright/test';
 import { captureResponsiveScreenshots, captureScreenshot } from './screenshot-utils.js';
 
 /**
+ * On mobile viewports the sidebar opens by default with a fixed backdrop
+ * (z-index 40) that covers the landing page buttons. Close it before interacting.
+ */
+async function closeSidebarOnMobile(page: import('@playwright/test').Page) {
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width < 768) {
+    const toggle = page.getByTestId('sidebar-toggle');
+    if (await toggle.isVisible()) {
+      await toggle.click();
+      await page.waitForTimeout(200);
+    }
+  }
+}
+
+/**
  * Helper: Enter demo mode from the landing page.
- * Waits for the landing page to render, clicks "Try the demo", then ensures the
- * editor is visible. On narrow viewports the sidebar is fixed-position and covers
- * the editor, so we close it first.
+ * Waits for the landing page to render, closes sidebar on mobile so buttons
+ * are clickable, clicks "Try the demo", then ensures the editor is visible.
  */
 async function enterDemoMode(page: import('@playwright/test').Page) {
   await page.goto('/');
   await expect(page.getByTestId('landing-page')).toBeVisible();
+  await closeSidebarOnMobile(page);
   await page.getByTestId('try-demo').click();
   // Wait for the landing page to disappear (proves we entered demo mode)
   await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
   // On narrow viewports, close the sidebar so the editor is uncovered
-  const viewport = page.viewportSize();
-  if (viewport && viewport.width < 768) {
-    await page.getByTestId('sidebar-toggle').click();
-    await page.waitForTimeout(200);
-  }
+  await closeSidebarOnMobile(page);
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
@@ -37,14 +48,10 @@ test.describe('Responsive: Onboarding / Landing', () => {
   test('start writing creates first page', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();
+    await closeSidebarOnMobile(page);
     await page.getByTestId('start-writing').click();
     await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
-    // On narrow viewports, close the sidebar so the editor is uncovered
-    const viewport = page.viewportSize();
-    if (viewport && viewport.width < 768) {
-      await page.getByTestId('sidebar-toggle').click();
-      await page.waitForTimeout(200);
-    }
+    await closeSidebarOnMobile(page);
     await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
   });
 });
@@ -216,7 +223,8 @@ test.describe('Responsive: Full-page Screenshots', () => {
       fullPage: true,
     });
 
-    // Demo mode
+    // Close sidebar on mobile before clicking try-demo
+    await closeSidebarOnMobile(page);
     await page.getByTestId('try-demo').click();
     await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
 
