@@ -99,6 +99,7 @@
 .cept-page-header-actions {
   position: relative;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .cept-page-header-menu-btn {
@@ -123,7 +124,7 @@
 .cept-page-header-menu {
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
   z-index: 100;
   margin-top: 4px;
   background: white;
