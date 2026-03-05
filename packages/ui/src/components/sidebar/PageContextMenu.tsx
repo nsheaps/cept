@@ -91,7 +91,7 @@ export function PageContextMenu({
         onClick={() => { onMoveToRoot(pageId); onClose(); }}
         data-testid="ctx-move-to-root"
       >
-        Move to root
+        Move...
       </button>
       <div className="cept-context-menu-divider" />
       <button
