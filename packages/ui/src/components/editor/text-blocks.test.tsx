@@ -7,7 +7,7 @@ describe('CeptEditor — text blocks', () => {
     it('renders code block with language', async () => {
       render(
         <CeptEditor
-          content='<pre class="cept-code-block"><code class="language-javascript">const x = 1;</code></pre>'
+          content={'```javascript\nconst x = 1;\n```'}
         />
       );
       await waitFor(() => {
@@ -20,7 +20,7 @@ describe('CeptEditor — text blocks', () => {
     it('renders code block without language', async () => {
       render(
         <CeptEditor
-          content='<pre class="cept-code-block"><code>plain code</code></pre>'
+          content={'```\nplain code\n```'}
         />
       );
       await waitFor(() => {
@@ -34,7 +34,7 @@ describe('CeptEditor — text blocks', () => {
   describe('Blockquote', () => {
     it('renders blockquote content', async () => {
       render(
-        <CeptEditor content="<blockquote><p>A wise quote</p></blockquote>" />
+        <CeptEditor content={"> A wise quote"} />
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
@@ -45,7 +45,7 @@ describe('CeptEditor — text blocks', () => {
 
     it('renders nested blockquote content', async () => {
       render(
-        <CeptEditor content="<blockquote><p>Line one</p><p>Line two</p></blockquote>" />
+        <CeptEditor content={"> Line one\n>\n> Line two"} />
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
@@ -106,7 +106,7 @@ describe('CeptEditor — text blocks', () => {
   describe('Horizontal rule / divider', () => {
     it('renders horizontal rule between paragraphs', async () => {
       render(
-        <CeptEditor content="<p>Above</p><hr><p>Below</p>" />
+        <CeptEditor content={"Above\n\n---\n\nBelow"} />
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
@@ -121,14 +121,19 @@ describe('CeptEditor — text blocks', () => {
     it('renders combination of text blocks', async () => {
       render(
         <CeptEditor
-          content={`
-            <h1>Document Title</h1>
-            <p>Introduction paragraph.</p>
-            <blockquote><p>A relevant quote</p></blockquote>
-            <pre class="cept-code-block"><code class="language-typescript">const y: number = 42;</code></pre>
-            <hr>
-            <p>Conclusion.</p>
-          `}
+          content={`# Document Title
+
+Introduction paragraph.
+
+> A relevant quote
+
+\`\`\`typescript
+const y: number = 42;
+\`\`\`
+
+---
+
+Conclusion.`}
         />
       );
       await waitFor(() => {
