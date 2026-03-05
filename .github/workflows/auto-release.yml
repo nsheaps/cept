@@ -45,40 +45,21 @@ jobs:
           # Set up branch tracking so release-it doesn't fail on upstream check
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
 
-      - name: Debug release-it state
-        run: |
-          echo "=== Git status ==="
-          git status
-          echo ""
-          echo "=== Current version ==="
-          node -p "require('./package.json').version"
-          echo ""
-          echo "=== Latest tags ==="
-          git tag --sort=-v:refname | head -10 || echo "No tags found"
-          echo ""
-          echo "=== Recent commits ==="
-          git log --oneline -10
-          echo ""
-          echo "=== release-it dry run ==="
-          bunx release-it --dry-run --verbose --ci 2>&1 || true
-
       - name: Determine version bump
         id: version
         run: |
           set +e
-          # Get the recommended bump from conventional commits
-          NEXT_VERSION=$(bunx release-it --release-version --verbose --ci 2>&1)
+          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null)
           EXIT_CODE=$?
           set -e
 
           if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
-            echo "No version bump detected from conventional commits (exit code: $EXIT_CODE)"
-            echo "Output: $NEXT_VERSION"
+            echo "No version bump needed (exit code: $EXIT_CODE)"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
+            echo "Next version: $NEXT_VERSION"
             echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "Next version: $NEXT_VERSION"
           fi
 
       - name: Release
