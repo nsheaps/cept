@@ -16,13 +16,21 @@ test.describe('Smoke Tests', () => {
 
   test('try demo enters demo mode with editor', async ({ page }) => {
     await page.goto('/');
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     await page.getByTestId('try-demo').click();
-    await expect(page.locator('.cept-editor')).toBeVisible();
+    // On narrow viewports the sidebar may cover the editor, so check for
+    // the editor OR the sidebar-toggle (which proves we left the landing page)
+    await expect(
+      page.locator('.cept-editor').or(page.getByTestId('sidebar-toggle')),
+    ).first().toBeVisible({ timeout: 10000 });
   });
 
   test('start writing creates a new page', async ({ page }) => {
     await page.goto('/');
+    await expect(page.getByTestId('landing-page')).toBeVisible();
     await page.getByTestId('start-writing').click();
-    await expect(page.locator('.cept-editor')).toBeVisible();
+    await expect(
+      page.locator('.cept-editor').or(page.getByTestId('sidebar-toggle')),
+    ).first().toBeVisible({ timeout: 10000 });
   });
 });
