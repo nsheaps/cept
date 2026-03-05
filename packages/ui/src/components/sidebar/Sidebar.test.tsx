@@ -232,17 +232,43 @@ describe('Sidebar', () => {
     expect(screen.queryByTestId('trash-toggle')).toBeNull();
   });
 
-  it('shows add page button, trash, and settings when not readOnly', () => {
+  it('shows add page button, trash, and app menu when not readOnly', () => {
     render(<Sidebar pages={mockPages} onPageAdd={vi.fn()} />);
     expect(screen.getByTestId('sidebar-add-page')).toBeDefined();
     expect(screen.getByTestId('trash-toggle')).toBeDefined();
-    expect(screen.getByTestId('app-menu-settings')).toBeDefined();
+    expect(screen.getByTestId('sidebar-app-menu-trigger')).toBeDefined();
   });
 
-  it('calls onOpenSettings with spaces tab when settings clicked', () => {
+  it('opens app menu and shows settings, help, about items', () => {
+    render(<Sidebar pages={mockPages} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    expect(screen.getByTestId('sidebar-app-menu')).toBeDefined();
+    expect(screen.getByTestId('sidebar-app-menu-settings')).toBeDefined();
+    expect(screen.getByTestId('sidebar-app-menu-help')).toBeDefined();
+    expect(screen.getByTestId('sidebar-app-menu-about')).toBeDefined();
+  });
+
+  it('calls onOpenSettings with settings tab when settings clicked in app menu', () => {
     const onOpenSettings = vi.fn();
     render(<Sidebar pages={mockPages} onOpenSettings={onOpenSettings} />);
-    fireEvent.click(screen.getByTestId('app-menu-settings'));
-    expect(onOpenSettings).toHaveBeenCalledWith('spaces');
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-settings'));
+    expect(onOpenSettings).toHaveBeenCalledWith('settings');
+  });
+
+  it('calls onOpenDocs when help clicked in app menu', () => {
+    const onOpenDocs = vi.fn();
+    render(<Sidebar pages={mockPages} onOpenDocs={onOpenDocs} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-help'));
+    expect(onOpenDocs).toHaveBeenCalled();
+  });
+
+  it('calls onOpenSettings with about tab when about clicked in app menu', () => {
+    const onOpenSettings = vi.fn();
+    render(<Sidebar pages={mockPages} onOpenSettings={onOpenSettings} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-about'));
+    expect(onOpenSettings).toHaveBeenCalledWith('about');
   });
 });

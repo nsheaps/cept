@@ -51,45 +51,10 @@ describe('PageHeader', () => {
     expect(defaultProps.onRename).not.toHaveBeenCalled();
   });
 
-  it('opens menu with triple-dot button', () => {
+  it('does not render page menu (menu is in header bar)', () => {
     render(<PageHeader {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    expect(screen.getByTestId('page-header-menu')).toBeDefined();
-  });
-
-  it('menu has favorite, rename, duplicate, delete actions', () => {
-    render(<PageHeader {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    expect(screen.getByTestId('page-menu-favorite')).toBeDefined();
-    expect(screen.getByTestId('page-menu-rename')).toBeDefined();
-    expect(screen.getByTestId('page-menu-duplicate')).toBeDefined();
-    expect(screen.getByTestId('page-menu-delete')).toBeDefined();
-  });
-
-  it('clicking duplicate in menu calls onDuplicate', () => {
-    render(<PageHeader {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    fireEvent.click(screen.getByTestId('page-menu-duplicate'));
-    expect(defaultProps.onDuplicate).toHaveBeenCalledWith('test-page');
-  });
-
-  it('shows "Remove from favorites" when isFavorite', () => {
-    render(<PageHeader {...defaultProps} isFavorite />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    expect(screen.getByText('Remove from favorites')).toBeDefined();
-  });
-
-  it('shows "Add to favorites" when not favorite', () => {
-    render(<PageHeader {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    expect(screen.getByText('Add to favorites')).toBeDefined();
-  });
-
-  it('rename from menu opens edit mode', () => {
-    render(<PageHeader {...defaultProps} />);
-    fireEvent.click(screen.getByTestId('page-menu-btn'));
-    fireEvent.click(screen.getByTestId('page-menu-rename'));
-    expect(screen.getByTestId('page-title-input')).toBeDefined();
+    expect(screen.queryByTestId('page-menu-btn')).toBeNull();
+    expect(screen.queryByTestId('page-header-menu')).toBeNull();
   });
 
   it('renders cover banner when cover is provided', () => {

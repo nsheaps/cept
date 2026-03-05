@@ -73,6 +73,14 @@
   border-radius: 9999px;
 }
 
+.cept-app-menu-item--danger {
+  color: #dc2626;
+}
+
+.cept-app-menu-item--danger:hover {
+  background-color: #fef2f2 !important;
+}
+
 .cept-app-menu-divider {
   height: 1px;
   background: #e5e7eb;
@@ -143,6 +151,8 @@
   .cept-app-menu-item:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.06); }
   .cept-app-menu-item:disabled { color: #71717a; }
   .cept-app-menu-badge { background: #333; color: #71717a; }
+  .cept-app-menu-item--danger { color: #ef4444; }
+  .cept-app-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
   .cept-app-menu-divider { background: #404040; }
   .cept-about-dialog { background: #262626; }
   .cept-about-dialog h2 { color: #e5e5e5; }
