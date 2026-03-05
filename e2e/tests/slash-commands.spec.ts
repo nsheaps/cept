@@ -322,26 +322,26 @@ test.describe('Page Header', () => {
     await captureScreenshot(page, { name: 'page-header-editing', category: 'features' });
   });
 
-  test('page menu has actions', async ({ page }) => {
+  test('page menu has actions in header bar', async ({ page }) => {
     await openDemoEditor(page);
     await page.getByTestId('page-menu-btn').click();
-    await expect(page.getByTestId('page-header-menu')).toBeVisible();
-    await captureScreenshot(page, { name: 'page-header-menu', category: 'features' });
+    await expect(page.getByTestId('page-menu')).toBeVisible();
+    await captureScreenshot(page, { name: 'page-menu', category: 'features' });
   });
 });
 
 test.describe('App Menu', () => {
-  test('app menu opens with actions', async ({ page }) => {
+  test('sidebar app menu opens with settings, help, about', async ({ page }) => {
     await openDemoEditor(page);
-    await page.getByTestId('app-menu-trigger').click();
-    await expect(page.getByTestId('app-menu')).toBeVisible();
-    await captureScreenshot(page, { name: 'app-menu-open', category: 'features' });
+    await page.getByTestId('sidebar-app-menu-trigger').click();
+    await expect(page.getByTestId('sidebar-app-menu')).toBeVisible();
+    await captureScreenshot(page, { name: 'sidebar-app-menu-open', category: 'features' });
   });
 
-  test('about panel displays via settings', async ({ page }) => {
+  test('about panel displays via sidebar app menu', async ({ page }) => {
     await openDemoEditor(page);
-    await page.getByTestId('app-menu-trigger').click();
-    await page.getByTestId('app-menu-about').click();
+    await page.getByTestId('sidebar-app-menu-trigger').click();
+    await page.getByTestId('sidebar-app-menu-about').click();
     // About is now a tab in the Settings modal
     await expect(page.getByTestId('settings-panel-about')).toBeVisible();
     await captureScreenshot(page, { name: 'about-panel', category: 'features' });

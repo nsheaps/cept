@@ -17,17 +17,11 @@ export function PageHeader({
   title,
   icon,
   cover,
-  isFavorite,
   onRename,
-  onDuplicate,
-  onDelete,
-  onToggleFavorite,
 }: PageHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
-  const [menuOpen, setMenuOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setEditValue(title);
@@ -39,17 +33,6 @@ export function PageHeader({
       inputRef.current.select();
     }
   }, [isEditing]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
 
   const handleSave = useCallback(() => {
     const trimmed = editValue.trim();
@@ -117,65 +100,6 @@ export function PageHeader({
             {title || 'Untitled'}
           </h1>
         )}
-        <div className="cept-page-header-actions">
-          <button
-            className="cept-page-header-menu-btn"
-            onClick={() => setMenuOpen((prev) => !prev)}
-            data-testid="page-menu-btn"
-            title="Page actions"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <circle cx="8" cy="3" r="1.5" />
-              <circle cx="8" cy="8" r="1.5" />
-              <circle cx="8" cy="13" r="1.5" />
-            </svg>
-          </button>
-          {menuOpen && (
-            <div className="cept-page-header-menu" ref={menuRef} data-testid="page-header-menu">
-              <button
-                className="cept-page-header-menu-item"
-                onClick={() => {
-                  onToggleFavorite(pageId);
-                  setMenuOpen(false);
-                }}
-                data-testid="page-menu-favorite"
-              >
-                {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              </button>
-              <button
-                className="cept-page-header-menu-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setIsEditing(true);
-                }}
-                data-testid="page-menu-rename"
-              >
-                Rename
-              </button>
-              <button
-                className="cept-page-header-menu-item"
-                onClick={() => {
-                  onDuplicate(pageId);
-                  setMenuOpen(false);
-                }}
-                data-testid="page-menu-duplicate"
-              >
-                Duplicate
-              </button>
-              <div className="cept-page-header-menu-divider" />
-              <button
-                className="cept-page-header-menu-item cept-page-header-menu-item--danger"
-                onClick={() => {
-                  onDelete(pageId);
-                  setMenuOpen(false);
-                }}
-                data-testid="page-menu-delete"
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

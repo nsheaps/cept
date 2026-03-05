@@ -7,46 +7,72 @@ describe('AppMenu', () => {
     vi.clearAllMocks();
   });
 
-  it('renders trigger button', () => {
-    render(<AppMenu />);
-    expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+  it('does not render when no pageId', () => {
+    const { container } = render(<AppMenu />);
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('renders trigger button when pageId is provided', () => {
+    render(<AppMenu pageId="test-page" />);
+    expect(screen.getByTestId('page-menu-btn')).toBeDefined();
   });
 
   it('opens menu on click', () => {
-    render(<AppMenu />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    expect(screen.getByTestId('app-menu')).toBeDefined();
+    render(<AppMenu pageId="test-page" />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    expect(screen.getByTestId('page-menu')).toBeDefined();
   });
 
-  it('has settings, help, and about items', () => {
-    render(<AppMenu />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    expect(screen.getByTestId('app-menu-settings')).toBeDefined();
-    expect(screen.getByTestId('app-menu-help')).toBeDefined();
-    expect(screen.getByTestId('app-menu-about')).toBeDefined();
+  it('has favorite, rename, duplicate, delete items', () => {
+    render(<AppMenu pageId="test-page" />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    expect(screen.getByTestId('page-menu-favorite')).toBeDefined();
+    expect(screen.getByTestId('page-menu-rename')).toBeDefined();
+    expect(screen.getByTestId('page-menu-duplicate')).toBeDefined();
+    expect(screen.getByTestId('page-menu-delete')).toBeDefined();
   });
 
-  it('help item calls onOpenDocs', () => {
-    const onOpenDocs = vi.fn();
-    render(<AppMenu onOpenDocs={onOpenDocs} />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    fireEvent.click(screen.getByTestId('app-menu-help'));
-    expect(onOpenDocs).toHaveBeenCalled();
+  it('shows "Add to favorites" when not favorite', () => {
+    render(<AppMenu pageId="test-page" />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    expect(screen.getByText('Add to favorites')).toBeDefined();
   });
 
-  it('settings item calls onOpenSettings with settings tab', () => {
-    const onOpenSettings = vi.fn();
-    render(<AppMenu onOpenSettings={onOpenSettings} />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    fireEvent.click(screen.getByTestId('app-menu-settings'));
-    expect(onOpenSettings).toHaveBeenCalledWith('settings');
+  it('shows "Remove from favorites" when isFavorite', () => {
+    render(<AppMenu pageId="test-page" isFavorite />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    expect(screen.getByText('Remove from favorites')).toBeDefined();
   });
 
-  it('about item calls onOpenSettings with about tab', () => {
-    const onOpenSettings = vi.fn();
-    render(<AppMenu onOpenSettings={onOpenSettings} />);
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    fireEvent.click(screen.getByTestId('app-menu-about'));
-    expect(onOpenSettings).toHaveBeenCalledWith('about');
+  it('calls onToggleFavorite with pageId', () => {
+    const onToggleFavorite = vi.fn();
+    render(<AppMenu pageId="test-page" onToggleFavorite={onToggleFavorite} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-favorite'));
+    expect(onToggleFavorite).toHaveBeenCalledWith('test-page');
+  });
+
+  it('calls onDuplicate with pageId', () => {
+    const onDuplicate = vi.fn();
+    render(<AppMenu pageId="test-page" onDuplicate={onDuplicate} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-duplicate'));
+    expect(onDuplicate).toHaveBeenCalledWith('test-page');
+  });
+
+  it('calls onDelete with pageId', () => {
+    const onDelete = vi.fn();
+    render(<AppMenu pageId="test-page" onDelete={onDelete} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-delete'));
+    expect(onDelete).toHaveBeenCalledWith('test-page');
+  });
+
+  it('calls onRename with pageId', () => {
+    const onRename = vi.fn();
+    render(<AppMenu pageId="test-page" onRename={onRename} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-rename'));
+    expect(onRename).toHaveBeenCalledWith('test-page');
   });
 });

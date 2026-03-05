@@ -647,8 +647,15 @@ export function App() {
         )}
         <div className="ml-auto" />
         <AppMenu
-          onOpenSettings={handleOpenSettings}
-          onOpenDocs={handleOpenDocs}
+          pageId={activeSpace === 'user' ? selectedPageId : undefined}
+          isFavorite={selectedPageId ? favorites.some((f) => f.id === selectedPageId) : false}
+          onToggleFavorite={handleToggleFavorite}
+          onRename={() => {
+            const titleEl = document.querySelector('[data-testid="page-title"]') as HTMLElement;
+            titleEl?.click();
+          }}
+          onDuplicate={handlePageDuplicate}
+          onDelete={handlePageDelete}
         />
       </header>
       <main className="flex flex-1 min-h-0">
