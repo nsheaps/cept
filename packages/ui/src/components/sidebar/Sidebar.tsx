@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
 import { PageContextMenu } from './PageContextMenu.js';
-import { AppMenu } from '../app-menu/AppMenu.js';
 
 export interface SidebarPageRef {
   id: string;
@@ -33,6 +32,7 @@ export interface SidebarProps {
   onBackToSpace?: () => void;
   onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
   onOpenDocs?: () => void;
+  onOpenTrash?: () => void;
   spaces?: Array<{ id: string; name: string }>;
   activeSpaceId?: string;
   onSwitchSpace?: (id: string) => void;
@@ -52,21 +52,17 @@ export function Sidebar({
   onPageDelete,
   onPageMoveToRoot,
   onToggleFavorite,
-  onRestoreFromTrash,
-  onPermanentDelete,
-  onEmptyTrash,
   onSearch,
   readOnly,
   spaceName,
   onSpaceRename,
   onBackToSpace,
   onOpenSettings,
-  onOpenDocs,
+  onOpenTrash,
   spaces,
   activeSpaceId,
   onSwitchSpace,
 }: SidebarProps) {
-  const [trashExpanded, setTrashExpanded] = useState(false);
   const [editingSpaceName, setEditingSpaceName] = useState(false);
   const [editSpaceNameValue, setEditSpaceNameValue] = useState(spaceName ?? 'Space');
   const [spaceSwitcherOpen, setSpaceSwitcherOpen] = useState(false);
@@ -185,11 +181,6 @@ export function Sidebar({
             )}
           </div>
         )}
-        {!readOnly && (
-          <div className="cept-sidebar-header-menu">
-            <AppMenu onOpenSettings={onOpenSettings} onOpenDocs={onOpenDocs} />
-          </div>
-        )}
       </div>
 
       <div className="cept-sidebar-actions">
@@ -198,7 +189,10 @@ export function Sidebar({
           onClick={onSearch}
           data-testid="sidebar-search"
         >
-          <span className="cept-sidebar-action-icon">{'\u{1F50D}'}</span>
+          <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="7" cy="7" r="5" />
+            <path d="M11 11l3.5 3.5" />
+          </svg>
           <span>Search</span>
         </button>
       </div>
@@ -248,15 +242,6 @@ export function Sidebar({
       <div className="cept-sidebar-section">
         <div className="cept-sidebar-section-header">
           <span>Pages</span>
-          {!readOnly && (
-            <button
-              className="cept-sidebar-section-add"
-              onClick={() => onPageAdd?.()}
-              data-testid="sidebar-add-page"
-            >
-              +
-            </button>
-          )}
         </div>
         <div className="cept-sidebar-tree" data-testid="page-tree">
           {pages.length === 0 ? (
@@ -283,60 +268,51 @@ export function Sidebar({
         </div>
       </div>
 
-      {!readOnly && <div className="cept-sidebar-section cept-sidebar-section--compact" data-testid="trash-section">
-        <button
-          className="cept-sidebar-action-btn"
-          onClick={() => setTrashExpanded((prev) => !prev)}
-          data-testid="trash-toggle"
-        >
-          <span className="cept-sidebar-action-icon">{'\u{1F5D1}'}</span>
-          <span>Trash</span>
-          {trash.length > 0 && (
-            <span className="cept-sidebar-badge" data-testid="trash-count">
-              {trash.length}
-            </span>
-          )}
-        </button>
-        {trashExpanded && (
-          <div className="cept-sidebar-tree" data-testid="trash-list">
-            {trash.length === 0 ? (
-              <div className="cept-sidebar-empty">Trash is empty</div>
-            ) : (
-              <>
-                {trash.map((item) => (
-                  <div key={item.id} className="cept-sidebar-trash-item" data-testid={`trash-item-${item.id}`}>
-                    <span className="cept-sidebar-icon">{item.icon ?? '\u{1F4C4}'}</span>
-                    <span className="cept-sidebar-title">{item.title || 'Untitled'}</span>
-                    <button
-                      className="cept-sidebar-trash-action"
-                      onClick={() => onRestoreFromTrash?.(item.id)}
-                      title="Restore"
-                      data-testid={`trash-restore-${item.id}`}
-                    >
-                      {'\u21A9'}
-                    </button>
-                    <button
-                      className="cept-sidebar-trash-action cept-sidebar-trash-action--danger"
-                      onClick={() => onPermanentDelete?.(item.id)}
-                      title="Delete permanently"
-                      data-testid={`trash-delete-${item.id}`}
-                    >
-                      {'\u2715'}
-                    </button>
-                  </div>
-                ))}
-                <button
-                  className="cept-sidebar-action-btn cept-sidebar-empty-trash"
-                  onClick={onEmptyTrash}
-                  data-testid="empty-trash"
-                >
-                  Empty trash
-                </button>
-              </>
-            )}
-          </div>
+      <div className="cept-sidebar-footer">
+        <div className="cept-sidebar-footer-divider" />
+        {!readOnly && (
+          <button
+            className="cept-sidebar-action-btn"
+            onClick={() => onPageAdd?.()}
+            data-testid="sidebar-add-page"
+          >
+            <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+            <span>New page</span>
+          </button>
         )}
-      </div>}
+        {!readOnly && (
+          <button
+            className="cept-sidebar-action-btn"
+            onClick={onOpenTrash}
+            data-testid="trash-toggle"
+          >
+            <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+            </svg>
+            <span>Trash</span>
+            {trash.length > 0 && (
+              <span className="cept-sidebar-badge" data-testid="trash-count">
+                {trash.length}
+              </span>
+            )}
+          </button>
+        )}
+        {!readOnly && (
+          <button
+            className="cept-sidebar-action-btn"
+            onClick={() => onOpenSettings?.('spaces')}
+            data-testid="app-menu-settings"
+          >
+            <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="2.5" />
+              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+            </svg>
+            <span>Settings</span>
+          </button>
+        )}
+      </div>
 
       {contextMenu && !readOnly && (
         <PageContextMenu

@@ -352,27 +352,23 @@ describe('App', () => {
     expect(screen.getByTestId('page-title-save')).toBeDefined();
   });
 
-  it('shows app menu in sidebar', async () => {
+  it('shows settings button in sidebar footer', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
     renderApp(backend);
     await waitFor(() => {
-      expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+      expect(screen.getByTestId('app-menu-settings')).toBeDefined();
     });
   });
 
-  it('app menu opens and has actions', async () => {
+  it('shows new page and trash buttons in sidebar footer', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
     renderApp(backend);
     await waitFor(() => {
-      expect(screen.getByTestId('app-menu-trigger')).toBeDefined();
+      expect(screen.getByTestId('sidebar-add-page')).toBeDefined();
+      expect(screen.getByTestId('trash-toggle')).toBeDefined();
     });
-    fireEvent.click(screen.getByTestId('app-menu-trigger'));
-    expect(screen.getByTestId('app-menu')).toBeDefined();
-    expect(screen.getByTestId('app-menu-settings')).toBeDefined();
-    expect(screen.getByTestId('app-menu-help')).toBeDefined();
-    expect(screen.getByTestId('app-menu-about')).toBeDefined();
   });
 
   it('persists space name', async () => {

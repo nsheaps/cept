@@ -350,6 +350,24 @@
   background-color: #fef2f2;
 }
 
+/* Sidebar footer */
+.cept-sidebar-footer {
+  flex-shrink: 0;
+  padding: 0 0.5rem 0.5rem;
+  margin-top: auto;
+}
+
+.cept-sidebar-footer-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.25rem 0 0.375rem;
+}
+
+.cept-sidebar-action-svg {
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
 /* Context menu */
 .cept-context-menu {
   position: fixed;
@@ -467,6 +485,8 @@
   .cept-context-menu-rename-input:focus { border-color: #3b82f6; }
   .cept-sidebar-back-btn { color: #9ca3af; }
   .cept-sidebar-back-btn:hover { background: #374151; color: #e5e5e5; }
+  .cept-sidebar-footer-divider { background: #333; }
+  .cept-sidebar-action-svg { color: #71717a; }
 }
 
 /* Docs banner */
