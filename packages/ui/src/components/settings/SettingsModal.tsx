@@ -530,7 +530,12 @@ export function SettingsModal({
                 <div className="cept-settings-about-logo">C</div>
                 <h3>Cept</h3>
                 <p>A Notion-inspired app that runs entirely in your browser.</p>
-                <p className="cept-settings-about-version">Version 0.1.0</p>
+                <p className="cept-settings-about-version" data-testid="about-version">
+                  Version {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0-dev'}
+                  {typeof __COMMIT_SHA__ !== 'undefined' && __COMMIT_SHA__ && (
+                    <span className="cept-settings-about-commit"> ({__COMMIT_SHA__.slice(0, 7)})</span>
+                  )}
+                </p>
                 <div className="cept-settings-section-divider" />
                 <p className="cept-settings-about-footer">
                   Built with React, TipTap, and love.

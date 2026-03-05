@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import fs from 'fs';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const rootPkg = require('../../package.json') as { version: string };
 
 /**
  * Provide empty stubs for Node.js built-in modules.
@@ -79,6 +83,10 @@ function inject404BasePath(): Plugin {
 export default defineConfig({
   plugins: [tailwindcss(), react(), nodeStubs(), inject404BasePath()],
   base: process.env.VITE_BASE_PATH || '/',
+  define: {
+    __APP_VERSION__: JSON.stringify(rootPkg.version),
+    __COMMIT_SHA__: JSON.stringify(process.env.COMMIT_SHA || ''),
+  },
   resolve: {
     alias: {
       '@cept/core': path.resolve(__dirname, '../core/src'),
