@@ -97,6 +97,7 @@ export function App() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [userSpaceId, setUserSpaceId] = useState('default');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
@@ -238,6 +239,7 @@ export function App() {
 
   const handlePageSelect = useCallback((id: string) => {
     setSelectedPageId(id);
+    setShowTrash(false);
     setPages((prev) => expandToNode(prev, id));
     const node = findNode(pages, id);
     if (node) {
@@ -666,6 +668,7 @@ export function App() {
             onSearch={() => setSearchOpen(true)}
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
+            onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename('default', name)}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
@@ -741,6 +744,50 @@ export function App() {
               onTryDemo={handleResetDemo}
               onOpenDocs={handleOpenDocs}
             />
+          ) : showTrash ? (
+            <div className="cept-trash-view" data-testid="trash-view">
+              <h2 className="cept-trash-view-title">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                </svg>
+                Trash
+              </h2>
+              {trash.length === 0 ? (
+                <p className="cept-trash-view-empty">Trash is empty</p>
+              ) : (
+                <>
+                  <div className="cept-trash-view-list">
+                    {trash.map((item) => (
+                      <div key={item.id} className="cept-trash-view-item" data-testid={`trash-item-${item.id}`}>
+                        <span className="cept-trash-view-item-icon">{item.icon ?? '\u{1F4C4}'}</span>
+                        <span className="cept-trash-view-item-title">{item.title || 'Untitled'}</span>
+                        <button
+                          className="cept-trash-view-action"
+                          onClick={() => handleRestoreFromTrash(item.id)}
+                          data-testid={`trash-restore-${item.id}`}
+                        >
+                          Restore
+                        </button>
+                        <button
+                          className="cept-trash-view-action cept-trash-view-action--danger"
+                          onClick={() => handlePermanentDelete(item.id)}
+                          data-testid={`trash-delete-${item.id}`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    className="cept-trash-view-empty-btn"
+                    onClick={handleEmptyTrash}
+                    data-testid="empty-trash"
+                  >
+                    Empty trash
+                  </button>
+                </>
+              )}
+            </div>
           ) : selectedPageId && selectedNode ? (
             <>
               <PageHeader
@@ -768,8 +815,17 @@ export function App() {
               )}
             </>
           ) : (
-            <div className="text-center text-gray-400 mt-20">
-              <p>Select a page or create a new one</p>
+            <div className="cept-empty-state" data-testid="empty-state">
+              <p className="cept-empty-state-text">
+                Select a page from the sidebar, or{' '}
+                <button
+                  className="cept-empty-state-link"
+                  onClick={() => handlePageAdd()}
+                  data-testid="empty-state-create"
+                >
+                  start typing to create a new one
+                </button>
+              </p>
             </div>
           )}
         </section>

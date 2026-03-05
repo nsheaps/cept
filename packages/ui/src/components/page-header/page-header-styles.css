@@ -35,10 +35,11 @@
   color: #111827;
   margin: 0;
   cursor: text;
-  padding: 0.125rem 0.25rem;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  transition: background-color 0.15s, border-color 0.15s;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -48,8 +49,8 @@
 }
 
 .cept-page-header-title:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .cept-page-header-edit-wrapper {
@@ -97,7 +98,6 @@
 .cept-page-header-actions {
   position: relative;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .cept-page-header-menu-btn {
@@ -122,7 +122,7 @@
 .cept-page-header-menu {
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 0;
   z-index: 100;
   margin-top: 4px;
   background: white;
@@ -167,8 +167,8 @@
 
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
-  .cept-page-header-title { color: #e5e5e5; }
-  .cept-page-header-title:hover { background-color: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); }
+  .cept-page-header-title { color: #e5e5e5; background: #262626; border-color: #404040; }
+  .cept-page-header-title:hover { border-color: #525252; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
   .cept-page-header-title-input { color: #e5e5e5; background: #262626; border-color: #3b82f6; }
   .cept-page-header-menu-btn { color: #71717a; }
   .cept-page-header-menu-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
@@ -178,4 +178,144 @@
   .cept-page-header-menu-item--danger { color: #ef4444; }
   .cept-page-header-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
   .cept-page-header-menu-divider { background: #404040; }
+}
+
+/* Empty state */
+.cept-empty-state {
+  text-align: center;
+  padding: 5rem 2rem;
+  color: #9ca3af;
+}
+
+.cept-empty-state-text {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.cept-empty-state-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cept-empty-state-link:hover {
+  color: #2563eb;
+}
+
+/* Trash page view */
+.cept-trash-view {
+  padding: 0;
+}
+
+.cept-trash-view-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1.5rem;
+}
+
+.cept-trash-view-empty {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.cept-trash-view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 1.5rem;
+}
+
+.cept-trash-view-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.12s;
+}
+
+.cept-trash-view-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.cept-trash-view-item-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cept-trash-view-item-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.cept-trash-view-action {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #374151;
+  flex-shrink: 0;
+  transition: background-color 0.12s;
+}
+
+.cept-trash-view-action:hover {
+  background: #f3f4f6;
+}
+
+.cept-trash-view-action--danger {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.cept-trash-view-action--danger:hover {
+  background: #fef2f2;
+}
+
+.cept-trash-view-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #fecaca;
+  background: none;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  color: #dc2626;
+}
+
+.cept-trash-view-empty-btn:hover {
+  background: #fef2f2;
+}
+
+/* Dark mode for empty state & trash */
+@media (prefers-color-scheme: dark) {
+  .cept-empty-state { color: #71717a; }
+  .cept-empty-state-link { color: #60a5fa; }
+  .cept-empty-state-link:hover { color: #93bbfd; }
+  .cept-trash-view-title { color: #e5e5e5; }
+  .cept-trash-view-empty { color: #71717a; }
+  .cept-trash-view-item:hover { background-color: rgba(255, 255, 255, 0.04); }
+  .cept-trash-view-item-title { color: #d4d4d8; }
+  .cept-trash-view-action { background: #333; border-color: #404040; color: #d4d4d8; }
+  .cept-trash-view-action:hover { background: #404040; }
+  .cept-trash-view-action--danger { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+  .cept-trash-view-action--danger:hover { background: rgba(239, 68, 68, 0.1); }
+  .cept-trash-view-empty-btn { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+  .cept-trash-view-empty-btn:hover { background: rgba(239, 68, 68, 0.1); }
 }
