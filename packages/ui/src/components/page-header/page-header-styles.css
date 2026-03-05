@@ -37,8 +37,8 @@
   cursor: text;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid transparent;
+  background: transparent;
   transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
   flex: 1;
   min-width: 0;
@@ -49,7 +49,8 @@
 }
 
 .cept-page-header-title:hover {
-  border-color: #d1d5db;
+  background: white;
+  border-color: #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
@@ -167,8 +168,8 @@
 
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
-  .cept-page-header-title { color: #e5e5e5; background: #262626; border-color: #404040; }
-  .cept-page-header-title:hover { border-color: #525252; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+  .cept-page-header-title { color: #e5e5e5; background: transparent; border-color: transparent; }
+  .cept-page-header-title:hover { background: #262626; border-color: #404040; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
   .cept-page-header-title-input { color: #e5e5e5; background: #262626; border-color: #3b82f6; }
   .cept-page-header-menu-btn { color: #71717a; }
   .cept-page-header-menu-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
