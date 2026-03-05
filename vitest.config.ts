@@ -2,6 +2,10 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify('0.0.0-test'),
+    __COMMIT_SHA__: JSON.stringify(''),
+  },
   resolve: {
     alias: {
       '@cept/core': path.resolve(__dirname, 'packages/core/src'),

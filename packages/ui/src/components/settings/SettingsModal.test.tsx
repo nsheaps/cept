@@ -138,9 +138,11 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('clear-all-data-btn')).toBeDefined();
   });
 
-  it('shows about tab', () => {
+  it('shows about tab with version', () => {
     render(<SettingsModal {...defaultProps} initialTab="about" />);
     expect(screen.getByTestId('settings-panel-about')).toBeDefined();
+    const versionEl = screen.getByTestId('about-version');
+    expect(versionEl.textContent).toContain('Version');
   });
 
   it('resets settings when reset button clicked', () => {
