@@ -29,7 +29,6 @@ export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
                 data-testid={`breadcrumb-${item.id}`}
                 aria-current="page"
               >
-                {item.icon && <span className="cept-breadcrumb-icon">{item.icon}</span>}
                 {item.title || 'Untitled'}
               </span>
             ) : (
@@ -38,7 +37,6 @@ export function Breadcrumbs({ items, onNavigate }: BreadcrumbsProps) {
                 onClick={() => onNavigate?.(item.id)}
                 data-testid={`breadcrumb-${item.id}`}
               >
-                {item.icon && <span className="cept-breadcrumb-icon">{item.icon}</span>}
                 {item.title || 'Untitled'}
               </button>
             )}

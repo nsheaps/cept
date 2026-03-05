@@ -53,9 +53,9 @@ describe('Breadcrumbs', () => {
     expect(onNavigate).toHaveBeenCalledWith('root');
   });
 
-  it('renders icons when provided', () => {
+  it('does not render icons in breadcrumbs', () => {
     render(<Breadcrumbs items={items} />);
-    expect(screen.getByText('\u{1F4C1}')).toBeDefined();
+    expect(screen.queryByText('\u{1F4C1}')).toBeNull();
   });
 
   it('renders single item without separator', () => {
