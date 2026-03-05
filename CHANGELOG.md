@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0](https://github.com/nsheaps/cept/compare/v0.0.2...v0.1.0) (2026-03-05)
+
+### Features
+
+* make commit hash on about page a clickable link to GitHub ([#21](https://github.com/nsheaps/cept/issues/21)) ([2f6b84a](https://github.com/nsheaps/cept/commit/2f6b84ad4a9e2fbfbdb7610e2f7309b4f9fc1c51))
+
 ## 0.0.2 (2026-03-05)
 
 ### Bug Fixes
