@@ -22,6 +22,9 @@ export interface AppRoute {
 
 const DEFAULT_ROUTE: AppRoute = { space: 'user', spaceId: 'default', pageId: undefined };
 
+/** Cached base path so detection only runs once. */
+let cachedBasePath: string | null = null;
+
 /** Override for testing. When set, getBasePath() returns this value. */
 let basePathOverride: string | null = null;
 
@@ -30,25 +33,52 @@ let basePathOverride: string | null = null;
  */
 export function setBasePath(base: string | null): void {
   basePathOverride = base;
+  cachedBasePath = null; // force re-detection
 }
 
 /**
- * Detect the base path from Vite's import.meta.env.BASE_URL
- * or fall back to '/'.
+ * Detect the base path. Tries in order:
+ * 1. Test override (setBasePath)
+ * 2. Vite's import.meta.env.BASE_URL (build-time replacement)
+ * 3. Runtime detection from <script> src attributes
+ * 4. Falls back to '/'
  */
 function getBasePath(): string {
   if (basePathOverride !== null) {
     const b = basePathOverride;
     return b.endsWith('/') ? b : b + '/';
   }
+  if (cachedBasePath !== null) return cachedBasePath;
+
+  let base = '/';
+
+  // Try Vite build-time value
   try {
-    // Vite injects import.meta.env.BASE_URL at build time
     const meta = import.meta as unknown as { env?: { BASE_URL?: string } };
-    const base = meta.env?.BASE_URL ?? '/';
-    return base.endsWith('/') ? base : base + '/';
+    if (meta.env?.BASE_URL && meta.env.BASE_URL !== '/') {
+      base = meta.env.BASE_URL;
+    }
   } catch {
-    return '/';
+    // not available
   }
+
+  // If Vite didn't give us a real base, detect from the DOM at runtime.
+  // Vite-built scripts have src like "/cept/app/assets/index-abc123.js".
+  // We extract everything before "/assets/".
+  if (base === '/' && typeof document !== 'undefined') {
+    const scripts = document.querySelectorAll('script[src]');
+    for (const s of scripts) {
+      const src = s.getAttribute('src') ?? '';
+      const assetsIdx = src.indexOf('/assets/');
+      if (assetsIdx > 0) {
+        base = src.substring(0, assetsIdx + 1);
+        break;
+      }
+    }
+  }
+
+  cachedBasePath = base.endsWith('/') ? base : base + '/';
+  return cachedBasePath;
 }
 
 /**

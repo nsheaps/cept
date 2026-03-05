@@ -605,11 +605,9 @@ export function App() {
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
     { id: 'toggle-sidebar', title: 'Toggle Sidebar', icon: '\u{1F4CB}', category: 'View', action: () => { setSidebarOpen((p) => !p); setCommandPaletteOpen(false); } },
-    { id: 'import-notion', title: 'Import from Notion', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('notion'); } },
-    { id: 'import-obsidian', title: 'Import from Obsidian', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('obsidian'); } },
     { id: 'export-page', title: 'Export Current Page', icon: '\u{1F4E4}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenExport(); } },
     { id: 'manage-spaces', title: 'Manage Spaces', icon: '\u{1F4C2}', category: 'Spaces', action: () => { setCommandPaletteOpen(false); handleOpenSettings('spaces'); } },
-  ], [handlePageAdd, handleOpenImport, handleOpenExport, handleOpenSettings]);
+  ], [handlePageAdd, handleOpenExport, handleOpenSettings]);
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
@@ -670,6 +668,9 @@ export function App() {
             onOpenDocs={handleOpenDocs}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename('default', name)}
+            spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
+            activeSpaceId={userSpaceId}
+            onSwitchSpace={handleSwitchSpace}
           />
         )}
         {sidebarOpen && activeSpace === 'docs' && (
@@ -802,6 +803,8 @@ export function App() {
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
+        backend={backend}
+        onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
       />
       <ImportDialog
         isOpen={importDialogOpen}
