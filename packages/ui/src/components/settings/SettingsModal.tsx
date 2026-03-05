@@ -533,7 +533,7 @@ export function SettingsModal({
                 <p className="cept-settings-about-version" data-testid="about-version">
                   Version {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0-dev'}
                   {typeof __COMMIT_SHA__ !== 'undefined' && __COMMIT_SHA__ && (
-                    <span className="cept-settings-about-commit"> ({__COMMIT_SHA__.slice(0, 7)})</span>
+                    <span className="cept-settings-about-commit"> (<a href={`https://github.com/nsheaps/cept/commit/${__COMMIT_SHA__}`} target="_blank" rel="noopener noreferrer">{__COMMIT_SHA__.slice(0, 7)}</a>)</span>
                   )}
                 </p>
                 <div className="cept-settings-section-divider" />
