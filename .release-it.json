@@ -37,7 +37,7 @@
     },
     "@release-it/bumper": {
       "in": "package.json",
-      "out": ["package.json"]
+      "out": []
     }
   }
 }

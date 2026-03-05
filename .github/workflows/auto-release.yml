@@ -18,10 +18,18 @@ jobs:
     # Skip release commits to avoid infinite loops
     if: "!startsWith(github.event.head_commit.message, 'chore: release v')"
     steps:
+      - name: Authenticate as GitHub App
+        id: auth
+        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.auth.outputs.token }}
 
       - name: Install mise
         uses: jdx/mise-action@v2
@@ -34,17 +42,32 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           # Set up branch tracking so release-it doesn't fail on upstream check
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
+
+      - name: Debug release-it state
+        run: |
+          echo "=== Git status ==="
+          git status
+          echo ""
+          echo "=== Current version ==="
+          node -p "require('./package.json').version"
+          echo ""
+          echo "=== Latest tags ==="
+          git tag --sort=-v:refname | head -10 || echo "No tags found"
+          echo ""
+          echo "=== Recent commits ==="
+          git log --oneline -10
+          echo ""
+          echo "=== release-it dry run ==="
+          bunx release-it --dry-run --verbose --ci 2>&1 || true
 
       - name: Determine version bump
         id: version
         run: |
           set +e
           # Get the recommended bump from conventional commits
-          NEXT_VERSION=$(bunx release-it --release-version --ci 2>&1)
+          NEXT_VERSION=$(bunx release-it --release-version --verbose --ci 2>&1)
           EXIT_CODE=$?
           set -e
 
@@ -60,6 +83,6 @@ jobs:
 
       - name: Release
         if: steps.version.outputs.skip != 'true'
-        run: bun run release:ci
+        run: bun run release:ci -- --verbose
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
