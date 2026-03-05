@@ -233,7 +233,7 @@ describe('Sidebar', () => {
   });
 
   it('shows add page button, trash, and settings when not readOnly', () => {
-    render(<Sidebar pages={mockPages} />);
+    render(<Sidebar pages={mockPages} onPageAdd={vi.fn()} />);
     expect(screen.getByTestId('sidebar-add-page')).toBeDefined();
     expect(screen.getByTestId('trash-toggle')).toBeDefined();
     expect(screen.getByTestId('app-menu-settings')).toBeDefined();

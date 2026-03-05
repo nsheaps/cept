@@ -185,7 +185,7 @@ export function Sidebar({
 
       <div className="cept-sidebar-actions">
         <button
-          className="cept-sidebar-action-btn"
+          className="cept-sidebar-search-btn"
           onClick={onSearch}
           data-testid="sidebar-search"
         >
@@ -242,6 +242,16 @@ export function Sidebar({
       <div className="cept-sidebar-section">
         <div className="cept-sidebar-section-header">
           <span>Pages</span>
+          {!readOnly && onPageAdd && (
+            <button
+              className="cept-sidebar-section-add"
+              onClick={() => onPageAdd()}
+              data-testid="sidebar-add-page"
+              title="Add a page"
+            >
+              +
+            </button>
+          )}
         </div>
         <div className="cept-sidebar-tree" data-testid="page-tree">
           {pages.length === 0 ? (
@@ -269,19 +279,6 @@ export function Sidebar({
       </div>
 
       <div className="cept-sidebar-footer">
-        <div className="cept-sidebar-footer-divider" />
-        {!readOnly && (
-          <button
-            className="cept-sidebar-action-btn"
-            onClick={() => onPageAdd?.()}
-            data-testid="sidebar-add-page"
-          >
-            <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 3v10M3 8h10" />
-            </svg>
-            <span>New page</span>
-          </button>
-        )}
         {!readOnly && (
           <button
             className="cept-sidebar-action-btn"
@@ -299,6 +296,7 @@ export function Sidebar({
             )}
           </button>
         )}
+        <div className="cept-sidebar-footer-divider" />
         {!readOnly && (
           <button
             className="cept-sidebar-action-btn"
