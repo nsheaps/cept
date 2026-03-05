@@ -33,6 +33,9 @@ export interface SidebarProps {
   onBackToSpace?: () => void;
   onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
   onOpenDocs?: () => void;
+  spaces?: Array<{ id: string; name: string }>;
+  activeSpaceId?: string;
+  onSwitchSpace?: (id: string) => void;
 }
 
 export function Sidebar({
@@ -59,10 +62,14 @@ export function Sidebar({
   onBackToSpace,
   onOpenSettings,
   onOpenDocs,
+  spaces,
+  activeSpaceId,
+  onSwitchSpace,
 }: SidebarProps) {
   const [trashExpanded, setTrashExpanded] = useState(false);
   const [editingSpaceName, setEditingSpaceName] = useState(false);
   const [editSpaceNameValue, setEditSpaceNameValue] = useState(spaceName ?? 'Space');
+  const [spaceSwitcherOpen, setSpaceSwitcherOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     pageId: string;
     pageTitle: string;
@@ -127,18 +134,56 @@ export function Sidebar({
             data-testid="sidebar-space-name-input"
           />
         ) : (
-          <span
-            className="cept-sidebar-workspace-name"
-            onDoubleClick={() => {
-              if (!readOnly && onSpaceRename) {
-                setEditSpaceNameValue(spaceName ?? 'Space');
-                setEditingSpaceName(true);
-              }
-            }}
-            data-testid="sidebar-space-name"
-          >
-            {spaceName ?? 'Space'}
-          </span>
+          <div className="cept-sidebar-workspace-name-wrapper">
+            <button
+              className="cept-sidebar-workspace-name"
+              onClick={() => {
+                if (spaces && spaces.length > 1 && onSwitchSpace) {
+                  setSpaceSwitcherOpen((p) => !p);
+                }
+              }}
+              onDoubleClick={() => {
+                if (!readOnly && onSpaceRename) {
+                  setSpaceSwitcherOpen(false);
+                  setEditSpaceNameValue(spaceName ?? 'Space');
+                  setEditingSpaceName(true);
+                }
+              }}
+              data-testid="sidebar-space-name"
+              title={spaces && spaces.length > 1 ? 'Click to switch space, double-click to rename' : 'Double-click to rename'}
+            >
+              {spaceName ?? 'Space'}
+              {spaces && spaces.length > 1 && (
+                <svg className="cept-sidebar-workspace-chevron" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 6l4 4 4-4" />
+                </svg>
+              )}
+            </button>
+            {spaceSwitcherOpen && spaces && onSwitchSpace && (
+              <div className="cept-sidebar-space-switcher" data-testid="space-switcher-dropdown">
+                {spaces.map((s) => (
+                  <button
+                    key={s.id}
+                    className={`cept-sidebar-space-switcher-item ${s.id === activeSpaceId ? 'is-active' : ''}`}
+                    onClick={() => {
+                      if (s.id !== activeSpaceId) {
+                        onSwitchSpace(s.id);
+                      }
+                      setSpaceSwitcherOpen(false);
+                    }}
+                    data-testid={`space-switcher-${s.id}`}
+                  >
+                    {s.name}
+                    {s.id === activeSpaceId && (
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3,8 7,12 13,4" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         {!readOnly && (
           <div className="cept-sidebar-header-menu">

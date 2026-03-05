@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import type { StorageBackend } from '@cept/core';
+import { FileBrowser } from './FileBrowser.js';
 
 export interface CeptSettings {
   autoSave: boolean;
@@ -73,6 +75,8 @@ export interface SettingsModalProps {
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
+  backend?: StorageBackend;
+  onNavigateToPage?: (pageId: string) => void;
 }
 
 export function SettingsModal({
@@ -93,18 +97,22 @@ export function SettingsModal({
   onImportNotion,
   onImportObsidian,
   onExport,
+  backend,
+  onNavigateToPage,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'data' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [creatingSpace, setCreatingSpace] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
+  const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
       setSelectedSpaceId(null);
+      setBrowsingSpaceId(null);
     }
   }, [isOpen, initialTab]);
 
@@ -274,12 +282,8 @@ export function SettingsModal({
                 ) : (
                   <div className="cept-settings-space-list">
                     {spaces.map((space) => (
-                      <div key={space.id} className="cept-settings-space-row">
-                        <button
-                          className={`cept-settings-space-item ${space.id === activeSpaceId ? 'is-active' : ''}`}
-                          onClick={() => setSelectedSpaceId(space.id)}
-                          data-testid={`space-item-${space.id}`}
-                        >
+                      <div key={space.id} className="cept-settings-space-row" data-testid={`space-item-${space.id}`}>
+                        <div className={`cept-settings-space-info-block ${space.id === activeSpaceId ? 'is-active' : ''}`}>
                           <div className="cept-settings-space-info">
                             <span className="cept-settings-space-name">
                               {space.name}
@@ -289,20 +293,33 @@ export function SettingsModal({
                             </span>
                             <span className="cept-settings-space-meta">{space.source} &middot; {space.pageCount} pages</span>
                           </div>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M6 4l4 4-4 4" />
-                          </svg>
-                        </button>
-                        {space.id !== activeSpaceId && (
+                        </div>
+                        <div className="cept-settings-space-actions">
+                          {space.id !== activeSpaceId && (
+                            <button
+                              className="cept-settings-icon-btn"
+                              onClick={() => { onSwitchSpace(space.id); onClose(); }}
+                              title="Switch to this space"
+                              data-testid={`switch-space-${space.id}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
+                                <polyline points="2,3 2,6.5 5.5,6.5" />
+                                <polyline points="14,13 14,9.5 10.5,9.5" />
+                              </svg>
+                            </button>
+                          )}
                           <button
-                            className="cept-settings-action-btn cept-settings-action-btn--small"
-                            onClick={() => { onSwitchSpace(space.id); onClose(); }}
-                            title="Switch to this space"
-                            data-testid={`switch-space-${space.id}`}
+                            className="cept-settings-icon-btn"
+                            onClick={() => setSelectedSpaceId(space.id)}
+                            title="Space settings"
+                            data-testid={`space-settings-${space.id}`}
                           >
-                            Switch
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M6 4l4 4-4 4" />
+                            </svg>
                           </button>
-                        )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -365,19 +382,21 @@ export function SettingsModal({
                       {onImportNotion && (
                         <button
                           className="cept-settings-action-btn"
-                          onClick={() => { onImportNotion(); onClose(); }}
+                          disabled
+                          title="Coming soon"
                           data-testid="import-notion-btn"
                         >
-                          Import from Notion
+                          Import from Notion (coming soon)
                         </button>
                       )}
                       {onImportObsidian && (
                         <button
                           className="cept-settings-action-btn"
-                          onClick={() => { onImportObsidian(); onClose(); }}
+                          disabled
+                          title="Coming soon"
                           data-testid="import-obsidian-btn"
                         >
-                          Import from Obsidian
+                          Import from Obsidian (coming soon)
                         </button>
                       )}
                       {onExport && (
@@ -395,7 +414,7 @@ export function SettingsModal({
               </div>
             )}
 
-            {activeTab === 'spaces' && selectedSpace && (
+            {activeTab === 'spaces' && selectedSpace && !browsingSpaceId && (
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
@@ -404,6 +423,15 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
+                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+              />
+            )}
+
+            {activeTab === 'spaces' && browsingSpaceId && backend && (
+              <FileBrowser
+                backend={backend}
+                onNavigateToPage={onNavigateToPage}
+                onClose={() => setBrowsingSpaceId(null)}
               />
             )}
 
@@ -476,7 +504,7 @@ export function SettingsModal({
               </div>
             )}
 
-            {activeTab === 'data' && selectedSpace && (
+            {activeTab === 'data' && selectedSpace && !browsingSpaceId && (
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
@@ -485,6 +513,15 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
+                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+              />
+            )}
+
+            {activeTab === 'data' && browsingSpaceId && backend && (
+              <FileBrowser
+                backend={backend}
+                onNavigateToPage={onNavigateToPage}
+                onClose={() => setBrowsingSpaceId(null)}
               />
             )}
 
@@ -512,11 +549,13 @@ function SpaceDetails({
   onBack,
   onDelete,
   onRename,
+  onBrowseFiles,
 }: {
   space: SpaceInfo;
   onBack: () => void;
   onDelete: () => void;
   onRename: (name: string) => void;
+  onBrowseFiles?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
@@ -598,6 +637,21 @@ function SpaceDetails({
           </div>
         )}
       </div>
+      {onBrowseFiles && (
+        <>
+          <div className="cept-settings-section-divider" />
+          <button
+            className="cept-settings-action-btn"
+            onClick={onBrowseFiles}
+            data-testid="space-browse-files"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M2 3h4l2 2h6v8H2z" />
+            </svg>
+            Browse files
+          </button>
+        </>
+      )}
       <div className="cept-settings-section-divider" />
       <button
         className="cept-settings-danger-btn"
