@@ -385,6 +385,46 @@
   color: #9ca3af;
 }
 
+/* Sidebar app menu (vertical triple-dot) */
+.cept-sidebar-app-menu-wrapper {
+  position: relative;
+}
+
+.cept-sidebar-app-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin-bottom: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.25rem;
+  min-width: 200px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.cept-sidebar-app-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #374151;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.cept-sidebar-app-menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
 /* Context menu */
 .cept-context-menu {
   position: fixed;
@@ -506,6 +546,9 @@
   .cept-sidebar-back-btn:hover { background: #374151; color: #e5e5e5; }
   .cept-sidebar-footer-divider { background: #333; }
   .cept-sidebar-action-svg { color: #71717a; }
+  .cept-sidebar-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+  .cept-sidebar-app-menu-item { color: #d4d4d8; }
+  .cept-sidebar-app-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
 }
 
 /* Docs banner */

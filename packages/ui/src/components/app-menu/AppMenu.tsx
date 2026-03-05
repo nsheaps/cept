@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 
 export interface AppMenuProps {
-  onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
-  onOpenDocs?: () => void;
+  pageId?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  onRename?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function AppMenu({ onOpenSettings, onOpenDocs }: AppMenuProps) {
+export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDuplicate, onDelete }: AppMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -20,63 +24,77 @@ export function AppMenu({ onOpenSettings, onOpenDocs }: AppMenuProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  if (!pageId) return null;
+
   return (
-    <div className="cept-app-menu-wrapper" ref={menuRef} data-testid="app-menu-wrapper">
+    <div className="cept-app-menu-wrapper" ref={menuRef} data-testid="page-menu-wrapper">
       <button
         className="cept-app-menu-trigger"
         onClick={() => setOpen((prev) => !prev)}
-        data-testid="app-menu-trigger"
-        title="Menu"
+        data-testid="page-menu-btn"
+        title="Page actions"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="3" cy="8" r="1.5" />
+          <circle cx="8" cy="3" r="1.5" />
           <circle cx="8" cy="8" r="1.5" />
-          <circle cx="13" cy="8" r="1.5" />
+          <circle cx="8" cy="13" r="1.5" />
         </svg>
       </button>
       {open && (
-        <div className="cept-app-menu" data-testid="app-menu">
+        <div className="cept-app-menu" data-testid="page-menu">
           <button
             className="cept-app-menu-item"
             onClick={() => {
               setOpen(false);
-              onOpenSettings?.('settings');
+              onToggleFavorite?.(pageId);
             }}
-            data-testid="app-menu-settings"
+            data-testid="page-menu-favorite"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="8" cy="8" r="2.5" />
-              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+              <path d="M8 1l2.1 4.3 4.7.7-3.4 3.3.8 4.7L8 11.8 3.8 14l.8-4.7L1.2 6l4.7-.7z" />
             </svg>
-            Settings
+            {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           </button>
           <button
             className="cept-app-menu-item"
             onClick={() => {
               setOpen(false);
-              onOpenDocs?.();
+              onRename?.(pageId);
             }}
-            data-testid="app-menu-help"
+            data-testid="page-menu-rename"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="8" cy="8" r="6.5" />
-              <path d="M6 6a2 2 0 114 0c0 1-1.5 1.5-2 2M8 11.5v.5" />
+              <path d="M11.5 1.5l3 3L5 14H2v-3z" />
             </svg>
-            Help &amp; Docs
+            Rename
           </button>
           <button
             className="cept-app-menu-item"
             onClick={() => {
               setOpen(false);
-              onOpenSettings?.('about');
+              onDuplicate?.(pageId);
             }}
-            data-testid="app-menu-about"
+            data-testid="page-menu-duplicate"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="8" cy="8" r="6.5" />
-              <path d="M8 7v4M8 4.5v.5" />
+              <rect x="5" y="5" width="9" height="9" rx="1" />
+              <path d="M3 11V3a1 1 0 011-1h8" />
             </svg>
-            About Cept
+            Duplicate
+          </button>
+          <div className="cept-app-menu-divider" />
+          <button
+            className="cept-app-menu-item cept-app-menu-item--danger"
+            onClick={() => {
+              setOpen(false);
+              onDelete?.(pageId);
+            }}
+            data-testid="page-menu-delete"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+            </svg>
+            Delete
           </button>
         </div>
       )}

@@ -329,7 +329,7 @@ describe('App', () => {
     });
   });
 
-  it('shows page header with title and menu when page is selected', async () => {
+  it('shows page header with title when page is selected', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
     renderApp(backend);
@@ -337,6 +337,7 @@ describe('App', () => {
       expect(screen.getByTestId('page-header')).toBeDefined();
     });
     expect(screen.getByTestId('page-title')).toBeDefined();
+    // Page menu is now in the top header bar, not in the page header
     expect(screen.getByTestId('page-menu-btn')).toBeDefined();
   });
 
@@ -352,12 +353,12 @@ describe('App', () => {
     expect(screen.getByTestId('page-title-save')).toBeDefined();
   });
 
-  it('shows settings button in sidebar footer', async () => {
+  it('shows app menu trigger in sidebar footer', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
     renderApp(backend);
     await waitFor(() => {
-      expect(screen.getByTestId('app-menu-settings')).toBeDefined();
+      expect(screen.getByTestId('sidebar-app-menu-trigger')).toBeDefined();
     });
   });
 
