@@ -45,6 +45,20 @@ jobs:
           # Set up branch tracking so release-it doesn't fail on upstream check
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
 
+      - name: Debug release-it state
+        run: |
+          echo "=== Git status ==="
+          git status
+          echo ""
+          echo "=== Current version ==="
+          node -p "require('./package.json').version"
+          echo ""
+          echo "=== Latest tags ==="
+          git tag --sort=-v:refname | head -10 || echo "No tags found"
+          echo ""
+          echo "=== Recent commits ==="
+          git log --oneline -10
+
       - name: Determine version bump
         id: version
         run: |
