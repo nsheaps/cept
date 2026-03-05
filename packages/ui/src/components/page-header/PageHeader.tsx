@@ -81,6 +81,42 @@ export function PageHeader({
         </div>
       )}
       <div className="cept-page-header-title-row">
+        {icon && <span className="cept-page-header-icon">{icon}</span>}
+        {isEditing ? (
+          <div className="cept-page-header-edit-wrapper">
+            <input
+              ref={inputRef}
+              className="cept-page-header-title-input"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleSave}
+              data-testid="page-title-input"
+            />
+            <button
+              className="cept-page-header-save-btn"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
+              data-testid="page-title-save"
+              title="Save"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3,8 7,12 13,4" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <h1
+            className="cept-page-header-title"
+            onClick={() => setIsEditing(true)}
+            data-testid="page-title"
+            title="Click to edit title"
+          >
+            {title || 'Untitled'}
+          </h1>
+        )}
         <div className="cept-page-header-actions">
           <button
             className="cept-page-header-menu-btn"
@@ -140,42 +176,6 @@ export function PageHeader({
             </div>
           )}
         </div>
-        {icon && <span className="cept-page-header-icon">{icon}</span>}
-        {isEditing ? (
-          <div className="cept-page-header-edit-wrapper">
-            <input
-              ref={inputRef}
-              className="cept-page-header-title-input"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={handleSave}
-              data-testid="page-title-input"
-            />
-            <button
-              className="cept-page-header-save-btn"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSave();
-              }}
-              data-testid="page-title-save"
-              title="Save"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3,8 7,12 13,4" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <h1
-            className="cept-page-header-title"
-            onClick={() => setIsEditing(true)}
-            data-testid="page-title"
-            title="Click to edit title"
-          >
-            {title || 'Untitled'}
-          </h1>
-        )}
       </div>
     </div>
   );
