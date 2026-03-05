@@ -58,6 +58,11 @@ jobs:
           echo ""
           echo "=== Recent commits ==="
           git log --oneline -10
+          echo ""
+          echo "=== release-it dry run ==="
+          bunx release-it --dry-run --verbose --ci 2>&1 || true
+          # Dry run modifies package.json and CHANGELOG.md without committing — reset
+          git checkout .
 
       - name: Determine version bump
         id: version
