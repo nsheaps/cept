@@ -2,6 +2,8 @@ name: Release Web
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -85,9 +87,14 @@ jobs:
                     return;
                   }
 
-                  // Bare /cept/ or /cept — redirect to app
-                  if (path === '/cept' || path === '/cept/') {
-                    window.location.replace('/cept/app/');
+                  // Any other /cept/... path — redirect to app with route preserved
+                  if (path.indexOf('/cept') === 0) {
+                    var remaining = path.slice('/cept'.length) || '/';
+                    if (remaining === '/') {
+                      window.location.replace('/cept/app/');
+                    } else {
+                      window.location.replace('/cept/app/?route=' + encodeURIComponent(remaining + window.location.search + window.location.hash));
+                    }
                     return;
                   }
                 })();

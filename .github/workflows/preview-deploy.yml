@@ -73,8 +73,14 @@ jobs:
                     window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
                     return;
                   }
-                  if (path === '/cept' || path === '/cept/') {
-                    window.location.replace('/cept/app/');
+                  // Any other /cept/... path — redirect to app with route preserved
+                  if (path.indexOf('/cept') === 0) {
+                    var remaining = path.slice('/cept'.length) || '/';
+                    if (remaining === '/') {
+                      window.location.replace('/cept/app/');
+                    } else {
+                      window.location.replace('/cept/app/?route=' + encodeURIComponent(remaining + window.location.search + window.location.hash));
+                    }
                     return;
                   }
                 })();
