@@ -54,50 +54,9 @@ jobs:
           mkdir -p "${DEPLOY_DIR}"
           cp -r packages/web/dist/* "${DEPLOY_DIR}/"
 
-          # Ensure the site-level 404.html exists at the root
+          # Copy shared site-level 404 router if not already present
           if [ ! -f 404.html ]; then
-            cat > 404.html << 'SITE_404'
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <title>Cept</title>
-              <script>
-                (function () {
-                  var path = window.location.pathname;
-                  var prMatch = path.match(/^\/cept\/pr-(\d+)(\/.*)?$/);
-                  if (prMatch) {
-                    var prBase = '/cept/pr-' + prMatch[1] + '/';
-                    var prRoute = prMatch[2] || '/';
-                    if (prRoute === '/') return;
-                    window.location.replace(prBase + '?route=' + encodeURIComponent(prRoute + window.location.search + window.location.hash));
-                    return;
-                  }
-                  var appMatch = path.match(/^\/cept\/app(\/.*)?$/);
-                  if (appMatch) {
-                    var appRoute = appMatch[1] || '/';
-                    if (appRoute === '/') return;
-                    window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
-                    return;
-                  }
-                  // Any other /cept/... path — redirect to app with route preserved
-                  if (path.indexOf('/cept') === 0) {
-                    var remaining = path.slice('/cept'.length) || '/';
-                    if (remaining === '/') {
-                      window.location.replace('/cept/app/');
-                    } else {
-                      window.location.replace('/cept/app/?route=' + encodeURIComponent(remaining + window.location.search + window.location.hash));
-                    }
-                    return;
-                  }
-                })();
-              </script>
-            </head>
-            <body>
-              <p>Page not found. <a href="/cept/app/">Go to Cept</a></p>
-            </body>
-          </html>
-          SITE_404
+            git show origin/main:.github/pages/404.html > 404.html
             git add 404.html
           fi
 

@@ -52,72 +52,9 @@ jobs:
           mkdir -p app
           cp -r packages/web/dist/* app/
 
-          # Ensure the site-level 404.html exists at the root
-          # This routes unknown paths to the correct app subdirectory
-          cat > 404.html << 'SITE_404'
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <title>Cept</title>
-              <script>
-                // Site-level 404 router for GitHub Pages.
-                // Routes to the correct app instance based on URL prefix.
-                (function () {
-                  var path = window.location.pathname;
-
-                  // Preview deployments: /cept/pr-N/...
-                  var prMatch = path.match(/^\/cept\/pr-(\d+)(\/.*)?$/);
-                  if (prMatch) {
-                    var prBase = '/cept/pr-' + prMatch[1] + '/';
-                    var prRoute = prMatch[2] || '/';
-                    if (prRoute === '/') return; // already at root
-                    window.location.replace(prBase + '?route=' + encodeURIComponent(prRoute + window.location.search + window.location.hash));
-                    return;
-                  }
-
-                  // Production app: /cept/app/...
-                  var appMatch = path.match(/^\/cept\/app(\/.*)?$/);
-                  if (appMatch) {
-                    var appRoute = appMatch[1] || '/';
-                    if (appRoute === '/') return; // already at root
-                    window.location.replace('/cept/app/?route=' + encodeURIComponent(appRoute + window.location.search + window.location.hash));
-                    return;
-                  }
-
-                  // Any other /cept/... path — redirect to app with route preserved
-                  if (path.indexOf('/cept') === 0) {
-                    var remaining = path.slice('/cept'.length) || '/';
-                    if (remaining === '/') {
-                      window.location.replace('/cept/app/');
-                    } else {
-                      window.location.replace('/cept/app/?route=' + encodeURIComponent(remaining + window.location.search + window.location.hash));
-                    }
-                    return;
-                  }
-                })();
-              </script>
-            </head>
-            <body>
-              <p>Page not found. <a href="/cept/app/">Go to Cept</a></p>
-            </body>
-          </html>
-          SITE_404
-
-          # Also create/update a root index.html that redirects to /cept/app/
-          cat > index.html << 'ROOT_INDEX'
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <meta http-equiv="refresh" content="0;url=/cept/app/" />
-              <title>Cept</title>
-            </head>
-            <body>
-              <p>Redirecting to <a href="/cept/app/">Cept</a>...</p>
-            </body>
-          </html>
-          ROOT_INDEX
+          # Copy shared site-level pages (404 router + root redirect)
+          git show origin/main:.github/pages/404.html > 404.html
+          git show origin/main:.github/pages/index.html > index.html
 
           # Commit and push
           git add app/ 404.html index.html
