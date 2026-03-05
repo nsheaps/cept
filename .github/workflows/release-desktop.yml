@@ -3,9 +3,6 @@ name: Release Desktop
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -18,10 +15,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: jdx/mise-action@v2
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -43,10 +36,6 @@ jobs:
 
       - uses: jdx/mise-action@v2
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -67,10 +56,6 @@ jobs:
 
       - uses: jdx/mise-action@v2
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -84,10 +69,10 @@ jobs:
           path: packages/desktop/dist/*.AppImage
           if-no-files-found: warn
 
-  release:
+  upload-release-assets:
     needs: [build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'release'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -95,9 +80,9 @@ jobs:
           merge-multiple: true
           path: dist
 
-      - name: Create GitHub Release
+      - name: Upload assets to release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
-          generate_release_notes: true
-          draft: true
+          tag_name: ${{ github.event.release.tag_name }}
+          fail_on_unmatched_files: false
