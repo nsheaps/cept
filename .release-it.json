@@ -7,8 +7,8 @@
     "tagName": "v${version}",
     "push": true,
     "requireCleanWorkingDir": true,
-    "requireUpstream": true,
-    "getLatestTagFromAllRefs": false
+    "requireUpstream": false,
+    "getLatestTagFromAllRefs": true
   },
   "npm": {
     "publish": false

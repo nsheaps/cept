@@ -32,25 +32,31 @@ jobs:
       - name: Run quality gate
         run: bun run validate
 
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Set up branch tracking so release-it doesn't fail on upstream check
+          git branch --set-upstream-to=origin/main main 2>/dev/null || true
+
       - name: Determine version bump
         id: version
         run: |
+          set +e
           # Get the recommended bump from conventional commits
-          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null || echo "")
-          if [ -z "$NEXT_VERSION" ]; then
-            echo "No version bump detected from conventional commits"
+          NEXT_VERSION=$(bunx release-it --release-version --ci 2>&1)
+          EXIT_CODE=$?
+          set -e
+
+          if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
+            echo "No version bump detected from conventional commits (exit code: $EXIT_CODE)"
+            echo "Output: $NEXT_VERSION"
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
             echo "skip=false" >> $GITHUB_OUTPUT
             echo "Next version: $NEXT_VERSION"
           fi
-
-      - name: Configure git
-        if: steps.version.outputs.skip != 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Release
         if: steps.version.outputs.skip != 'true'
