@@ -2,20 +2,13 @@ import { test, expect, type Page } from '@playwright/test';
 import { captureScreenshot } from './screenshot-utils.js';
 
 /**
- * Helper: Navigate to demo mode and wait for editor.
- * Demo mode is controlled by the showDemoContent setting in localStorage.
+ * Helper: Navigate to demo mode by clicking "Try the demo" on the landing page.
+ * This is the most reliable way — it mirrors how a real user would enter demo mode.
  */
 async function openDemoEditor(page: Page) {
-  // Navigate first to get access to localStorage
   await page.goto('/');
-  await page.evaluate(() => {
-    // Clear persisted workspace so demo content loads fresh
-    localStorage.removeItem('cept-workspace');
-    // Enable demo content via settings
-    localStorage.setItem('cept-settings', JSON.stringify({ autoSave: true, showDemoContent: true }));
-  });
-  // Reload so the app picks up the settings
-  await page.goto('/');
+  await expect(page.getByTestId('landing-page')).toBeVisible();
+  await page.getByTestId('try-demo').click();
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
