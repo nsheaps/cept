@@ -463,16 +463,19 @@ export function App() {
 
   const handleClearAllData = useCallback(() => {
     void clearAllData(backend);
+    // Reset settings and then recreate the demo space so users start fresh
     setSettings({ ...DEFAULT_SETTINGS });
-    setPages([]);
-    setPageContents({});
-    setSelectedPageId(undefined);
+    setPages(DEMO_PAGES);
+    const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+    setPageContents(demoContents);
+    setSelectedPageId('welcome');
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
-    setSpaceName('My Space');
-    setHasStarted(false);
+    setSpaceName('Demo Space');
+    setHasStarted(true);
     setSettingsOpen(false);
+    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
   }, [backend]);
 
   const handleSettingsChange = useCallback((updated: CeptSettings) => {
@@ -937,7 +940,7 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 
 const DEMO_CONTENT = `This is a demo space running in your browser. All data is stored locally.
 
-> 💡 Type \`/\` anywhere to see all available block types. Try it now!
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
 
 ## Getting Started
 
@@ -952,18 +955,26 @@ Cept is a fully-featured Notion clone that works offline. You can create pages, 
 1. Numbered lists work too
 2. Just like you'd expect
 
+### Links
+
+Links are styled with [blue underlines](https://example.com) so they stand out from surrounding text. You can also add links with **Cmd/Ctrl + K** or the inline toolbar.
+
 Start typing below to try the editor...
 `;
 
 const DEMO_FEATURES_CONTENT = `Cept supports a wide variety of content blocks. Type \`/\` in the editor to insert any of these.
 
-## Text Blocks
+## Text Formatting
 
-### Headings
+**Bold text** with \`Cmd/Ctrl + B\`, *italic text* with \`Cmd/Ctrl + I\`, <u>underline</u> with \`Cmd/Ctrl + U\`, ~~strikethrough~~ with \`Cmd/Ctrl + Shift + S\`, and \`inline code\` with \`Cmd/Ctrl + E\`.
 
-Three levels of headings are available: H1, H2, and H3.
+You can also add [links like this](https://example.com) and combine **_multiple_ ~~styles~~** together.
 
-### Code Block
+## Headings
+
+Three levels of headings are available. Type \`# \`, \`## \`, or \`### \` to create them.
+
+## Code Block
 
 \`\`\`javascript
 function greet(name) {
@@ -973,13 +984,11 @@ function greet(name) {
 console.log(greet('world'));
 \`\`\`
 
-### Blockquote
+## Blockquote
 
 > The best way to predict the future is to invent it. — Alan Kay
-
-### Divider
-
-A horizontal rule separates sections:
+>
+> Blockquotes use \`> \` on every line.
 
 ---
 
@@ -989,6 +998,8 @@ A horizontal rule separates sections:
 
 - First item
 - Second item
+  - Nested item
+  - Another nested item
 - Third item
 
 ### Numbered List
@@ -1003,57 +1014,59 @@ A horizontal rule separates sections:
 - [ ] Pending task
 - [ ] Another pending task
 
-## Blocks
+---
 
-### Callout
+## Callout
 
-> 💡 This is an informational callout. Use it to highlight important notes.
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>This is an informational callout. Use <code>/callout</code> or <code>Cmd/Ctrl + Shift + C</code> to create one.</p></div>
 
-### Toggle
+<div data-type="callout" data-icon="\u26A0\uFE0F" data-color="warning"><p>Callouts support different icons and colors. Change them by editing the icon or color attribute.</p></div>
 
-Click to expand — toggles are created with the \`/toggle\` slash command.
+## Toggle
 
-## Media
+Click the arrow to expand or collapse toggle blocks:
 
-### Image
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Click me to expand</summary><div class="cept-toggle-content"><p>This is hidden content inside a toggle. You can put any content here, including lists, code blocks, and more.</p></div></details>
 
-Use \`/image\` to insert an image from a URL.
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Toggle with a list inside</summary><div class="cept-toggle-content"><ul><li><p>Bullet lists</p></li><li><p>Numbered lists</p></li><li><p>Task lists with checkboxes</p></li></ul></div></details>
 
-### Embed
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Nested toggle (toggle in toggle)</summary><div class="cept-toggle-content"><p>This outer toggle contains another toggle:</p><details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Inner toggle</summary><div class="cept-toggle-content"><p>Nested content inside the inner toggle.</p></div></details></div></details>
 
-Use \`/embed\` to embed YouTube, Vimeo, and other media.
+Type \`> \` at the start of a line to create a toggle (like Notion), or use \`/toggle\`.
 
-### Bookmark
-
-Use \`/bookmark\` to create a rich link preview card.
-
-## Layout
-
-### Columns
-
-Columns are created with the \`/columns\` slash command to split content side by side.
+---
 
 ## Tables
-
-### Simple Table
 
 | Feature | Status | Notes |
 | --- | --- | --- |
 | Rich text editing | Complete | Full inline formatting |
 | Slash commands | Complete | Type / to insert blocks |
 | Drag & drop | Complete | Reorder blocks freely |
+| Toggle blocks | Complete | Collapsible content |
+| Callouts | Complete | Highlighted notes |
 
-## Advanced
+---
 
-### Math Equation
+## Math Equation
 
 Use \`/math\` to insert a math equation block (e.g. $E = mc^2$).
 
 Inline math is also supported: The formula $a^2 + b^2 = c^2$ is the Pythagorean theorem.
 
-### Mermaid Diagram
+## Mermaid Diagram
 
-Use \`/mermaid\` to insert a Mermaid diagram block.
+Use \`/mermaid\` to insert flowcharts, sequence diagrams, and more.
+
+## Media Blocks
+
+- **Image** — Use \`/image\` to insert an image from a URL
+- **Embed** — Use \`/embed\` to embed YouTube, Vimeo, and other media
+- **Bookmark** — Use \`/bookmark\` to create a rich link preview card
+
+## Layout
+
+**Columns** — Use \`/columns\` to split content side by side (2 or 3 columns).
 `;
 
 const DEMO_GETTING_STARTED_CONTENT = `Welcome to Cept! Here's how to get started with your space.
@@ -1064,19 +1077,35 @@ Click the **+** button in the sidebar to create a new page. Pages can be nested 
 
 ## Using the Editor
 
-> 💡 Type \`/\` to open the slash command menu. You can search for any block type by name.
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> to open the slash command menu. You can search for any block type by name.</p></div>
 
 ## Keyboard Shortcuts
 
-- **Cmd/Ctrl + K** — Open command palette
-- **Cmd/Ctrl + B** — Bold text
-- **Cmd/Ctrl + I** — Italic text
-- **Cmd/Ctrl + U** — Underline text
-- **Cmd/Ctrl + Shift + S** — Strikethrough
+| Shortcut | Action |
+| --- | --- |
+| \`Cmd/Ctrl + K\` | Open command palette |
+| \`Cmd/Ctrl + B\` | Bold text |
+| \`Cmd/Ctrl + I\` | Italic text |
+| \`Cmd/Ctrl + U\` | Underline text |
+| \`Cmd/Ctrl + E\` | Inline code |
+| \`Cmd/Ctrl + Shift + S\` | Strikethrough |
+| \`Cmd/Ctrl + Shift + H\` | Highlight |
+| \`Cmd/Ctrl + Shift + C\` | Callout |
+| \`Cmd/Ctrl + \\\\\` | Toggle sidebar |
 
 ## Organizing Your Space
 
 1. **Favorites** — Right-click a page and add it to favorites for quick access
 2. **Nested pages** — Click the + on a page to create a sub-page
 3. **Trash** — Deleted pages go to trash and can be restored
+
+## Managing Spaces
+
+Cept supports multiple storage backends:
+
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Browser Storage (Default)</summary><div class="cept-toggle-content"><p>Your data is stored in your browser using IndexedDB. No setup required — just start typing. Data persists across sessions but is local to this browser.</p></div></details>
+
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Git Repository (Coming Soon)</summary><div class="cept-toggle-content"><p>Connect a Git repository for version history, collaboration, and sync across devices. Public repositories can be browsed anonymously; private repositories require authentication.</p></div></details>
+
+To manage spaces, open **Settings** (gear icon) and go to the **Data & Cache** tab.
 `;
