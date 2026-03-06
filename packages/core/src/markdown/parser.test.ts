@@ -569,4 +569,189 @@ Important note here.
       expect(blocks[0].children.length).toBe(2);
     });
   });
+
+  describe('toggle syntax', () => {
+    it('should parse a basic toggle with content', () => {
+      const md = `> Toggle text
+  Stuff in toggle
+
+  Still in toggle
+
+  - list in toggle
+    - with item inside`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('Toggle text');
+      expect(blocks[0].children.length).toBeGreaterThan(0);
+    });
+
+    it('should still parse regular blockquotes', () => {
+      const md = '> This is a quote\n> More quote text';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('blockquote');
+    });
+
+    it('should parse a standalone > line as blockquote (no indented continuation)', () => {
+      const md = '> Just a quote\n\nNext paragraph.';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('blockquote');
+    });
+
+    it('should parse toggle in a list', () => {
+      const md = `- list
+  - item
+    - nested
+    - > toggle in list
+      In toggle
+
+      Still in toggle
+    - next item in list`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('bulletList');
+      // Find the toggle in the nested structure
+      const findToggle = (block: { type: string; children: { type: string; children: unknown[]; attrs: Record<string, unknown> }[] }): { type: string; attrs: Record<string, unknown>; children: unknown[] } | null => {
+        if (block.type === 'toggle') return block;
+        for (const child of block.children) {
+          const found = findToggle(child as typeof block);
+          if (found) return found;
+        }
+        return null;
+      };
+      const toggle = findToggle(blocks[0] as unknown as Parameters<typeof findToggle>[0]);
+      expect(toggle).not.toBeNull();
+      expect(toggle!.attrs.summary).toBe('toggle in list');
+    });
+
+    it('should parse toggle with next list item after single blank line', () => {
+      const md = `- list
+  - item
+    - nested
+    - > toggle in list
+      In toggle
+
+      Still in toggle
+
+    - next item in list`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('bulletList');
+    });
+
+    it('should end toggle after two blank lines', () => {
+      const md = `- list
+  - item
+    - nested
+    - > toggle in list
+      In toggle
+
+      Still in toggle
+
+
+    - new indented list
+    - because 2 empty lines ends the toggle`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('bulletList');
+    });
+
+    it('should parse toggle with nested list content', () => {
+      const md = `- list
+  - item
+    - nested
+    - > toggle in list
+      - nested
+      - items
+        - lol`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('bulletList');
+    });
+
+    it('should parse h1 heading toggle', () => {
+      const md = `> # h1 toggle
+  Content inside h1 toggle`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('# h1 toggle');
+    });
+
+    it('should parse h3 heading toggle', () => {
+      const md = `> ### h3 toggle atx style
+  Content inside`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('### h3 toggle atx style');
+    });
+
+    it('should parse toggle with heading in list context', () => {
+      const md = `- list
+- with
+  - nested items
+  - > ## with a random heading!
+    Content inside`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('bulletList');
+    });
+
+    it('should roundtrip a basic toggle', () => {
+      const md = `> Toggle text
+  Stuff in toggle`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+
+      const serialized = parser.serializeBlocks(blocks);
+      expect(serialized).toContain('> Toggle text');
+      expect(serialized).toContain('  Stuff in toggle');
+    });
+
+    it('should roundtrip a toggle with multiple paragraphs', () => {
+      const md = `> My Toggle
+  First paragraph
+
+  Second paragraph`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('My Toggle');
+
+      const serialized = parser.serializeBlocks(blocks);
+      expect(serialized).toContain('> My Toggle');
+      expect(serialized).toContain('First paragraph');
+      expect(serialized).toContain('Second paragraph');
+    });
+
+    it('should serialize a toggle block with the new syntax', () => {
+      const result = parser.serializeBlocks([
+        {
+          id: '1',
+          type: 'toggle',
+          content: '',
+          attrs: { summary: 'Click me' },
+          children: [
+            { id: '2', type: 'paragraph', content: 'Hidden content', attrs: {}, children: [] },
+          ],
+        },
+      ]);
+      expect(result).toContain('> Click me');
+      expect(result).toContain('  Hidden content');
+      // Should NOT use cept:block comment syntax
+      expect(result).not.toContain('<!-- cept:block');
+    });
+
+    it('should roundtrip a heading toggle', () => {
+      const md = `> # Important Section
+  Details here`;
+
+      const blocks = parser.parseBlocks(md);
+      const serialized = parser.serializeBlocks(blocks);
+      expect(serialized).toContain('> # Important Section');
+      expect(serialized).toContain('  Details here');
+    });
+  });
 });
