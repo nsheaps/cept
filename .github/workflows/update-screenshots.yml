@@ -45,7 +45,8 @@ jobs:
         run: mkdir -p docs/screenshots/features
 
       - name: Run screenshot tests
-        run: bunx playwright test e2e/tests/feature-screenshots.spec.ts --project='Desktop Chrome'
+        run: bunx playwright test tests/feature-screenshots.spec.ts --project='Desktop Chrome'
+        working-directory: e2e
         env:
           CI: true
 
