@@ -1,0 +1,76 @@
+name: Update Documentation Screenshots
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: update-screenshots-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    name: Capture Feature Screenshots
+    runs-on: ubuntu-latest
+    # Skip draft PRs
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code (push)
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
+
+      - name: Checkout code (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Create screenshots directory
+        run: mkdir -p docs/screenshots/features
+
+      - name: Run screenshot tests
+        run: bunx playwright test e2e/tests/feature-screenshots.spec.ts --project='Desktop Chrome'
+        env:
+          CI: true
+
+      - name: Upload screenshots as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: feature-screenshots
+          path: docs/screenshots/
+          retention-days: 30
+
+      - name: Check for screenshot changes
+        id: changes
+        run: |
+          if [ -n "$(git diff --name-only docs/screenshots/)" ] || [ -n "$(git ls-files --others --exclude-standard docs/screenshots/)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit updated screenshots
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/
+          git commit -m "docs(screenshots): update feature screenshots [skip ci]"
+          git push origin ${{ github.head_ref || github.ref_name }}
