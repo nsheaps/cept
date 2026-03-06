@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes, wrappingInputRule } from '@tiptap/core';
 
 export interface ToggleOptions {
   HTMLAttributes: Record<string, string>;
@@ -12,8 +12,17 @@ declare module '@tiptap/core' {
   }
 }
 
+/**
+ * Matches `> ` at the start of a line to create a toggle (like Notion).
+ * This takes priority over the blockquote input rule.
+ */
+const toggleInputRegex = /^\s*>\s$/;
+
 export const Toggle = Node.create<ToggleOptions>({
   name: 'toggle',
+
+  // Higher priority than blockquote (100) so `> ` triggers toggle first
+  priority: 110,
 
   group: 'block',
 
@@ -80,5 +89,14 @@ export const Toggle = Node.create<ToggleOptions>({
           return commands.wrapIn(this.name, attrs);
         },
     };
+  },
+
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: toggleInputRegex,
+        type: this.type,
+      }),
+    ];
   },
 });

@@ -100,18 +100,12 @@ export class CeptMarkdownParser {
   /**
    * Pre-process toggle syntax before remark parsing.
    *
-   * Toggle syntax:
-   *   > Summary text
-   *     Content indented by 2+ spaces
+   * Every `> text` line is a toggle. Content is indented by 2 spaces
+   * (top-level) or at the list item continuation indent (in lists).
+   * A single blank line continues the toggle; two end it.
    *
-   *     Still in toggle (single blank line continues)
-   *
-   *
-   *     Two blank lines end the toggle
-   *
-   * Distinguished from blockquotes: if the line(s) after `> text` are
-   * indented (not `>` prefixed), it is a toggle. If the next non-blank
-   * line starts with `>`, it is a blockquote.
+   * Standard blockquotes use `> ` on EVERY continuation line.
+   * A toggle has either no continuation or indented continuation.
    */
   private preprocessToggles(markdown: string): string {
     const lines = markdown.split('\n');
@@ -136,45 +130,23 @@ export class CeptMarkdownParser {
       const summary = toggleMatch[2];
 
       // Determine content indentation.
-      // In list context (`    - > text`), content aligns with the list item
-      // continuation indent (i.e., the length of the prefix).
-      // At top level (`> text`), content is indented by 2 spaces.
       const contentIndentLen = match && match[1] ? match[1].length : 2;
       const contentIndent = ' '.repeat(contentIndentLen);
 
-      // Look ahead: skip blank lines to find first content line
-      let peekIdx = i + 1;
-      while (peekIdx < lines.length && lines[peekIdx].trim() === '') peekIdx++;
-
-      if (peekIdx >= lines.length) {
-        // No content after — standalone blockquote
-        result.push(line);
-        i++;
-        continue;
+      // Check if the VERY NEXT line continues with '>' (standard blockquote)
+      const nextIdx = i + 1;
+      if (nextIdx < lines.length) {
+        const nextLine = lines[nextIdx];
+        const nextTrimmed = nextLine.trimStart();
+        if (nextTrimmed.startsWith('> ') || nextTrimmed === '>') {
+          // Next line is also `> ` prefixed — this is a blockquote, not a toggle
+          result.push(line);
+          i++;
+          continue;
+        }
       }
 
-      const peekLine = lines[peekIdx];
-
-      // If the next non-blank line continues with '>', it's a blockquote
-      const peekTrimmed = peekLine.trimStart();
-      if (peekTrimmed.startsWith('> ') || peekTrimmed === '>') {
-        result.push(line);
-        i++;
-        continue;
-      }
-
-      // Check if peek line is indented at the content indent level
-      if (
-        peekLine.length < contentIndentLen ||
-        peekLine.substring(0, contentIndentLen) !== contentIndent
-      ) {
-        // Not indented enough — just a blockquote line
-        result.push(line);
-        i++;
-        continue;
-      }
-
-      // It's a toggle! Collect content lines.
+      // It's a toggle. Collect any indented content lines.
       const contentLines: string[] = [];
       let j = i + 1;
       let consecutiveBlanks = 0;
@@ -210,11 +182,9 @@ export class CeptMarkdownParser {
         contentLines.shift();
       }
 
-      if (contentLines.length === 0) {
-        result.push(line);
-        i++;
-        continue;
-      }
+      // Recursively preprocess the content so nested toggles are detected
+      const innerMarkdown = contentLines.join('\n');
+      const preprocessedInner = contentLines.length > 0 ? this.preprocessToggles(innerMarkdown) : '';
 
       // Emit cept:block comments
       const config = JSON.stringify({ type: 'toggle', summary });
@@ -224,20 +194,24 @@ export class CeptMarkdownParser {
         const listPrefix = match[1];
         const innerIndent = ' '.repeat(listPrefix.length);
         result.push(`${listPrefix}<!-- cept:block ${config} -->`);
-        result.push('');
-        for (const cl of contentLines) {
-          result.push(cl === '' ? '' : `${innerIndent}${cl}`);
+        if (preprocessedInner) {
+          result.push('');
+          for (const cl of preprocessedInner.split('\n')) {
+            result.push(cl === '' ? '' : `${innerIndent}${cl}`);
+          }
+          result.push('');
         }
-        result.push('');
         result.push(`${innerIndent}<!-- /cept:block -->`);
       } else {
         // Top-level toggle
         result.push(`<!-- cept:block ${config} -->`);
-        result.push('');
-        for (const cl of contentLines) {
-          result.push(cl);
+        if (preprocessedInner) {
+          result.push('');
+          for (const cl of preprocessedInner.split('\n')) {
+            result.push(cl);
+          }
+          result.push('');
         }
-        result.push('');
         result.push(`<!-- /cept:block -->`);
       }
 

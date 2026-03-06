@@ -44,4 +44,16 @@ describe('Toggle extension', () => {
     const commands = ext.config.addCommands?.call(ext);
     expect(commands).toHaveProperty('setToggle');
   });
+
+  it('has higher priority than blockquote (110)', () => {
+    const ext = Toggle;
+    expect(ext.config.priority).toBe(110);
+  });
+
+  it('defines an input rule for > shortcut', () => {
+    const ext = Toggle;
+    const inputRules = ext.config.addInputRules?.call(ext);
+    expect(inputRules).toBeDefined();
+    expect(inputRules!.length).toBeGreaterThan(0);
+  });
 });

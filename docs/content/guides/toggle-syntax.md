@@ -2,7 +2,11 @@
 
 Toggles are collapsible content blocks. They use a blockquote-like syntax with indented content.
 
-## Syntax
+## Editor Shortcut
+
+Type `> ` (greater-than followed by space) at the start of a line to create a toggle, just like in Notion. This replaces the default blockquote shortcut — use `/quote` from the slash command menu to insert a blockquote instead.
+
+## Markdown Syntax
 
 A toggle starts with `> ` followed by the summary text. The content inside the toggle is indented by 2 spaces (or aligned to the list item continuation indent when inside a list).
 
@@ -17,7 +21,8 @@ A toggle starts with `> ` followed by the summary text. The content inside the t
 2. **Content**: Subsequent lines indented by 2 spaces (top-level) or at the list item continuation indent (in lists)
 3. **Single blank line**: Continues the toggle (does not end it)
 4. **Two blank lines**: Ends the toggle
-5. **Distinction from blockquotes**: If the next non-blank line after `> text` starts with `>`, it is a blockquote. If it is indented (no `>`), it is a toggle.
+5. **Distinction from blockquotes**: If the VERY NEXT line after `> text` also starts with `>`, it is a standard blockquote. Otherwise it is a toggle.
+6. **Nesting**: Toggles inside toggle content are detected recursively
 
 ---
 
@@ -155,19 +160,43 @@ Heading toggles work inside lists too.
 > More quote text
 ```
 
-When the line following `> text` also starts with `>`, it is a standard blockquote, not a toggle.
+When the VERY NEXT line also starts with `>`, it is a standard blockquote, not a toggle.
 
 ---
 
-### 10. Standalone blockquote line (not a toggle)
+### 10. Standalone toggle (no content)
 
 ```markdown
-> Just a quote
+> Click to expand
+```
+
+A `> text` line with no continuation is an empty toggle. In the editor, the user can open it and add content later.
+
+---
+
+### 11. Toggle followed by a paragraph
+
+```markdown
+> A toggle
 
 Next paragraph.
 ```
 
-A `> text` line with no indented continuation is a regular blockquote.
+A `> text` line followed by a blank line and then unindented text creates a toggle (empty body) followed by a separate paragraph.
+
+---
+
+### 12. Nested toggles (toggle in toggle)
+
+```markdown
+> Outer toggle
+  Some content
+
+  > Inner toggle
+    Nested content
+```
+
+Toggle content is preprocessed recursively, so `> ` inside indented toggle content creates a nested toggle.
 
 ---
 

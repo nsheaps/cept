@@ -116,8 +116,8 @@ properties: {}
       expect(blocks[0].children[1].attrs.checked).toBe(false);
     });
 
-    it('should parse blockquotes', () => {
-      const blocks = parser.parseBlocks('> This is a quote');
+    it('should parse blockquotes (multi-line with > on each line)', () => {
+      const blocks = parser.parseBlocks('> This is a quote\n> Second line');
       expect(blocks[0].type).toBe('blockquote');
       expect(blocks[0].children.length).toBeGreaterThan(0);
     });
@@ -544,7 +544,11 @@ Important note here.
     it('should handle deeply nested blockquotes', () => {
       const md = '> > > Deeply nested';
       const blocks = parser.parseBlocks(md);
-      expect(blocks[0].type).toBe('blockquote');
+      // `> > > text` — second line starts with `>`, so it stays a blockquote
+      // Actually, `> > > text` is a single line; the preprocessor sees `> ` and
+      // checks the next line. With no next line starting with `>`, this becomes
+      // a toggle with summary `> > Deeply nested`.
+      expect(blocks[0].type).toBe('toggle');
     });
 
     it('should handle code blocks with special characters', () => {
@@ -586,16 +590,42 @@ Important note here.
       expect(blocks[0].children.length).toBeGreaterThan(0);
     });
 
-    it('should still parse regular blockquotes', () => {
+    it('should still parse regular blockquotes (> on every line)', () => {
       const md = '> This is a quote\n> More quote text';
       const blocks = parser.parseBlocks(md);
       expect(blocks[0].type).toBe('blockquote');
     });
 
-    it('should parse a standalone > line as blockquote (no indented continuation)', () => {
-      const md = '> Just a quote\n\nNext paragraph.';
+    it('should parse standalone > line as a toggle (empty body)', () => {
+      const md = '> Click to expand';
       const blocks = parser.parseBlocks(md);
-      expect(blocks[0].type).toBe('blockquote');
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('Click to expand');
+    });
+
+    it('should parse > followed by blank then unindented text as toggle + paragraph', () => {
+      const md = '> A toggle\n\nNext paragraph.';
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('A toggle');
+      expect(blocks[1].type).toBe('paragraph');
+    });
+
+    it('should parse nested toggle (toggle in toggle)', () => {
+      const md = `> Outer toggle
+  Some content
+
+  > Inner toggle
+    Nested content`;
+
+      const blocks = parser.parseBlocks(md);
+      expect(blocks[0].type).toBe('toggle');
+      expect(blocks[0].attrs.summary).toBe('Outer toggle');
+      const inner = blocks[0].children.find(
+        (c: { type: string }) => c.type === 'toggle',
+      );
+      expect(inner).toBeDefined();
+      expect(inner!.attrs.summary).toBe('Inner toggle');
     });
 
     it('should parse toggle in a list', () => {
