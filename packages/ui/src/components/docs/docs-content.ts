@@ -25,6 +25,8 @@ export const DOCS_PAGES: PageTreeNode[] = [
         isExpanded: false,
         children: [
           { id: 'docs-features', title: 'Features', children: [] },
+          { id: 'docs-toggle-syntax', title: 'Toggle Syntax', children: [] },
+          { id: 'docs-markdown-extensions', title: 'Markdown Extensions', children: [] },
           { id: 'docs-platform-support', title: 'Platform Support', children: [] },
         ],
       },
@@ -52,6 +54,7 @@ export const DOCS_PAGES: PageTreeNode[] = [
         isExpanded: false,
         children: [
           { id: 'docs-keyboard-shortcuts', title: 'Keyboard Shortcuts', children: [] },
+          { id: 'docs-icons', title: 'Icons Reference', children: [] },
           { id: 'docs-roadmap', title: 'Product Roadmap', children: [] },
         ],
       },
@@ -656,6 +659,224 @@ Core infrastructure and basic editing experience.
 
 Cept is open source. Contributions are welcome! See the GitHub repository at github.com/nsheaps/cept.`;
 
+const MD_TOGGLE_SYNTAX = `# Toggle Syntax
+
+Toggles are collapsible content blocks — click the arrow to expand or collapse.
+
+## Editor Shortcut
+
+Type \`> \` (greater-than followed by space) at the start of a line to create a toggle, just like in Notion. This replaces the default blockquote shortcut. Use \`/quote\` from the slash command menu to insert a blockquote instead.
+
+## Markdown Representation
+
+A toggle starts with \`> \` followed by the summary text. Content inside the toggle is indented by 2 spaces:
+
+\`\`\`markdown
+> Summary text
+  Content inside the toggle
+
+  More content (single blank line continues the toggle)
+
+
+  Two blank lines end the toggle
+\`\`\`
+
+## Rules
+
+| Rule | Description |
+| --- | --- |
+| **Start** | A line beginning with \`> \` followed by text |
+| **Content** | Subsequent lines indented by 2 spaces |
+| **Single blank** | Continues the toggle (does not end it) |
+| **Two blanks** | Ends the toggle |
+| **Blockquote** | If the NEXT line also starts with \`> \`, it is a standard blockquote |
+| **Nesting** | Toggles inside toggle content are detected recursively |
+
+## Examples
+
+### Basic toggle
+
+\`\`\`markdown
+> Click to expand
+  Hidden content here
+\`\`\`
+
+### Empty toggle (no content)
+
+\`\`\`markdown
+> Click to expand
+\`\`\`
+
+### Toggle with a list
+
+\`\`\`markdown
+> Toggle with items
+  - First item
+  - Second item
+  - Third item
+\`\`\`
+
+### Nested toggle
+
+\`\`\`markdown
+> Outer toggle
+  Some content
+
+  > Inner toggle
+    Nested content
+\`\`\`
+
+### Heading toggle
+
+\`\`\`markdown
+> # Section Title
+  Content inside a heading toggle
+\`\`\`
+
+### Toggle in a list
+
+\`\`\`markdown
+- list item
+- > toggle in list
+  content inside toggle
+\`\`\`
+
+### Standard blockquote (not a toggle)
+
+\`\`\`markdown
+> Line one
+> Line two (same blockquote)
+\`\`\`
+
+When the very next line also starts with \`> \`, it remains a standard blockquote.`;
+
+const MD_MARKDOWN_EXTENSIONS = `# Markdown Extensions
+
+Cept uses standard Markdown as its primary content format, with a few extensions for rich blocks that go beyond standard Markdown capabilities.
+
+## Standard Markdown
+
+These blocks use standard Markdown syntax:
+
+| Block | Syntax |
+| --- | --- |
+| Headings | \`# \`, \`## \`, \`### \` |
+| Bold | \`**text**\` |
+| Italic | \`*text*\` |
+| Strikethrough | \`~~text~~\` |
+| Inline code | Backtick-wrapped text |
+| Code block | Triple backtick fenced block |
+| Bullet list | \`- item\` or \`* item\` |
+| Numbered list | \`1. item\` |
+| Task list | \`- [ ] item\` or \`- [x] item\` |
+| Blockquote | \`> text\` on every line |
+| Horizontal rule | \`---\` |
+| Link | \`[text](url)\` |
+| Image | \`![alt](url)\` |
+| Table | Pipe-delimited table syntax |
+
+## Cept Extensions
+
+These blocks use HTML comments or inline HTML for Markdown representation:
+
+### Toggles
+
+Toggles use the \`> \` prefix with indented content. See the **Toggle Syntax** guide for full details.
+
+### Callouts
+
+Callouts use HTML div tags with \`data-type="callout"\`, \`data-icon\`, and \`data-color\` attributes.
+
+### Mermaid Diagrams
+
+Mermaid diagrams use fenced code blocks with the \`mermaid\` language tag.
+
+### Math Equations
+
+Math uses LaTeX syntax: \`$$E = mc^2$$\` for block math and \`$a^2 + b^2 = c^2$\` for inline math.
+
+## Design Principles
+
+1. **Markdown first** — Standard markdown is preferred for all content that has a natural markdown representation
+2. **HTML fallback** — Rich blocks that extend markdown use HTML with \`data-type\` attributes
+3. **Interoperability** — Files can be opened in any markdown editor; extended blocks render as HTML
+4. **No proprietary format** — Everything is plain text, never binary or opaque`;
+
+const MD_ICONS = `# Icons Reference
+
+Cept uses a combination of Unicode emoji, inline SVG icons, and CSS-generated graphics throughout the interface.
+
+## Page Icons
+
+Pages use Unicode emoji as their icons. Click the page icon in the header or sidebar to change it.
+
+| Default | Usage |
+| --- | --- |
+| \uD83D\uDCC4 | Default page icon |
+| \uD83D\uDC4B | Welcome page |
+| \uD83D\uDE80 | Getting started |
+| \u2728 | Features |
+| \uD83D\uDCDD | Notes |
+
+## Editor Icons
+
+### Slash Command Menu
+
+Each block type in the slash command menu has an emoji icon:
+
+| Icon | Block Type |
+| --- | --- |
+| \uD83D\uDCDD | Text / Paragraph |
+| \uD83D\uDCCC | Heading 1 |
+| \uD83D\uDCCE | Heading 2 |
+| \uD83D\uDD16 | Heading 3 |
+| \uD83D\uDCCB | Bullet List |
+| \uD83D\uDD22 | Numbered List |
+| \u2611\uFE0F | To-do List |
+| \uD83D\uDCA1 | Callout |
+| \uD83D\uDD3D | Toggle |
+| \uD83D\uDCCA | Table |
+| \uD83D\uDCF7 | Image |
+| \uD83C\uDFAC | Embed |
+| \uD83D\uDD17 | Bookmark |
+| \u2797 | Math Equation |
+| \uD83D\uDCD0 | Mermaid Diagram |
+| \u25A4 | Columns |
+| \u2014 | Divider |
+| \uD83D\uDCAC | Blockquote |
+| \uD83E\uDDF1 | Code Block |
+
+### Inline Toolbar
+
+The inline toolbar uses text-based button labels:
+
+| Button | Action |
+| --- | --- |
+| **B** | Bold |
+| *I* | Italic |
+| U | Underline |
+| ~~S~~ | Strikethrough |
+| \`<>\` | Inline Code |
+| \uD83D\uDD8C | Highlight |
+| \uD83D\uDD17 | Link |
+
+### Drag Handle
+
+The drag handle uses a 2x3 dot grid (6 dots) generated via CSS \`radial-gradient\`. It appears to the left of blocks when you hover near them. Grab and drag to reorder blocks.
+
+### Settings & UI
+
+Settings and UI elements use inline SVG icons for common actions:
+
+| Icon | Usage |
+| --- | --- |
+| \u2699\uFE0F (gear SVG) | Settings button |
+| \uD83D\uDDD1 (trash SVG) | Delete / Clear data |
+| \u21A9 (refresh SVG) | Recreate demo |
+| \u2715 (close SVG) | Close modal |
+| + (plus) | Add page / New item |
+| \u22EF (ellipsis) | Page menu / More actions |`;
+
 // Pre-converted HTML content for each docs page
 export const DOCS_CONTENT: Record<string, string> = {
   'docs-index': stripFrontMatter(MD_INDEX),
@@ -667,14 +888,17 @@ export const DOCS_CONTENT: Record<string, string> = {
   'docs-vs-obsidian': stripFrontMatter(MD_VS_OBSIDIAN),
   'docs-from-notion': stripFrontMatter(MD_FROM_NOTION),
   'docs-from-obsidian': stripFrontMatter(MD_FROM_OBSIDIAN),
+  'docs-toggle-syntax': stripFrontMatter(MD_TOGGLE_SYNTAX),
+  'docs-markdown-extensions': stripFrontMatter(MD_MARKDOWN_EXTENSIONS),
   'docs-keyboard-shortcuts': stripFrontMatter(MD_KEYBOARD_SHORTCUTS),
+  'docs-icons': stripFrontMatter(MD_ICONS),
   'docs-roadmap': stripFrontMatter(MD_ROADMAP),
   // Folder pages — auto-generated index content for parent nodes
   'docs-getting-started': stripFrontMatter(`# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`),
-  'docs-guides': stripFrontMatter(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Platform Support** — Supported platforms and browsers`),
+  'docs-guides': stripFrontMatter(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Toggle Syntax** — Toggle block syntax and examples\n- **Markdown Extensions** — How Cept extends standard Markdown\n- **Platform Support** — Supported platforms and browsers`),
   'docs-comparison': stripFrontMatter(`# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`),
   'docs-migration': stripFrontMatter(`# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`),
-  'docs-reference': stripFrontMatter(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Product Roadmap** — What's built and what's coming next`),
+  'docs-reference': stripFrontMatter(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Icons Reference** — All icons used in the app\n- **Product Roadmap** — What's built and what's coming next`),
 };
 
 /** Map of docs page IDs to their source file path in the GitHub repo */
@@ -688,7 +912,10 @@ export const DOCS_SOURCE_PATHS: Record<string, string> = {
   'docs-vs-obsidian': 'docs/content/comparison/vs-obsidian.md',
   'docs-from-notion': 'docs/content/migration/from-notion.md',
   'docs-from-obsidian': 'docs/content/migration/from-obsidian.md',
+  'docs-toggle-syntax': 'docs/content/guides/toggle-syntax.md',
+  'docs-markdown-extensions': 'docs/content/guides/markdown-extensions.md',
   'docs-keyboard-shortcuts': 'docs/content/reference/keyboard-shortcuts.md',
+  'docs-icons': 'docs/content/reference/icons.md',
   'docs-roadmap': 'docs/content/reference/roadmap.md',
 };
 
