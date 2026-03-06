@@ -915,7 +915,7 @@ export const DOCS_SOURCE_PATHS: Record<string, string> = {
   'docs-toggle-syntax': 'docs/content/guides/toggle-syntax.md',
   'docs-markdown-extensions': 'docs/content/guides/markdown-extensions.md',
   'docs-keyboard-shortcuts': 'docs/content/reference/keyboard-shortcuts.md',
-  'docs-icons': 'docs/content/reference/icons.md',
+  'docs-icons': 'docs/content/reference/icon-reference.md',
   'docs-roadmap': 'docs/content/reference/roadmap.md',
 };
 
