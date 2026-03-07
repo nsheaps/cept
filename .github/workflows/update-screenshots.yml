@@ -80,8 +80,11 @@ jobs:
       - name: Commit updated screenshots
         if: steps.changes.outputs.changed == 'true'
         run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          git checkout -B "$BRANCH"
           git add docs/screenshots/
           git commit -m "docs(screenshots): update feature screenshots"
-          git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
+          git pull --rebase origin "$BRANCH" || true
+          git push origin "$BRANCH"
         env:
           GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
