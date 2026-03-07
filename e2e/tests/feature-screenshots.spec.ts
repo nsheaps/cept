@@ -31,13 +31,28 @@ async function openDemoEditor(page: Page) {
   await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
 }
 
+/** Navigate to a page in the sidebar by clicking its link. Returns true if successful. */
+async function navigateToPage(page: Page, linkText: string): Promise<boolean> {
+  // Use exact match to avoid ambiguity with partial text matches
+  const link = page.getByRole('link', { name: linkText }).or(
+    page.locator(`[data-testid="sidebar"] >> text="${linkText}"`),
+  );
+  try {
+    await link.first().waitFor({ state: 'visible', timeout: 3000 });
+    await link.first().click();
+    await page.waitForTimeout(500);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 test.describe('Feature Screenshots', () => {
   test.beforeEach(async ({ page }) => {
     await openDemoEditor(page);
   });
 
   test('landing page', async ({ page }) => {
-    // Go back to landing page
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();
     await closeSidebarOnMobile(page);
@@ -49,36 +64,35 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('sidebar', async ({ page }) => {
-    await captureScreenshot(page, {
-      name: 'sidebar',
-      category: 'features',
-      selector: '[data-testid="sidebar"]',
-    });
+    const sidebar = page.getByTestId('sidebar');
+    if (await sidebar.isVisible()) {
+      await captureScreenshot(page, {
+        name: 'sidebar',
+        category: 'features',
+        selector: '[data-testid="sidebar"]',
+      });
+    }
   });
 
   test('features page with toggles', async ({ page }) => {
-    // Navigate to features page
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
     await captureScreenshot(page, { name: 'features-page', category: 'features', fullPage: true });
   });
 
   test('toggle blocks', async ({ page }) => {
-    // Navigate to features page which has toggle demos
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
 
-    // Look for toggle blocks
     const toggles = page.locator('.cept-toggle');
     const toggleCount = await toggles.count();
     if (toggleCount > 0) {
-      // Click first toggle to open it
       const firstSummary = toggles.first().locator('.cept-toggle-summary');
       if (await firstSummary.isVisible()) {
         await firstSummary.click();
@@ -89,7 +103,6 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('callout blocks', async ({ page }) => {
-    // Callout should be on the welcome page
     const callout = page.locator('.cept-callout').first();
     if (await callout.isVisible()) {
       await captureScreenshot(page, { name: 'callout', category: 'features', selector: '.cept-callout' });
@@ -97,11 +110,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('code block', async ({ page }) => {
-    // Navigate to features page which has a code block
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
     const codeBlock = page.locator('.cept-code-block').first();
     if (await codeBlock.isVisible()) {
@@ -110,11 +122,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('table', async ({ page }) => {
-    // Navigate to features page which has a table
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
     const table = page.locator('.cept-table').first();
     if (await table.isVisible()) {
@@ -123,11 +134,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('task list', async ({ page }) => {
-    // Navigate to features page which has task list
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
     const taskList = page.locator('.cept-task-list').first();
     if (await taskList.isVisible()) {
@@ -136,10 +146,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('blockquote', async ({ page }) => {
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
     const blockquote = page.locator('.cept-blockquote').first();
     if (await blockquote.isVisible()) {
@@ -148,18 +158,15 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('text formatting', async ({ page }) => {
-    // Features page should show bold, italic, strikethrough, code, links
-    const featuresLink = page.getByText('Features');
-    if (await featuresLink.isVisible()) {
-      await featuresLink.click();
-      await page.waitForTimeout(500);
+    const navigated = await navigateToPage(page, 'Features');
+    if (!navigated) {
+      test.skip();
+      return;
     }
-    // Capture the text formatting section
     await captureScreenshot(page, { name: 'text-formatting', category: 'features' });
   });
 
   test('drag handle', async ({ page }) => {
-    // Hover over a paragraph to show the drag handle
     const paragraph = page.locator('.cept-paragraph').first();
     if (await paragraph.isVisible()) {
       await paragraph.hover();
@@ -183,10 +190,9 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('inline toolbar', async ({ page }) => {
-    // Select some text to show inline toolbar
     const paragraph = page.locator('.cept-paragraph').first();
     if (await paragraph.isVisible()) {
-      await paragraph.click({ clickCount: 3 }); // Triple-click to select all text in paragraph
+      await paragraph.click({ clickCount: 3 });
       await page.waitForTimeout(500);
       const toolbar = page.locator('.cept-inline-toolbar');
       if (await toolbar.isVisible()) {
@@ -201,19 +207,16 @@ test.describe('Feature Screenshots', () => {
     const palette = page.locator('.cept-command-palette');
     if (await palette.isVisible()) {
       await captureScreenshot(page, { name: 'command-palette', category: 'features', selector: '.cept-command-palette' });
-      // Close it
       await page.keyboard.press('Escape');
     }
   });
 
   test('settings modal', async ({ page }) => {
-    // Open settings
     const settingsBtn = page.getByTestId('settings-btn');
     if (await settingsBtn.isVisible()) {
       await settingsBtn.click();
       await page.waitForTimeout(300);
       await captureScreenshot(page, { name: 'settings', category: 'features' });
-      // Navigate to Data & Cache tab
       const dataTab = page.getByText('Data & Cache');
       if (await dataTab.isVisible()) {
         await dataTab.click();
@@ -224,12 +227,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('docs space', async ({ page }) => {
-    // Open docs space via settings or sidebar
     const settingsBtn = page.getByTestId('settings-btn');
     if (await settingsBtn.isVisible()) {
       await settingsBtn.click();
       await page.waitForTimeout(300);
-      // Look for docs space link
       const docsLink = page.getByText('Cept Docs');
       if (await docsLink.isVisible()) {
         await docsLink.click();
@@ -240,12 +241,11 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('getting started page', async ({ page }) => {
-    // Navigate to getting started page
-    const link = page.getByText('Getting Started');
-    if (await link.isVisible()) {
-      await link.click();
-      await page.waitForTimeout(500);
-      await captureScreenshot(page, { name: 'getting-started', category: 'features', fullPage: true });
+    const navigated = await navigateToPage(page, 'Getting Started');
+    if (!navigated) {
+      test.skip();
+      return;
     }
+    await captureScreenshot(page, { name: 'getting-started', category: 'features', fullPage: true });
   });
 });
