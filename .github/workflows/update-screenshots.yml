@@ -25,12 +25,22 @@ jobs:
       - name: Checkout code (push)
         if: github.event_name == 'push'
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Checkout code (PR)
         if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Authenticate as GitHub App
+        id: auth
+        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
 
       - name: Install mise
         uses: jdx/mise-action@v2
@@ -70,8 +80,8 @@ jobs:
       - name: Commit updated screenshots
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/screenshots/
-          git commit -m "docs(screenshots): update feature screenshots [skip ci]"
+          git commit -m "docs(screenshots): update feature screenshots"
           git push origin ${{ github.head_ref || github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
