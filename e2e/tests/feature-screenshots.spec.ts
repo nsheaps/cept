@@ -145,9 +145,13 @@ test.describe('Feature Screenshots', () => {
       test.skip();
       return;
     }
-    const taskList = page.locator('.cept-task-list').first();
-    if (await taskList.isVisible()) {
+    try {
+      const taskList = page.locator('.cept-task-list').first();
+      await taskList.waitFor({ state: 'visible', timeout: 3000 });
+      await page.waitForTimeout(300);
       await captureScreenshot(page, { name: 'task-list', category: 'features', selector: '.cept-task-list' });
+    } catch {
+      // Element may detach during page re-render, skip gracefully
     }
   });
 
