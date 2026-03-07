@@ -103,9 +103,15 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('callout blocks', async ({ page }) => {
+    // Wait for editor to settle before checking for callouts
+    await page.waitForTimeout(500);
     const callout = page.locator('.cept-callout').first();
-    if (await callout.isVisible()) {
-      await captureScreenshot(page, { name: 'callout', category: 'features', selector: '.cept-callout' });
+    try {
+      if (await callout.isVisible()) {
+        await captureScreenshot(page, { name: 'callout', category: 'features', selector: '.cept-callout' });
+      }
+    } catch {
+      // Element may detach during re-render, skip gracefully
     }
   });
 

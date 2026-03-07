@@ -47,7 +47,10 @@ export async function captureScreenshot(
   }
 
   if (options.selector) {
-    const element = page.locator(options.selector);
+    const element = page.locator(options.selector).first();
+    // Wait for element to be stable before screenshotting
+    await element.waitFor({ state: 'attached', timeout: 5000 });
+    await page.waitForTimeout(200);
     await element.screenshot({ path: filePath });
   } else {
     await page.screenshot({
