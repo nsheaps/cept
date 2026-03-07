@@ -28,6 +28,18 @@ export interface PersistedState {
 const WORKSPACE_FILE = '.cept/workspace-state.json';
 const PAGES_DIR = 'pages';
 const SETTINGS_FILE = '.cept/settings.json';
+
+/** Get workspace file path for a specific space */
+export function spaceWorkspaceFile(spaceId: string): string {
+  if (spaceId === 'default') return WORKSPACE_FILE;
+  return `.cept/spaces/${spaceId}/workspace-state.json`;
+}
+
+/** Get pages directory for a specific space */
+export function spacePagesDir(spaceId: string): string {
+  if (spaceId === 'default') return PAGES_DIR;
+  return `.cept/spaces/${spaceId}/pages`;
+}
 const LEGACY_STORAGE_KEY = 'cept-workspace';
 const LEGACY_SETTINGS_KEY = 'cept-settings';
 
@@ -208,6 +220,86 @@ export async function deletePageContent(backend: StorageBackend, pageId: string)
   } catch {
     // Ignore legacy file
   }
+}
+
+/** Save workspace state for a specific space */
+export async function saveSpaceState(
+  backend: StorageBackend,
+  spaceId: string,
+  state: PersistedState,
+): Promise<void> {
+  await backend.writeFile(spaceWorkspaceFile(spaceId), encode(state));
+}
+
+/** Load workspace state for a specific space */
+export async function loadSpaceState(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<PersistedState | null> {
+  const data = await backend.readFile(spaceWorkspaceFile(spaceId));
+  if (!data) return null;
+  const state = decode<PersistedState>(data);
+  if (state) {
+    await migrateSpacePageContentsToFiles(backend, spaceId, state);
+  }
+  return state;
+}
+
+/** Migrate pageContents to individual files for a specific space */
+async function migrateSpacePageContentsToFiles(
+  backend: StorageBackend,
+  spaceId: string,
+  state: PersistedState,
+): Promise<void> {
+  if (!state.pageContents || Object.keys(state.pageContents).length === 0) return;
+  const dir = spacePagesDir(spaceId);
+  const writes = Object.entries(state.pageContents).map(([pageId, content]) =>
+    backend.writeFile(`${dir}/${pageId}.md`, new TextEncoder().encode(content)),
+  );
+  await Promise.all(writes);
+  delete state.pageContents;
+  await backend.writeFile(spaceWorkspaceFile(spaceId), encode(state));
+}
+
+/** Read page content for a specific space */
+export async function readSpacePageContent(
+  backend: StorageBackend,
+  spaceId: string,
+  pageId: string,
+): Promise<string | null> {
+  const dir = spacePagesDir(spaceId);
+  const mdData = await backend.readFile(`${dir}/${pageId}.md`);
+  if (mdData) return new TextDecoder().decode(mdData);
+  const htmlData = await backend.readFile(`${dir}/${pageId}.html`);
+  if (htmlData) return new TextDecoder().decode(htmlData);
+  return null;
+}
+
+/** Write page content for a specific space */
+export async function writeSpacePageContent(
+  backend: StorageBackend,
+  spaceId: string,
+  pageId: string,
+  content: string,
+): Promise<void> {
+  const dir = spacePagesDir(spaceId);
+  await backend.writeFile(`${dir}/${pageId}.md`, new TextEncoder().encode(content));
+  try {
+    await backend.deleteFile(`${dir}/${pageId}.html`);
+  } catch {
+    // Ignore — legacy file may not exist
+  }
+}
+
+/** Delete page content for a specific space */
+export async function deleteSpacePageContent(
+  backend: StorageBackend,
+  spaceId: string,
+  pageId: string,
+): Promise<void> {
+  const dir = spacePagesDir(spaceId);
+  try { await backend.deleteFile(`${dir}/${pageId}.md`); } catch { /* ignore */ }
+  try { await backend.deleteFile(`${dir}/${pageId}.html`); } catch { /* ignore */ }
 }
 
 /** Clear all workspace data from the backend */

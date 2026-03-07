@@ -67,6 +67,26 @@ function stripFrontMatter(md: string): string {
   return md.replace(/^---[\s\S]*?---\n*/m, '');
 }
 
+/** Get the base URL for static assets (screenshots, etc.) */
+function getBaseUrl(): string {
+  if (typeof document !== 'undefined') {
+    // Use the document base URI which respects <base> tags and Vite's base config
+    const base = document.baseURI;
+    try {
+      const url = new URL(base);
+      return url.pathname.endsWith('/') ? url.pathname : url.pathname + '/';
+    } catch {
+      return '/';
+    }
+  }
+  return '/';
+}
+
+/** Resolve {{base}} placeholders in a content string at read time */
+export function resolveDocsContent(content: string): string {
+  return content.replace(/\{\{base\}\}/g, getBaseUrl());
+}
+
 // --- Inline documentation content ---
 // These are the markdown files from docs/content/
 
@@ -106,6 +126,8 @@ This documentation is loaded from the docs/ folder in the Cept repository on Git
 const MD_INTRODUCTION = `# Introduction
 
 Cept is a fully-featured Notion alternative that runs entirely on the client. It works offline-first, supports real-time collaboration, and uses Git as its sync and versioning layer.
+
+![Cept editor]({{base}}screenshots/features/landing-page.png)
 
 ## Why Cept?
 
@@ -206,6 +228,8 @@ const MD_FEATURES = `# Features
 
 Cept provides a comprehensive set of features for note-taking, knowledge management, and structured data.
 
+![Editor overview]({{base}}screenshots/features/editor-overview.png)
+
 ## Block Editor
 
 The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type \`/\` anywhere to insert a block.
@@ -241,6 +265,12 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type \
 | Image | /image | Image from URL |
 | Embed | /embed | Embedded video or web content |
 | Bookmark | /bookmark | Rich link preview card |
+
+![Toggle block]({{base}}screenshots/features/toggle-open.png)
+
+![Code block]({{base}}screenshots/features/code-block.png)
+
+![Blockquote]({{base}}screenshots/features/blockquote.png)
 
 ### Advanced Blocks
 
@@ -281,7 +311,33 @@ Save any page as a template for reuse.
 
 - **Import from Notion** — Export as Markdown & CSV from Notion, import the ZIP into Cept
 - **Import from Obsidian** — Point Cept at your vault directory or ZIP
-- **Export to Markdown, HTML, or PDF**`;
+- **Export to Markdown, HTML, or PDF**
+
+## Editor Tools
+
+### Slash Menu
+
+Type \`/\` in the editor to open the slash menu and insert any block type.
+
+![Slash menu]({{base}}screenshots/features/slash-menu.png)
+
+### Inline Toolbar
+
+Select text to reveal the inline formatting toolbar.
+
+![Inline toolbar]({{base}}screenshots/features/inline-toolbar.png)
+
+### Command Palette
+
+Press \`Ctrl+K\` (or \`Cmd+K\` on Mac) to open the command palette for quick navigation.
+
+![Command palette]({{base}}screenshots/features/command-palette.png)
+
+### Drag Handle
+
+Hover over any block to reveal the 6-dot drag handle for reordering.
+
+![Drag handle]({{base}}screenshots/features/drag-handle.png)`;
 
 const MD_PLATFORM_SUPPORT = `# Platform Support
 
