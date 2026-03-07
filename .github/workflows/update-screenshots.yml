@@ -82,6 +82,6 @@ jobs:
         run: |
           git add docs/screenshots/
           git commit -m "docs(screenshots): update feature screenshots"
-          git push origin ${{ github.head_ref || github.ref_name }}
+          git push origin HEAD:refs/heads/${{ github.head_ref || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
