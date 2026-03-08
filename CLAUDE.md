@@ -59,6 +59,7 @@ nx affected -t build            # Build only affected packages
 9. Markdown files use HTML comments (`<!-- cept:block -->`) for extended blocks
 10. Database schemas are YAML files in `.cept/databases/`
 11. Opening a local folder MUST NOT modify existing files unless the user explicitly edits them in Cept
+12. Every command palette action MUST have a clickable UI equivalent that works on desktop, tablet, and mobile — the command palette is a power-user accelerator, not the primary UI
 
 ## Task Tracking
 Current progress is tracked in `TASKS.md`. Always:
