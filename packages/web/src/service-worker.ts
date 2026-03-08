@@ -49,13 +49,12 @@ function matchesAny(url: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(url));
 }
 
-/** Install event — precache static assets */
+/** Install event — precache static assets (do NOT auto-skipWaiting; let the client decide) */
 self.addEventListener('install', (event: SWExtendableEvent) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting()),
+      .then((cache) => cache.addAll(PRECACHE_URLS)),
   );
 });
 
