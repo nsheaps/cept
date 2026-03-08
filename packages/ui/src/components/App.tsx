@@ -844,6 +844,8 @@ export function App() {
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
             onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
+            onExportSpace={() => setSpaceExportDialogOpen(true)}
+            onImportSpace={() => setSpaceImportDialogOpen(true)}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename(userSpaceId, name)}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
@@ -1059,6 +1061,8 @@ export function App() {
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
+        onExportSpace={() => setSpaceExportDialogOpen(true)}
+        onImportSpace={() => setSpaceImportDialogOpen(true)}
         backend={backend}
         onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
       />
