@@ -16,13 +16,17 @@ describe('ImageBlock extension', () => {
     expect(ext.config.atom).toBe(true);
   });
 
-  it('parses from figure[data-type="image"] and img[src]', () => {
+  it('parses from figure[data-type="image"]', () => {
     const ext = ImageBlock;
     const parseRules = ext.config.parseHTML?.call(ext);
-    expect(parseRules).toHaveLength(2);
-    expect(parseRules?.[0]).toEqual({ tag: 'figure[data-type="image"]' });
-    expect(parseRules?.[1]).toMatchObject({ tag: 'img[src]' });
-    expect(parseRules?.[1]).toHaveProperty('getAttrs');
+    expect(parseRules).toEqual([{ tag: 'figure[data-type="image"]' }]);
+  });
+
+  it('has markdown parse.updateDOM that transforms img to figure', () => {
+    const ext = ImageBlock;
+    const storage = ext.config.addStorage?.call(ext);
+    expect(storage?.markdown?.parse?.updateDOM).toBeDefined();
+    expect(typeof storage?.markdown?.parse?.updateDOM).toBe('function');
   });
 
   it('has src attribute defaulting to null', () => {
