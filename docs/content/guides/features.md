@@ -14,7 +14,7 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 | Heading 1 | `/heading1` | `# ` |
 | Heading 2 | `/heading2` | `## ` |
 | Heading 3 | `/heading3` | `### ` |
-| Blockquote | `/quote` | `> ` |
+| Blockquote | `/quote` | *(slash command only)* |
 | Code Block | `/code` | ```` ``` ```` |
 | Divider | `/divider` | `---` |
 
@@ -31,7 +31,7 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 | Block | Slash Command | Description |
 |-------|---------------|-------------|
 | Callout | `/callout` | Highlighted note with icon and color |
-| Toggle | `/toggle` | Collapsible content section |
+| Toggle | `/toggle` or `> ` | Collapsible content section (supports nesting) |
 | Columns | `/columns` | Side-by-side layout (2 or 3 columns) |
 | Table | `/table` | Data table with resizable columns |
 | Image | `/image` | Image from URL |
@@ -45,6 +45,27 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 | Math Equation | `/math` | LaTeX math rendering (block and inline) |
 | Mermaid Diagram | `/mermaid` | Flowcharts, sequence diagrams, and more |
 | Inline Database | `/database` | Embedded database view |
+
+### Toggle Demo
+
+Toggles are collapsible content sections. Type `> ` at the start of a line (like Notion) or use `/toggle` to create one. Toggles support nesting:
+
+> All Block Types
+  Cept supports 20+ block types including paragraphs, headings, lists, code blocks, and more.
+
+  > Nested Toggle: Rich Blocks
+    Callouts, columns, tables, images, embeds, bookmarks, math equations, and Mermaid diagrams.
+
+  > Nested Toggle: Advanced Features
+    Inline databases, mentions, wiki-links, and synced blocks.
+
+> Toggle with a List Inside
+  - Bullet lists
+  - Numbered lists
+  - To-do lists with checkboxes
+
+> # Heading Toggle
+  Toggle summaries can include heading markers for styled collapsible sections.
 
 ### Text Formatting
 

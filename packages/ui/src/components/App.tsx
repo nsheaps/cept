@@ -12,7 +12,7 @@ import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
-import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl } from './docs/docs-content.js';
+import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl, resolveDocsContent } from './docs/docs-content.js';
 import {
   useStorage,
   useWorkspacePersistence,
@@ -22,6 +22,11 @@ import {
   readPageContent,
   writePageContent,
   deletePageContent,
+  saveSpaceState,
+  loadSpaceState,
+  readSpacePageContent,
+  writeSpacePageContent,
+  deleteSpacePageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -31,7 +36,8 @@ import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces } from './storage/SpaceManager.js';
+import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
+import type { SpacesManifest } from './storage/SpaceManager.js';
 import { restoreRoute, replaceRoute, pushRoute, parseRoute } from '../router.js';
 
 
@@ -100,8 +106,80 @@ export function App() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [userSpaceId, setUserSpaceId] = useState('default');
+  const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
+
+  // Space-aware page content helpers — for default space, use legacy paths for backward compat
+  const currentReadPage = useCallback((pageId: string) => {
+    if (userSpaceId === 'default') return readPageContent(backend, pageId);
+    return readSpacePageContent(backend, userSpaceId, pageId);
+  }, [backend, userSpaceId]);
+  const currentWritePage = useCallback((pageId: string, content: string) => {
+    if (userSpaceId === 'default') return writePageContent(backend, pageId, content);
+    return writeSpacePageContent(backend, userSpaceId, pageId, content);
+  }, [backend, userSpaceId]);
+  const currentDeletePage = useCallback((pageId: string) => {
+    if (userSpaceId === 'default') return deletePageContent(backend, pageId);
+    return deleteSpacePageContent(backend, userSpaceId, pageId);
+  }, [backend, userSpaceId]);
+
+  /** Save current space state to its per-space workspace file */
+  const saveCurrentSpaceState = useCallback((
+    currentSpaceId: string,
+    currentPages: PageTreeNode[],
+    currentFavorites: SidebarPageRef[],
+    currentRecentPages: SidebarPageRef[],
+    currentSelectedPageId: string | undefined,
+    currentSpaceName: string,
+    currentPageContents: Record<string, string>,
+  ) => {
+    void saveSpaceState(backend, currentSpaceId, {
+      pages: currentPages,
+      favorites: currentFavorites,
+      recentPages: currentRecentPages,
+      selectedPageId: currentSelectedPageId,
+      spaceName: currentSpaceName,
+    });
+    // Also write page contents to per-space dir
+    for (const [pageId, content] of Object.entries(currentPageContents)) {
+      if (content) {
+        void writeSpacePageContent(backend, currentSpaceId, pageId, content);
+      }
+    }
+  }, [backend]);
+
+  /** Load a space's state from storage and apply it to React state */
+  const loadAndApplySpaceState = useCallback(async (spaceId: string, name: string) => {
+    const state = await loadSpaceState(backend, spaceId);
+    if (state) {
+      setPages(state.pages);
+      setSelectedPageId(state.selectedPageId);
+      setFavorites(state.favorites ?? []);
+      setRecentPages(state.recentPages ?? []);
+      setSpaceName(state.spaceName ?? name);
+      setPageContents({});
+      setTrash([]);
+      setHasStarted(true);
+      // Load selected page content
+      if (state.selectedPageId) {
+        const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
+        if (content !== null) {
+          setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content }));
+        }
+      }
+    } else {
+      // Empty space
+      setPages([]);
+      setPageContents({});
+      setSelectedPageId(undefined);
+      setFavorites([]);
+      setRecentPages([]);
+      setTrash([]);
+      setSpaceName(name);
+      setHasStarted(true);
+    }
+  }, [backend]);
 
   // Apply loaded state once backend is ready
   const initializedRef = useRef(false);
@@ -111,6 +189,12 @@ export function App() {
 
     setSettings(initialSettings);
 
+    // Load spaces manifest
+    void loadSpaces(backend).then((manifest) => {
+      setSpacesManifest(manifest);
+      setUserSpaceId(manifest.activeSpaceId);
+    });
+
     if (persisted) {
       setPages(persisted.pages);
       setSelectedPageId(persisted.selectedPageId);
@@ -119,6 +203,8 @@ export function App() {
       setSpaceName(persisted.spaceName ?? 'My Space');
       setHasStarted(true);
       setTrash([]);
+      // Also save to per-space file so switching back works
+      void saveSpaceState(backend, 'default', persisted);
       // Load selected page content from backend
       if (persisted.selectedPageId) {
         void readPageContent(backend, persisted.selectedPageId).then((content) => {
@@ -134,8 +220,25 @@ export function App() {
       setPageContents(demoContents);
       setSpaceName('Demo Space');
       setHasStarted(true);
-      // Write demo content to individual files
+      // Write demo content to individual files (both legacy location and per-space)
       void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+      // Save demo state so switching back works
+      void saveSpaceState(backend, 'default', {
+        pages: DEMO_PAGES,
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'welcome',
+        spaceName: 'Demo Space',
+      });
+      // Update manifest to reflect demo space name
+      void loadSpaces(backend).then((manifest) => {
+        const defaultSpace = manifest.spaces.find((s) => s.id === 'default');
+        if (defaultSpace && defaultSpace.name === 'My Space') {
+          defaultSpace.name = 'Demo Space';
+          void saveSpacesManifest(backend, manifest);
+        }
+        setSpacesManifest(manifest);
+      });
     }
   }, [ready, persisted, initialSettings, shouldShowDemo, backend]);
 
@@ -223,9 +326,12 @@ export function App() {
     if (!initializedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
-      save({ pages, favorites, recentPages, selectedPageId, spaceName });
+      const state = { pages, favorites, recentPages, selectedPageId, spaceName };
+      save(state);
+      // Also save to per-space file
+      void saveSpaceState(backend, userSpaceId, state);
     }, 300);
-  }, [pages, favorites, recentPages, selectedPageId, spaceName, save]);
+  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, backend, userSpaceId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -249,7 +355,7 @@ export function App() {
     }
     // Load page content from backend if not already cached
     if (!pageContents[id]) {
-      void readPageContent(backend, id).then((content) => {
+      void currentReadPage(id).then((content) => {
         if (content !== null) {
           setPageContents((prev) => ({ ...prev, [id]: content }));
         }
@@ -259,7 +365,7 @@ export function App() {
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
-  }, [pages, addToRecent, pageContents, backend]);
+  }, [pages, addToRecent, pageContents, currentReadPage]);
 
   const handlePageToggle = useCallback((id: string) => {
     setPages((prev) => toggleNode(prev, id));
@@ -278,9 +384,9 @@ export function App() {
     }
     setPageContents((prev) => ({ ...prev, [newPage.id]: '' }));
     setSelectedPageId(newPage.id);
-    void writePageContent(backend, newPage.id, '');
+    void currentWritePage(newPage.id, '');
     if (!hasStarted) setHasStarted(true);
-  }, [hasStarted, backend]);
+  }, [hasStarted, currentWritePage]);
 
   const handlePageRename = useCallback((id: string, title: string) => {
     setPages((prev) => renameNode(prev, id, title));
@@ -329,8 +435,8 @@ export function App() {
       delete next[id];
       return next;
     });
-    void deletePageContent(backend, id);
-  }, [backend]);
+    void currentDeletePage(id);
+  }, [currentDeletePage]);
 
   const handleEmptyTrash = useCallback(() => {
     setTrash((prev) => {
@@ -340,11 +446,11 @@ export function App() {
           delete next[item.id];
           return next;
         });
-        void deletePageContent(backend, item.id);
+        void currentDeletePage(item.id);
       }
       return [];
     });
-  }, [backend]);
+  }, [currentDeletePage]);
 
   const handleToggleFavorite = useCallback((id: string) => {
     setFavorites((prev) => {
@@ -373,7 +479,7 @@ export function App() {
       // Copy content only (not children)
       const content = pageContents[id] ?? '';
       setPageContents((pc) => ({ ...pc, [duplicateId]: content }));
-      void writePageContent(backend, duplicateId, content);
+      void currentWritePage(duplicateId, content);
       const ancestors = findAncestorIds(prev, id);
       if (!ancestors || ancestors.length === 0) {
         const idx = prev.findIndex((n) => n.id === id);
@@ -384,7 +490,7 @@ export function App() {
       const parentId = ancestors[ancestors.length - 1];
       return addChild(prev, parentId, duplicate);
     });
-  }, [pageContents, backend]);
+  }, [pageContents, currentWritePage]);
 
   const handlePageMoveToRoot = useCallback((id: string) => {
     setPages((prev) => moveNode(prev, id, undefined));
@@ -397,9 +503,9 @@ export function App() {
     // Debounced write to backend
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      void writePageContent(backend, selectedPageId, markdown);
+      void currentWritePage(selectedPageId, markdown);
     }, 500);
-  }, [selectedPageId, backend]);
+  }, [selectedPageId, currentWritePage]);
 
   // Keep search index in sync with page content
   const indexedRef = useRef(new Set<string>());
@@ -444,8 +550,8 @@ export function App() {
     setPages([firstPage]);
     setPageContents({ [firstPage.id]: content });
     setSelectedPageId(firstPage.id);
-    void writePageContent(backend, firstPage.id, content);
-  }, [backend]);
+    void currentWritePage(firstPage.id, content);
+  }, [currentWritePage]);
 
   const handleResetDemo = useCallback(() => {
     // Always recreate — if space was renamed, this creates what is effectively a duplicate
@@ -457,22 +563,40 @@ export function App() {
     setRecentPages([]);
     setTrash([]);
     setSpaceName('Demo Space');
+    setUserSpaceId('default');
     setHasStarted(true);
     void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+    void saveSpaceState(backend, 'default', {
+      pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+    });
   }, [backend]);
 
   const handleClearAllData = useCallback(() => {
     void clearAllData(backend);
+    // Reset settings and then recreate the demo space so users start fresh
     setSettings({ ...DEFAULT_SETTINGS });
-    setPages([]);
-    setPageContents({});
-    setSelectedPageId(undefined);
+    setPages(DEMO_PAGES);
+    const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+    setPageContents(demoContents);
+    setSelectedPageId('welcome');
     setFavorites([]);
     setRecentPages([]);
     setTrash([]);
-    setSpaceName('My Space');
-    setHasStarted(false);
+    setSpaceName('Demo Space');
+    setUserSpaceId('default');
+    setHasStarted(true);
     setSettingsOpen(false);
+    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+    void saveSpaceState(backend, 'default', {
+      pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+    });
+    // Reset spaces manifest to just the default space
+    const freshManifest: SpacesManifest = {
+      activeSpaceId: 'default',
+      spaces: [{ id: 'default', name: 'Demo Space', createdAt: new Date().toISOString() }],
+    };
+    void saveSpacesManifest(backend, freshManifest);
+    setSpacesManifest(freshManifest);
   }, [backend]);
 
   const handleSettingsChange = useCallback((updated: CeptSettings) => {
@@ -486,33 +610,35 @@ export function App() {
   }, [backend]);
 
   const handleSpaceRename = useCallback((id: string, name: string) => {
-    if (id === userSpaceId || id === 'default') {
+    if (id === userSpaceId) {
       setSpaceName(name);
     }
-    void renameSpaceInBackend(backend, id, name);
+    void renameSpaceInBackend(backend, id, name).then(() => {
+      void loadSpaces(backend).then((manifest) => setSpacesManifest(manifest));
+    });
   }, [backend, userSpaceId]);
 
   const handleDeleteSpace = useCallback((id: string) => {
     void deleteSpaceInBackend(backend, id).then(() => {
-      if (id === userSpaceId) {
-        // Reload from the new active space
-        void loadSpaces(backend).then((manifest) => {
-          setUserSpaceId(manifest.activeSpaceId);
-          // Reset to empty state — the new space will be loaded on next persist cycle
-          setPages([]);
-          setPageContents({});
-          setSelectedPageId(undefined);
-          setFavorites([]);
-          setRecentPages([]);
-          setTrash([]);
-          setSpaceName(manifest.spaces[0]?.name ?? 'My Space');
-        });
-      }
+      void loadSpaces(backend).then((manifest) => {
+        setSpacesManifest(manifest);
+        if (id === userSpaceId) {
+          const targetId = manifest.activeSpaceId;
+          const targetSpace = manifest.spaces.find((s) => s.id === targetId);
+          setUserSpaceId(targetId);
+          void loadAndApplySpaceState(targetId, targetSpace?.name ?? 'My Space');
+        }
+      });
     });
-  }, [backend, userSpaceId]);
+  }, [backend, userSpaceId, loadAndApplySpaceState]);
 
   const handleCreateSpace = useCallback((name: string) => {
+    // Save current space state before switching
+    saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
     void createSpaceInBackend(backend, name).then((newSpace) => {
+      void loadSpaces(backend).then((manifest) => {
+        setSpacesManifest(manifest);
+      });
       setUserSpaceId(newSpace.id);
       setPages([]);
       setPageContents({});
@@ -523,27 +649,20 @@ export function App() {
       setSpaceName(name);
       setHasStarted(true);
     });
-  }, [backend]);
+  }, [backend, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
 
   const handleSwitchSpace = useCallback((id: string) => {
+    // Save current space state before switching
+    saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
     void switchSpaceInBackend(backend, id).then(() => {
       setUserSpaceId(id);
-      // For now, switching reloads — a full implementation would load from the space's stored state
       void loadSpaces(backend).then((manifest) => {
+        setSpacesManifest(manifest);
         const space = manifest.spaces.find((s) => s.id === id);
-        if (space) {
-          setSpaceName(space.name);
-          setPages([]);
-          setPageContents({});
-          setSelectedPageId(undefined);
-          setFavorites([]);
-          setRecentPages([]);
-          setTrash([]);
-          setHasStarted(true);
-        }
+        void loadAndApplySpaceState(id, space?.name ?? 'My Space');
       });
     });
-  }, [backend]);
+  }, [backend, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState, loadAndApplySpaceState]);
 
   const handleImportComplete = useCallback((importedPages: ImportedPage[]) => {
     for (const page of importedPages) {
@@ -554,10 +673,10 @@ export function App() {
       };
       setPages((prev) => [...prev, newPage]);
       setPageContents((prev) => ({ ...prev, [newPage.id]: page.content }));
-      void writePageContent(backend, newPage.id, page.content);
+      void currentWritePage(newPage.id, page.content);
     }
     if (!hasStarted) setHasStarted(true);
-  }, [backend, hasStarted]);
+  }, [currentWritePage, hasStarted]);
 
   const handleOpenImport = useCallback((source: ImportSource) => {
     setImportSource(source);
@@ -599,19 +718,45 @@ export function App() {
 
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
-    if (hasStarted || pages.length > 0) {
+    const source = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
+    if (spacesManifest) {
+      for (const space of spacesManifest.spaces) {
+        if (space.id === userSpaceId) {
+          // Active space — use live React state for accurate counts
+          const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
+          list.push({
+            id: space.id,
+            name: spaceName,
+            source,
+            pageCount: flattenPages(pages).length,
+            contentSize,
+            createdAt: space.createdAt,
+          });
+        } else {
+          list.push({
+            id: space.id,
+            name: space.name,
+            source,
+            pageCount: 0,
+            contentSize: 0,
+            createdAt: space.createdAt,
+          });
+        }
+      }
+    } else if (hasStarted || pages.length > 0) {
+      // Fallback before manifest loads
       const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
       list.push({
         id: 'default',
         name: spaceName,
-        source: `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`,
+        source,
         pageCount: flattenPages(pages).length,
         contentSize,
       });
     }
     list.push(DOCS_SPACE_INFO);
     return list;
-  }, [hasStarted, pages, pageContents, spaceName]);
+  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
@@ -695,7 +840,7 @@ export function App() {
             onOpenDocs={handleOpenDocs}
             onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
             spaceName={spaceName}
-            onSpaceRename={(name) => handleSpaceRename('default', name)}
+            onSpaceRename={(name) => handleSpaceRename(userSpaceId, name)}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
             activeSpaceId={userSpaceId}
             onSwitchSpace={(id) => {
@@ -743,13 +888,16 @@ export function App() {
                   <span>Read-only — sourced from <code>docs/</code> in the Git repository</span>
                   {getDocsSourceUrl(docsSelectedPageId) && (
                     <a
-                      className="cept-docs-banner-link"
+                      className="cept-docs-source-icon"
                       href={getDocsSourceUrl(docsSelectedPageId)}
                       target="_blank"
                       rel="noopener noreferrer"
                       data-testid="docs-source-link"
+                      title="View source on GitHub"
                     >
-                      View source
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                      </svg>
                     </a>
                   )}
                   <button className="cept-docs-banner-back" onClick={handleBackToUserSpace} data-testid="docs-back-to-space">
@@ -758,7 +906,7 @@ export function App() {
                 </div>
                 <CeptEditor
                   key={docsSelectedPageId}
-                  content={DOCS_CONTENT[docsSelectedPageId]}
+                  content={resolveDocsContent(DOCS_CONTENT[docsSelectedPageId])}
                   placeholder=""
                   onUpdate={() => {/* read-only */}}
                   editable={false}
@@ -937,7 +1085,7 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
 
 const DEMO_CONTENT = `This is a demo space running in your browser. All data is stored locally.
 
-> 💡 Type \`/\` anywhere to see all available block types. Try it now!
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> anywhere to see all available block types. Try it now!</p></div>
 
 ## Getting Started
 
@@ -952,18 +1100,26 @@ Cept is a fully-featured Notion clone that works offline. You can create pages, 
 1. Numbered lists work too
 2. Just like you'd expect
 
+### Links
+
+Links are styled with [blue underlines](https://example.com) so they stand out from surrounding text. You can also add links with **Cmd/Ctrl + K** or the inline toolbar.
+
 Start typing below to try the editor...
 `;
 
 const DEMO_FEATURES_CONTENT = `Cept supports a wide variety of content blocks. Type \`/\` in the editor to insert any of these.
 
-## Text Blocks
+## Text Formatting
 
-### Headings
+**Bold text** with \`Cmd/Ctrl + B\`, *italic text* with \`Cmd/Ctrl + I\`, <u>underline</u> with \`Cmd/Ctrl + U\`, ~~strikethrough~~ with \`Cmd/Ctrl + Shift + S\`, and \`inline code\` with \`Cmd/Ctrl + E\`.
 
-Three levels of headings are available: H1, H2, and H3.
+You can also add [links like this](https://example.com) and combine **_multiple_ ~~styles~~** together.
 
-### Code Block
+## Headings
+
+Three levels of headings are available. Type \`# \`, \`## \`, or \`### \` to create them.
+
+## Code Block
 
 \`\`\`javascript
 function greet(name) {
@@ -973,13 +1129,11 @@ function greet(name) {
 console.log(greet('world'));
 \`\`\`
 
-### Blockquote
+## Blockquote
 
 > The best way to predict the future is to invent it. — Alan Kay
-
-### Divider
-
-A horizontal rule separates sections:
+>
+> Blockquotes use \`> \` on every line.
 
 ---
 
@@ -989,6 +1143,8 @@ A horizontal rule separates sections:
 
 - First item
 - Second item
+  - Nested item
+  - Another nested item
 - Third item
 
 ### Numbered List
@@ -1003,57 +1159,59 @@ A horizontal rule separates sections:
 - [ ] Pending task
 - [ ] Another pending task
 
-## Blocks
+---
 
-### Callout
+## Callout
 
-> 💡 This is an informational callout. Use it to highlight important notes.
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>This is an informational callout. Use <code>/callout</code> or <code>Cmd/Ctrl + Shift + C</code> to create one.</p></div>
 
-### Toggle
+<div data-type="callout" data-icon="\u26A0\uFE0F" data-color="warning"><p>Callouts support different icons and colors. Change them by editing the icon or color attribute.</p></div>
 
-Click to expand — toggles are created with the \`/toggle\` slash command.
+## Toggle
 
-## Media
+Click the arrow to expand or collapse toggle blocks:
 
-### Image
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Click me to expand</summary><div class="cept-toggle-content"><p>This is hidden content inside a toggle. You can put any content here, including lists, code blocks, and more.</p></div></details>
 
-Use \`/image\` to insert an image from a URL.
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Toggle with a list inside</summary><div class="cept-toggle-content"><ul><li><p>Bullet lists</p></li><li><p>Numbered lists</p></li><li><p>Task lists with checkboxes</p></li></ul></div></details>
 
-### Embed
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Nested toggle (toggle in toggle)</summary><div class="cept-toggle-content"><p>This outer toggle contains another toggle:</p><details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Inner toggle</summary><div class="cept-toggle-content"><p>Nested content inside the inner toggle.</p></div></details></div></details>
 
-Use \`/embed\` to embed YouTube, Vimeo, and other media.
+Type \`> \` at the start of a line to create a toggle (like Notion), or use \`/toggle\`.
 
-### Bookmark
-
-Use \`/bookmark\` to create a rich link preview card.
-
-## Layout
-
-### Columns
-
-Columns are created with the \`/columns\` slash command to split content side by side.
+---
 
 ## Tables
-
-### Simple Table
 
 | Feature | Status | Notes |
 | --- | --- | --- |
 | Rich text editing | Complete | Full inline formatting |
 | Slash commands | Complete | Type / to insert blocks |
 | Drag & drop | Complete | Reorder blocks freely |
+| Toggle blocks | Complete | Collapsible content |
+| Callouts | Complete | Highlighted notes |
 
-## Advanced
+---
 
-### Math Equation
+## Math Equation
 
 Use \`/math\` to insert a math equation block (e.g. $E = mc^2$).
 
 Inline math is also supported: The formula $a^2 + b^2 = c^2$ is the Pythagorean theorem.
 
-### Mermaid Diagram
+## Mermaid Diagram
 
-Use \`/mermaid\` to insert a Mermaid diagram block.
+Use \`/mermaid\` to insert flowcharts, sequence diagrams, and more.
+
+## Media Blocks
+
+- **Image** — Use \`/image\` to insert an image from a URL
+- **Embed** — Use \`/embed\` to embed YouTube, Vimeo, and other media
+- **Bookmark** — Use \`/bookmark\` to create a rich link preview card
+
+## Layout
+
+**Columns** — Use \`/columns\` to split content side by side (2 or 3 columns).
 `;
 
 const DEMO_GETTING_STARTED_CONTENT = `Welcome to Cept! Here's how to get started with your space.
@@ -1064,19 +1222,35 @@ Click the **+** button in the sidebar to create a new page. Pages can be nested 
 
 ## Using the Editor
 
-> 💡 Type \`/\` to open the slash command menu. You can search for any block type by name.
+<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="default"><p>Type <code>/</code> to open the slash command menu. You can search for any block type by name.</p></div>
 
 ## Keyboard Shortcuts
 
-- **Cmd/Ctrl + K** — Open command palette
-- **Cmd/Ctrl + B** — Bold text
-- **Cmd/Ctrl + I** — Italic text
-- **Cmd/Ctrl + U** — Underline text
-- **Cmd/Ctrl + Shift + S** — Strikethrough
+| Shortcut | Action |
+| --- | --- |
+| \`Cmd/Ctrl + K\` | Open command palette |
+| \`Cmd/Ctrl + B\` | Bold text |
+| \`Cmd/Ctrl + I\` | Italic text |
+| \`Cmd/Ctrl + U\` | Underline text |
+| \`Cmd/Ctrl + E\` | Inline code |
+| \`Cmd/Ctrl + Shift + S\` | Strikethrough |
+| \`Cmd/Ctrl + Shift + H\` | Highlight |
+| \`Cmd/Ctrl + Shift + C\` | Callout |
+| \`Cmd/Ctrl + \\\\\` | Toggle sidebar |
 
 ## Organizing Your Space
 
 1. **Favorites** — Right-click a page and add it to favorites for quick access
 2. **Nested pages** — Click the + on a page to create a sub-page
 3. **Trash** — Deleted pages go to trash and can be restored
+
+## Managing Spaces
+
+Cept supports multiple storage backends:
+
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Browser Storage (Default)</summary><div class="cept-toggle-content"><p>Your data is stored in your browser using IndexedDB. No setup required — just start typing. Data persists across sessions but is local to this browser.</p></div></details>
+
+<details data-type="toggle" class="cept-toggle"><summary class="cept-toggle-summary">Git Repository (Coming Soon)</summary><div class="cept-toggle-content"><p>Connect a Git repository for version history, collaboration, and sync across devices. Public repositories can be browsed anonymously; private repositories require authentication.</p></div></details>
+
+To manage spaces, open **Settings** (gear icon) and go to the **Data & Cache** tab.
 `;

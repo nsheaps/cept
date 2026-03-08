@@ -8,6 +8,17 @@
 
 .cept-editor-content {
   outline: none;
+  /* Prevent browser grammar/writing suggestions underlines */
+  -webkit-text-decorations-in-effect: none;
+}
+
+/* Prevent spurious underlines on cursor hover / browser suggestions */
+.cept-editor .tiptap p,
+.cept-editor .tiptap h1,
+.cept-editor .tiptap h2,
+.cept-editor .tiptap h3,
+.cept-editor .tiptap span:not([style*="underline"]) {
+  text-decoration-line: none;
 }
 
 .cept-editor-content > * + * {
@@ -657,16 +668,20 @@
   color: #9ca3af;
 }
 
-/* Link styles */
+/* Link styles — must stand out from surrounding text */
 .cept-editor .tiptap a.cept-link {
   color: #2563eb;
-  text-decoration: underline;
+  text-decoration: underline !important;
+  text-decoration-color: rgba(37, 99, 235, 0.4);
   text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
   cursor: pointer;
+  transition: color 0.15s, text-decoration-color 0.15s;
 }
 
 .cept-editor .tiptap a.cept-link:hover {
   color: #1d4ed8;
+  text-decoration-color: #1d4ed8;
 }
 
 /* Highlight */
@@ -801,13 +816,13 @@
   margin: 0.25rem 0;
 }
 
-/* Drag handle */
+/* Drag handle — 2-column, 3-row dot grip (6 dots) */
 .cept-editor .drag-handle {
   position: fixed;
   opacity: 1;
   transition: opacity 0.15s ease;
   width: 20px;
-  height: 20px;
+  height: 24px;
   border-radius: 4px;
   background-color: transparent;
   display: flex;
@@ -818,10 +833,15 @@
 }
 
 .cept-editor .drag-handle::after {
-  content: '\2807';
-  font-size: 1rem;
+  /* 2 wide x 3 tall dot grid using radial-gradient */
+  content: '';
+  display: block;
+  width: 10px;
+  height: 16px;
+  background-image: radial-gradient(circle, currentColor 1.2px, transparent 1.2px);
+  background-size: 5px 5px;
+  background-position: 0 0;
   color: #d1d5db;
-  line-height: 1;
 }
 
 .cept-editor .drag-handle:hover::after {
@@ -945,6 +965,6 @@
   .cept-folder-view-item { color: #d4d4d8; }
   .cept-folder-view-item:hover { background-color: #333; }
   .cept-folder-view-count { color: #71717a; background: #333; }
-  .cept-editor .drag-handle::after { color: #525252; }
+  .cept-editor .drag-handle::after { color: #4a4a4a; }
   .cept-editor .drag-handle:hover::after { color: #71717a; }
 }

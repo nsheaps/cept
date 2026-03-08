@@ -12,7 +12,16 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
 import yaml from 'js-yaml';
-import type { Content, Heading, Code, List, ListItem, Table, TableRow, TableCell } from 'mdast';
+import type {
+  Content,
+  Heading,
+  Code,
+  List,
+  ListItem,
+  Table,
+  TableRow,
+  TableCell,
+} from 'mdast';
 import type { Block, BlockType, PageMeta } from '../models/index.js';
 
 export class CeptMarkdownParser {
@@ -83,8 +92,133 @@ export class CeptMarkdownParser {
   }
 
   parseBlocks(markdown: string): Block[] {
-    const tree = this.parser.parse(markdown);
+    const preprocessed = this.preprocessToggles(markdown);
+    const tree = this.parser.parse(preprocessed);
     return this.convertNodes(tree.children.filter((n) => n.type !== 'yaml'));
+  }
+
+  /**
+   * Pre-process toggle syntax before remark parsing.
+   *
+   * Every `> text` line is a toggle. Content is indented by 2 spaces
+   * (top-level) or at the list item continuation indent (in lists).
+   * A single blank line continues the toggle; two end it.
+   *
+   * Standard blockquotes use `> ` on EVERY continuation line.
+   * A toggle has either no continuation or indented continuation.
+   */
+  private preprocessToggles(markdown: string): string {
+    const lines = markdown.split('\n');
+    const result: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Match toggle start: optional whitespace + '> ' + text
+      // Also match list markers: `- > text`, `  - > text`, `1. > text`
+      const match = line.match(/^([ \t]*(?:[-*+]|\d+\.)\s+)> (.+)$/);
+      const match2 = !match ? line.match(/^([ \t]*)> (.+)$/) : null;
+      const toggleMatch = match || match2;
+
+      if (!toggleMatch) {
+        result.push(line);
+        i++;
+        continue;
+      }
+
+      const summary = toggleMatch[2];
+
+      // Determine content indentation.
+      const contentIndentLen = match && match[1] ? match[1].length : 2;
+      const contentIndent = ' '.repeat(contentIndentLen);
+
+      // Check if the VERY NEXT line continues with '>' (standard blockquote)
+      const nextIdx = i + 1;
+      if (nextIdx < lines.length) {
+        const nextLine = lines[nextIdx];
+        const nextTrimmed = nextLine.trimStart();
+        if (nextTrimmed.startsWith('> ') || nextTrimmed === '>') {
+          // Next line is also `> ` prefixed — this is a blockquote, not a toggle
+          result.push(line);
+          i++;
+          continue;
+        }
+      }
+
+      // It's a toggle. Collect any indented content lines.
+      const contentLines: string[] = [];
+      let j = i + 1;
+      let consecutiveBlanks = 0;
+
+      while (j < lines.length) {
+        const cl = lines[j];
+
+        if (cl.trim() === '') {
+          consecutiveBlanks++;
+          if (consecutiveBlanks >= 2) break;
+          contentLines.push('');
+          j++;
+          continue;
+        }
+
+        // Check if line is indented enough to be toggle content
+        if (cl.length >= contentIndentLen && cl.substring(0, contentIndentLen) === contentIndent) {
+          consecutiveBlanks = 0;
+          contentLines.push(cl.substring(contentIndentLen));
+          j++;
+          continue;
+        }
+
+        break;
+      }
+
+      // Trim trailing blank lines
+      while (contentLines.length > 0 && contentLines[contentLines.length - 1] === '') {
+        contentLines.pop();
+      }
+      // Trim leading blank lines
+      while (contentLines.length > 0 && contentLines[0] === '') {
+        contentLines.shift();
+      }
+
+      // Recursively preprocess the content so nested toggles are detected
+      const innerMarkdown = contentLines.join('\n');
+      const preprocessedInner = contentLines.length > 0 ? this.preprocessToggles(innerMarkdown) : '';
+
+      // Emit cept:block comments
+      const config = JSON.stringify({ type: 'toggle', summary });
+
+      if (match && match[1]) {
+        // List context: preserve list marker on the opening comment
+        const listPrefix = match[1];
+        const innerIndent = ' '.repeat(listPrefix.length);
+        result.push(`${listPrefix}<!-- cept:block ${config} -->`);
+        if (preprocessedInner) {
+          result.push('');
+          for (const cl of preprocessedInner.split('\n')) {
+            result.push(cl === '' ? '' : `${innerIndent}${cl}`);
+          }
+          result.push('');
+        }
+        result.push(`${innerIndent}<!-- /cept:block -->`);
+      } else {
+        // Top-level toggle
+        result.push(`<!-- cept:block ${config} -->`);
+        if (preprocessedInner) {
+          result.push('');
+          for (const cl of preprocessedInner.split('\n')) {
+            result.push(cl);
+          }
+          result.push('');
+        }
+        result.push(`<!-- /cept:block -->`);
+      }
+
+      i = j;
+    }
+
+    return result.join('\n');
   }
 
   serializeBlocks(blocks: Block[]): string {
@@ -160,7 +294,7 @@ export class CeptMarkdownParser {
                   attrs: { checked: item.checked },
                 };
               }
-              return this.createBlock('paragraph', this.extractText(item));
+              return this.convertListItem(item);
             }),
           };
         }
@@ -180,7 +314,7 @@ export class CeptMarkdownParser {
         return {
           ...this.createBlock('bulletList', ''),
           children: listNode.children.map((item: ListItem) =>
-            this.createBlock('paragraph', this.extractText(item)),
+            this.convertListItem(item),
           ),
         };
       }
@@ -234,6 +368,32 @@ export class CeptMarkdownParser {
       default:
         return null;
     }
+  }
+
+  /**
+   * Convert a list item to a Block, handling complex content (nested blocks,
+   * cept:block comments) when present.
+   */
+  private convertListItem(item: ListItem): Block {
+    const children = item.children as Content[];
+    // If the list item has complex content (HTML, nested lists, etc.),
+    // convert recursively so that cept:block patterns are detected.
+    const hasComplex = children.some(
+      (c) => c.type === 'html' || c.type === 'list' || c.type === 'blockquote',
+    );
+    if (!hasComplex) {
+      return this.createBlock('paragraph', this.extractText(item));
+    }
+
+    const childBlocks = this.convertNodes(children);
+    if (childBlocks.length === 1) return childBlocks[0];
+
+    // First block becomes the list item text; the rest are nested children
+    const first = childBlocks[0];
+    return {
+      ...first,
+      children: [...first.children, ...childBlocks.slice(1)],
+    };
   }
 
   // -- Cept extension parsing (<!-- cept:block --> comments) --
@@ -382,8 +542,19 @@ export class CeptMarkdownParser {
       case 'image':
         return `![${block.attrs.alt ?? ''}](${block.attrs.src ?? ''})`;
 
+      case 'toggle': {
+        const summary = String(block.attrs.summary || block.content || 'Toggle');
+        const childContent = block.children.map((c) => this.serializeBlock(c)).join('\n\n');
+        const body = childContent || block.content;
+        // Indent every line of the body by 2 spaces
+        const indented = body
+          .split('\n')
+          .map((l) => (l.trim() === '' ? '' : `  ${l}`))
+          .join('\n');
+        return `> ${summary}\n${indented}`;
+      }
+
       case 'callout':
-      case 'toggle':
       case 'columns':
       case 'embed':
       case 'bookmark':

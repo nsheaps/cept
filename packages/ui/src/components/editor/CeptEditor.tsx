@@ -226,6 +226,9 @@ export function CeptEditor({
       attributes: {
         class: 'cept-editor-content',
         spellcheck: 'false',
+        // Prevent browser writing suggestions that cause spurious underlines
+        writingsuggestions: 'false',
+        autocorrect: 'off',
       },
     },
   });

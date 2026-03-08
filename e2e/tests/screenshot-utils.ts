@@ -47,8 +47,19 @@ export async function captureScreenshot(
   }
 
   if (options.selector) {
-    const element = page.locator(options.selector);
-    await element.screenshot({ path: filePath });
+    const element = page.locator(options.selector).first();
+    // Retry up to 3 times — elements can detach during re-renders
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await element.waitFor({ state: 'visible', timeout: 5000 });
+        await page.waitForTimeout(300);
+        await element.screenshot({ path: filePath });
+        break;
+      } catch (err) {
+        if (attempt === 2) throw err;
+        await page.waitForTimeout(500);
+      }
+    }
   } else {
     await page.screenshot({
       path: filePath,

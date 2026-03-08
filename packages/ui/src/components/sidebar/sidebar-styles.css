@@ -572,6 +572,23 @@
   font-size: 0.75rem;
 }
 
+.cept-docs-source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  color: #0369a1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  margin-left: auto;
+  text-decoration: none !important;
+}
+
+.cept-docs-source-icon:hover {
+  opacity: 1;
+}
+
 .cept-docs-banner-link {
   padding: 0.25rem 0.5rem;
   border: 1px solid #bae6fd;
@@ -612,6 +629,9 @@
   }
   .cept-docs-banner code {
     background: rgba(125, 211, 252, 0.1);
+  }
+  .cept-docs-source-icon {
+    color: #7dd3fc;
   }
   .cept-docs-banner-link {
     background: #1e3a5f;

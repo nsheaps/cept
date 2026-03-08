@@ -39,9 +39,37 @@ describe('Toggle extension', () => {
     expect(attrs?.open?.default).toBe(false);
   });
 
-  it('defines setToggle command', () => {
+  it('defines setToggle and toggleToggleOpen commands', () => {
     const ext = Toggle;
     const commands = ext.config.addCommands?.call(ext);
     expect(commands).toHaveProperty('setToggle');
+    expect(commands).toHaveProperty('toggleToggleOpen');
+  });
+
+  it('has higher priority than blockquote (110)', () => {
+    const ext = Toggle;
+    expect(ext.config.priority).toBe(110);
+  });
+
+  it('defines an input rule for > shortcut', () => {
+    const ext = Toggle;
+    const inputRules = ext.config.addInputRules?.call(ext);
+    expect(inputRules).toBeDefined();
+    expect(inputRules!.length).toBeGreaterThan(0);
+  });
+
+  it('provides markdown serialization storage', () => {
+    const ext = Toggle;
+    const storage = ext.config.addStorage?.call(ext);
+    expect(storage).toBeDefined();
+    expect(storage?.markdown?.serialize).toBeDefined();
+    expect(typeof storage?.markdown?.serialize).toBe('function');
+  });
+
+  it('defines ProseMirror plugins for click handling', () => {
+    const ext = Toggle;
+    const plugins = ext.config.addProseMirrorPlugins?.call(ext);
+    expect(plugins).toBeDefined();
+    expect(plugins!.length).toBeGreaterThan(0);
   });
 });
