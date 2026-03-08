@@ -54,7 +54,11 @@ jobs:
 
           # Fetch gh-pages branch or create it
           git fetch origin gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git checkout -B gh-pages origin/gh-pages
+          else
+            git checkout --orphan gh-pages
+          fi
 
           # Clean the PR directory and copy new build
           rm -rf "${DEPLOY_DIR}"

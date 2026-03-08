@@ -5,6 +5,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('0.0.0-test'),
     __COMMIT_SHA__: JSON.stringify(''),
+    __IS_PREVIEW__: JSON.stringify(false),
   },
   resolve: {
     alias: {
