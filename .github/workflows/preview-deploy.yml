@@ -53,6 +53,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Fetch gh-pages branch or create it
+          # Discard working tree changes (e.g. generated live-docs-content.ts)
+          # since the build is already complete
+          git checkout -- .
           git fetch origin gh-pages || true
           if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
             git checkout -B gh-pages origin/gh-pages
