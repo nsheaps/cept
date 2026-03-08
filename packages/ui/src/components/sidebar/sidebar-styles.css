@@ -425,6 +425,12 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+.cept-sidebar-app-menu-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
 /* Context menu */
 .cept-context-menu {
   position: fixed;
@@ -549,6 +555,7 @@
   .cept-sidebar-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
   .cept-sidebar-app-menu-item { color: #d4d4d8; }
   .cept-sidebar-app-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-sidebar-app-menu-divider { background-color: #404040; }
 }
 
 /* Docs banner */

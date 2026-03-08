@@ -138,6 +138,42 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('export-page-btn')).toBeDefined();
   });
 
+  it('shows export space button when handler provided', () => {
+    const onExportSpace = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <SettingsModal
+        {...defaultProps}
+        initialTab="spaces"
+        onExportSpace={onExportSpace}
+        onClose={onClose}
+      />,
+    );
+    const btn = screen.getByTestId('export-space-btn');
+    expect(btn).toBeDefined();
+    btn.click();
+    expect(onExportSpace).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows import space button when handler provided', () => {
+    const onImportSpace = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <SettingsModal
+        {...defaultProps}
+        initialTab="spaces"
+        onImportSpace={onImportSpace}
+        onClose={onClose}
+      />,
+    );
+    const btn = screen.getByTestId('import-space-btn');
+    expect(btn).toBeDefined();
+    btn.click();
+    expect(onImportSpace).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('shows clear all data button in spaces tab', () => {
     render(<SettingsModal {...defaultProps} initialTab="spaces" />);
     expect(screen.getByTestId('settings-panel-spaces')).toBeDefined();
