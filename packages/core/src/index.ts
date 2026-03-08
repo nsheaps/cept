@@ -199,6 +199,33 @@ export type {
   SendFn,
 } from './crdt/index.js';
 
+// Spaces (import/export archives)
+export {
+  exportSpace,
+  importSpace,
+  previewImportConflicts,
+  generateRenamedPath,
+  sha256Hex,
+} from './spaces/index.js';
+export type {
+  ArchiveManifest,
+  ArchiveFileEntry,
+  SpaceExportOptions,
+  ExportProgress,
+  ExportProgressCallback,
+  SpaceExportResult,
+  ExportFileData,
+  ConflictStrategy,
+  SpaceImportOptions,
+  SpaceImportProgress,
+  SpaceImportProgressCallback,
+  ConflictInfo,
+  SpaceImportResult,
+  SpaceArchiveError,
+  ArchiveZipEntry,
+  ArchiveZipReader,
+} from './spaces/index.js';
+
 // Importers
 export {
   cleanNotionFilename,
