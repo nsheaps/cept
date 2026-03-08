@@ -92,7 +92,11 @@ export function resolveDocsContent(content: string): string {
 
 const MD_INDEX = `# Cept Documentation
 
+> **You are viewing docs from this PR.** If images appear below, the fix is working!
+
 Welcome to the Cept documentation. Cept is an open-source Notion alternative that runs entirely on the client with optional Git-based sync and collaboration.
+
+![Cept landing page]({{base}}screenshots/features/landing-page.png)
 
 ## Getting Started
 
