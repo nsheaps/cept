@@ -42,9 +42,24 @@ cat > "$WRAPPER_FILE" << 'EOF'
 export { DOCS_PAGES as LIVE_DOCS_PAGES } from './_main-branch-docs.js';
 export { DOCS_CONTENT as LIVE_DOCS_CONTENT } from './_main-branch-docs.js';
 export { getDocsSourceUrl as getLiveDocsSourceUrl } from './_main-branch-docs.js';
-export { resolveDocsContent as resolveLiveDocsContent } from './_main-branch-docs.js';
 
 import { DOCS_CONTENT, DOCS_SPACE_INFO } from './_main-branch-docs.js';
+
+// Use our own resolver instead of re-exporting main's, because main's version
+// may use document.baseURI which breaks with pushState navigation.
+function getBaseUrl(): string {
+  try {
+    const meta = import.meta as unknown as { env?: { BASE_URL?: string } };
+    if (meta.env?.BASE_URL) {
+      const b = meta.env.BASE_URL;
+      return b.endsWith('/') ? b : b + '/';
+    }
+  } catch { /* not available */ }
+  return '/';
+}
+export function resolveLiveDocsContent(content: string): string {
+  return content.replace(/\{\{base\}\}/g, getBaseUrl());
+}
 
 export const LIVE_DOCS_AVAILABLE = true;
 
