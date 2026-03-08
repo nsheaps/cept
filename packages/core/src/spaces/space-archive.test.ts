@@ -395,9 +395,7 @@ describe('exportSpace', () => {
       backend.seed('pages/good.md', 'good');
       // Simulate a file that exists but fails to read
       const origRead = backend.readFile.bind(backend);
-      let callCount = 0;
       vi.spyOn(backend, 'readFile').mockImplementation(async (path: string) => {
-        callCount++;
         if (path.includes('bad.md')) throw new Error('disk error');
         return origRead(path);
       });
