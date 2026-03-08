@@ -16,10 +16,13 @@ describe('ImageBlock extension', () => {
     expect(ext.config.atom).toBe(true);
   });
 
-  it('parses from figure[data-type="image"]', () => {
+  it('parses from figure[data-type="image"] and img[src]', () => {
     const ext = ImageBlock;
     const parseRules = ext.config.parseHTML?.call(ext);
-    expect(parseRules).toEqual([{ tag: 'figure[data-type="image"]' }]);
+    expect(parseRules).toHaveLength(2);
+    expect(parseRules?.[0]).toEqual({ tag: 'figure[data-type="image"]' });
+    expect(parseRules?.[1]).toMatchObject({ tag: 'img[src]' });
+    expect(parseRules?.[1]).toHaveProperty('getAttrs');
   });
 
   it('has src attribute defaulting to null', () => {

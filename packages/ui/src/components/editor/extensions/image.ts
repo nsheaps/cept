@@ -78,6 +78,16 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
       {
         tag: 'figure[data-type="image"]',
       },
+      {
+        tag: 'img[src]',
+        getAttrs: (dom) => {
+          const el = dom as HTMLImageElement;
+          return {
+            src: el.getAttribute('src'),
+            alt: el.getAttribute('alt') || '',
+          };
+        },
+      },
     ];
   },
 
@@ -117,6 +127,28 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
     }
 
     return ['figure', figureAttrs, imgSpec] as const;
+  },
+
+  addStorage() {
+    return {
+      markdown: {
+        serialize(
+          state: Record<string, unknown>,
+          node: { attrs: { src: string; alt: string } },
+        ) {
+          const s = state as unknown as {
+            write: (text: string) => void;
+            ensureNewLine: () => void;
+            closeBlock: (n: unknown) => void;
+          };
+          s.write(`![${node.attrs.alt || ''}](${node.attrs.src || ''})`);
+          s.closeBlock(node);
+        },
+        parse: {
+          // handled by markdown-it default image rendering + parseHTML above
+        },
+      },
+    };
   },
 
   addCommands() {
