@@ -34,6 +34,8 @@ export interface SidebarProps {
   onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
   onOpenDocs?: () => void;
   onOpenTrash?: () => void;
+  onExportSpace?: () => void;
+  onImportSpace?: () => void;
   spaces?: Array<{ id: string; name: string }>;
   activeSpaceId?: string;
   onSwitchSpace?: (id: string) => void;
@@ -61,6 +63,8 @@ export function Sidebar({
   onOpenSettings,
   onOpenDocs,
   onOpenTrash,
+  onExportSpace,
+  onImportSpace,
   spaces,
   activeSpaceId,
   onSwitchSpace,
@@ -371,6 +375,39 @@ export function Sidebar({
                   </svg>
                   About Cept
                 </button>
+                {(onExportSpace || onImportSpace) && (
+                  <div className="cept-sidebar-app-menu-divider" />
+                )}
+                {onExportSpace && (
+                  <button
+                    className="cept-sidebar-app-menu-item"
+                    onClick={() => {
+                      setAppMenuOpen(false);
+                      onExportSpace();
+                    }}
+                    data-testid="sidebar-app-menu-export-space"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8 2v8M5 5l3-3 3 3M3 11v2h10v-2" />
+                    </svg>
+                    Export Space
+                  </button>
+                )}
+                {onImportSpace && (
+                  <button
+                    className="cept-sidebar-app-menu-item"
+                    onClick={() => {
+                      setAppMenuOpen(false);
+                      onImportSpace();
+                    }}
+                    data-testid="sidebar-app-menu-import-space"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8 10V2M5 7l3 3 3-3M3 11v2h10v-2" />
+                    </svg>
+                    Import Space
+                  </button>
+                )}
               </div>
             )}
           </div>
