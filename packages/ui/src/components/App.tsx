@@ -35,6 +35,8 @@ import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
+import { SpaceExportDialog } from './import-export/SpaceExportDialog.js';
+import { SpaceImportDialog } from './import-export/SpaceImportDialog.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
@@ -108,6 +110,8 @@ export function App() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [spaceExportDialogOpen, setSpaceExportDialogOpen] = useState(false);
+  const [spaceImportDialogOpen, setSpaceImportDialogOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [userSpaceId, setUserSpaceId] = useState('default');
   const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
@@ -762,6 +766,8 @@ export function App() {
     { id: 'import-notion', title: 'Import from Notion', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('notion'); } },
     { id: 'import-obsidian', title: 'Import from Obsidian', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('obsidian'); } },
     { id: 'export-page', title: 'Export Current Page', icon: '\u{1F4E4}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenExport(); } },
+    { id: 'export-space', title: 'Export Space as ZIP', icon: '\u{1F4E6}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); setSpaceExportDialogOpen(true); } },
+    { id: 'import-space', title: 'Import Space from ZIP', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); setSpaceImportDialogOpen(true); } },
     { id: 'manage-spaces', title: 'Manage Spaces', icon: '\u{1F4C2}', category: 'Spaces', action: () => { setCommandPaletteOpen(false); handleOpenSettings('spaces'); } },
   ], [handlePageAdd, handleOpenExport, handleOpenSettings, handleOpenImport]);
 
@@ -1077,6 +1083,25 @@ export function App() {
           markdown: pageContents[selectedPageId] ?? '',
           path: `pages/${selectedPageId}.md`,
         } as PageContent : null}
+      />
+      <SpaceExportDialog
+        isOpen={spaceExportDialogOpen}
+        onClose={() => setSpaceExportDialogOpen(false)}
+        backend={backend}
+        spaceId={userSpaceId}
+        spaceName={spaceName}
+      />
+      <SpaceImportDialog
+        isOpen={spaceImportDialogOpen}
+        onClose={() => setSpaceImportDialogOpen(false)}
+        backend={backend}
+        spaces={spaceInfoList.filter((s) => s.id !== 'cept-docs').map((s) => ({ id: s.id, name: s.name }))}
+        onImportComplete={() => {
+          // Refresh space list after import
+          void loadSpaces(backend).then((manifest) => {
+            setSpacesManifest(manifest);
+          });
+        }}
       />
     </div>
   );
