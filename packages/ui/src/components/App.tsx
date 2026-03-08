@@ -14,6 +14,14 @@ import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl, resolveDocsContent } from './docs/docs-content.js';
 import {
+  LIVE_DOCS_AVAILABLE,
+  LIVE_DOCS_PAGES,
+  LIVE_DOCS_CONTENT,
+  LIVE_DOCS_SPACE_INFO,
+  getLiveDocsSourceUrl,
+  resolveLiveDocsContent,
+} from './docs/live-docs-content.js';
+import {
   useStorage,
   useWorkspacePersistence,
   saveSettingsToBackend,
@@ -100,7 +108,7 @@ export function App() {
   const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
-  const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
+  const [activeSpace, setActiveSpace] = useState<'user' | 'docs' | 'live-docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -266,7 +274,10 @@ export function App() {
     routeRestoredRef.current = true;
 
     const route = restoreRoute();
-    if (route.space === 'docs') {
+    if (route.space === 'live-docs') {
+      setActiveSpace('live-docs');
+      if (route.pageId) setDocsSelectedPageId(route.pageId);
+    } else if (route.space === 'docs') {
       setActiveSpace('docs');
       if (route.pageId) setDocsSelectedPageId(route.pageId);
     } else if (route.pageId) {
@@ -289,7 +300,9 @@ export function App() {
     if (!initializedRef.current || !routeRestoredRef.current) return;
     if (!hasStarted) return;
 
-    if (activeSpace === 'docs') {
+    if (activeSpace === 'live-docs') {
+      replaceRoute({ space: 'live-docs', pageId: docsSelectedPageId });
+    } else if (activeSpace === 'docs') {
       replaceRoute({ space: 'docs', pageId: docsSelectedPageId });
     } else if (selectedPageId) {
       replaceRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
@@ -304,7 +317,10 @@ export function App() {
   useEffect(() => {
     const handlePopState = () => {
       const route = parseRoute();
-      if (route.space === 'docs') {
+      if (route.space === 'live-docs') {
+        setActiveSpace('live-docs');
+        if (route.pageId) setDocsSelectedPageId(route.pageId);
+      } else if (route.space === 'docs') {
         setActiveSpace('docs');
         if (route.pageId) setDocsSelectedPageId(route.pageId);
       } else {
@@ -701,6 +717,14 @@ export function App() {
     pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
+  const handleOpenLiveDocs = useCallback(() => {
+    if (!LIVE_DOCS_AVAILABLE || !LIVE_DOCS_PAGES) return;
+    setActiveSpace('live-docs');
+    setDocsSelectedPageId('docs-index');
+    setDocsPages(LIVE_DOCS_PAGES);
+    pushRoute({ space: 'live-docs', pageId: 'docs-index' });
+  }, []);
+
   const handleBackToUserSpace = useCallback(() => {
     setActiveSpace('user');
     pushRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
@@ -756,7 +780,17 @@ export function App() {
         contentSize,
       });
     }
-    list.push(DOCS_SPACE_INFO);
+    // On preview deploys with live docs available, show both docs spaces with
+    // distinct labels; otherwise show the single "Cept Docs" entry.
+    if (__IS_PREVIEW__ && LIVE_DOCS_AVAILABLE && LIVE_DOCS_SPACE_INFO) {
+      list.push({
+        ...DOCS_SPACE_INFO,
+        name: 'Docs (This PR)',
+      });
+      list.push(LIVE_DOCS_SPACE_INFO);
+    } else {
+      list.push(DOCS_SPACE_INFO);
+    }
     return list;
   }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type]);
 
@@ -775,6 +809,18 @@ export function App() {
   const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
+
+  // Compute active docs content source based on which docs space is active
+  const isDocsActive = activeSpace === 'docs' || activeSpace === 'live-docs';
+  const activeDocsContent = activeSpace === 'live-docs' && LIVE_DOCS_CONTENT ? LIVE_DOCS_CONTENT : DOCS_CONTENT;
+  const activeDocsSourceUrl = activeSpace === 'live-docs' ? getLiveDocsSourceUrl : getDocsSourceUrl;
+  const activeDocsResolve = activeSpace === 'live-docs' ? resolveLiveDocsContent : resolveDocsContent;
+  const activeDocsSpaceName = activeSpace === 'live-docs'
+    ? 'Docs (Live)'
+    : (__IS_PREVIEW__ && LIVE_DOCS_AVAILABLE ? 'Docs (This PR)' : 'Cept Docs');
+  const activeDocsBannerText = activeSpace === 'live-docs'
+    ? 'Read-only \u2014 sourced from main branch'
+    : 'Read-only \u2014 sourced from docs/ in the Git repository';
 
   // Show loading state while backend loads persisted data
   if (!ready) {
@@ -848,13 +894,15 @@ export function App() {
             onSwitchSpace={(id) => {
               if (id === 'cept-docs') {
                 handleOpenDocs();
+              } else if (id === 'cept-live-docs') {
+                handleOpenLiveDocs();
               } else {
                 handleSwitchSpace(id);
               }
             }}
           />
         )}
-        {sidebarOpen && activeSpace === 'docs' && (
+        {sidebarOpen && isDocsActive && (
           <Sidebar
             pages={docsPages}
             favorites={[]}
@@ -874,24 +922,24 @@ export function App() {
             onEmptyTrash={() => {/* read-only */}}
             onSearch={() => setSearchOpen(true)}
             readOnly
-            spaceName="Cept Docs"
+            spaceName={activeDocsSpaceName}
             onBackToSpace={handleBackToUserSpace}
           />
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
-          {activeSpace === 'docs' ? (
-            docsSelectedPageId && DOCS_CONTENT[docsSelectedPageId] ? (
+          {isDocsActive ? (
+            docsSelectedPageId && activeDocsContent[docsSelectedPageId] ? (
               <>
                 <div className="cept-docs-banner" data-testid="docs-banner">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <rect x="2" y="1" width="12" height="14" rx="1" />
                     <path d="M5 5h6M5 8h6M5 11h3" />
                   </svg>
-                  <span>Read-only — sourced from <code>docs/</code> in the Git repository</span>
-                  {getDocsSourceUrl(docsSelectedPageId) && (
+                  <span>{activeDocsBannerText}</span>
+                  {activeDocsSourceUrl(docsSelectedPageId) && (
                     <a
                       className="cept-docs-source-icon"
-                      href={getDocsSourceUrl(docsSelectedPageId)}
+                      href={activeDocsSourceUrl(docsSelectedPageId)}
                       target="_blank"
                       rel="noopener noreferrer"
                       data-testid="docs-source-link"
@@ -907,8 +955,8 @@ export function App() {
                   </button>
                 </div>
                 <CeptEditor
-                  key={docsSelectedPageId}
-                  content={resolveDocsContent(DOCS_CONTENT[docsSelectedPageId])}
+                  key={`${activeSpace}-${docsSelectedPageId}`}
+                  content={activeDocsResolve(activeDocsContent[docsSelectedPageId])}
                   placeholder=""
                   onUpdate={() => {/* read-only */}}
                   editable={false}

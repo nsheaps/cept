@@ -47,6 +47,9 @@ packages/mobile/ios/App/Pods/
 packages/desktop/dist/
 packages/desktop/release/
 
+# Generated at build time (preview deploys)
+packages/ui/src/components/docs/_main-branch-docs.ts
+
 # Logs
 *.log
 npm-debug.log*
