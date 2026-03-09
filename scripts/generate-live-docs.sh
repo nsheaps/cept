@@ -47,15 +47,10 @@ import { DOCS_CONTENT, DOCS_SPACE_INFO } from './_main-branch-docs.js';
 
 // Use our own resolver instead of re-exporting main's, because main's version
 // may use document.baseURI which breaks with pushState navigation.
+// Vite replaces the literal import.meta.env.BASE_URL at build time.
 function getBaseUrl(): string {
-  try {
-    const meta = import.meta as unknown as { env?: { BASE_URL?: string } };
-    if (meta.env?.BASE_URL) {
-      const b = meta.env.BASE_URL;
-      return b.endsWith('/') ? b : b + '/';
-    }
-  } catch { /* not available */ }
-  return '/';
+  const base = import.meta.env.BASE_URL ?? '/';
+  return base.endsWith('/') ? base : base + '/';
 }
 export function resolveLiveDocsContent(content: string): string {
   return content.replace(/\{\{base\}\}/g, getBaseUrl());

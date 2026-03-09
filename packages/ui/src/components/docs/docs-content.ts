@@ -69,19 +69,11 @@ function stripFrontMatter(md: string): string {
 
 /** Get the base URL for static assets (screenshots, etc.) */
 function getBaseUrl(): string {
-  // Use Vite's build-time base path (set via VITE_BASE_PATH env var).
-  // This is stable regardless of client-side routing / pushState navigation,
-  // unlike document.baseURI which changes with the current URL.
-  try {
-    const meta = import.meta as unknown as { env?: { BASE_URL?: string } };
-    if (meta.env?.BASE_URL) {
-      const b = meta.env.BASE_URL;
-      return b.endsWith('/') ? b : b + '/';
-    }
-  } catch {
-    // not available
-  }
-  return '/';
+  // Vite replaces the literal `import.meta.env.BASE_URL` at build time.
+  // We must use the exact literal — any indirection (cast, variable) defeats
+  // the replacement and leaves it as undefined at runtime.
+  const base = import.meta.env.BASE_URL ?? '/';
+  return base.endsWith('/') ? base : base + '/';
 }
 
 /** Resolve {{base}} placeholders in a content string at read time */
