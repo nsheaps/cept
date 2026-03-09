@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.5](https://github.com/nsheaps/cept/compare/v0.1.4...v0.1.5) (2026-03-09)
+
+### Documentation
+
+* **screenshots:** update feature screenshots ([4e30503](https://github.com/nsheaps/cept/commit/4e30503176a3bfe12af8503da1537e6018e96888))
+
 ## [0.1.4](https://github.com/nsheaps/cept/compare/v0.1.3...v0.1.4) (2026-03-09)
 
 ### Documentation
