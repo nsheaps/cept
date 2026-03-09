@@ -42,6 +42,9 @@ jobs:
           if [[ "$COMMIT_MSG" == "docs(screenshots): update feature screenshots" ]]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Skipping — last commit is a screenshot update"
+          elif [[ "$COMMIT_MSG" == chore:\ release\ v* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping — last commit is a release (no need to regenerate screenshots)"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
