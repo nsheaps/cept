@@ -1,21 +1,48 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import { App, StorageProvider } from '@cept/ui';
 import { BrowserFsBackend } from '@cept/core';
 import '@cept/ui/styles/globals.css';
+import { registerServiceWorker, consumeUpdateFlag } from './sw-register.js';
+import { UpdateToast } from './UpdateToast.js';
 
 const backend = new BrowserFsBackend('cept-workspace');
 
 // Initialize the workspace structure (creates dirs if needed, no-ops if they exist)
 void backend.initialize({ name: 'My Space' });
 
-const root = document.getElementById('root');
-if (root) {
-  ReactDOM.createRoot(root).render(
+function Root() {
+  const [showUpdateToast, setShowUpdateToast] = useState(false);
+
+  const dismissToast = useCallback(() => setShowUpdateToast(false), []);
+
+  useEffect(() => {
+    // Check if we just reloaded after a SW update
+    if (consumeUpdateFlag()) {
+      setShowUpdateToast(true);
+    }
+
+    // Register the service worker (import.meta.env.BASE_URL includes trailing slash)
+    void registerServiceWorker(
+      `${import.meta.env.BASE_URL}service-worker.js`,
+    );
+  }, []);
+
+  return (
     <StrictMode>
       <StorageProvider backend={backend}>
         <App />
       </StorageProvider>
-    </StrictMode>,
+      <UpdateToast
+        version={__APP_VERSION__}
+        visible={showUpdateToast}
+        onDismiss={dismissToast}
+      />
+    </StrictMode>
   );
+}
+
+const root = document.getElementById('root');
+if (root) {
+  ReactDOM.createRoot(root).render(<Root />);
 }

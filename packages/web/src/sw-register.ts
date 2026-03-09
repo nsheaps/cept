@@ -1,7 +1,12 @@
 /**
  * Service Worker Registration — Handles registering the SW and
- * notifying the app about updates.
+ * notifying the app about updates. When a new SW version is detected,
+ * it automatically activates the new SW and reloads the page so the
+ * user always sees the latest content.
  */
+
+/** Key used in sessionStorage to signal a post-update reload */
+export const UPDATE_FLAG_KEY = 'cept-sw-updated';
 
 export interface SWRegistrationCallbacks {
   /** Called when a new service worker is waiting to activate */
@@ -16,14 +21,31 @@ export async function registerServiceWorker(
   swUrl: string,
   callbacks?: SWRegistrationCallbacks,
 ): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker) {
     return null;
   }
 
+  const sw = navigator.serviceWorker;
+
+  // Listen for controller changes (a new SW activated). Reload once so
+  // the page is served by the fresh SW.
+  let refreshing = false;
+  sw.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    // Mark that an update just occurred so the app can show a toast after reload
+    sessionStorage.setItem(UPDATE_FLAG_KEY, 'true');
+    window.location.reload();
+  });
+
   try {
-    const registration = await navigator.serviceWorker.register(swUrl, {
-      scope: '/',
-    });
+    const registration = await sw.register(swUrl);
+
+    // If a waiting worker already exists (e.g. from a previous visit), activate it
+    if (registration.waiting) {
+      callbacks?.onUpdate?.(registration);
+      skipWaiting(registration);
+    }
 
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
@@ -31,9 +53,10 @@ export async function registerServiceWorker(
 
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed') {
-          if (navigator.serviceWorker.controller) {
-            // New update available
+          if (sw.controller) {
+            // New update available — activate it immediately
             callbacks?.onUpdate?.(registration);
+            skipWaiting(registration);
           } else {
             // First install — app is cached for offline
             callbacks?.onReady?.(registration);
@@ -51,4 +74,17 @@ export async function registerServiceWorker(
 
 export function skipWaiting(registration: ServiceWorkerRegistration): void {
   registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+}
+
+/**
+ * Check whether the page just reloaded due to a SW update.
+ * Consumes the flag so it only returns true once.
+ */
+export function consumeUpdateFlag(): boolean {
+  const flag = sessionStorage.getItem(UPDATE_FLAG_KEY);
+  if (flag) {
+    sessionStorage.removeItem(UPDATE_FLAG_KEY);
+    return true;
+  }
+  return false;
 }

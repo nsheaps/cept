@@ -100,5 +100,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'service-worker': path.resolve(__dirname, 'src/service-worker.ts'),
+      },
+      output: {
+        entryFileNames(chunkInfo) {
+          // Service worker must be at a fixed path (no hash) at the app root
+          if (chunkInfo.name === 'service-worker') return 'service-worker.js';
+          return 'assets/[name]-[hash].js';
+        },
+      },
+    },
   },
 });
