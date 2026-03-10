@@ -67,11 +67,12 @@ function stripFrontMatter(md: string): string {
   return md.replace(/^---[\s\S]*?---\n*/m, '');
 }
 
-/** Get the base URL for static assets (screenshots, etc.) */
+/**
+ * Get the base URL for static assets (screenshots, etc.).
+ * Vite replaces the literal `import.meta.env.BASE_URL` at build time.
+ * We must use the exact literal — any indirection defeats replacement.
+ */
 function getBaseUrl(): string {
-  // Vite replaces the literal `import.meta.env.BASE_URL` at build time.
-  // We must use the exact literal — any indirection (cast, variable) defeats
-  // the replacement and leaves it as undefined at runtime.
   const base = import.meta.env.BASE_URL ?? '/';
   return base.endsWith('/') ? base : base + '/';
 }
