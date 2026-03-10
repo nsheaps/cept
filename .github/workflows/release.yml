@@ -1,19 +1,19 @@
-name: Release
+name: Manual Release
 
 on:
   workflow_dispatch:
     inputs:
       increment:
-        description: 'Version increment (major, minor, patch)'
+        description: "Version increment (major, minor, patch)"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - major
           - minor
           - patch
       dry-run:
-        description: 'Dry run (no actual release)'
+        description: "Dry run (no actual release)"
         required: false
         default: false
         type: boolean
@@ -55,17 +55,6 @@ jobs:
       - name: Configure git
         run: |
           git branch --set-upstream-to=origin/main main 2>/dev/null || true
-
-      - name: Debug release-it state
-        run: |
-          echo "=== Current version ==="
-          node -p "require('./package.json').version"
-          echo ""
-          echo "=== Latest tags ==="
-          git tag --sort=-v:refname | head -10 || echo "No tags found"
-          echo ""
-          echo "=== Increment: ${{ inputs.increment }} ==="
-          echo "=== Dry run: ${{ inputs.dry-run }} ==="
 
       - name: Release
         run: bun run release:ci -- --increment ${{ inputs.increment }} ${{ inputs.dry-run && '--dry-run' || '' }} --verbose

@@ -2,8 +2,7 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 permissions:
@@ -107,18 +106,10 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-screenshots
-          path: docs/screenshots/
-          retention-days: 14
-
   build:
     name: Build
-    runs-on: ubuntu-latest
     needs: [lint, test-unit]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -206,9 +197,11 @@ jobs:
           path: docs/screenshots/
           retention-days: 30
 
-  # Commit screenshots + release — only on push to main, after all checks pass
-  release:
-    name: Release
+  # Tag a release after all checks pass — only on push to main
+  # This commits screenshots (if changed) + version bump + tag, then pushes.
+  # The tag push triggers the CD workflow. No GitHub release is created here.
+  tag-release:
+    name: Tag Release
     needs: [lint, test-unit, test-integration, test-e2e, build, screenshots]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -246,7 +239,6 @@ jobs:
         if: needs.screenshots.outputs.changed == 'true'
         run: |
           git add docs/screenshots/
-          # Only commit if there are staged changes
           if ! git diff --cached --quiet; then
             git commit -m "docs(screenshots): update feature screenshots"
           fi
@@ -272,7 +264,7 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Release
+      - name: Tag release
         if: steps.version.outputs.skip != 'true'
         run: bun run release:ci -- --verbose
         env:
