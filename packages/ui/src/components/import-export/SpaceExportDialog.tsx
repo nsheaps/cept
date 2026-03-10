@@ -178,11 +178,11 @@ export function SpaceExportDialog({
         <div className="cept-modal-body">
           {state === 'options' && (
             <div data-testid="space-export-options">
-              <p style={{ marginBottom: '0.75rem' }}>
+              <p>
                 Export <strong>{spaceName}</strong> as a ZIP archive.
               </p>
 
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+              <label className="cept-modal-label">
                 <input
                   type="checkbox"
                   checked={includeDatabases}
@@ -192,7 +192,7 @@ export function SpaceExportDialog({
                 {' '}Include databases
               </label>
 
-              <label style={{ display: 'block', marginBottom: '1rem' }}>
+              <label className="cept-modal-label">
                 <input
                   type="checkbox"
                   checked={includeAssets}
@@ -203,9 +203,9 @@ export function SpaceExportDialog({
               </label>
 
               <button
+                className="cept-modal-btn"
                 onClick={handleExport}
                 data-testid="space-export-button"
-                style={{ marginTop: '0.5rem' }}
               >
                 Export Space
               </button>
@@ -233,16 +233,16 @@ export function SpaceExportDialog({
 
           {state === 'done' && result && (
             <div data-testid="space-export-done">
-              <p style={{ color: 'green', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              <p className="cept-modal-success">
                 Export complete!
               </p>
               <ul>
                 <li>{result.manifest.files.length} files exported</li>
                 {result.errors.length > 0 && (
-                  <li style={{ color: 'orange' }}>{result.errors.length} errors</li>
+                  <li className="cept-modal-warning">{result.errors.length} errors</li>
                 )}
               </ul>
-              <button onClick={handleClose} data-testid="space-export-done-close" style={{ marginTop: '1rem' }}>
+              <button className="cept-modal-btn--secondary cept-modal-btn" onClick={handleClose} data-testid="space-export-done-close">
                 Done
               </button>
             </div>
@@ -250,8 +250,8 @@ export function SpaceExportDialog({
 
           {state === 'error' && (
             <div data-testid="space-export-error">
-              <p style={{ color: 'red' }}>Error: {error}</p>
-              <button onClick={() => setState('options')} data-testid="space-export-retry">
+              <p className="cept-modal-error">Error: {error}</p>
+              <button className="cept-modal-btn--secondary cept-modal-btn" onClick={() => setState('options')} data-testid="space-export-retry">
                 Try Again
               </button>
             </div>
