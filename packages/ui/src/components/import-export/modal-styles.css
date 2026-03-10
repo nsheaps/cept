@@ -1,0 +1,223 @@
+/* Import/Export modal dialogs */
+.cept-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.cept-modal-content {
+  background: white;
+  border-radius: 10px;
+  width: 95%;
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.cept-modal-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cept-modal-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #111827;
+  flex: 1;
+}
+
+.cept-modal-close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.cept-modal-close:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #6b7280;
+}
+
+.cept-modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.cept-modal-body p {
+  margin: 0 0 0.75rem;
+}
+
+.cept-modal-body h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #111827;
+}
+
+.cept-modal-body ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.cept-modal-body ul li {
+  margin-bottom: 0.25rem;
+}
+
+.cept-modal-body code {
+  font-size: 0.8125rem;
+  background: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+}
+
+/* Checkbox / radio labels */
+.cept-modal-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.cept-modal-label:last-child {
+  margin-bottom: 0;
+}
+
+.cept-modal-label-indented {
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Fieldset */
+.cept-modal-fieldset {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cept-modal-fieldset legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.cept-modal-fieldset--warning legend {
+  color: #d97706;
+}
+
+/* Text input inside modal */
+.cept-modal-input {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.cept-modal-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* Primary action button */
+.cept-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.15s;
+  margin-top: 0.5rem;
+}
+
+.cept-modal-btn:hover {
+  background: #2563eb;
+}
+
+/* Secondary / neutral button */
+.cept-modal-btn--secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.cept-modal-btn--secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Success text */
+.cept-modal-success {
+  color: #16a34a;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Error text */
+.cept-modal-error {
+  color: #dc2626;
+}
+
+/* Warning text */
+.cept-modal-warning {
+  color: #d97706;
+}
+
+/* Progress bar */
+.cept-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.cept-progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .cept-modal-content { background: #1e1e1e; }
+  .cept-modal-header { border-color: #333; }
+  .cept-modal-header h2 { color: #e5e5e5; }
+  .cept-modal-close { color: #71717a; }
+  .cept-modal-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+  .cept-modal-body { color: #d4d4d8; }
+  .cept-modal-body h3 { color: #e5e5e5; }
+  .cept-modal-body code { background: #333; color: #d4d4d8; }
+  .cept-modal-fieldset { border-color: #404040; }
+  .cept-modal-input { background: #333; border-color: #555; color: #e5e5e5; }
+  .cept-modal-btn--secondary { background: #333; border-color: #404040; color: #d4d4d8; }
+  .cept-modal-btn--secondary:hover { background: #404040; }
+  .cept-progress-bar { background: #333; }
+}
