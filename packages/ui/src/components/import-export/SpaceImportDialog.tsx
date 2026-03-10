@@ -203,7 +203,7 @@ export function SpaceImportDialog({
           {/* Step 1: File Selection */}
           {state === 'idle' && (
             <div data-testid="space-import-idle">
-              <p style={{ marginBottom: '1rem' }}>
+              <p>
                 Select a <code>.cept.zip</code> archive to import.
               </p>
               <input
@@ -225,16 +225,16 @@ export function SpaceImportDialog({
           {/* Step 2: Preview & Options */}
           {state === 'preview' && manifest && (
             <div data-testid="space-import-preview">
-              <h3 style={{ margin: '0 0 0.5rem' }}>Archive: {manifest.space.name}</h3>
-              <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.75rem' }}>
+              <h3>Archive: {manifest.space.name}</h3>
+              <p className="cept-modal-body-meta">
                 {manifest.files.length} files &middot; Exported {new Date(manifest.exportedAt).toLocaleDateString()}
               </p>
 
               {/* Target selection */}
-              <fieldset style={{ border: '1px solid #ddd', borderRadius: 6, padding: '0.75rem', marginBottom: '0.75rem' }}>
-                <legend style={{ fontSize: '0.875rem', fontWeight: 600 }}>Import into</legend>
+              <fieldset className="cept-modal-fieldset">
+                <legend>Import into</legend>
 
-                <label style={{ display: 'block', marginBottom: '0.25rem' }}>
+                <label className="cept-modal-label">
                   <input
                     type="radio"
                     name="target"
@@ -246,16 +246,16 @@ export function SpaceImportDialog({
                 </label>
                 {targetMode === 'new' && (
                   <input
+                    className="cept-modal-input cept-modal-label-indented"
                     type="text"
                     value={newSpaceName}
                     onChange={(e) => setNewSpaceName(e.target.value)}
                     placeholder="Space name"
                     data-testid="space-import-new-name"
-                    style={{ marginLeft: '1.5rem', marginBottom: '0.5rem', padding: '0.25rem 0.5rem' }}
                   />
                 )}
 
-                <label style={{ display: 'block', marginBottom: '0.25rem' }}>
+                <label className="cept-modal-label">
                   <input
                     type="radio"
                     name="target"
@@ -267,10 +267,10 @@ export function SpaceImportDialog({
                 </label>
                 {targetMode === 'existing' && spaces.length > 0 && (
                   <select
+                    className="cept-modal-input cept-modal-label-indented"
                     value={targetSpaceId}
                     onChange={(e) => setTargetSpaceId(e.target.value)}
                     data-testid="space-import-target-select"
-                    style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}
                   >
                     {spaces.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -281,12 +281,12 @@ export function SpaceImportDialog({
 
               {/* Conflict resolution */}
               {conflicts.length > 0 && (
-                <fieldset style={{ border: '1px solid #ddd', borderRadius: 6, padding: '0.75rem', marginBottom: '0.75rem' }}>
-                  <legend style={{ fontSize: '0.875rem', fontWeight: 600, color: 'orange' }}>
+                <fieldset className="cept-modal-fieldset cept-modal-fieldset--warning">
+                  <legend>
                     {conflicts.length} conflict{conflicts.length !== 1 ? 's' : ''} detected
                   </legend>
                   {(Object.keys(CONFLICT_LABELS) as ConflictStrategy[]).map((strategy) => (
-                    <label key={strategy} style={{ display: 'block', marginBottom: '0.25rem' }}>
+                    <label key={strategy} className="cept-modal-label">
                       <input
                         type="radio"
                         name="conflict"
@@ -301,7 +301,7 @@ export function SpaceImportDialog({
               )}
 
               {/* Additional options */}
-              <label style={{ display: 'block', marginBottom: '1rem' }}>
+              <label className="cept-modal-label">
                 <input
                   type="checkbox"
                   checked={importWorkspaceState}
@@ -312,6 +312,7 @@ export function SpaceImportDialog({
               </label>
 
               <button
+                className="cept-modal-btn"
                 onClick={handleImport}
                 data-testid="space-import-button"
               >
@@ -343,7 +344,7 @@ export function SpaceImportDialog({
           {/* Step 4: Results */}
           {state === 'done' && result && (
             <div data-testid="space-import-done">
-              <p style={{ color: 'green', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              <p className="cept-modal-success">
                 Import complete!
               </p>
               <ul>
@@ -352,10 +353,10 @@ export function SpaceImportDialog({
                 {result.renamed.length > 0 && <li>{result.renamed.length} files renamed</li>}
                 {result.skipped.length > 0 && <li>{result.skipped.length} files skipped</li>}
                 {result.errors.length > 0 && (
-                  <li style={{ color: 'orange' }}>{result.errors.length} errors</li>
+                  <li className="cept-modal-warning">{result.errors.length} errors</li>
                 )}
               </ul>
-              <button onClick={handleClose} data-testid="space-import-done-close" style={{ marginTop: '1rem' }}>
+              <button className="cept-modal-btn cept-modal-btn--secondary" onClick={handleClose} data-testid="space-import-done-close">
                 Done
               </button>
             </div>
@@ -364,8 +365,9 @@ export function SpaceImportDialog({
           {/* Error */}
           {state === 'error' && (
             <div data-testid="space-import-error">
-              <p style={{ color: 'red' }}>Error: {error}</p>
+              <p className="cept-modal-error">Error: {error}</p>
               <button
+                className="cept-modal-btn cept-modal-btn--secondary"
                 onClick={() => { setState('idle'); setError(null); }}
                 data-testid="space-import-retry"
               >
