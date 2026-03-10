@@ -1,0 +1,83 @@
+name: Update Screenshots
+
+on:
+  workflow_call:
+    outputs:
+      changed:
+        description: "Whether any screenshots had pixel-level changes"
+        value: ${{ jobs.screenshots.outputs.changed }}
+
+jobs:
+  screenshots:
+    name: Capture Screenshots
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Create screenshots directory
+        run: mkdir -p docs/screenshots/features
+
+      - name: Capture screenshots
+        run: bunx playwright test tests/feature-screenshots.spec.ts
+        working-directory: e2e
+        env:
+          CI: true
+
+      - name: Compare screenshots pixel-by-pixel
+        id: compare
+        run: |
+          # Install ImageMagick for pixel-level comparison
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick > /dev/null 2>&1
+
+          CHANGED=false
+          for new_file in docs/screenshots/features/*.png; do
+            [ -f "$new_file" ] || continue
+
+            # If file is new (not tracked), it's a real change
+            if ! git show HEAD:"$new_file" > /tmp/old_screenshot.png 2>/dev/null; then
+              echo "NEW: $new_file"
+              CHANGED=true
+              continue
+            fi
+
+            # Compare pixels only (AE = Absolute Error pixel count)
+            DIFF=$(compare -metric AE "$new_file" /tmp/old_screenshot.png /dev/null 2>&1 || true)
+
+            if [ "$DIFF" = "0" ]; then
+              # Pixels identical — restore original to avoid metadata-only diff
+              echo "UNCHANGED (metadata only): $new_file"
+              git checkout HEAD -- "$new_file"
+            else
+              echo "CHANGED ($DIFF pixels differ): $new_file"
+              CHANGED=true
+            fi
+          done
+
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: Upload changed screenshots
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-screenshots
+          path: docs/screenshots/
+          retention-days: 5
+
+      - name: Upload screenshots for review
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: feature-screenshots
+          path: docs/screenshots/
+          retention-days: 30

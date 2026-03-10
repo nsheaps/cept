@@ -1,0 +1,92 @@
+name: Tag Release
+
+on:
+  workflow_call:
+    inputs:
+      screenshots-changed:
+        description: "Whether screenshots have pixel-level changes to commit"
+        type: boolean
+        default: false
+    secrets:
+      AUTOMATION_GITHUB_APP_ID:
+        required: true
+      AUTOMATION_GITHUB_APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    name: Tag Release
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate as GitHub App
+        id: auth
+        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download updated screenshots
+        if: inputs.screenshots-changed
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-screenshots
+          path: docs/screenshots/
+
+      - name: Commit updated screenshots
+        if: inputs.screenshots-changed
+        run: |
+          git add docs/screenshots/
+          if ! git diff --cached --quiet; then
+            git commit -m "docs(screenshots): update feature screenshots [skip ci]"
+          fi
+
+      - name: Configure git
+        run: |
+          git branch --set-upstream-to=origin/main main 2>/dev/null || true
+
+      - name: Determine version bump
+        id: version
+        run: |
+          set +e
+          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null)
+          EXIT_CODE=$?
+          set -e
+
+          if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
+            echo "No version bump needed (exit code: $EXIT_CODE)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Next version: $NEXT_VERSION"
+            echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Tag release
+        if: steps.version.outputs.skip != 'true'
+        run: bun run release:ci -- --verbose
+        env:
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
+
+      - name: Push screenshot updates (no release needed)
+        if: steps.version.outputs.skip == 'true' && inputs.screenshots-changed
+        run: git push origin main
+        env:
+          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}

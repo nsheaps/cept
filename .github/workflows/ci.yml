@@ -13,265 +13,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Gate: skip the entire pipeline for automated commits (releases, screenshot updates)
-  should-run:
-    runs-on: ubuntu-latest
-    # Always run for PRs; for pushes, skip automated commit types
-    if: >-
-      github.event_name == 'pull_request' ||
-      (
-        !startsWith(github.event.head_commit.message, 'chore: release v') &&
-        !startsWith(github.event.head_commit.message, 'docs(screenshots):')
-      )
-    outputs:
-      run: "true"
-    steps:
-      - run: echo "Pipeline will run"
-
   lint:
-    name: Lint & Typecheck
-    needs: should-run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Typecheck
-        run: bun run typecheck
+    uses: ./.github/workflows/_lint.yml
 
   test-unit:
-    name: Unit Tests
-    needs: should-run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run unit tests
-        run: bun run test:unit
+    uses: ./.github/workflows/_test-unit.yml
 
   test-integration:
-    name: Integration Tests
-    needs: should-run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run integration tests
-        run: bun run test:integration
+    uses: ./.github/workflows/_test-integration.yml
 
   test-e2e:
-    name: E2E Tests
-    needs: should-run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: bun run test:e2e
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 14
+    uses: ./.github/workflows/_test-e2e.yml
 
   build:
-    name: Build
     needs: [lint, test-unit]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build all packages
-        run: bun run build
+    uses: ./.github/workflows/_build.yml
 
   screenshots:
-    name: Capture Screenshots
-    needs: should-run
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.compare.outputs.changed }}
-    steps:
-      - uses: actions/checkout@v4
+    uses: ./.github/workflows/_update-screenshots.yml
 
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-
-      - name: Create screenshots directory
-        run: mkdir -p docs/screenshots/features
-
-      - name: Capture screenshots
-        run: bunx playwright test tests/feature-screenshots.spec.ts --project='Desktop Chrome'
-        working-directory: e2e
-        env:
-          CI: true
-
-      - name: Compare screenshots pixel-by-pixel
-        id: compare
-        run: |
-          # Install ImageMagick for pixel-level comparison
-          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick > /dev/null 2>&1
-
-          CHANGED=false
-          for new_file in docs/screenshots/features/*.png; do
-            [ -f "$new_file" ] || continue
-
-            # If file is new (not tracked), it's a real change
-            if ! git show HEAD:"$new_file" > /tmp/old_screenshot.png 2>/dev/null; then
-              echo "NEW: $new_file"
-              CHANGED=true
-              continue
-            fi
-
-            # Compare pixels only (AE = Absolute Error pixel count)
-            DIFF=$(compare -metric AE "$new_file" /tmp/old_screenshot.png /dev/null 2>&1 || true)
-
-            if [ "$DIFF" = "0" ]; then
-              # Pixels identical — restore original to avoid metadata-only diff
-              echo "UNCHANGED (metadata only): $new_file"
-              git checkout HEAD -- "$new_file"
-            else
-              echo "CHANGED ($DIFF pixels differ): $new_file"
-              CHANGED=true
-            fi
-          done
-
-          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
-
-      - name: Upload changed screenshots
-        if: steps.compare.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: updated-screenshots
-          path: docs/screenshots/
-          retention-days: 5
-
-      - name: Upload screenshots for review
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: feature-screenshots
-          path: docs/screenshots/
-          retention-days: 30
-
-  # Tag a release after all checks pass — only on push to main
-  # This commits screenshots (if changed) + version bump + tag, then pushes.
-  # The tag push triggers the CD workflow. No GitHub release is created here.
   tag-release:
-    name: Tag Release
     needs: [lint, test-unit, test-integration, test-e2e, build, screenshots]
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: release
-      cancel-in-progress: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Authenticate as GitHub App
-        id: auth
-        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
-        with:
-          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
-          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
-
-      - name: Install mise
-        uses: jdx/mise-action@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Download updated screenshots
-        if: needs.screenshots.outputs.changed == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: updated-screenshots
-          path: docs/screenshots/
-
-      - name: Commit updated screenshots
-        if: needs.screenshots.outputs.changed == 'true'
-        run: |
-          git add docs/screenshots/
-          if ! git diff --cached --quiet; then
-            git commit -m "docs(screenshots): update feature screenshots"
-          fi
-
-      - name: Configure git
-        run: |
-          git branch --set-upstream-to=origin/main main 2>/dev/null || true
-
-      - name: Determine version bump
-        id: version
-        run: |
-          set +e
-          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null)
-          EXIT_CODE=$?
-          set -e
-
-          if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
-            echo "No version bump needed (exit code: $EXIT_CODE)"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "Next version: $NEXT_VERSION"
-            echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Tag release
-        if: steps.version.outputs.skip != 'true'
-        run: bun run release:ci -- --verbose
-        env:
-          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
-
-      - name: Push screenshot updates (no release needed)
-        if: steps.version.outputs.skip == 'true' && needs.screenshots.outputs.changed == 'true'
-        run: git push origin main
-        env:
-          GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
+    uses: ./.github/workflows/_tag-release.yml
+    with:
+      screenshots-changed: ${{ needs.screenshots.outputs.changed == 'true' }}
+    secrets:
+      AUTOMATION_GITHUB_APP_ID: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+      AUTOMATION_GITHUB_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}

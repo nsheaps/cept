@@ -1,8 +1,10 @@
 name: CD
 
 on:
-  push:
-    tags: ["v*"]
+  # Use 'create' instead of 'push: tags' because the release commit
+  # contains [skip ci] which would suppress push-triggered workflows.
+  # The 'create' event is not affected by [skip ci].
+  create:
   workflow_dispatch:
 
 permissions:
@@ -15,6 +17,8 @@ concurrency:
 jobs:
   github-release:
     name: Create GitHub Release
+    # Only run for version tags (filter out branch creation and non-version tags)
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,10 +29,7 @@ jobs:
       - name: Extract changelog for this version
         id: changelog
         run: |
-          TAG="${GITHUB_REF_NAME:-$(git describe --tags --abbrev=0)}"
-          VERSION="${TAG#v}"
-
-          # Extract the section for this version from CHANGELOG.md
+          VERSION="${GITHUB_REF_NAME#v}"
           NOTES=$(sed -n "/^## \\[${VERSION}\\]/,/^## \\[/p" CHANGELOG.md 2>/dev/null | head -n -1 | tail -n +2)
 
           if [ -z "$NOTES" ]; then
@@ -36,7 +37,6 @@ jobs:
             echo "auto=true" >> "$GITHUB_OUTPUT"
           else
             echo "auto=false" >> "$GITHUB_OUTPUT"
-            # Write notes to a file to preserve formatting
             echo "$NOTES" > /tmp/release-notes.md
           fi
 
@@ -54,6 +54,7 @@ jobs:
 
   deploy-web:
     name: Deploy Web
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,6 +99,7 @@ jobs:
 
   build-macos:
     name: Build macOS
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,6 +116,7 @@ jobs:
 
   build-windows:
     name: Build Windows
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,6 +133,7 @@ jobs:
 
   build-linux:
     name: Build Linux
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -146,6 +150,7 @@ jobs:
 
   build-ios:
     name: Build iOS
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,6 +171,7 @@ jobs:
 
   build-android:
     name: Build Android
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -205,7 +211,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Upload any built artifacts to the release (ignore errors for missing files)
           if ls dist/*.dmg dist/*.exe dist/*.AppImage 2>/dev/null; then
             gh release upload "$GITHUB_REF_NAME" dist/*.dmg dist/*.exe dist/*.AppImage --clobber 2>/dev/null || true
           fi
