@@ -359,11 +359,12 @@ export function App() {
       addToRecent(id, node.title, node.icon);
     }
     // Load page content from backend if not already cached
-    if (!pageContents[id]) {
+    // Use `in` check instead of falsy check — empty string '' is valid content
+    if (!(id in pageContents)) {
       void currentReadPage(id).then((content) => {
-        if (content !== null) {
-          setPageContents((prev) => ({ ...prev, [id]: content }));
-        }
+        // Set content even when null (page file doesn't exist yet) — use empty string
+        // to avoid getting stuck in a permanent loading state
+        setPageContents((prev) => ({ ...prev, [id]: content ?? '' }));
       });
     }
     // Close sidebar on narrow screens after selecting a page
