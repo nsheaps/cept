@@ -1,23 +1,47 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface PreviewToastProps {
   prNumber: string;
   repoUrl: string;
   productionUrl: string;
+  /** Auto-dismiss delay in ms. Defaults to 15000 (15s). */
+  dismissMs?: number;
 }
 
+const DEFAULT_DISMISS_MS = 15_000;
+const CIRCLE_RADIUS = 10;
+const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
 /**
- * Persistent toast notification shown on preview deployments.
+ * Toast notification shown on preview deployments.
  * Links to the source PR and the production deployment.
+ * Auto-dismisses with a circular countdown indicator around the close button.
  */
 export function PreviewToast({
   prNumber,
   repoUrl,
   productionUrl,
+  dismissMs = DEFAULT_DISMISS_MS,
 }: PreviewToastProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleDismiss = useCallback(() => setDismissed(true), []);
+
+  useEffect(() => {
+    if (!prNumber || dismissed) return;
+
+    // Kick off the CSS animation after a frame so the transition starts
+    const frame = requestAnimationFrame(() => setAnimating(true));
+
+    timerRef.current = setTimeout(handleDismiss, dismissMs);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [prNumber, dismissed, dismissMs, handleDismiss]);
 
   if (!prNumber || dismissed) return null;
 
@@ -77,6 +101,7 @@ export function PreviewToast({
         type="button"
         onClick={handleDismiss}
         aria-label="Dismiss notification"
+        data-testid="preview-toast-dismiss"
         style={{
           background: 'none',
           border: 'none',
@@ -84,10 +109,47 @@ export function PreviewToast({
           cursor: 'pointer',
           fontSize: '1.1rem',
           lineHeight: 1,
-          padding: '0 0.25rem',
+          padding: 0,
+          position: 'relative',
+          width: '24px',
+          height: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        &times;
+        {/* Countdown ring */}
+        <svg
+          data-testid="countdown-ring"
+          width="24"
+          height="24"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            transform: 'rotate(-90deg)',
+          }}
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r={CIRCLE_RADIUS}
+            fill="none"
+            stroke="#888"
+            strokeWidth="2"
+            strokeDasharray={CIRCLE_CIRCUMFERENCE}
+            strokeDashoffset={animating ? CIRCLE_CIRCUMFERENCE : 0}
+            style={{
+              transition: animating
+                ? `stroke-dashoffset ${dismissMs}ms linear`
+                : 'none',
+            }}
+          />
+        </svg>
+        {/* X label */}
+        <span aria-hidden="true" style={{ position: 'relative', zIndex: 1 }}>
+          &times;
+        </span>
       </button>
     </div>
   );

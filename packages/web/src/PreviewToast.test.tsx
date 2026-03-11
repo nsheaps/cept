@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { PreviewToast } from './PreviewToast.js';
 
 describe('PreviewToast', () => {
@@ -8,6 +8,14 @@ describe('PreviewToast', () => {
     repoUrl: 'https://github.com/nsheaps/cept',
     productionUrl: 'https://nsheaps.github.io/cept/app/',
   };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('renders nothing when prNumber is empty', () => {
     const { container } = render(
@@ -54,5 +62,35 @@ describe('PreviewToast', () => {
     render(<PreviewToast {...defaultProps} />);
     const el = screen.getByRole('status');
     expect(el.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('auto-dismisses after the timeout', () => {
+    render(<PreviewToast {...defaultProps} dismissMs={5000} />);
+    expect(screen.getByTestId('preview-toast')).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByTestId('preview-toast')).toBeNull();
+  });
+
+  it('renders a countdown ring SVG', () => {
+    render(<PreviewToast {...defaultProps} />);
+    expect(screen.getByTestId('countdown-ring')).toBeTruthy();
+  });
+
+  it('clears timeout on unmount', () => {
+    const { unmount } = render(
+      <PreviewToast {...defaultProps} dismissMs={5000} />,
+    );
+    expect(screen.getByTestId('preview-toast')).toBeTruthy();
+
+    unmount();
+
+    // Advancing timers after unmount should not throw
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
   });
 });
