@@ -48,13 +48,21 @@ describe('PreviewToast', () => {
     expect(screen.queryByText('View production')).toBeNull();
   });
 
-  it('dismisses when close button is clicked', () => {
+  it('fades out and removes after close button is clicked', () => {
     render(<PreviewToast {...defaultProps} />);
-    expect(screen.getByTestId('preview-toast')).toBeTruthy();
+    const toast = screen.getByTestId('preview-toast');
+    expect(toast).toBeTruthy();
 
     const button = screen.getByLabelText('Dismiss notification');
     fireEvent.click(button);
 
+    // Still in DOM but fading (opacity 0)
+    expect(screen.getByTestId('preview-toast').style.opacity).toBe('0');
+
+    // After fade completes, removed from DOM
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(screen.queryByTestId('preview-toast')).toBeNull();
   });
 
@@ -64,14 +72,20 @@ describe('PreviewToast', () => {
     expect(el.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('auto-dismisses after the timeout', () => {
+  it('auto-dismisses after timeout plus fade', () => {
     render(<PreviewToast {...defaultProps} dismissMs={5000} />);
     expect(screen.getByTestId('preview-toast')).toBeTruthy();
 
+    // After timeout, starts fading
     act(() => {
       vi.advanceTimersByTime(5000);
     });
+    expect(screen.getByTestId('preview-toast').style.opacity).toBe('0');
 
+    // After fade completes, removed from DOM
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(screen.queryByTestId('preview-toast')).toBeNull();
   });
 

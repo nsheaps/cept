@@ -4,11 +4,12 @@ interface PreviewToastProps {
   prNumber: string;
   repoUrl: string;
   productionUrl: string;
-  /** Auto-dismiss delay in ms. Defaults to 15000 (15s). */
+  /** Auto-dismiss delay in ms. Defaults to 7500 (7.5s). */
   dismissMs?: number;
 }
 
-const DEFAULT_DISMISS_MS = 15_000;
+const DEFAULT_DISMISS_MS = 7_500;
+const FADE_OUT_MS = 300;
 const CIRCLE_RADIUS = 10;
 const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
@@ -24,10 +25,15 @@ export function PreviewToast({
   dismissMs = DEFAULT_DISMISS_MS,
 }: PreviewToastProps) {
   const [dismissed, setDismissed] = useState(false);
+  const [fading, setFading] = useState(false);
   const [animating, setAnimating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const fadeRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const handleDismiss = useCallback(() => setDismissed(true), []);
+  const handleDismiss = useCallback(() => {
+    setFading(true);
+    fadeRef.current = setTimeout(() => setDismissed(true), FADE_OUT_MS);
+  }, []);
 
   useEffect(() => {
     if (!prNumber || dismissed) return;
@@ -40,6 +46,7 @@ export function PreviewToast({
     return () => {
       cancelAnimationFrame(frame);
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (fadeRef.current) clearTimeout(fadeRef.current);
     };
   }, [prNumber, dismissed, dismissMs, handleDismiss]);
 
@@ -70,6 +77,8 @@ export function PreviewToast({
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         pointerEvents: 'auto',
+        opacity: fading ? 0 : 1,
+        transition: `opacity ${FADE_OUT_MS}ms ease`,
       }}
     >
       <span>
@@ -118,7 +127,7 @@ export function PreviewToast({
           justifyContent: 'center',
         }}
       >
-        {/* Countdown ring */}
+        {/* Countdown ring — rotates clockwise (90deg start = top, positive dashoffset = CW) */}
         <svg
           data-testid="countdown-ring"
           width="24"
@@ -127,7 +136,7 @@ export function PreviewToast({
             position: 'absolute',
             top: 0,
             left: 0,
-            transform: 'rotate(-90deg)',
+            transform: 'rotate(90deg) scaleX(-1)',
           }}
         >
           <circle
