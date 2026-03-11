@@ -63,9 +63,9 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
         }),
       },
       width: {
-        default: '100%',
+        default: null,
         parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-width') || '100%',
+          element.getAttribute('data-width') || null,
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-width': attributes.width as string,
         }),
@@ -86,23 +86,27 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
     const src = attrs['data-src'] || '';
     const alt = attrs['data-alt'] || '';
     const caption = attrs['data-caption'] || '';
-    const width = attrs['data-width'] || '100%';
+    const width = attrs['data-width'] || null;
 
     const figureAttrs = mergeAttributes(this.options.HTMLAttributes, {
       'data-type': 'image',
       'data-src': src,
       'data-alt': alt,
       'data-caption': caption,
-      'data-width': width,
+      ...(width ? { 'data-width': width } : {}),
       class: 'cept-image-block',
     });
+
+    const imgStyle = width
+      ? `width: ${width}; max-width: 100%;`
+      : 'max-width: 100%;';
 
     const imgSpec = [
       'img',
       {
         src,
         alt,
-        style: `width: ${width}; max-width: 100%;`,
+        style: imgStyle,
         draggable: 'false',
       },
     ] as const;

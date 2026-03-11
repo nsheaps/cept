@@ -47,10 +47,10 @@ describe('ImageBlock extension', () => {
     expect(attrs?.caption?.default).toBe('');
   });
 
-  it('has width attribute defaulting to 100%', () => {
+  it('has width attribute defaulting to null (natural size)', () => {
     const ext = ImageBlock;
     const attrs = ext.config.addAttributes?.call(ext);
-    expect(attrs?.width?.default).toBe('100%');
+    expect(attrs?.width?.default).toBeNull();
   });
 
   it('defines setImageBlock command', () => {
