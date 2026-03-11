@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0](https://github.com/nsheaps/cept/compare/v0.1.32...v0.2.0) (2026-03-11)
+
+### Features
+
+* **web:** isolate preview deployment storage from production and other PRs ([#29](https://github.com/nsheaps/cept/issues/29)) ([b3b832e](https://github.com/nsheaps/cept/commit/b3b832e22985942e4e82ab29441c513dd34c7a33))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([142a488](https://github.com/nsheaps/cept/commit/142a488b0331207a633e3e6cf273a4a603026ad5))
+
 ## [0.1.32](https://github.com/nsheaps/cept/compare/v0.1.31...v0.1.32) (2026-03-11)
 
 ### Bug Fixes
