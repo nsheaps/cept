@@ -107,7 +107,7 @@ export function SettingsModal({
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'data' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const [creatingSpace, setCreatingSpace] = useState(false);
+  const [createFlow, setCreateFlow] = useState<null | 'choose-type' | 'create-empty' | 'add-remote'>(null);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -330,45 +330,10 @@ export function SettingsModal({
                 )}
 
                 <div className="cept-settings-section-divider" />
-                {creatingSpace ? (
-                  <div className="cept-settings-rename-row" data-testid="create-space-form">
-                    <input
-                      className="cept-settings-rename-input"
-                      placeholder="Space name..."
-                      value={newSpaceName}
-                      onChange={(e) => setNewSpaceName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newSpaceName.trim()) {
-                          onCreateSpace(newSpaceName.trim());
-                          setNewSpaceName('');
-                          setCreatingSpace(false);
-                        }
-                        if (e.key === 'Escape') {
-                          setCreatingSpace(false);
-                          setNewSpaceName('');
-                        }
-                      }}
-                      autoFocus
-                      data-testid="create-space-input"
-                    />
-                    <button
-                      className="cept-settings-action-btn"
-                      onClick={() => {
-                        if (newSpaceName.trim()) {
-                          onCreateSpace(newSpaceName.trim());
-                          setNewSpaceName('');
-                          setCreatingSpace(false);
-                        }
-                      }}
-                      data-testid="create-space-confirm"
-                    >
-                      Create
-                    </button>
-                  </div>
-                ) : (
+                {createFlow === null && (
                   <button
                     className="cept-settings-action-btn"
-                    onClick={() => setCreatingSpace(true)}
+                    onClick={() => setCreateFlow('choose-type')}
                     data-testid="create-space-btn"
                   >
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
@@ -378,26 +343,153 @@ export function SettingsModal({
                   </button>
                 )}
 
-                {onAddRemoteDocs && (
-                  <>
-                    <div className="cept-settings-section-divider" />
-                    <h3 className="cept-settings-section-title">Remote Spaces</h3>
-                    {hasRemoteDocs ? (
-                      <p className="cept-settings-empty">Cept Docs (main) already added.</p>
-                    ) : (
+                {createFlow === 'choose-type' && (
+                  <div data-testid="create-space-type-chooser">
+                    <div className="cept-settings-wizard-header">
+                      <button
+                        className="cept-settings-back-btn"
+                        onClick={() => setCreateFlow(null)}
+                        data-testid="create-space-back"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10 4l-4 4 4 4" />
+                        </svg>
+                        Back
+                      </button>
+                      <h3 className="cept-settings-section-title">New Space</h3>
+                    </div>
+                    <div className="cept-settings-type-cards">
+                      <button
+                        className="cept-settings-type-card"
+                        onClick={() => setCreateFlow('create-empty')}
+                        data-testid="create-space-empty"
+                      >
+                        <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="2" y="1" width="12" height="14" rx="1" />
+                          <path d="M5 5h6M5 8h6M5 11h3" />
+                        </svg>
+                        <span className="cept-settings-type-card-title">Empty space</span>
+                        <span className="cept-settings-type-card-desc">Create a new blank space with local browser storage</span>
+                      </button>
+                      <button
+                        className="cept-settings-type-card"
+                        onClick={() => setCreateFlow('add-remote')}
+                        data-testid="create-space-remote"
+                      >
+                        <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <circle cx="8" cy="8" r="6.5" />
+                          <path d="M2 6h12M2 10h12" />
+                          <ellipse cx="8" cy="8" rx="3" ry="6.5" />
+                        </svg>
+                        <span className="cept-settings-type-card-title">Add from remote</span>
+                        <span className="cept-settings-type-card-desc">Add a read-only space from a remote source</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {createFlow === 'create-empty' && (
+                  <div data-testid="create-space-form">
+                    <div className="cept-settings-wizard-header">
+                      <button
+                        className="cept-settings-back-btn"
+                        onClick={() => setCreateFlow('choose-type')}
+                        data-testid="create-space-back"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10 4l-4 4 4 4" />
+                        </svg>
+                        Back
+                      </button>
+                      <h3 className="cept-settings-section-title">Create Empty Space</h3>
+                    </div>
+                    <p className="cept-settings-wizard-desc">
+                      Stored in your browser using IndexedDB. Your data stays on this device.
+                    </p>
+                    <div className="cept-settings-rename-row">
+                      <input
+                        className="cept-settings-rename-input"
+                        placeholder="Space name..."
+                        value={newSpaceName}
+                        onChange={(e) => setNewSpaceName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newSpaceName.trim()) {
+                            onCreateSpace(newSpaceName.trim());
+                            setNewSpaceName('');
+                            setCreateFlow(null);
+                          }
+                          if (e.key === 'Escape') {
+                            setCreateFlow('choose-type');
+                            setNewSpaceName('');
+                          }
+                        }}
+                        autoFocus
+                        data-testid="create-space-input"
+                      />
                       <button
                         className="cept-settings-action-btn"
-                        onClick={onAddRemoteDocs}
-                        data-testid="add-remote-docs-btn"
+                        onClick={() => {
+                          if (newSpaceName.trim()) {
+                            onCreateSpace(newSpaceName.trim());
+                            setNewSpaceName('');
+                            setCreateFlow(null);
+                          }
+                        }}
+                        data-testid="create-space-confirm"
                       >
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <circle cx="8" cy="8" r="6.5" />
-                          <path d="M4 8h8M8 4v8" />
-                        </svg>
-                        Add Cept Docs (from main)
+                        Create
                       </button>
-                    )}
-                  </>
+                    </div>
+                  </div>
+                )}
+
+                {createFlow === 'add-remote' && (
+                  <div data-testid="create-space-remote-chooser">
+                    <div className="cept-settings-wizard-header">
+                      <button
+                        className="cept-settings-back-btn"
+                        onClick={() => setCreateFlow('choose-type')}
+                        data-testid="create-space-back"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10 4l-4 4 4 4" />
+                        </svg>
+                        Back
+                      </button>
+                      <h3 className="cept-settings-section-title">Add from Remote</h3>
+                    </div>
+                    <div className="cept-settings-type-cards">
+                      {hasRemoteDocs ? (
+                        <div className="cept-settings-type-card cept-settings-type-card--disabled" data-testid="remote-docs-already-added">
+                          <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="2" y="1" width="12" height="14" rx="1" />
+                            <path d="M5 5h6M5 8h6M5 11h3" />
+                          </svg>
+                          <span className="cept-settings-type-card-title">Cept Docs (main)</span>
+                          <span className="cept-settings-type-card-desc">Already added</span>
+                        </div>
+                      ) : (
+                        <button
+                          className="cept-settings-type-card"
+                          onClick={() => {
+                            onAddRemoteDocs?.();
+                            setCreateFlow(null);
+                          }}
+                          data-testid="add-remote-docs-btn"
+                        >
+                          <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="2" y="1" width="12" height="14" rx="1" />
+                            <path d="M5 5h6M5 8h6M5 11h3" />
+                          </svg>
+                          <span className="cept-settings-type-card-title">Cept Docs (main)</span>
+                          <span className="cept-settings-type-card-desc">Read-only documentation from the main branch</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="cept-settings-wizard-desc">
+                      More remote sources coming soon (Git repositories, shared spaces).
+                    </p>
+                  </div>
                 )}
 
                 {(onImportNotion || onImportObsidian || onExport) && (

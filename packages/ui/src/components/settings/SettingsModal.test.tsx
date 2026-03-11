@@ -100,21 +100,58 @@ describe('SettingsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows create space form when button clicked', () => {
+  it('shows type chooser when create space button clicked', () => {
     render(<SettingsModal {...defaultProps} initialTab="spaces" />);
     act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    expect(screen.getByTestId('create-space-type-chooser')).toBeDefined();
+    expect(screen.getByTestId('create-space-empty')).toBeDefined();
+    expect(screen.getByTestId('create-space-remote')).toBeDefined();
+  });
+
+  it('shows create space form when empty space selected', () => {
+    render(<SettingsModal {...defaultProps} initialTab="spaces" />);
+    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    act(() => { fireEvent.click(screen.getByTestId('create-space-empty')); });
     expect(screen.getByTestId('create-space-form')).toBeDefined();
     expect(screen.getByTestId('create-space-input')).toBeDefined();
   });
 
-  it('calls onCreateSpace when form submitted', () => {
+  it('calls onCreateSpace when form submitted through wizard', () => {
     const onCreateSpace = vi.fn();
     render(<SettingsModal {...defaultProps} initialTab="spaces" onCreateSpace={onCreateSpace} />);
     act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    act(() => { fireEvent.click(screen.getByTestId('create-space-empty')); });
     const input = screen.getByTestId('create-space-input');
     fireEvent.change(input, { target: { value: 'New Space' } });
     act(() => { fireEvent.click(screen.getByTestId('create-space-confirm')); });
     expect(onCreateSpace).toHaveBeenCalledWith('New Space');
+  });
+
+  it('shows remote options when add from remote selected', () => {
+    render(<SettingsModal {...defaultProps} initialTab="spaces" onAddRemoteDocs={vi.fn()} />);
+    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    act(() => { fireEvent.click(screen.getByTestId('create-space-remote')); });
+    expect(screen.getByTestId('create-space-remote-chooser')).toBeDefined();
+    expect(screen.getByTestId('add-remote-docs-btn')).toBeDefined();
+  });
+
+  it('shows already added state for remote docs when hasRemoteDocs is true', () => {
+    render(<SettingsModal {...defaultProps} initialTab="spaces" onAddRemoteDocs={vi.fn()} hasRemoteDocs />);
+    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    act(() => { fireEvent.click(screen.getByTestId('create-space-remote')); });
+    expect(screen.getByTestId('remote-docs-already-added')).toBeDefined();
+  });
+
+  it('navigates back through wizard steps', () => {
+    render(<SettingsModal {...defaultProps} initialTab="spaces" />);
+    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
+    expect(screen.getByTestId('create-space-type-chooser')).toBeDefined();
+    act(() => { fireEvent.click(screen.getByTestId('create-space-empty')); });
+    expect(screen.getByTestId('create-space-form')).toBeDefined();
+    act(() => { fireEvent.click(screen.getByTestId('create-space-back')); });
+    expect(screen.getByTestId('create-space-type-chooser')).toBeDefined();
+    act(() => { fireEvent.click(screen.getByTestId('create-space-back')); });
+    expect(screen.getByTestId('create-space-btn')).toBeDefined();
   });
 
   it('shows import/export buttons when handlers provided', () => {

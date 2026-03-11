@@ -470,6 +470,12 @@
   .cept-settings-about h3 { color: #e5e5e5; }
   .cept-settings-about p { color: #a1a1aa; }
   .cept-settings-rename-input { background: #333; border-color: #555; color: #e5e5e5; }
+  .cept-settings-wizard-desc { color: #71717a; }
+  .cept-settings-type-card { background: #262626; border-color: #404040; }
+  .cept-settings-type-card:hover { background: #333; border-color: #525252; }
+  .cept-settings-type-card--disabled { background: #262626; border-color: #404040; }
+  .cept-settings-type-card-title { color: #e5e5e5; }
+  .cept-settings-type-card-desc { color: #71717a; }
 }
 
 /* Space rename in settings */
@@ -545,6 +551,73 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+}
+
+/* Wizard header */
+.cept-settings-wizard-header {
+  margin-bottom: 0.75rem;
+}
+
+.cept-settings-wizard-header .cept-settings-section-title {
+  margin-bottom: 0;
+}
+
+.cept-settings-wizard-desc {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin: 0 0 1rem;
+}
+
+/* Type cards */
+.cept-settings-type-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cept-settings-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.cept-settings-type-card:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.cept-settings-type-card--disabled {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  text-align: left;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cept-settings-type-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.cept-settings-type-card-desc {
+  font-size: 0.75rem;
+  color: #9ca3af;
 }
 
 /* Disabled action buttons */
