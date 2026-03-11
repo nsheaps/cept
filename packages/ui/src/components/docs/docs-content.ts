@@ -850,12 +850,26 @@ Mermaid diagrams use fenced code blocks with the \`mermaid\` language tag.
 
 Math uses LaTeX syntax: \`$$E = mc^2$$\` for block math and \`$a^2 + b^2 = c^2$\` for inline math.
 
+## Images
+
+Use standard Markdown image syntax:
+
+\`\`\`markdown
+![Alt text describing the image](url)
+\`\`\`
+
+- Alt text is required for all images
+- Images render at their natural size, centered, capped at the content width
+- Cept does not stretch images to fill the page — small images stay small
+- Use GitHub Flavored Markdown (GFM) conventions when standard Markdown is not sufficient
+
 ## Design Principles
 
-1. **Markdown first** — Standard markdown is preferred for all content that has a natural markdown representation
-2. **HTML fallback** — Rich blocks that extend markdown use HTML with \`data-type\` attributes
-3. **Interoperability** — Files can be opened in any markdown editor; extended blocks render as HTML
-4. **No proprietary format** — Everything is plain text, never binary or opaque`;
+1. **Standard Markdown first** — Use standard Markdown syntax whenever possible. This is the default for all content that has a natural Markdown representation.
+2. **GFM fallback** — When standard Markdown is not sufficient (e.g., tables, task lists, strikethrough), fall back to GitHub Flavored Markdown.
+3. **HTML as last resort** — Rich blocks that extend Markdown use HTML with \`data-type\` attributes. Avoid raw HTML when Markdown or GFM can express the same thing.
+4. **Interoperability** — Files can be opened in any Markdown editor; extended blocks render as HTML.
+5. **No proprietary format** — Everything is plain text, never binary or opaque.`;
 
 const MD_ICONS = `# Icons Reference
 
