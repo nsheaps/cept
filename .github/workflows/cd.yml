@@ -1,0 +1,216 @@
+name: CD
+
+on:
+  # Use 'create' instead of 'push: tags' because the release commit
+  # contains [skip ci] which would suppress push-triggered workflows.
+  # The 'create' event is not affected by [skip ci].
+  create:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+jobs:
+  github-release:
+    name: Create GitHub Release
+    # Only run for version tags (filter out branch creation and non-version tags)
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES=$(sed -n "/^## \\[${VERSION}\\]/,/^## \\[/p" CHANGELOG.md 2>/dev/null | head -n -1 | tail -n +2)
+
+          if [ -z "$NOTES" ]; then
+            echo "No changelog entry found for ${VERSION}, using auto-generated notes"
+            echo "auto=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "auto=false" >> "$GITHUB_OUTPUT"
+            echo "$NOTES" > /tmp/release-notes.md
+          fi
+
+      - name: Create release (from changelog)
+        if: steps.changelog.outputs.auto != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md
+
+      - name: Create release (auto-generated notes)
+        if: steps.changelog.outputs.auto == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+
+  deploy-web:
+    name: Deploy Web
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate as GitHub App
+        id: auth
+        uses: nsheaps/github-actions/.github/actions/github-app-auth@main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
+
+      - uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web
+        run: bun run build
+        env:
+          NODE_ENV: production
+          VITE_BASE_PATH: /cept/app/
+          COMMIT_SHA: ${{ github.sha }}
+
+      - name: Deploy to GitHub Pages
+        run: |
+          git fetch origin gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          rm -rf app
+          mkdir -p app
+          cp -r packages/web/dist/* app/
+
+          git show origin/main:.github/pages/404.html > 404.html
+          git show origin/main:.github/pages/index.html > index.html
+
+          git add app/ 404.html index.html
+          git commit -m "Deploy production app (${GITHUB_REF_NAME})" --allow-empty
+          git push origin gh-pages
+
+  build-macos:
+    name: Build macOS
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cept-macos
+          path: packages/desktop/dist/*.dmg
+          if-no-files-found: warn
+
+  build-windows:
+    name: Build Windows
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cept-windows
+          path: packages/desktop/dist/*.exe
+          if-no-files-found: warn
+
+  build-linux:
+    name: Build Linux
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cept-linux
+          path: packages/desktop/dist/*.AppImage
+          if-no-files-found: warn
+
+  build-ios:
+    name: Build iOS
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Sync Capacitor iOS
+        run: cd packages/mobile && npx cap sync ios
+        continue-on-error: true
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cept-ios
+          path: packages/mobile/ios/
+          if-no-files-found: warn
+
+  build-android:
+    name: Build Android
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Sync Capacitor Android
+        run: cd packages/mobile && npx cap sync android
+        continue-on-error: true
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cept-android
+          path: packages/mobile/android/app/build/outputs/
+          if-no-files-found: warn
+
+  upload-release-assets:
+    name: Upload Release Assets
+    needs: [github-release, build-macos, build-windows, build-linux, build-ios, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+
+      - name: Upload assets to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ls dist/*.dmg dist/*.exe dist/*.AppImage 2>/dev/null; then
+            gh release upload "$GITHUB_REF_NAME" dist/*.dmg dist/*.exe dist/*.AppImage --clobber 2>/dev/null || true
+          fi
