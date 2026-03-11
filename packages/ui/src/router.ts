@@ -5,10 +5,8 @@
  *   /{base}/                     — landing / onboarding
  *   /{base}/s/{spaceId}          — space root (no page selected)
  *   /{base}/s/{spaceId}/{pageId} — specific page in a user space
- *   /{base}/docs                 — docs space index (git/PR version)
- *   /{base}/docs/{pageId}        — specific docs page (git/PR version)
- *   /{base}/live-docs             — live docs space index (main branch, preview only)
- *   /{base}/live-docs/{pageId}    — specific live docs page
+ *   /{base}/docs                 — docs space index
+ *   /{base}/docs/{pageId}        — specific docs page
  *
  * Works with the GitHub Pages 404.html hack: when the server can't find
  * a path, 404.html redirects to `/?route=<encoded-path>`. On load, the
@@ -17,7 +15,7 @@
  */
 
 export interface AppRoute {
-  space: 'user' | 'docs' | 'live-docs';
+  space: 'user' | 'docs';
   spaceId: string;
   pageId: string | undefined;
 }
@@ -112,15 +110,6 @@ export function parseRoute(pathname?: string): AppRoute {
     return { ...DEFAULT_ROUTE };
   }
 
-  // /live-docs or /live-docs/{pageId}
-  if (segments[0] === 'live-docs') {
-    return {
-      space: 'live-docs',
-      spaceId: 'live-docs',
-      pageId: segments[1] ?? undefined,
-    };
-  }
-
   // /docs or /docs/{pageId}
   if (segments[0] === 'docs') {
     return {
@@ -157,13 +146,6 @@ export function parseRoute(pathname?: string): AppRoute {
  */
 export function buildPath(route: Partial<AppRoute>): string {
   const base = getBasePath();
-
-  if (route.space === 'live-docs') {
-    if (route.pageId) {
-      return `${base}live-docs/${route.pageId}`;
-    }
-    return `${base}live-docs`;
-  }
 
   if (route.space === 'docs') {
     if (route.pageId) {

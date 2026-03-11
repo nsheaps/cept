@@ -72,6 +72,8 @@ export interface SettingsModalProps {
   onSwitchSpace: (id: string) => void;
   onClearAllData: () => void;
   onRecreateDemoSpace: () => void;
+  onAddRemoteDocs?: () => void;
+  hasRemoteDocs?: boolean;
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
@@ -94,6 +96,8 @@ export function SettingsModal({
   onSwitchSpace,
   onClearAllData,
   onRecreateDemoSpace,
+  onAddRemoteDocs,
+  hasRemoteDocs,
   onImportNotion,
   onImportObsidian,
   onExport,
@@ -372,6 +376,28 @@ export function SettingsModal({
                     </svg>
                     Create new space
                   </button>
+                )}
+
+                {onAddRemoteDocs && (
+                  <>
+                    <div className="cept-settings-section-divider" />
+                    <h3 className="cept-settings-section-title">Remote Spaces</h3>
+                    {hasRemoteDocs ? (
+                      <p className="cept-settings-empty">Cept Docs (main) already added.</p>
+                    ) : (
+                      <button
+                        className="cept-settings-action-btn"
+                        onClick={onAddRemoteDocs}
+                        data-testid="add-remote-docs-btn"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <circle cx="8" cy="8" r="6.5" />
+                          <path d="M4 8h8M8 4v8" />
+                        </svg>
+                        Add Cept Docs (from main)
+                      </button>
+                    )}
+                  </>
                 )}
 
                 {(onImportNotion || onImportObsidian || onExport) && (
