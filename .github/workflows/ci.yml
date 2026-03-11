@@ -27,7 +27,6 @@ jobs:
     uses: ./.github/workflows/_test-e2e.yml
 
   build:
-    needs: [lint, test-unit]
     uses: ./.github/workflows/_build.yml
 
   screenshots:
