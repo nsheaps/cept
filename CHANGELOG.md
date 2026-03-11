@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.32](https://github.com/nsheaps/cept/compare/v0.1.31...v0.1.32) (2026-03-11)
+
+### Bug Fixes
+
+* **ci:** remove unnecessary build dependency on lint and test-unit ([#28](https://github.com/nsheaps/cept/issues/28)) ([89a7e28](https://github.com/nsheaps/cept/commit/89a7e28557c4908adce5aa24167d15a8aa655798))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([867fac4](https://github.com/nsheaps/cept/commit/867fac4515ebc87a9045a994b40767371642e03d))
+
 ## [0.1.31](https://github.com/nsheaps/cept/compare/v0.1.30...v0.1.31) (2026-03-09)
 
 ### Documentation
