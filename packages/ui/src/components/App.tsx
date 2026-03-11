@@ -1101,10 +1101,13 @@ export function App() {
         onClose={() => setSpaceImportDialogOpen(false)}
         backend={backend}
         spaces={spaceInfoList.filter((s) => s.id !== 'cept-docs').map((s) => ({ id: s.id, name: s.name }))}
-        onImportComplete={() => {
-          // Refresh space list after import
+        onImportComplete={(importedSpaceId, importedSpaceName) => {
+          // Save current space state, refresh manifest, and switch to the imported space
+          saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
           void loadSpaces(backend).then((manifest) => {
             setSpacesManifest(manifest);
+            setUserSpaceId(importedSpaceId);
+            void loadAndApplySpaceState(importedSpaceId, importedSpaceName);
           });
         }}
       />
