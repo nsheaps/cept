@@ -356,6 +356,7 @@
 
 .cept-editor .tiptap figure.cept-image-block img {
   max-width: 100%;
+  min-height: 2rem;
   height: auto;
   border-radius: 6px;
   display: block;
