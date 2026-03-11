@@ -86,6 +86,9 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || rootPkg.version),
     __COMMIT_SHA__: JSON.stringify(process.env.COMMIT_SHA || ''),
+    __PR_NUMBER__: JSON.stringify(process.env.PR_NUMBER || ''),
+    __REPO_URL__: JSON.stringify(process.env.REPO_URL || ''),
+    __PRODUCTION_URL__: JSON.stringify(process.env.PRODUCTION_URL || ''),
   },
   resolve: {
     alias: {

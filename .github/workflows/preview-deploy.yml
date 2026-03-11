@@ -35,6 +35,9 @@ jobs:
           VITE_BASE_PATH: /cept/pr-${{ github.event.pull_request.number }}/
           VITE_APP_VERSION: ${{ env.PREVIEW_VERSION }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+          PRODUCTION_URL: https://nsheaps.github.io/cept/app/
 
       - name: Deploy to GitHub Pages subdirectory
         run: |
