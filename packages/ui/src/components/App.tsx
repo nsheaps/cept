@@ -174,9 +174,7 @@ export function App() {
       // Load selected page content
       if (state.selectedPageId) {
         const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
-        if (content !== null) {
-          setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content }));
-        }
+        setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
       }
     } else {
       // Empty space
@@ -218,9 +216,8 @@ export function App() {
       // Load selected page content from backend
       if (persisted.selectedPageId) {
         void readPageContent(backend, persisted.selectedPageId).then((content) => {
-          if (content !== null) {
-            setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content }));
-          }
+          // Always set content (even if null/missing) so the page doesn't stay stuck on "Loading..."
+          setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content ?? '' }));
         });
       }
     } else if (shouldShowDemo) {
@@ -590,8 +587,7 @@ export function App() {
   }, [backend]);
 
   const handleClearAllData = useCallback(() => {
-    void clearAllData(backend);
-    // Reset settings and then recreate the demo space so users start fresh
+    // Reset React state immediately so the UI is responsive
     setSettings({ ...DEFAULT_SETTINGS });
     setPages(DEMO_PAGES);
     const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
@@ -604,17 +600,19 @@ export function App() {
     setUserSpaceId('default');
     setHasStarted(true);
     setSettingsOpen(false);
-    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
-    void saveSpaceState(backend, 'default', {
-      pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
-    });
-    // Reset spaces manifest to just the default space
     const freshManifest: SpacesManifest = {
       activeSpaceId: 'default',
       spaces: [{ id: 'default', name: 'Demo Space', createdAt: new Date().toISOString() }],
     };
-    void saveSpacesManifest(backend, freshManifest);
     setSpacesManifest(freshManifest);
+    // Clear storage FIRST, then write fresh data so writes aren't deleted by the concurrent clear
+    void clearAllData(backend).then(() => {
+      void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+      void saveSpaceState(backend, 'default', {
+        pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+      });
+      void saveSpacesManifest(backend, freshManifest);
+    });
   }, [backend]);
 
   const handleSettingsChange = useCallback((updated: CeptSettings) => {

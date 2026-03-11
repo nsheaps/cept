@@ -188,7 +188,11 @@ Welcome to your new workspace.
     try {
       await this.pfs.stat(normalized);
     } catch {
-      await this.pfs.mkdir(normalized);
+      try {
+        await this.pfs.mkdir(normalized);
+      } catch {
+        // Directory may have been created concurrently — ignore
+      }
     }
   }
 
@@ -201,7 +205,11 @@ Welcome to your new workspace.
       try {
         await this.pfs.stat(current);
       } catch {
-        await this.pfs.mkdir(current);
+        try {
+          await this.pfs.mkdir(current);
+        } catch {
+          // Directory may have been created concurrently — ignore
+        }
       }
     }
   }
