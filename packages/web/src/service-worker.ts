@@ -21,9 +21,30 @@ interface SWGlobalScope {
 
 declare const self: SWGlobalScope;
 
-const CACHE_NAME = 'cept-v1';
-const STATIC_CACHE = 'cept-static-v1';
-const DATA_CACHE = 'cept-data-v1';
+/**
+ * Derive a deployment ID from the service worker's URL path so that preview
+ * deployments on the same origin get isolated caches.
+ *
+ * Examples:
+ *   /service-worker.js            → "" (local dev)
+ *   /cept/app/service-worker.js   → "" (production)
+ *   /cept/pr-42/service-worker.js → "cept-pr-42"
+ */
+function getDeploymentId(): string {
+  const swPath = self.location.pathname;
+  // Strip the filename to get the base path, then slugify
+  const base = swPath.replace(/\/[^/]*$/, '');
+  const slug = base.replace(/^\/+|\/+$/g, '').replace(/\//g, '-');
+  if (!slug || slug === 'cept-app') return '';
+  return slug;
+}
+
+const DEPLOY_ID = getDeploymentId();
+const CACHE_PREFIX = DEPLOY_ID ? `${DEPLOY_ID}::` : '';
+
+const CACHE_NAME = `${CACHE_PREFIX}cept-v1`;
+const STATIC_CACHE = `${CACHE_PREFIX}cept-static-v1`;
+const DATA_CACHE = `${CACHE_PREFIX}cept-data-v1`;
 
 /** Static assets to precache on install */
 const PRECACHE_URLS = [

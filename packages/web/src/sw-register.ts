@@ -5,8 +5,10 @@
  * user always sees the latest content.
  */
 
+import { namespacedKey } from './deploy-namespace.js';
+
 /** Key used in sessionStorage to signal a post-update reload */
-export const UPDATE_FLAG_KEY = 'cept-sw-updated';
+export const UPDATE_FLAG_KEY = namespacedKey(import.meta.env.BASE_URL, 'cept-sw-updated');
 
 export interface SWRegistrationCallbacks {
   /** Called when a new service worker is waiting to activate */

@@ -5,8 +5,9 @@ import { BrowserFsBackend } from '@cept/core';
 import '@cept/ui/styles/globals.css';
 import { registerServiceWorker, consumeUpdateFlag } from './sw-register.js';
 import { UpdateToast } from './UpdateToast.js';
+import { getDbName } from './deploy-namespace.js';
 
-const backend = new BrowserFsBackend('cept-workspace');
+const backend = new BrowserFsBackend(getDbName(import.meta.env.BASE_URL));
 
 // Initialize the workspace structure (creates dirs if needed, no-ops if they exist)
 void backend.initialize({ name: 'My Space' });
