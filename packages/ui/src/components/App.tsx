@@ -34,6 +34,7 @@ import { FolderView } from './editor/FolderView.js';
 import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
+import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
@@ -100,6 +101,7 @@ export function App() {
   const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
+  const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
@@ -1044,20 +1046,22 @@ export function App() {
         onResetSettings={handleResetSettings}
         onDeleteSpace={handleDeleteSpace}
         onSpaceRename={handleSpaceRename}
-        onCreateSpace={handleCreateSpace}
         onSwitchSpace={handleSwitchSpace}
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
-        onAddRemoteDocs={() => {
-          handleOpenDocs();
-          setSettingsOpen(false);
-        }}
-        hasRemoteDocs={false}
+        onOpenAddSpaceWizard={() => setAddSpaceWizardOpen(true)}
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
         backend={backend}
         onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
+      />
+      <AddSpaceWizardModal
+        isOpen={addSpaceWizardOpen}
+        onClose={() => setAddSpaceWizardOpen(false)}
+        onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        onAddRemoteDocs={() => { handleOpenDocs(); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        hasRemoteDocs={false}
       />
       <ImportDialog
         isOpen={importDialogOpen}
