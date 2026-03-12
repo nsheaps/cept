@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.2.1](https://github.com/nsheaps/cept/compare/v0.2.0...v0.2.1) (2026-03-12)
+
 ## [0.2.0](https://github.com/nsheaps/cept/compare/v0.1.32...v0.2.0) (2026-03-11)
 
 ### Features
