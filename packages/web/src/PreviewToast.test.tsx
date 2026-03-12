@@ -1,0 +1,110 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { PreviewToast } from './PreviewToast.js';
+
+describe('PreviewToast', () => {
+  const defaultProps = {
+    prNumber: '42',
+    repoUrl: 'https://github.com/nsheaps/cept',
+    productionUrl: 'https://nsheaps.github.io/cept/app/',
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders nothing when prNumber is empty', () => {
+    const { container } = render(
+      <PreviewToast prNumber="" repoUrl="" productionUrl="" />,
+    );
+    expect(container.querySelector('[data-testid="preview-toast"]')).toBeNull();
+  });
+
+  it('shows PR number and links to PR when visible', () => {
+    render(<PreviewToast {...defaultProps} />);
+    const link = screen.getByText('PR #42');
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe(
+      'https://github.com/nsheaps/cept/pull/42',
+    );
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('shows production link', () => {
+    render(<PreviewToast {...defaultProps} />);
+    const link = screen.getByText('View production');
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe(
+      'https://nsheaps.github.io/cept/app/',
+    );
+  });
+
+  it('hides production link when productionUrl is empty', () => {
+    render(<PreviewToast {...defaultProps} productionUrl="" />);
+    expect(screen.queryByText('View production')).toBeNull();
+  });
+
+  it('fades out and removes after close button is clicked', () => {
+    render(<PreviewToast {...defaultProps} />);
+    const toast = screen.getByTestId('preview-toast');
+    expect(toast).toBeTruthy();
+
+    const button = screen.getByLabelText('Dismiss notification');
+    fireEvent.click(button);
+
+    // Still in DOM but fading (opacity 0)
+    expect(screen.getByTestId('preview-toast').style.opacity).toBe('0');
+
+    // After fade completes, removed from DOM
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.queryByTestId('preview-toast')).toBeNull();
+  });
+
+  it('has accessible role and aria-live', () => {
+    render(<PreviewToast {...defaultProps} />);
+    const el = screen.getByRole('status');
+    expect(el.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('auto-dismisses after timeout plus fade', () => {
+    render(<PreviewToast {...defaultProps} dismissMs={5000} />);
+    expect(screen.getByTestId('preview-toast')).toBeTruthy();
+
+    // After timeout, starts fading
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.getByTestId('preview-toast').style.opacity).toBe('0');
+
+    // After fade completes, removed from DOM
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.queryByTestId('preview-toast')).toBeNull();
+  });
+
+  it('renders a countdown ring SVG', () => {
+    render(<PreviewToast {...defaultProps} />);
+    expect(screen.getByTestId('countdown-ring')).toBeTruthy();
+  });
+
+  it('clears timeout on unmount', () => {
+    const { unmount } = render(
+      <PreviewToast {...defaultProps} dismissMs={5000} />,
+    );
+    expect(screen.getByTestId('preview-toast')).toBeTruthy();
+
+    unmount();
+
+    // Advancing timers after unmount should not throw
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+  });
+});

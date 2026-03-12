@@ -5,6 +5,7 @@ import { BrowserFsBackend } from '@cept/core';
 import '@cept/ui/styles/globals.css';
 import { registerServiceWorker, consumeUpdateFlag } from './sw-register.js';
 import { UpdateToast } from './UpdateToast.js';
+import { PreviewToast } from './PreviewToast.js';
 import { getDbName } from './deploy-namespace.js';
 
 const backend = new BrowserFsBackend(getDbName(import.meta.env.BASE_URL));
@@ -38,6 +39,11 @@ function Root() {
         version={__APP_VERSION__}
         visible={showUpdateToast}
         onDismiss={dismissToast}
+      />
+      <PreviewToast
+        prNumber={__PR_NUMBER__}
+        repoUrl={__REPO_URL__}
+        productionUrl={__PRODUCTION_URL__}
       />
     </StrictMode>
   );
