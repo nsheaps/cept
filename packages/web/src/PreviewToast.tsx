@@ -118,13 +118,19 @@ export function PreviewToast({
           cursor: 'pointer',
           fontSize: '1.1rem',
           lineHeight: 1,
+          margin: 0,
           padding: 0,
           position: 'relative',
           width: '24px',
           height: '24px',
+          minWidth: '24px',
+          minHeight: '24px',
+          flexShrink: 0,
+          boxSizing: 'border-box',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          WebkitAppearance: 'none',
         }}
       >
         {/* Countdown ring — rotates clockwise (90deg start = top, positive dashoffset = CW) */}
