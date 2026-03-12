@@ -959,8 +959,8 @@
   .cept-block-action-item:hover { background-color: #333; }
   .cept-block-action-divider { background-color: #404040; }
   .cept-editor .tiptap table.cept-table td.cept-table-cell,
-  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { border-color: #404040; }
-  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { background-color: #1e1e1e; }
+  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { border-color: #404040; color: #d4d4d8; }
+  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { background-color: #1e1e1e; color: #e5e5e5; }
   .cept-editor .tiptap table.cept-table .selectedCell::after { background: rgba(99, 102, 241, 0.2); }
   .cept-folder-view-item { color: #d4d4d8; }
   .cept-folder-view-item:hover { background-color: #333; }
