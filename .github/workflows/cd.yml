@@ -108,7 +108,7 @@ jobs:
       - run: bun run build
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cept-macos
           path: packages/desktop/dist/*.dmg
@@ -125,7 +125,7 @@ jobs:
       - run: bun run build
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cept-windows
           path: packages/desktop/dist/*.exe
@@ -142,7 +142,7 @@ jobs:
       - run: bun run build
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cept-linux
           path: packages/desktop/dist/*.AppImage
@@ -163,7 +163,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cept-ios
           path: packages/mobile/ios/
@@ -190,7 +190,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cept-android
           path: packages/mobile/android/app/build/outputs/
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           merge-multiple: true
           path: dist
