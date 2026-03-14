@@ -89,7 +89,9 @@ export function App() {
   const [pageContents, setPageContents] = useState<Record<string, string>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth >= 768,
+  );
   const [hasStarted, setHasStarted] = useState(false);
   const [spaceName, setSpaceName] = useState<string>('My Space');
   const [trash, setTrash] = useState<SidebarPageRef[]>([]);

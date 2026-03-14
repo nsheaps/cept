@@ -111,6 +111,23 @@ describe('App', () => {
     fireEvent.click(toggle);
   });
 
+  it('sidebar starts closed on mobile viewport', async () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: 375, writable: true, configurable: true });
+    try {
+      const backend = new MemoryBackend();
+      seedDemoMode(backend);
+      renderApp(backend);
+      await waitFor(() => {
+        expect(screen.getByTestId('sidebar-toggle')).toBeDefined();
+      });
+      // Sidebar should be closed by default on mobile
+      expect(screen.queryByTestId('sidebar-backdrop')).toBeNull();
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
+    }
+  });
+
   it('opens command palette with keyboard shortcut', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
