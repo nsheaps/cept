@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Comment on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           VERSION_CURRENT: ${{ steps.version.outputs.current_version }}
           VERSION_NEXT: ${{ steps.version.outputs.next_version }}
