@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0](https://github.com/nsheaps/cept/compare/v0.2.1...v0.3.0) (2026-03-14)
+
+### Features
+
+* **ui:** default sidebar to closed on mobile viewports ([#31](https://github.com/nsheaps/cept/issues/31)) ([fce5ddf](https://github.com/nsheaps/cept/commit/fce5ddfa6fa57bef90adf47a2fa149f170ca3abd))
+
 ## [0.2.1](https://github.com/nsheaps/cept/compare/v0.2.0...v0.2.1) (2026-03-12)
 
 ## [0.2.0](https://github.com/nsheaps/cept/compare/v0.1.32...v0.2.0) (2026-03-11)
