@@ -1,6 +1,6 @@
 // Bundled documentation content from docs/content/ in the Cept repository.
-// Source: https://github.com/nsheaps/cept/tree/main/docs/content
-// This is a read-only Git-backed space.
+// Source: https://github.com/nsheaps/cept/tree/<branch>/docs/content
+// This is a read-only Git-backed space. Branch is determined at build time via HEAD_BRANCH.
 
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
@@ -988,7 +988,8 @@ export const DOCS_SOURCE_PATHS: Record<string, string> = {
   'docs-roadmap': 'docs/content/reference/roadmap.md',
 };
 
-const GITHUB_BASE = 'https://github.com/nsheaps/cept/blob/main/';
+const DOCS_BRANCH = typeof __HEAD_BRANCH__ !== 'undefined' && __HEAD_BRANCH__ ? __HEAD_BRANCH__ : 'main';
+const GITHUB_BASE = `https://github.com/nsheaps/cept/blob/${DOCS_BRANCH}/`;
 
 export function getDocsSourceUrl(pageId: string): string | undefined {
   const path = DOCS_SOURCE_PATHS[pageId];
@@ -1000,7 +1001,7 @@ export const DOCS_SPACE_INFO = {
   name: 'Cept Docs',
   source: 'Git (read-only)',
   remoteUrl: 'github.com/nsheaps/cept',
-  branch: 'main',
+  branch: DOCS_BRANCH,
   subPath: 'docs/',
   pageCount: Object.keys(DOCS_CONTENT).length,
   contentSize: Object.values(DOCS_CONTENT).reduce((sum, c) => sum + c.length, 0),

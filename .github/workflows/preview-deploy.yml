@@ -39,6 +39,7 @@ jobs:
           REPO_URL: ${{ github.event.repository.html_url }}
           PRODUCTION_URL: https://nsheaps.github.io/cept/app/
           VITE_IS_PREVIEW: 'true'
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
 
       - name: Deploy to GitHub Pages subdirectory
         run: |
