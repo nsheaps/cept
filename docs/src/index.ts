@@ -47,6 +47,7 @@ const DOC_PAGES: DocPage[] = [
   { slug: 'storage-backends', title: 'Storage Backends', description: 'Backend types and capabilities', category: 'reference', order: 3 },
   { slug: 'database-formulas', title: 'Database Formulas', description: 'Formula syntax and functions', category: 'reference', order: 4 },
   { slug: 'api-reference', title: 'API Reference', description: 'Core API documentation', category: 'reference', order: 5 },
+  { slug: 'design-style-guide', title: 'Design & Style Guide', description: 'Colors, typography, accessibility, and interaction patterns', category: 'reference', order: 6 },
 
   // Migration
   { slug: 'from-notion', title: 'Migrate from Notion', description: 'Import your Notion workspace', category: 'migration', order: 1 },
