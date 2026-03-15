@@ -26,6 +26,7 @@ Welcome to the Cept documentation. Cept is an open-source Notion alternative tha
 
 - [Keyboard Shortcuts](reference/keyboard-shortcuts.md) — All keyboard shortcuts
 - [Icon Reference](reference/icon-reference.md) — Emoji icons used in the app
+- [Design & Style Guide](reference/design-style-guide.md) — Colors, typography, accessibility, and interaction patterns
 - [Product Roadmap](reference/roadmap.md) — What's built and what's coming next
 
 ## Source
