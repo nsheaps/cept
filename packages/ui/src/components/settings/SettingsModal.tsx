@@ -55,6 +55,9 @@ export interface SpaceInfo {
   pageCount: number;
   contentSize: number;
   createdAt?: string;
+  remoteUrl?: string;
+  branch?: string;
+  subPath?: string;
 }
 
 export interface SettingsModalProps {
@@ -289,7 +292,11 @@ export function SettingsModal({
                                 <span className="cept-settings-space-badge" data-testid="active-space-badge"> (active)</span>
                               )}
                             </span>
-                            <span className="cept-settings-space-meta">{space.source} &middot; {space.pageCount} pages</span>
+                            <span className="cept-settings-space-meta">
+                              {space.source}
+                              {space.branch && <> &middot; <span className="cept-settings-space-branch" data-testid={`space-branch-${space.id}`}>{space.branch}</span></>}
+                              {' '}&middot; {space.pageCount} pages
+                            </span>
                           </div>
                         </div>
                         <div className="cept-settings-space-actions">
@@ -596,6 +603,24 @@ function SpaceDetails({
           <span className="cept-settings-detail-label">Storage used</span>
           <span className="cept-settings-detail-value">{formatBytes(space.contentSize)}</span>
         </div>
+        {space.remoteUrl && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Remote</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-remote">{space.remoteUrl}</span>
+          </div>
+        )}
+        {space.branch && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Branch</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-branch">{space.branch}</span>
+          </div>
+        )}
+        {space.subPath && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Path</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-subpath">{space.subPath}</span>
+          </div>
+        )}
         {space.createdAt && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Created</span>

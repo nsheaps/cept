@@ -242,6 +242,14 @@
   margin-top: 0.125rem;
 }
 
+.cept-settings-space-branch {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.05em 0.35em;
+  border-radius: 3px;
+  font-size: 0.7rem;
+}
+
 /* Data row (space + delete btn) */
 .cept-settings-data-row {
   display: flex;
@@ -454,6 +462,7 @@
   .cept-settings-space-item:hover { background-color: rgba(255, 255, 255, 0.06); }
   .cept-settings-space-name { color: #e5e5e5; }
   .cept-settings-space-meta { color: #71717a; }
+  .cept-settings-space-branch { background: rgba(255, 255, 255, 0.1); }
   .cept-settings-icon-btn { color: #71717a; }
   .cept-settings-icon-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
   .cept-settings-icon-btn--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
@@ -1010,6 +1019,22 @@
   margin-bottom: 1rem;
 }
 
+.cept-wizard-form-row--flex {
+  flex: 1;
+  min-width: 0;
+}
+
+.cept-wizard-form-row-inline {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cept-wizard-divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.25rem 0;
+}
+
 .cept-wizard-label {
   display: block;
   font-size: 0.8125rem;
@@ -1087,6 +1112,7 @@
   .cept-wizard-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
   .cept-wizard-desc { color: #a1a1aa; }
   .cept-wizard-desc--muted { color: #71717a; }
+  .cept-wizard-divider { border-top-color: #404040; }
   .cept-wizard-type-card { background: #262626; border-color: #404040; }
   .cept-wizard-type-card:hover { background: #333; border-color: #525252; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
   .cept-wizard-type-card--disabled { background: #262626; border-color: #404040; }

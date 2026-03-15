@@ -1,10 +1,23 @@
 import { useState, useCallback } from 'react';
 
+export interface RemoteSpaceConfig {
+  url: string;
+  branch: string;
+  subPath: string;
+}
+
+const DEFAULT_REMOTE: RemoteSpaceConfig = {
+  url: 'github.com/nsheaps/cept',
+  branch: 'main',
+  subPath: 'docs/',
+};
+
 export interface AddSpaceWizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateSpace: (name: string) => void;
   onAddRemoteDocs?: () => void;
+  onAddRemoteRepo?: (config: RemoteSpaceConfig) => void;
   hasRemoteDocs?: boolean;
 }
 
@@ -15,14 +28,21 @@ export function AddSpaceWizardModal({
   onClose,
   onCreateSpace,
   onAddRemoteDocs,
+  onAddRemoteRepo,
   hasRemoteDocs,
 }: AddSpaceWizardModalProps) {
   const [step, setStep] = useState<WizardStep>('choose-type');
   const [newSpaceName, setNewSpaceName] = useState('');
+  const [remoteUrl, setRemoteUrl] = useState(DEFAULT_REMOTE.url);
+  const [remoteBranch, setRemoteBranch] = useState(DEFAULT_REMOTE.branch);
+  const [remoteSubPath, setRemoteSubPath] = useState(DEFAULT_REMOTE.subPath);
 
   const resetAndClose = useCallback(() => {
     setStep('choose-type');
     setNewSpaceName('');
+    setRemoteUrl(DEFAULT_REMOTE.url);
+    setRemoteBranch(DEFAULT_REMOTE.branch);
+    setRemoteSubPath(DEFAULT_REMOTE.subPath);
     onClose();
   }, [onClose]);
 
@@ -32,6 +52,17 @@ export function AddSpaceWizardModal({
       resetAndClose();
     }
   }, [newSpaceName, onCreateSpace, resetAndClose]);
+
+  const handleAddRemote = useCallback(() => {
+    if (remoteUrl.trim()) {
+      onAddRemoteRepo?.({
+        url: remoteUrl.trim(),
+        branch: remoteBranch.trim() || 'main',
+        subPath: remoteSubPath.trim(),
+      });
+      resetAndClose();
+    }
+  }, [remoteUrl, remoteBranch, remoteSubPath, onAddRemoteRepo, resetAndClose]);
 
   const handleBack = useCallback(() => {
     if (step === 'create-empty' || step === 'add-remote') {
@@ -162,41 +193,109 @@ export function AddSpaceWizardModal({
 
           {step === 'add-remote' && (
             <div data-testid="wizard-remote-chooser">
-              <div className="cept-wizard-type-cards">
-                {hasRemoteDocs ? (
-                  <div className="cept-wizard-type-card cept-wizard-type-card--disabled" data-testid="wizard-remote-docs-added">
-                    <svg width="28" height="28" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="2" y="1" width="12" height="14" rx="1" />
-                      <path d="M5 5h6M5 8h6M5 11h3" />
-                    </svg>
-                    <div className="cept-wizard-type-card-text">
-                      <span className="cept-wizard-type-card-title">Cept Docs (main)</span>
-                      <span className="cept-wizard-type-card-desc">Already added</span>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    className="cept-wizard-type-card"
-                    onClick={() => {
-                      onAddRemoteDocs?.();
-                      resetAndClose();
-                    }}
-                    data-testid="wizard-add-remote-docs"
-                  >
-                    <svg width="28" height="28" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="2" y="1" width="12" height="14" rx="1" />
-                      <path d="M5 5h6M5 8h6M5 11h3" />
-                    </svg>
-                    <div className="cept-wizard-type-card-text">
-                      <span className="cept-wizard-type-card-title">Cept Docs (main)</span>
-                      <span className="cept-wizard-type-card-desc">Read-only documentation from the main branch</span>
-                    </div>
-                  </button>
-                )}
-              </div>
-              <p className="cept-wizard-desc cept-wizard-desc--muted">
-                More remote sources coming soon (Git repositories, shared spaces).
+              <p className="cept-wizard-desc">
+                Add a read-only space from a Git repository.
               </p>
+              <div className="cept-wizard-form-row">
+                <label className="cept-wizard-label" htmlFor="wizard-remote-url">Repository URL</label>
+                <input
+                  id="wizard-remote-url"
+                  className="cept-wizard-input"
+                  placeholder="github.com/user/repo"
+                  value={remoteUrl}
+                  onChange={(e) => setRemoteUrl(e.target.value)}
+                  autoFocus
+                  data-testid="wizard-remote-url-input"
+                />
+              </div>
+              <div className="cept-wizard-form-row-inline">
+                <div className="cept-wizard-form-row cept-wizard-form-row--flex">
+                  <label className="cept-wizard-label" htmlFor="wizard-remote-branch">Branch</label>
+                  <input
+                    id="wizard-remote-branch"
+                    className="cept-wizard-input"
+                    placeholder="main"
+                    value={remoteBranch}
+                    onChange={(e) => setRemoteBranch(e.target.value)}
+                    data-testid="wizard-remote-branch-input"
+                  />
+                </div>
+                <div className="cept-wizard-form-row cept-wizard-form-row--flex">
+                  <label className="cept-wizard-label" htmlFor="wizard-remote-subpath">Sub-path (optional)</label>
+                  <input
+                    id="wizard-remote-subpath"
+                    className="cept-wizard-input"
+                    placeholder="docs/"
+                    value={remoteSubPath}
+                    onChange={(e) => setRemoteSubPath(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && remoteUrl.trim()) {
+                        handleAddRemote();
+                      }
+                      if (e.key === 'Escape') {
+                        handleBack();
+                      }
+                    }}
+                    data-testid="wizard-remote-subpath-input"
+                  />
+                </div>
+              </div>
+              <div className="cept-wizard-footer">
+                <button
+                  className="cept-wizard-cancel-btn"
+                  onClick={resetAndClose}
+                  data-testid="wizard-cancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="cept-wizard-primary-btn"
+                  onClick={handleAddRemote}
+                  disabled={!remoteUrl.trim()}
+                  data-testid="wizard-add-remote-confirm"
+                >
+                  Add Space
+                </button>
+              </div>
+
+              {onAddRemoteDocs && (
+                <>
+                  <div className="cept-wizard-divider" />
+                  <p className="cept-wizard-desc cept-wizard-desc--muted">Quick add</p>
+                  <div className="cept-wizard-type-cards">
+                    {hasRemoteDocs ? (
+                      <div className="cept-wizard-type-card cept-wizard-type-card--disabled" data-testid="wizard-remote-docs-added">
+                        <svg width="28" height="28" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="2" y="1" width="12" height="14" rx="1" />
+                          <path d="M5 5h6M5 8h6M5 11h3" />
+                        </svg>
+                        <div className="cept-wizard-type-card-text">
+                          <span className="cept-wizard-type-card-title">Cept Docs (main)</span>
+                          <span className="cept-wizard-type-card-desc">Already added</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        className="cept-wizard-type-card"
+                        onClick={() => {
+                          onAddRemoteDocs();
+                          resetAndClose();
+                        }}
+                        data-testid="wizard-add-remote-docs"
+                      >
+                        <svg width="28" height="28" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="2" y="1" width="12" height="14" rx="1" />
+                          <path d="M5 5h6M5 8h6M5 11h3" />
+                        </svg>
+                        <div className="cept-wizard-type-card-text">
+                          <span className="cept-wizard-type-card-title">Cept Docs (main)</span>
+                          <span className="cept-wizard-type-card-desc">Read-only documentation from the main branch</span>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

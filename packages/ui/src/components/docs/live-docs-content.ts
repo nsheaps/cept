@@ -20,6 +20,9 @@ export const LIVE_DOCS_SPACE_INFO: {
   id: string;
   name: string;
   source: string;
+  remoteUrl?: string;
+  branch?: string;
+  subPath?: string;
   pageCount: number;
   contentSize: number;
 } | null = null;

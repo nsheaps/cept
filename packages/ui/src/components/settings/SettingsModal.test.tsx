@@ -68,6 +68,23 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('space-item-work')).toBeDefined();
   });
 
+  it('shows branch badge in space listing when branch is set', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'docs', name: 'Cept Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'github.com/nsheaps/cept' },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.getByTestId('space-branch-docs')).toBeDefined();
+    expect(screen.getByTestId('space-branch-docs').textContent).toBe('main');
+  });
+
+  it('does not show branch badge when branch is not set', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.queryByTestId('space-branch-default')).toBeNull();
+  });
+
   it('shows active badge on active space', () => {
     const spaces: SpaceInfo[] = [
       { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },

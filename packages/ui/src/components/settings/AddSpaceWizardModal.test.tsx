@@ -33,11 +33,45 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('wizard-space-name-input')).toBeDefined();
   });
 
-  it('shows remote chooser when add from remote selected', () => {
+  it('shows remote form when add from remote selected', () => {
     render(<AddSpaceWizardModal {...defaultProps} onAddRemoteDocs={vi.fn()} />);
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
     expect(screen.getByTestId('wizard-remote-chooser')).toBeDefined();
-    expect(screen.getByTestId('wizard-add-remote-docs')).toBeDefined();
+    expect(screen.getByTestId('wizard-remote-url-input')).toBeDefined();
+    expect(screen.getByTestId('wizard-remote-branch-input')).toBeDefined();
+    expect(screen.getByTestId('wizard-remote-subpath-input')).toBeDefined();
+  });
+
+  it('pre-populates remote form with docs repo defaults', () => {
+    render(<AddSpaceWizardModal {...defaultProps} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
+    expect((screen.getByTestId('wizard-remote-branch-input') as HTMLInputElement).value).toBe('main');
+    expect((screen.getByTestId('wizard-remote-subpath-input') as HTMLInputElement).value).toBe('docs/');
+  });
+
+  it('calls onAddRemoteRepo with form values when confirmed', () => {
+    const onAddRemoteRepo = vi.fn();
+    const onClose = vi.fn();
+    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={onAddRemoteRepo} onClose={onClose} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'github.com/other/repo' } });
+    fireEvent.change(screen.getByTestId('wizard-remote-branch-input'), { target: { value: 'develop' } });
+    fireEvent.change(screen.getByTestId('wizard-remote-subpath-input'), { target: { value: 'content/' } });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-add-remote-confirm')); });
+    expect(onAddRemoteRepo).toHaveBeenCalledWith({
+      url: 'github.com/other/repo',
+      branch: 'develop',
+      subPath: 'content/',
+    });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('disables add remote button when URL is empty', () => {
+    render(<AddSpaceWizardModal {...defaultProps} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: '' } });
+    expect(screen.getByTestId('wizard-add-remote-confirm').hasAttribute('disabled')).toBe(true);
   });
 
   it('calls onCreateSpace when form submitted via button', () => {
@@ -106,7 +140,7 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('wizard-remote-docs-added')).toBeDefined();
   });
 
-  it('calls onAddRemoteDocs and closes when remote docs clicked', () => {
+  it('calls onAddRemoteDocs and closes when quick-add docs clicked', () => {
     const onAddRemoteDocs = vi.fn();
     const onClose = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onAddRemoteDocs={onAddRemoteDocs} onClose={onClose} />);
@@ -129,5 +163,29 @@ describe('AddSpaceWizardModal', () => {
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
     const btn = screen.getByTestId('wizard-create-confirm');
     expect(btn.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('submits remote form when Enter pressed in subpath input', () => {
+    const onAddRemoteRepo = vi.fn();
+    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={onAddRemoteRepo} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    const subpathInput = screen.getByTestId('wizard-remote-subpath-input');
+    fireEvent.keyDown(subpathInput, { key: 'Enter' });
+    expect(onAddRemoteRepo).toHaveBeenCalledWith({
+      url: 'github.com/nsheaps/cept',
+      branch: 'main',
+      subPath: 'docs/',
+    });
+  });
+
+  it('resets remote form fields on close and reopen', () => {
+    const { rerender } = render(<AddSpaceWizardModal {...defaultProps} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'changed' } });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-close')); });
+    // Reopen
+    rerender(<AddSpaceWizardModal {...defaultProps} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
   });
 });

@@ -998,7 +998,10 @@ export function getDocsSourceUrl(pageId: string): string | undefined {
 export const DOCS_SPACE_INFO = {
   id: 'cept-docs',
   name: 'Cept Docs',
-  source: 'Git (github.com/nsheaps/cept, docs/, read-only)',
+  source: 'Git (read-only)',
+  remoteUrl: 'github.com/nsheaps/cept',
+  branch: 'main',
+  subPath: 'docs/',
   pageCount: Object.keys(DOCS_CONTENT).length,
   contentSize: Object.values(DOCS_CONTENT).reduce((sum, c) => sum + c.length, 0),
 };
