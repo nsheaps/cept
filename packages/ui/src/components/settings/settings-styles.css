@@ -423,8 +423,20 @@
   color: #9ca3af;
 }
 
-/* Mobile: stack tabs horizontally */
-@media (max-width: 480px) {
+/* Mobile: full-page settings */
+@media (max-width: 640px) {
+  .cept-settings-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  .cept-settings-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
   .cept-settings-body {
     flex-direction: column;
   }
@@ -438,6 +450,14 @@
   .cept-settings-tab {
     white-space: nowrap;
     flex-shrink: 0;
+  }
+  .cept-wizard-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
