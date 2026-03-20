@@ -97,6 +97,10 @@
       "Bash(git reset --hard:*)"
     ]
   },
+  "attribution": {
+    "commit": "\nCo-Authored-By: Claude Code (${CLAUDE_PROJECT_DIR/$HOME/~}) <noreply@anthropic.com>"
+  },
+  "includeCoAuthoredBy": false,
   "env": {
     "FORCE_COLOR": "1",
     "NODE_ENV": "development",
@@ -113,6 +117,14 @@
   "enabledPlugins": {
     "ralph-wiggum@claude-plugins-official": true,
     "scm-utils@nsheaps-ai-mktpl": true,
-    "git-spice@nsheaps-ai-mktpl": true
+    "git-spice@nsheaps-ai-mktpl": true,
+    "common-sense@nsheaps-ai-mktpl": true,
+    "web-auto-approve@nsheaps-ai-mktpl": true,
+    "mise@nsheaps-ai-mktpl": true,
+    "context-bloat-prevention@nsheaps-ai-mktpl": true,
+    "command-help-skill@nsheaps-ai-mktpl": true,
+    "fix-pr@nsheaps-ai-mktpl": true,
+    "github@nsheaps-ai-mktpl": true,
+    "todo-plus-plus@nsheaps-ai-mktpl": true
   }
 }

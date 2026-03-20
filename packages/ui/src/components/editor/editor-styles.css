@@ -851,6 +851,7 @@
   background-size: 5px 5px;
   background-position: 0 0;
   color: #d1d5db;
+  pointer-events: none;
 }
 
 .cept-editor .drag-handle:hover::after {
