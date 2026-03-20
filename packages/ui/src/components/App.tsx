@@ -328,8 +328,12 @@ export function App() {
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
       const state = { pages, favorites, recentPages, selectedPageId, spaceName };
-      save(state);
-      // Also save to per-space file
+      // Only write to root workspace file when on default space to avoid
+      // overwriting the default space's state with another space's data (#40).
+      if (userSpaceId === 'default') {
+        save(state);
+      }
+      // Save to per-space file
       void saveSpaceState(backend, userSpaceId, state);
     }, 300);
   }, [pages, favorites, recentPages, selectedPageId, spaceName, save, backend, userSpaceId]);

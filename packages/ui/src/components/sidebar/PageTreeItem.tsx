@@ -13,6 +13,7 @@ export interface PageTreeItemProps {
   node: PageTreeNode;
   depth: number;
   selectedId?: string;
+  readOnly?: boolean;
   onSelect?: (id: string) => void;
   onToggle?: (id: string) => void;
   onAdd?: (parentId: string) => void;
@@ -23,6 +24,7 @@ export function PageTreeItem({
   node,
   depth,
   selectedId,
+  readOnly,
   onSelect,
   onToggle,
   onAdd,
@@ -32,7 +34,7 @@ export function PageTreeItem({
   const hasChildren = node.children.length > 0;
   const isSelected = selectedId === node.id;
   const isExpanded = node.isExpanded ?? false;
-  const showActions = hovered || isSelected;
+  const showActions = !readOnly && (hovered || isSelected);
 
   const handleClick = useCallback(() => {
     onSelect?.(node.id);
@@ -117,6 +119,7 @@ export function PageTreeItem({
               node={child}
               depth={depth + 1}
               selectedId={selectedId}
+              readOnly={readOnly}
               onSelect={onSelect}
               onToggle={onToggle}
               onAdd={onAdd}
