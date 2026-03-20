@@ -11,7 +11,7 @@
  */
 
 import git from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
+import type { HttpClient } from 'isomorphic-git';
 import type {
   GitStorageBackend,
   BackendCapabilities,
@@ -50,6 +50,13 @@ export interface GitAuth {
 }
 
 /**
+ * HTTP client type expected by isomorphic-git.
+ * Use `isomorphic-git/http/web` in browsers and `isomorphic-git/http/node` in Node.
+ * Re-exported from isomorphic-git for convenience.
+ */
+export type GitHttp = HttpClient;
+
+/**
  * Filesystem interface expected by isomorphic-git.
  * Any object implementing these methods can be injected (node:fs, lightning-fs, memfs, etc.).
  */
@@ -85,6 +92,8 @@ export class GitBackend implements GitStorageBackend {
   private underlying: StorageBackend;
   private dir: string;
   private fs: GitFs;
+  private http?: GitHttp;
+  private corsProxy?: string;
   private auth?: GitAuth;
   private authorName: string;
   private authorEmail: string;
@@ -93,6 +102,8 @@ export class GitBackend implements GitStorageBackend {
     underlying: StorageBackend;
     dir: string;
     fs: GitFs;
+    http?: GitHttp;
+    corsProxy?: string;
     auth?: GitAuth;
     authorName?: string;
     authorEmail?: string;
@@ -100,6 +111,8 @@ export class GitBackend implements GitStorageBackend {
     this.underlying = options.underlying;
     this.dir = options.dir;
     this.fs = options.fs;
+    this.http = options.http;
+    this.corsProxy = options.corsProxy;
     this.auth = options.auth;
     this.authorName = options.authorName ?? 'Cept User';
     this.authorEmail = options.authorEmail ?? 'user@cept.app';
@@ -190,12 +203,14 @@ export class GitBackend implements GitStorageBackend {
   }
 
   async push(branch?: string): Promise<PushResult> {
+    if (!this.http) throw new Error('GitBackend: http client required for push');
     const ref = branch ?? (await this.branchCurrent());
     const result = await git.push({
       fs: this.fs,
-      http,
+      http: this.http,
       dir: this.dir,
       ref,
+      corsProxy: this.corsProxy,
       onAuth: this.auth ? () => this.getOnAuth() : undefined,
     });
     return {
@@ -212,13 +227,15 @@ export class GitBackend implements GitStorageBackend {
   }
 
   async pull(branch?: string): Promise<MergeResult> {
+    if (!this.http) throw new Error('GitBackend: http client required for pull');
     const ref = branch ?? (await this.branchCurrent());
     try {
       await git.pull({
         fs: this.fs,
-        http,
+        http: this.http,
         dir: this.dir,
         ref,
+        corsProxy: this.corsProxy,
         author: {
           name: this.authorName,
           email: this.authorEmail,
@@ -233,6 +250,42 @@ export class GitBackend implements GitStorageBackend {
       }
       throw e;
     }
+  }
+
+  /**
+   * Clone a remote repository into this backend's directory.
+   * Should be called instead of `initialize()` when bootstrapping from a remote.
+   */
+  async clone(url: string, options?: { ref?: string; depth?: number; singleBranch?: boolean }): Promise<void> {
+    if (!this.http) throw new Error('GitBackend: http client required for clone');
+    await this.underlying.initialize({ name: 'git-clone' });
+    await git.clone({
+      fs: this.fs,
+      http: this.http,
+      dir: this.dir,
+      url,
+      ref: options?.ref ?? 'main',
+      singleBranch: options?.singleBranch ?? true,
+      depth: options?.depth,
+      corsProxy: this.corsProxy,
+      onAuth: this.auth ? () => this.getOnAuth() : undefined,
+    });
+  }
+
+  /**
+   * Fetch refs from the remote without merging into the working tree.
+   */
+  async fetch(branch?: string): Promise<void> {
+    if (!this.http) throw new Error('GitBackend: http client required for fetch');
+    const ref = branch ?? (await this.branchCurrent());
+    await git.fetch({
+      fs: this.fs,
+      http: this.http,
+      dir: this.dir,
+      ref,
+      corsProxy: this.corsProxy,
+      onAuth: this.auth ? () => this.getOnAuth() : undefined,
+    });
   }
 
   async log(path?: string, options?: LogOptions): Promise<CommitInfo[]> {
