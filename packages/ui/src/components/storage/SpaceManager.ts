@@ -14,6 +14,16 @@ export interface SpaceMeta {
   name: string;
   icon?: string;
   createdAt: string;
+  /** Remote Git repository URL (e.g., "https://github.com/user/repo") */
+  remoteUrl?: string;
+  /** Branch to track (e.g., "main") */
+  branch?: string;
+  /** Sub-path within the repo to scope the space to (e.g., "docs/") */
+  subPath?: string;
+  /** Whether this space is read-only (true for cloned remote spaces) */
+  readOnly?: boolean;
+  /** ISO timestamp of the last successful sync/clone from the remote */
+  lastSyncedAt?: string;
 }
 
 export interface SpacesManifest {
@@ -80,6 +90,43 @@ export async function createSpace(
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
   return newSpace;
+}
+
+/** Create a new space linked to a remote Git repository. */
+export async function createRemoteSpace(
+  backend: StorageBackend,
+  name: string,
+  remoteUrl: string,
+  branch: string,
+  subPath?: string,
+): Promise<SpaceMeta> {
+  const manifest = await loadSpaces(backend);
+  const newSpace: SpaceMeta = {
+    id: `space-${Date.now()}`,
+    name,
+    createdAt: new Date().toISOString(),
+    remoteUrl,
+    branch,
+    subPath,
+    readOnly: true,
+    lastSyncedAt: new Date().toISOString(),
+  };
+  manifest.spaces.push(newSpace);
+  manifest.activeSpaceId = newSpace.id;
+  await saveSpaces(backend, manifest);
+  return newSpace;
+}
+
+/** Update the lastSyncedAt timestamp for a space. */
+export async function updateSpaceSyncTimestamp(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<void> {
+  const manifest = await loadSpaces(backend);
+  const space = manifest.spaces.find((s) => s.id === spaceId);
+  if (!space) throw new Error(`Space not found: ${spaceId}`);
+  space.lastSyncedAt = new Date().toISOString();
+  await saveSpaces(backend, manifest);
 }
 
 /** Switch the active space. */

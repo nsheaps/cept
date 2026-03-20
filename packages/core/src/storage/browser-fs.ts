@@ -174,6 +174,14 @@ Welcome to your new workspace.
     this.watchers.clear();
   }
 
+  /**
+   * Get the raw lightning-fs instance for use with isomorphic-git.
+   * GitBackend needs direct access to the filesystem object.
+   */
+  getRawFs(): FS {
+    return this.fs;
+  }
+
   // -- Internal helpers --
 
   private normalizePath(path: string): string {

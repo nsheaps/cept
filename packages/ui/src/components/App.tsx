@@ -35,10 +35,14 @@ import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
+import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
+import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp } from './storage/SpaceManager.js';
 import type { SpacesManifest } from './storage/SpaceManager.js';
+import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
+import { BrowserFsBackend } from '@cept/core';
+import type { GitHttp } from '@cept/core';
 import { restoreRoute, replaceRoute, pushRoute, parseRoute } from '../router.js';
 
 
@@ -111,6 +115,7 @@ export function App() {
   const [showTrash, setShowTrash] = useState(false);
   const [userSpaceId, setUserSpaceId] = useState('default');
   const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
+  const [cloneStatus, setCloneStatus] = useState<{ active: boolean; message?: string; error?: string }>({ active: false });
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
 
@@ -328,8 +333,12 @@ export function App() {
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
       const state = { pages, favorites, recentPages, selectedPageId, spaceName };
-      save(state);
-      // Also save to per-space file
+      // Only write to root workspace file when on default space to avoid
+      // overwriting the default space's state with another space's data (#40).
+      if (userSpaceId === 'default') {
+        save(state);
+      }
+      // Save to per-space file
       void saveSpaceState(backend, userSpaceId, state);
     }, 300);
   }, [pages, favorites, recentPages, selectedPageId, spaceName, save, backend, userSpaceId]);
@@ -637,6 +646,8 @@ export function App() {
   const handleCreateSpace = useCallback((name: string) => {
     // Save current space state before switching
     saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+    // Switch to user view (important when creating from docs view)
+    setActiveSpace('user');
     void createSpaceInBackend(backend, name).then((newSpace) => {
       void loadSpaces(backend).then((manifest) => {
         setSpacesManifest(manifest);
@@ -701,6 +712,161 @@ export function App() {
     pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
+  /** Handle "Add Space" from the remote repo form in the wizard. */
+  const handleAddRemoteRepo = useCallback(async (config: RemoteSpaceConfig) => {
+    // Build a human-readable name from the repo URL
+    const normalizedUrl = config.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\.git$/, '').replace(/\/$/, '');
+    const repoName = normalizedUrl.split('/').pop() ?? 'Remote';
+    const name = config.subPath.trim()
+      ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
+      : repoName;
+    const displayName = `${name} (${config.branch || 'main'})`;
+
+    // Check if the backend is a BrowserFsBackend (required for git cloning)
+    if (!(backend instanceof BrowserFsBackend)) {
+      // Fall back to creating an empty space for non-browser backends
+      handleCreateSpace(displayName);
+      return;
+    }
+
+    // Dynamically import the browser HTTP client for isomorphic-git
+    let gitHttp: GitHttp;
+    try {
+      const httpModule = await import('isomorphic-git/http/web');
+      gitHttp = httpModule.default as GitHttp;
+    } catch {
+      // Fallback: create empty space if http module unavailable
+      handleCreateSpace(displayName);
+      return;
+    }
+
+    setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
+
+    try {
+      // Save current space state before switching
+      saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+      setActiveSpace('user');
+
+      // Clone the remote repo and extract pages
+      const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+        backend,
+        gitHttp,
+        config.url,
+        config.branch || 'main',
+        config.subPath.trim() || undefined,
+        'https://cors.isomorphic-git.org',
+      );
+
+      // Create the space with remote metadata
+      const branch = config.branch || 'main';
+      const newSpace = await createRemoteSpaceInBackend(
+        backend,
+        displayName,
+        normalizeRepoUrl(config.url),
+        branch,
+        config.subPath.trim() || undefined,
+      );
+
+      // Update manifest in state
+      const manifest = await loadSpaces(backend);
+      setSpacesManifest(manifest);
+      setUserSpaceId(newSpace.id);
+
+      // Apply cloned pages to the UI
+      setPages(clonedPages);
+      setPageContents(clonedContents);
+      setSelectedPageId(clonedPages[0]?.id);
+      setFavorites([]);
+      setRecentPages([]);
+      setTrash([]);
+      setSpaceName(displayName);
+      setHasStarted(true);
+
+      // Persist the cloned pages to the space's storage
+      await saveSpaceState(backend, newSpace.id, {
+        pages: clonedPages,
+        favorites: [],
+        recentPages: [],
+        selectedPageId: clonedPages[0]?.id,
+        spaceName: displayName,
+      });
+
+      // Write page contents to individual files
+      for (const [pageId, content] of Object.entries(clonedContents)) {
+        if (content) {
+          void writeSpacePageContent(backend, newSpace.id, pageId, content);
+        }
+      }
+
+      setCloneStatus({ active: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Clone failed';
+      setCloneStatus({ active: false, error: message });
+      // eslint-disable-next-line no-console
+      console.error('Failed to clone remote repo:', err);
+    }
+  }, [backend, handleCreateSpace, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
+
+  /** Refresh a git space by re-cloning from the remote. */
+  const handleRefreshSpace = useCallback(async (spaceId: string) => {
+    if (!(backend instanceof BrowserFsBackend)) return;
+
+    // Find the space metadata
+    const manifest = await loadSpaces(backend);
+    const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
+    if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
+
+    // Dynamically import the browser HTTP client for isomorphic-git
+    let gitHttp: GitHttp;
+    try {
+      const httpModule = await import('isomorphic-git/http/web');
+      gitHttp = httpModule.default as GitHttp;
+    } catch {
+      return;
+    }
+
+    // Clone fresh from remote
+    const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+      backend,
+      gitHttp,
+      spaceMeta.remoteUrl,
+      spaceMeta.branch,
+      spaceMeta.subPath,
+      'https://cors.isomorphic-git.org',
+    );
+
+    // Update the sync timestamp
+    await updateSpaceSyncTimestamp(backend, spaceId);
+
+    // Persist the refreshed pages
+    await saveSpaceState(backend, spaceId, {
+      pages: clonedPages,
+      favorites: [],
+      recentPages: [],
+      selectedPageId: clonedPages[0]?.id,
+      spaceName: spaceMeta.name,
+    });
+
+    for (const [pageId, content] of Object.entries(clonedContents)) {
+      if (content) {
+        void writeSpacePageContent(backend, spaceId, pageId, content);
+      }
+    }
+
+    // If we're refreshing the currently active space, update the UI state
+    if (spaceId === userSpaceId) {
+      setPages(clonedPages);
+      setPageContents(clonedContents);
+      setSelectedPageId(clonedPages[0]?.id);
+      setFavorites([]);
+      setRecentPages([]);
+    }
+
+    // Reload manifest to get updated lastSyncedAt
+    const updatedManifest = await loadSpaces(backend);
+    setSpacesManifest(updatedManifest);
+  }, [backend, userSpaceId]);
+
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
     setDocsPages((prev) => expandToNode(prev, id));
@@ -715,28 +881,39 @@ export function App() {
 
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
-    const source = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
+    const defaultSource = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
     if (spacesManifest) {
       for (const space of spacesManifest.spaces) {
+        const spaceSource = space.remoteUrl
+          ? `Git (${space.readOnly ? 'read-only' : 'sync'})`
+          : defaultSource;
         if (space.id === userSpaceId) {
           // Active space — use live React state for accurate counts
           const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
           list.push({
             id: space.id,
             name: spaceName,
-            source,
+            source: spaceSource,
             pageCount: flattenPages(pages).length,
             contentSize,
             createdAt: space.createdAt,
+            remoteUrl: space.remoteUrl,
+            branch: space.branch,
+            subPath: space.subPath,
+            lastSyncedAt: space.lastSyncedAt,
           });
         } else {
           list.push({
             id: space.id,
             name: space.name,
-            source,
+            source: spaceSource,
             pageCount: 0,
             contentSize: 0,
             createdAt: space.createdAt,
+            remoteUrl: space.remoteUrl,
+            branch: space.branch,
+            subPath: space.subPath,
+            lastSyncedAt: space.lastSyncedAt,
           });
         }
       }
@@ -746,7 +923,7 @@ export function App() {
       list.push({
         id: 'default',
         name: spaceName,
-        source,
+        source: defaultSource,
         pageCount: flattenPages(pages).length,
         contentSize,
       });
@@ -870,6 +1047,8 @@ export function App() {
             onPermanentDelete={() => {/* read-only */}}
             onEmptyTrash={() => {/* read-only */}}
             onSearch={() => setSearchOpen(true)}
+            onOpenSettings={handleOpenSettings}
+            onOpenDocs={handleOpenDocs}
             readOnly
             spaceName={DOCS_SPACE_INFO.name}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
@@ -1055,13 +1234,15 @@ export function App() {
         onExport={handleOpenExport}
         backend={backend}
         onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
+        onRefreshSpace={handleRefreshSpace}
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
         onClose={() => setAddSpaceWizardOpen(false)}
         onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
         onAddRemoteDocs={() => { handleOpenDocs(); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
-        hasRemoteDocs={false}
+        onAddRemoteRepo={(config) => { handleAddRemoteRepo(config); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        hasRemoteDocs={activeSpace === 'docs'}
       />
       <ImportDialog
         isOpen={importDialogOpen}
@@ -1078,6 +1259,27 @@ export function App() {
           path: `pages/${selectedPageId}.md`,
         } as PageContent : null}
       />
+      {cloneStatus.active && (
+        <div className="cept-clone-overlay" data-testid="clone-status">
+          <div className="cept-clone-dialog">
+            <div className="cept-clone-spinner" />
+            <p>{cloneStatus.message ?? 'Cloning repository...'}</p>
+          </div>
+        </div>
+      )}
+      {cloneStatus.error && (
+        <div className="cept-clone-overlay" data-testid="clone-error">
+          <div className="cept-clone-dialog cept-clone-dialog--error">
+            <p>Clone failed: {cloneStatus.error}</p>
+            <button
+              className="cept-wizard-primary-btn"
+              onClick={() => setCloneStatus({ active: false })}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
