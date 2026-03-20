@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/nsheaps/cept/compare/v0.4.1...v0.5.0) (2026-03-20)
+
+### Features
+
+* full-page settings modal on mobile ([#54](https://github.com/nsheaps/cept/issues/54)) ([35588e1](https://github.com/nsheaps/cept/commit/35588e184fb0221a58d326387d93209a34e3e5ec))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([7c27092](https://github.com/nsheaps/cept/commit/7c27092fa8dca8556e7c3bf1eb19f9071bf23871))
+
 ## [0.4.1](https://github.com/nsheaps/cept/compare/v0.4.0...v0.4.1) (2026-03-20)
 
 ### Documentation
