@@ -212,6 +212,14 @@ describe('Sidebar', () => {
     expect(screen.getByText('My Workspace')).toBeDefined();
   });
 
+  it('updates displayed space name when spaceName prop changes', () => {
+    const { rerender } = render(<Sidebar pages={mockPages} spaceName="Demo Space" />);
+    expect(screen.getByText('Demo Space')).toBeDefined();
+    rerender(<Sidebar pages={mockPages} spaceName="New Project" />);
+    expect(screen.getByText('New Project')).toBeDefined();
+    expect(screen.queryByText('Demo Space')).toBeNull();
+  });
+
   it('renders back button when onBackToSpace is provided', () => {
     const onBackToSpace = vi.fn();
     render(<Sidebar pages={mockPages} onBackToSpace={onBackToSpace} />);
