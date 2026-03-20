@@ -708,24 +708,14 @@ export function App() {
 
   /** Handle "Add Space" from the remote repo form in the wizard. */
   const handleAddRemoteRepo = useCallback((config: RemoteSpaceConfig) => {
-    // Detect the Cept docs repo (with or without protocol/www prefix)
+    // Build a human-readable name from the repo URL
     const normalizedUrl = config.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\.git$/, '').replace(/\/$/, '');
-    const isCeptRepo = normalizedUrl === 'github.com/nsheaps/cept';
-    const isDocsSubPath = !config.subPath.trim() || config.subPath.trim().replace(/\/$/, '') === 'docs';
-    if (isCeptRepo && isDocsSubPath) {
-      handleOpenDocs();
-      return;
-    }
-    // Remote Git spaces for arbitrary repos are not yet wired up.
-    // Create a placeholder space entry so the user sees something was added,
-    // with a name derived from the URL. Full Git backend integration is needed
-    // to populate it with actual content.
     const repoName = normalizedUrl.split('/').pop() ?? 'Remote';
-    const spaceName = config.subPath.trim()
+    const name = config.subPath.trim()
       ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
       : repoName;
-    handleCreateSpace(`${spaceName} (${config.branch || 'main'})`);
-  }, [handleOpenDocs, handleCreateSpace]);
+    handleCreateSpace(`${name} (${config.branch || 'main'})`);
+  }, [handleCreateSpace]);
 
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
@@ -896,6 +886,8 @@ export function App() {
             onPermanentDelete={() => {/* read-only */}}
             onEmptyTrash={() => {/* read-only */}}
             onSearch={() => setSearchOpen(true)}
+            onOpenSettings={handleOpenSettings}
+            onOpenDocs={handleOpenDocs}
             readOnly
             spaceName={DOCS_SPACE_INFO.name}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
