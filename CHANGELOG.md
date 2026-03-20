@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/nsheaps/cept/compare/v0.3.1...v0.4.0) (2026-03-20)
+
+### Features
+
+* unified docs space, wizard with remote repo form, image fixes ([#23](https://github.com/nsheaps/cept/issues/23)) ([d1858ed](https://github.com/nsheaps/cept/commit/d1858edd5f67e7c8c9502e23e44a9065f9410993))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([08e699a](https://github.com/nsheaps/cept/commit/08e699af7182acc7c96401d25ec959fa48f3d100))
+
 ## [0.3.1](https://github.com/nsheaps/cept/compare/v0.3.0...v0.3.1) (2026-03-15)
 
 ### Documentation
