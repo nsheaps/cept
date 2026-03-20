@@ -63,9 +63,9 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
         }),
       },
       width: {
-        default: '100%',
+        default: null,
         parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-width') || '100%',
+          element.getAttribute('data-width') || null,
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-width': attributes.width as string,
         }),
@@ -86,23 +86,27 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
     const src = attrs['data-src'] || '';
     const alt = attrs['data-alt'] || '';
     const caption = attrs['data-caption'] || '';
-    const width = attrs['data-width'] || '100%';
+    const width = attrs['data-width'] || null;
 
     const figureAttrs = mergeAttributes(this.options.HTMLAttributes, {
       'data-type': 'image',
       'data-src': src,
       'data-alt': alt,
       'data-caption': caption,
-      'data-width': width,
+      ...(width ? { 'data-width': width } : {}),
       class: 'cept-image-block',
     });
+
+    const imgStyle = width
+      ? `width: ${width}; max-width: 100%;`
+      : 'max-width: 100%;';
 
     const imgSpec = [
       'img',
       {
         src,
         alt,
-        style: `width: ${width}; max-width: 100%;`,
+        style: imgStyle,
         draggable: 'false',
       },
     ] as const;
@@ -117,6 +121,45 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
     }
 
     return ['figure', figureAttrs, imgSpec] as const;
+  },
+
+  addStorage() {
+    return {
+      markdown: {
+        serialize(
+          state: Record<string, unknown>,
+          node: { attrs: { src: string; alt: string } },
+        ) {
+          const s = state as unknown as {
+            write: (text: string) => void;
+            ensureNewLine: () => void;
+            closeBlock: (n: unknown) => void;
+          };
+          s.write(`![${node.attrs.alt || ''}](${node.attrs.src || ''})`);
+          s.closeBlock(node);
+        },
+        parse: {
+          // Transform bare <img> tags into <figure data-type="image"> before
+          // ProseMirror parsing so they match imageBlock's parseHTML rule
+          // instead of being consumed by tiptap-markdown's built-in image node.
+          updateDOM(element: HTMLElement) {
+            element.querySelectorAll('img').forEach((img) => {
+              // Skip images already inside a figure
+              if (img.closest('figure[data-type="image"]')) return;
+              const figure = img.ownerDocument.createElement('figure');
+              figure.setAttribute('data-type', 'image');
+              figure.setAttribute('data-src', img.getAttribute('src') || '');
+              figure.setAttribute('data-alt', img.getAttribute('alt') || '');
+              const newImg = img.ownerDocument.createElement('img');
+              newImg.setAttribute('src', img.getAttribute('src') || '');
+              newImg.setAttribute('alt', img.getAttribute('alt') || '');
+              figure.appendChild(newImg);
+              img.replaceWith(figure);
+            });
+          },
+        },
+      },
+    };
   },
 
   addCommands() {

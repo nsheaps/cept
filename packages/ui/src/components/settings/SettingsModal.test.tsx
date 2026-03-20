@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { SettingsModal, DEFAULT_SETTINGS } from './SettingsModal.js';
 import type { SpaceInfo } from './SettingsModal.js';
 
@@ -13,7 +13,6 @@ const defaultProps = {
   onResetSettings: vi.fn(),
   onDeleteSpace: vi.fn(),
   onSpaceRename: vi.fn(),
-  onCreateSpace: vi.fn(),
   onSwitchSpace: vi.fn(),
   onClearAllData: vi.fn(),
   onRecreateDemoSpace: vi.fn(),
@@ -69,6 +68,23 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('space-item-work')).toBeDefined();
   });
 
+  it('shows branch badge in space listing when branch is set', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'docs', name: 'Cept Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'github.com/nsheaps/cept' },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.getByTestId('space-branch-docs')).toBeDefined();
+    expect(screen.getByTestId('space-branch-docs').textContent).toBe('main');
+  });
+
+  it('does not show branch badge when branch is not set', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.queryByTestId('space-branch-default')).toBeNull();
+  });
+
   it('shows active badge on active space', () => {
     const spaces: SpaceInfo[] = [
       { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
@@ -100,21 +116,11 @@ describe('SettingsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows create space form when button clicked', () => {
-    render(<SettingsModal {...defaultProps} initialTab="spaces" />);
-    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
-    expect(screen.getByTestId('create-space-form')).toBeDefined();
-    expect(screen.getByTestId('create-space-input')).toBeDefined();
-  });
-
-  it('calls onCreateSpace when form submitted', () => {
-    const onCreateSpace = vi.fn();
-    render(<SettingsModal {...defaultProps} initialTab="spaces" onCreateSpace={onCreateSpace} />);
-    act(() => { fireEvent.click(screen.getByTestId('create-space-btn')); });
-    const input = screen.getByTestId('create-space-input');
-    fireEvent.change(input, { target: { value: 'New Space' } });
-    act(() => { fireEvent.click(screen.getByTestId('create-space-confirm')); });
-    expect(onCreateSpace).toHaveBeenCalledWith('New Space');
+  it('calls onOpenAddSpaceWizard when create space button clicked', () => {
+    const onOpenAddSpaceWizard = vi.fn();
+    render(<SettingsModal {...defaultProps} initialTab="spaces" onOpenAddSpaceWizard={onOpenAddSpaceWizard} />);
+    screen.getByTestId('create-space-btn').click();
+    expect(onOpenAddSpaceWizard).toHaveBeenCalled();
   });
 
   it('shows import/export buttons when handlers provided', () => {

@@ -335,12 +335,20 @@ export function useWorkspacePersistence(backend: StorageBackend) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [state, settings] = await Promise.all([
-        loadPersistedState(backend),
-        loadSettingsFromBackend(backend, DEFAULT_SETTINGS),
-      ]);
-      if (!cancelled) {
-        setLoaded({ state, settings, ready: true });
+      try {
+        const [state, settings] = await Promise.all([
+          loadPersistedState(backend),
+          loadSettingsFromBackend(backend, DEFAULT_SETTINGS),
+        ]);
+        if (!cancelled) {
+          setLoaded({ state, settings, ready: true });
+        }
+      } catch {
+        // Even if loading fails (e.g., corrupted IndexedDB), become ready with defaults
+        // so the app doesn't get stuck on "Loading..." forever.
+        if (!cancelled) {
+          setLoaded({ state: null, settings: DEFAULT_SETTINGS, ready: true });
+        }
       }
     }
     void load();

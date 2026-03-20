@@ -3,3 +3,14 @@ declare const __COMMIT_SHA__: string;
 declare const __PR_NUMBER__: string;
 declare const __REPO_URL__: string;
 declare const __PRODUCTION_URL__: string;
+declare const __IS_PREVIEW__: boolean;
+declare const __HEAD_BRANCH__: string;
+
+// Vite's import.meta.env — BASE_URL is always available in Vite builds.
+interface ImportMetaEnv {
+  readonly BASE_URL: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

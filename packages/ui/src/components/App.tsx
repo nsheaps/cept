@@ -34,6 +34,7 @@ import { FolderView } from './editor/FolderView.js';
 import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
+import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
@@ -100,6 +101,7 @@ export function App() {
   const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
+  const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
@@ -166,9 +168,7 @@ export function App() {
       // Load selected page content
       if (state.selectedPageId) {
         const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
-        if (content !== null) {
-          setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content }));
-        }
+        setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
       }
     } else {
       // Empty space
@@ -210,9 +210,8 @@ export function App() {
       // Load selected page content from backend
       if (persisted.selectedPageId) {
         void readPageContent(backend, persisted.selectedPageId).then((content) => {
-          if (content !== null) {
-            setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content }));
-          }
+          // Always set content (even if null/missing) so the page doesn't stay stuck on "Loading..."
+          setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content ?? '' }));
         });
       }
     } else if (shouldShowDemo) {
@@ -574,8 +573,7 @@ export function App() {
   }, [backend]);
 
   const handleClearAllData = useCallback(() => {
-    void clearAllData(backend);
-    // Reset settings and then recreate the demo space so users start fresh
+    // Reset React state immediately so the UI is responsive
     setSettings({ ...DEFAULT_SETTINGS });
     setPages(DEMO_PAGES);
     const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
@@ -588,17 +586,19 @@ export function App() {
     setUserSpaceId('default');
     setHasStarted(true);
     setSettingsOpen(false);
-    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
-    void saveSpaceState(backend, 'default', {
-      pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
-    });
-    // Reset spaces manifest to just the default space
     const freshManifest: SpacesManifest = {
       activeSpaceId: 'default',
       spaces: [{ id: 'default', name: 'Demo Space', createdAt: new Date().toISOString() }],
     };
-    void saveSpacesManifest(backend, freshManifest);
     setSpacesManifest(freshManifest);
+    // Clear storage FIRST, then write fresh data so writes aren't deleted by the concurrent clear
+    void clearAllData(backend).then(() => {
+      void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+      void saveSpaceState(backend, 'default', {
+        pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+      });
+      void saveSpacesManifest(backend, freshManifest);
+    });
   }, [backend]);
 
   const handleSettingsChange = useCallback((updated: CeptSettings) => {
@@ -701,11 +701,6 @@ export function App() {
     pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
-  const handleBackToUserSpace = useCallback(() => {
-    setActiveSpace('user');
-    pushRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
-  }, [userSpaceId, selectedPageId]);
-
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
     setDocsPages((prev) => expandToNode(prev, id));
@@ -775,6 +770,8 @@ export function App() {
   const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
+
+  const isDocsActive = activeSpace === 'docs';
 
   // Show loading state while backend loads persisted data
   if (!ready) {
@@ -846,7 +843,7 @@ export function App() {
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
             activeSpaceId={userSpaceId}
             onSwitchSpace={(id) => {
-              if (id === 'cept-docs') {
+              if (id === DOCS_SPACE_INFO.id) {
                 handleOpenDocs();
               } else {
                 handleSwitchSpace(id);
@@ -854,7 +851,7 @@ export function App() {
             }}
           />
         )}
-        {sidebarOpen && activeSpace === 'docs' && (
+        {sidebarOpen && isDocsActive && (
           <Sidebar
             pages={docsPages}
             favorites={[]}
@@ -874,12 +871,21 @@ export function App() {
             onEmptyTrash={() => {/* read-only */}}
             onSearch={() => setSearchOpen(true)}
             readOnly
-            spaceName="Cept Docs"
-            onBackToSpace={handleBackToUserSpace}
+            spaceName={DOCS_SPACE_INFO.name}
+            spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
+            activeSpaceId={DOCS_SPACE_INFO.id}
+            onSwitchSpace={(id) => {
+              if (id === DOCS_SPACE_INFO.id) {
+                handleOpenDocs();
+              } else {
+                setActiveSpace('user');
+                handleSwitchSpace(id);
+              }
+            }}
           />
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
-          {activeSpace === 'docs' ? (
+          {isDocsActive ? (
             docsSelectedPageId && DOCS_CONTENT[docsSelectedPageId] ? (
               <>
                 <div className="cept-docs-banner" data-testid="docs-banner">
@@ -887,7 +893,7 @@ export function App() {
                     <rect x="2" y="1" width="12" height="14" rx="1" />
                     <path d="M5 5h6M5 8h6M5 11h3" />
                   </svg>
-                  <span>Read-only — sourced from <code>docs/</code> in the Git repository</span>
+                  <span>Read-only &mdash; sourced from docs/ in the Git repository</span>
                   {getDocsSourceUrl(docsSelectedPageId) && (
                     <a
                       className="cept-docs-source-icon"
@@ -902,12 +908,9 @@ export function App() {
                       </svg>
                     </a>
                   )}
-                  <button className="cept-docs-banner-back" onClick={handleBackToUserSpace} data-testid="docs-back-to-space">
-                    Back to my space
-                  </button>
                 </div>
                 <CeptEditor
-                  key={docsSelectedPageId}
+                  key={`docs-${docsSelectedPageId}`}
                   content={resolveDocsContent(DOCS_CONTENT[docsSelectedPageId])}
                   placeholder=""
                   onUpdate={() => {/* read-only */}}
@@ -1043,15 +1046,22 @@ export function App() {
         onResetSettings={handleResetSettings}
         onDeleteSpace={handleDeleteSpace}
         onSpaceRename={handleSpaceRename}
-        onCreateSpace={handleCreateSpace}
         onSwitchSpace={handleSwitchSpace}
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
+        onOpenAddSpaceWizard={() => setAddSpaceWizardOpen(true)}
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
         backend={backend}
         onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
+      />
+      <AddSpaceWizardModal
+        isOpen={addSpaceWizardOpen}
+        onClose={() => setAddSpaceWizardOpen(false)}
+        onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        onAddRemoteDocs={() => { handleOpenDocs(); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        hasRemoteDocs={false}
       />
       <ImportDialog
         isOpen={importDialogOpen}

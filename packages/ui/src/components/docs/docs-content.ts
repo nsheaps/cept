@@ -1,6 +1,6 @@
 // Bundled documentation content from docs/content/ in the Cept repository.
-// Source: https://github.com/nsheaps/cept/tree/main/docs/content
-// This is a read-only Git-backed space.
+// Source: https://github.com/nsheaps/cept/tree/<branch>/docs/content
+// This is a read-only Git-backed space. Branch is determined at build time via HEAD_BRANCH.
 
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
@@ -67,19 +67,14 @@ function stripFrontMatter(md: string): string {
   return md.replace(/^---[\s\S]*?---\n*/m, '');
 }
 
-/** Get the base URL for static assets (screenshots, etc.) */
+/**
+ * Get the base URL for static assets (screenshots, etc.).
+ * Vite replaces the literal `import.meta.env.BASE_URL` at build time.
+ * We must use the exact literal — any indirection defeats replacement.
+ */
 function getBaseUrl(): string {
-  if (typeof document !== 'undefined') {
-    // Use the document base URI which respects <base> tags and Vite's base config
-    const base = document.baseURI;
-    try {
-      const url = new URL(base);
-      return url.pathname.endsWith('/') ? url.pathname : url.pathname + '/';
-    } catch {
-      return '/';
-    }
-  }
-  return '/';
+  const base = import.meta.env.BASE_URL ?? '/';
+  return base.endsWith('/') ? base : base + '/';
 }
 
 /** Resolve {{base}} placeholders in a content string at read time */
@@ -92,7 +87,11 @@ export function resolveDocsContent(content: string): string {
 
 const MD_INDEX = `# Cept Documentation
 
+> **You are viewing docs from this PR.** If images appear below, the fix is working!
+
 Welcome to the Cept documentation. Cept is an open-source Notion alternative that runs entirely on the client with optional Git-based sync and collaboration.
+
+![Cept landing page]({{base}}screenshots/features/landing-page.png)
 
 ## Getting Started
 
@@ -851,12 +850,26 @@ Mermaid diagrams use fenced code blocks with the \`mermaid\` language tag.
 
 Math uses LaTeX syntax: \`$$E = mc^2$$\` for block math and \`$a^2 + b^2 = c^2$\` for inline math.
 
+## Images
+
+Use standard Markdown image syntax:
+
+\`\`\`markdown
+![Alt text describing the image](url)
+\`\`\`
+
+- Alt text is required for all images
+- Images render at their natural size, centered, capped at the content width
+- Cept does not stretch images to fill the page — small images stay small
+- Use GitHub Flavored Markdown (GFM) conventions when standard Markdown is not sufficient
+
 ## Design Principles
 
-1. **Markdown first** — Standard markdown is preferred for all content that has a natural markdown representation
-2. **HTML fallback** — Rich blocks that extend markdown use HTML with \`data-type\` attributes
-3. **Interoperability** — Files can be opened in any markdown editor; extended blocks render as HTML
-4. **No proprietary format** — Everything is plain text, never binary or opaque`;
+1. **Standard Markdown first** — Use standard Markdown syntax whenever possible. This is the default for all content that has a natural Markdown representation.
+2. **GFM fallback** — When standard Markdown is not sufficient (e.g., tables, task lists, strikethrough), fall back to GitHub Flavored Markdown.
+3. **HTML as last resort** — Rich blocks that extend Markdown use HTML with \`data-type\` attributes. Avoid raw HTML when Markdown or GFM can express the same thing.
+4. **Interoperability** — Files can be opened in any Markdown editor; extended blocks render as HTML.
+5. **No proprietary format** — Everything is plain text, never binary or opaque.`;
 
 const MD_ICONS = `# Icons Reference
 
@@ -975,7 +988,8 @@ export const DOCS_SOURCE_PATHS: Record<string, string> = {
   'docs-roadmap': 'docs/content/reference/roadmap.md',
 };
 
-const GITHUB_BASE = 'https://github.com/nsheaps/cept/blob/main/';
+const DOCS_BRANCH = typeof __HEAD_BRANCH__ !== 'undefined' && __HEAD_BRANCH__ ? __HEAD_BRANCH__ : 'main';
+const GITHUB_BASE = `https://github.com/nsheaps/cept/blob/${DOCS_BRANCH}/`;
 
 export function getDocsSourceUrl(pageId: string): string | undefined {
   const path = DOCS_SOURCE_PATHS[pageId];
@@ -985,7 +999,10 @@ export function getDocsSourceUrl(pageId: string): string | undefined {
 export const DOCS_SPACE_INFO = {
   id: 'cept-docs',
   name: 'Cept Docs',
-  source: 'Git (github.com/nsheaps/cept, docs/, read-only)',
+  source: 'Git (read-only)',
+  remoteUrl: 'github.com/nsheaps/cept',
+  branch: DOCS_BRANCH,
+  subPath: 'docs/',
   pageCount: Object.keys(DOCS_CONTENT).length,
   contentSize: Object.values(DOCS_CONTENT).reduce((sum, c) => sum + c.length, 0),
 };

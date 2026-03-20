@@ -38,6 +38,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO_URL: ${{ github.event.repository.html_url }}
           PRODUCTION_URL: https://nsheaps.github.io/cept/app/
+          VITE_IS_PREVIEW: 'true'
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
 
       - name: Deploy to GitHub Pages subdirectory
         run: |
@@ -49,8 +51,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Fetch gh-pages branch or create it
+          # Discard working tree changes since the build is already complete
+          git checkout -- .
           git fetch origin gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git checkout -B gh-pages origin/gh-pages
+          else
+            git checkout --orphan gh-pages
+          fi
 
           # Clean the PR directory and copy new build
           rm -rf "${DEPLOY_DIR}"

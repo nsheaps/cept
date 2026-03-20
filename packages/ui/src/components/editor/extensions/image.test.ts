@@ -22,6 +22,13 @@ describe('ImageBlock extension', () => {
     expect(parseRules).toEqual([{ tag: 'figure[data-type="image"]' }]);
   });
 
+  it('has markdown parse.updateDOM that transforms img to figure', () => {
+    const ext = ImageBlock;
+    const storage = ext.config.addStorage?.call(ext);
+    expect(storage?.markdown?.parse?.updateDOM).toBeDefined();
+    expect(typeof storage?.markdown?.parse?.updateDOM).toBe('function');
+  });
+
   it('has src attribute defaulting to null', () => {
     const ext = ImageBlock;
     const attrs = ext.config.addAttributes?.call(ext);
@@ -40,10 +47,10 @@ describe('ImageBlock extension', () => {
     expect(attrs?.caption?.default).toBe('');
   });
 
-  it('has width attribute defaulting to 100%', () => {
+  it('has width attribute defaulting to null (natural size)', () => {
     const ext = ImageBlock;
     const attrs = ext.config.addAttributes?.call(ext);
-    expect(attrs?.width?.default).toBe('100%');
+    expect(attrs?.width?.default).toBeNull();
   });
 
   it('defines setImageBlock command', () => {

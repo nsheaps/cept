@@ -89,6 +89,8 @@ export default defineConfig({
     __PR_NUMBER__: JSON.stringify(process.env.PR_NUMBER || ''),
     __REPO_URL__: JSON.stringify(process.env.REPO_URL || ''),
     __PRODUCTION_URL__: JSON.stringify(process.env.PRODUCTION_URL || ''),
+    __IS_PREVIEW__: JSON.stringify(process.env.VITE_IS_PREVIEW === 'true'),
+    __HEAD_BRANCH__: JSON.stringify(process.env.HEAD_BRANCH || 'main'),
   },
   resolve: {
     alias: {

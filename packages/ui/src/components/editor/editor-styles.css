@@ -346,17 +346,26 @@
   margin: 1.5rem 0;
 }
 
-/* Image block */
+/* Image block — Notion-style: natural size, centered, rounded, subtle hover */
 .cept-editor .tiptap figure.cept-image-block {
   margin: 0.75rem 0;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .cept-editor .tiptap figure.cept-image-block img {
   max-width: 100%;
+  min-height: 2rem;
   height: auto;
-  border-radius: 4px;
-  display: inline-block;
+  border-radius: 6px;
+  display: block;
+  cursor: default;
+  transition: box-shadow 0.15s ease;
+}
+
+.cept-editor .tiptap figure.cept-image-block img:hover {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .cept-editor .tiptap figure.cept-image-block figcaption.cept-image-caption {
@@ -932,6 +941,7 @@
   .cept-editor .tiptap .cept-mermaid-preview { background: #262626; }
   .cept-editor .tiptap .cept-math-block { background-color: #1e1e1e; }
   .cept-editor .tiptap figure.cept-image-block figcaption.cept-image-caption { color: #71717a; }
+  .cept-editor .tiptap figure.cept-image-block img:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.3); }
   .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link { border-color: #404040; }
   .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link:hover { background-color: rgba(255, 255, 255, 0.03); }
   .cept-editor .tiptap .cept-bookmark-description { color: #a1a1aa; }
