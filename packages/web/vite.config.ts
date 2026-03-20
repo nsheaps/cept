@@ -17,6 +17,40 @@ const rootPkg = require('../../package.json') as { version: string };
  * plugin returns an empty module for any `node:*` import so the build
  * succeeds and the final bundle contains no Node.js references.
  */
+/**
+ * Provide a Buffer polyfill for isomorphic-git in the browser.
+ *
+ * isomorphic-git expects Node's `Buffer` global but never imports it.
+ * The main.tsx entry already sets `globalThis.Buffer` from the `buffer`
+ * npm package, but isomorphic-git's CJS bundle is converted to ESM by
+ * Rollup and may evaluate in a context where the global isn't yet set.
+ *
+ * This plugin uses Rollup's `banner` option to inject a synchronous
+ * Buffer setup at the very top of the output chunk — before any module
+ * code evaluates — guaranteeing Buffer is available globally.
+ */
+function injectBufferPolyfill(): Plugin {
+  return {
+    name: 'inject-buffer-polyfill',
+    // Use renderChunk to prepend a Buffer polyfill to the main chunk.
+    // renderChunk runs after tree-shaking, so we know which chunks
+    // contain isomorphic-git code.
+    renderChunk(code, chunk) {
+      if (code.includes('Missing Buffer dependency')) {
+        // This chunk contains isomorphic-git — prepend the polyfill.
+        // We use a self-executing import to set Buffer before any code runs.
+        const polyfill = [
+          '// Buffer polyfill for isomorphic-git (injected by inject-buffer-polyfill plugin)',
+          'import { Buffer as _Buffer } from "buffer";',
+          'globalThis.Buffer = _Buffer;',
+          '',
+        ].join('\n');
+        return { code: polyfill + code, map: null };
+      }
+    },
+  };
+}
+
 function nodeStubs(): Plugin {
   // Returns a module that re-exports a Proxy as default so any named import
   // (e.g. `import { watch } from "node:fs"`) resolves to a no-op.
@@ -81,7 +115,7 @@ function inject404BasePath(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [tailwindcss(), react(), nodeStubs(), inject404BasePath()],
+  plugins: [tailwindcss(), react(), injectBufferPolyfill(), nodeStubs(), inject404BasePath()],
   base: process.env.VITE_BASE_PATH || '/',
   define: {
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || rootPkg.version),
@@ -98,6 +132,17 @@ export default defineConfig({
     alias: {
       '@cept/core': path.resolve(__dirname, '../core/src'),
       '@cept/ui': path.resolve(__dirname, '../ui/src'),
+    },
+  },
+  optimizeDeps: {
+    // Ensure isomorphic-git and buffer are pre-bundled together so
+    // Buffer is available when isomorphic-git CJS code is evaluated.
+    include: ['buffer', 'isomorphic-git'],
+    esbuildOptions: {
+      // Make Buffer available as a global in esbuild pre-bundling
+      define: {
+        Buffer: 'Buffer',
+      },
     },
   },
   server: {
