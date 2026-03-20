@@ -3,9 +3,11 @@ import { MemoryBackend } from './test-helpers.js';
 import {
   loadSpaces,
   createSpace,
+  createRemoteSpace,
   switchSpace,
   deleteSpace,
   renameSpace,
+  updateSpaceSyncTimestamp,
   spaceWorkspaceFile,
   spacePagesDir,
 } from './SpaceManager.js';
@@ -109,6 +111,37 @@ describe('SpaceManager', () => {
 
     it('throws for non-existent space', async () => {
       await expect(renameSpace(backend, 'nope', 'x')).rejects.toThrow('Space not found');
+    });
+  });
+
+  describe('createRemoteSpace', () => {
+    it('creates a remote space with lastSyncedAt', async () => {
+      const space = await createRemoteSpace(backend, 'Docs', 'https://github.com/user/repo', 'main', 'docs/');
+      expect(space.remoteUrl).toBe('https://github.com/user/repo');
+      expect(space.branch).toBe('main');
+      expect(space.subPath).toBe('docs/');
+      expect(space.readOnly).toBe(true);
+      expect(space.lastSyncedAt).toBeDefined();
+    });
+  });
+
+  describe('updateSpaceSyncTimestamp', () => {
+    it('updates the lastSyncedAt timestamp', async () => {
+      const space = await createRemoteSpace(backend, 'Docs', 'https://github.com/user/repo', 'main');
+      const originalTimestamp = space.lastSyncedAt;
+
+      // Small delay to ensure timestamp differs
+      await new Promise((r) => setTimeout(r, 10));
+      await updateSpaceSyncTimestamp(backend, space.id);
+
+      const manifest = await loadSpaces(backend);
+      const updated = manifest.spaces.find((s) => s.id === space.id);
+      expect(updated?.lastSyncedAt).toBeDefined();
+      expect(updated?.lastSyncedAt).not.toBe(originalTimestamp);
+    });
+
+    it('throws for non-existent space', async () => {
+      await expect(updateSpaceSyncTimestamp(backend, 'nope')).rejects.toThrow('Space not found');
     });
   });
 

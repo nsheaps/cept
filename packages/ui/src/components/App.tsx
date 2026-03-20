@@ -38,7 +38,7 @@ import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
+import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp } from './storage/SpaceManager.js';
 import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
@@ -807,6 +807,66 @@ export function App() {
     }
   }, [backend, handleCreateSpace, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
 
+  /** Refresh a git space by re-cloning from the remote. */
+  const handleRefreshSpace = useCallback(async (spaceId: string) => {
+    if (!(backend instanceof BrowserFsBackend)) return;
+
+    // Find the space metadata
+    const manifest = await loadSpaces(backend);
+    const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
+    if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
+
+    // Dynamically import the browser HTTP client for isomorphic-git
+    let gitHttp: GitHttp;
+    try {
+      const httpModule = await import('isomorphic-git/http/web');
+      gitHttp = httpModule.default as GitHttp;
+    } catch {
+      return;
+    }
+
+    // Clone fresh from remote
+    const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+      backend,
+      gitHttp,
+      spaceMeta.remoteUrl,
+      spaceMeta.branch,
+      spaceMeta.subPath,
+      'https://cors.isomorphic-git.org',
+    );
+
+    // Update the sync timestamp
+    await updateSpaceSyncTimestamp(backend, spaceId);
+
+    // Persist the refreshed pages
+    await saveSpaceState(backend, spaceId, {
+      pages: clonedPages,
+      favorites: [],
+      recentPages: [],
+      selectedPageId: clonedPages[0]?.id,
+      spaceName: spaceMeta.name,
+    });
+
+    for (const [pageId, content] of Object.entries(clonedContents)) {
+      if (content) {
+        void writeSpacePageContent(backend, spaceId, pageId, content);
+      }
+    }
+
+    // If we're refreshing the currently active space, update the UI state
+    if (spaceId === userSpaceId) {
+      setPages(clonedPages);
+      setPageContents(clonedContents);
+      setSelectedPageId(clonedPages[0]?.id);
+      setFavorites([]);
+      setRecentPages([]);
+    }
+
+    // Reload manifest to get updated lastSyncedAt
+    const updatedManifest = await loadSpaces(backend);
+    setSpacesManifest(updatedManifest);
+  }, [backend, userSpaceId]);
+
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
     setDocsPages((prev) => expandToNode(prev, id));
@@ -840,6 +900,7 @@ export function App() {
             remoteUrl: space.remoteUrl,
             branch: space.branch,
             subPath: space.subPath,
+            lastSyncedAt: space.lastSyncedAt,
           });
         } else {
           list.push({
@@ -852,6 +913,7 @@ export function App() {
             remoteUrl: space.remoteUrl,
             branch: space.branch,
             subPath: space.subPath,
+            lastSyncedAt: space.lastSyncedAt,
           });
         }
       }
@@ -1172,6 +1234,7 @@ export function App() {
         onExport={handleOpenExport}
         backend={backend}
         onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
+        onRefreshSpace={handleRefreshSpace}
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}

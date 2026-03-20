@@ -154,6 +154,24 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('delete-space-work')).toBeDefined();
   });
 
+  it('shows refresh button for git spaces in listing when onRefreshSpace provided', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'git-space', name: 'Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'https://github.com/user/repo' },
+      { id: 'local', name: 'Local', source: 'Browser', pageCount: 3, contentSize: 512 },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" onRefreshSpace={vi.fn()} />);
+    expect(screen.getByTestId('refresh-space-git-space')).toBeDefined();
+    expect(screen.queryByTestId('refresh-space-local')).toBeNull();
+  });
+
+  it('does not show refresh button when onRefreshSpace not provided', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'git-space', name: 'Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'https://github.com/user/repo' },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.queryByTestId('refresh-space-git-space')).toBeNull();
+  });
+
   it('shows about tab with version', () => {
     render(<SettingsModal {...defaultProps} initialTab="about" />);
     expect(screen.getByTestId('settings-panel-about')).toBeDefined();

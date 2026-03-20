@@ -22,6 +22,8 @@ export interface SpaceMeta {
   subPath?: string;
   /** Whether this space is read-only (true for cloned remote spaces) */
   readOnly?: boolean;
+  /** ISO timestamp of the last successful sync/clone from the remote */
+  lastSyncedAt?: string;
 }
 
 export interface SpacesManifest {
@@ -107,11 +109,24 @@ export async function createRemoteSpace(
     branch,
     subPath,
     readOnly: true,
+    lastSyncedAt: new Date().toISOString(),
   };
   manifest.spaces.push(newSpace);
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
   return newSpace;
+}
+
+/** Update the lastSyncedAt timestamp for a space. */
+export async function updateSpaceSyncTimestamp(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<void> {
+  const manifest = await loadSpaces(backend);
+  const space = manifest.spaces.find((s) => s.id === spaceId);
+  if (!space) throw new Error(`Space not found: ${spaceId}`);
+  space.lastSyncedAt = new Date().toISOString();
+  await saveSpaces(backend, manifest);
 }
 
 /** Switch the active space. */
