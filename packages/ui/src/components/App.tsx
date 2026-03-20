@@ -35,6 +35,7 @@ import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
+import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { createSpace as createSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest } from './storage/SpaceManager.js';
@@ -705,6 +706,27 @@ export function App() {
     pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
+  /** Handle "Add Space" from the remote repo form in the wizard. */
+  const handleAddRemoteRepo = useCallback((config: RemoteSpaceConfig) => {
+    // Detect the Cept docs repo (with or without protocol/www prefix)
+    const normalizedUrl = config.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\.git$/, '').replace(/\/$/, '');
+    const isCeptRepo = normalizedUrl === 'github.com/nsheaps/cept';
+    const isDocsSubPath = !config.subPath.trim() || config.subPath.trim().replace(/\/$/, '') === 'docs';
+    if (isCeptRepo && isDocsSubPath) {
+      handleOpenDocs();
+      return;
+    }
+    // Remote Git spaces for arbitrary repos are not yet wired up.
+    // Create a placeholder space entry so the user sees something was added,
+    // with a name derived from the URL. Full Git backend integration is needed
+    // to populate it with actual content.
+    const repoName = normalizedUrl.split('/').pop() ?? 'Remote';
+    const spaceName = config.subPath.trim()
+      ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
+      : repoName;
+    handleCreateSpace(`${spaceName} (${config.branch || 'main'})`);
+  }, [handleOpenDocs, handleCreateSpace]);
+
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
     setDocsPages((prev) => expandToNode(prev, id));
@@ -1065,7 +1087,8 @@ export function App() {
         onClose={() => setAddSpaceWizardOpen(false)}
         onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
         onAddRemoteDocs={() => { handleOpenDocs(); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
-        hasRemoteDocs={false}
+        onAddRemoteRepo={(config) => { handleAddRemoteRepo(config); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        hasRemoteDocs={activeSpace === 'docs'}
       />
       <ImportDialog
         isOpen={importDialogOpen}
