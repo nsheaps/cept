@@ -227,11 +227,11 @@ test.describe('Feature Screenshots', () => {
       await settingsBtn.click();
       await page.waitForTimeout(300);
       await captureScreenshot(page, { name: 'settings', category: 'features' });
-      const dataTab = page.getByText('Data & Cache');
-      if (await dataTab.isVisible()) {
-        await dataTab.click();
+      const spacesTab = page.getByText('Spaces');
+      if (await spacesTab.isVisible()) {
+        await spacesTab.click();
         await page.waitForTimeout(200);
-        await captureScreenshot(page, { name: 'settings-data', category: 'features' });
+        await captureScreenshot(page, { name: 'settings-spaces', category: 'features' });
       }
     }
   });

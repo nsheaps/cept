@@ -138,10 +138,20 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('export-page-btn')).toBeDefined();
   });
 
-  it('shows data tab with clear all data button', () => {
-    render(<SettingsModal {...defaultProps} initialTab="data" />);
-    expect(screen.getByTestId('settings-panel-data')).toBeDefined();
+  it('shows clear all data button in spaces tab', () => {
+    render(<SettingsModal {...defaultProps} initialTab="spaces" />);
+    expect(screen.getByTestId('settings-panel-spaces')).toBeDefined();
     expect(screen.getByTestId('clear-all-data-btn')).toBeDefined();
+  });
+
+  it('shows delete button for each space in spaces tab', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
+      { id: 'work', name: 'Work', source: 'Browser', pageCount: 5, contentSize: 2048 },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
+    expect(screen.getByTestId('delete-space-default')).toBeDefined();
+    expect(screen.getByTestId('delete-space-work')).toBeDefined();
   });
 
   it('shows about tab with version', () => {

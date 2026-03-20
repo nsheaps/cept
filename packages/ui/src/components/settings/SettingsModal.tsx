@@ -62,7 +62,7 @@ export interface SpaceInfo {
 
 export interface SettingsModalProps {
   isOpen: boolean;
-  initialTab?: 'about' | 'settings' | 'data' | 'spaces';
+  initialTab?: 'about' | 'settings' | 'spaces';
   settings: CeptSettings;
   spaces: SpaceInfo[];
   activeSpaceId?: string;
@@ -103,7 +103,7 @@ export function SettingsModal({
   backend,
   onNavigateToPage,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'data' | 'spaces'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
@@ -188,18 +188,6 @@ export function SettingsModal({
                 <rect x="9" y="9" width="5" height="5" rx="1" />
               </svg>
               Spaces
-            </button>
-            <button
-              className={`cept-settings-tab ${activeTab === 'data' ? 'is-active' : ''}`}
-              onClick={() => { setActiveTab('data'); setSelectedSpaceId(null); }}
-              data-testid="settings-tab-data"
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <ellipse cx="8" cy="4" rx="6" ry="2.5" />
-                <path d="M2 4v4c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V4" />
-                <path d="M2 8v4c0 1.38 2.69 2.5 6 2.5s6-1.12 6-2.5V8" />
-              </svg>
-              Data &amp; Cache
             </button>
             <button
               className={`cept-settings-tab ${activeTab === 'about' ? 'is-active' : ''}`}
@@ -295,7 +283,7 @@ export function SettingsModal({
                             <span className="cept-settings-space-meta">
                               {space.source}
                               {space.branch && <> &middot; <span className="cept-settings-space-branch" data-testid={`space-branch-${space.id}`}>{space.branch}</span></>}
-                              {' '}&middot; {space.pageCount} pages
+                              {' '}&middot; {space.pageCount} pages &middot; {formatBytes(space.contentSize)}
                             </span>
                           </div>
                         </div>
@@ -314,6 +302,16 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
+                          <button
+                            className="cept-settings-icon-btn cept-settings-icon-btn--danger"
+                            onClick={() => onDeleteSpace(space.id)}
+                            title="Delete space"
+                            data-testid={`delete-space-${space.id}`}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                            </svg>
+                          </button>
                           <button
                             className="cept-settings-icon-btn"
                             onClick={() => setSelectedSpaceId(space.id)}
@@ -379,70 +377,9 @@ export function SettingsModal({
                     </div>
                   </>
                 )}
-              </div>
-            )}
-
-            {activeTab === 'spaces' && selectedSpace && !browsingSpaceId && (
-              <SpaceDetails
-                space={selectedSpace}
-                onBack={() => setSelectedSpaceId(null)}
-                onRename={(name) => onSpaceRename(selectedSpace.id, name)}
-                onDelete={() => {
-                  onDeleteSpace(selectedSpace.id);
-                  setSelectedSpaceId(null);
-                }}
-                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
-              />
-            )}
-
-            {activeTab === 'spaces' && browsingSpaceId && backend && (
-              <FileBrowser
-                backend={backend}
-                onNavigateToPage={onNavigateToPage}
-                onClose={() => setBrowsingSpaceId(null)}
-              />
-            )}
-
-            {activeTab === 'data' && !selectedSpace && (
-              <div data-testid="settings-panel-data">
-                <h3 className="cept-settings-section-title">Spaces</h3>
-                {spaces.length === 0 ? (
-                  <p className="cept-settings-empty">No spaces.</p>
-                ) : (
-                  <div className="cept-settings-space-list">
-                    {spaces.map((space) => (
-                      <div key={space.id} className="cept-settings-data-row" data-testid={`data-space-${space.id}`}>
-                        <button
-                          className="cept-settings-space-item"
-                          onClick={() => setSelectedSpaceId(space.id)}
-                        >
-                          <div className="cept-settings-space-info">
-                            <span className="cept-settings-space-name">{space.name}</span>
-                            <span className="cept-settings-space-meta">
-                              {space.source} &middot; {formatBytes(space.contentSize)}
-                            </span>
-                          </div>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M6 4l4 4-4 4" />
-                          </svg>
-                        </button>
-                        <button
-                          className="cept-settings-icon-btn cept-settings-icon-btn--danger"
-                          onClick={() => onDeleteSpace(space.id)}
-                          title="Delete space"
-                          data-testid={`delete-space-${space.id}`}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 <div className="cept-settings-section-divider" />
-                <h3 className="cept-settings-section-title">Actions</h3>
+                <h3 className="cept-settings-section-title">Data</h3>
                 <div className="cept-settings-actions">
                   {settings.showDemoContent && (
                     <button
@@ -472,7 +409,7 @@ export function SettingsModal({
               </div>
             )}
 
-            {activeTab === 'data' && selectedSpace && !browsingSpaceId && (
+            {activeTab === 'spaces' && selectedSpace && !browsingSpaceId && (
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
@@ -485,13 +422,14 @@ export function SettingsModal({
               />
             )}
 
-            {activeTab === 'data' && browsingSpaceId && backend && (
+            {activeTab === 'spaces' && browsingSpaceId && backend && (
               <FileBrowser
                 backend={backend}
                 onNavigateToPage={onNavigateToPage}
                 onClose={() => setBrowsingSpaceId(null)}
               />
             )}
+
 
             {activeTab === 'about' && (
               <div className="cept-settings-about" data-testid="settings-panel-about">
