@@ -31,7 +31,7 @@ export interface SidebarProps {
   spaceName?: string;
   onSpaceRename?: (name: string) => void;
   onBackToSpace?: () => void;
-  onOpenSettings?: (tab?: 'settings' | 'about' | 'data' | 'spaces') => void;
+  onOpenSettings?: (tab?: 'settings' | 'about' | 'spaces') => void;
   onOpenDocs?: () => void;
   onOpenTrash?: () => void;
   spaces?: Array<{ id: string; name: string }>;

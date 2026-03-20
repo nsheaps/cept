@@ -100,7 +100,7 @@ export function App() {
   const [recentPages, setRecentPages] = useState<SidebarPageRef[]>([]);
   const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'data' | 'spaces'>('settings');
+  const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'spaces'>('settings');
   const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
@@ -689,7 +689,7 @@ export function App() {
     setExportDialogOpen(true);
   }, []);
 
-  const handleOpenSettings = useCallback((tab: 'settings' | 'about' | 'data' | 'spaces' = 'settings') => {
+  const handleOpenSettings = useCallback((tab: 'settings' | 'about' | 'spaces' = 'settings') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
   }, []);
