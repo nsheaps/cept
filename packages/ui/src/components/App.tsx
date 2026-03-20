@@ -642,6 +642,8 @@ export function App() {
   const handleCreateSpace = useCallback((name: string) => {
     // Save current space state before switching
     saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+    // Switch to user view (important when creating from docs view)
+    setActiveSpace('user');
     void createSpaceInBackend(backend, name).then((newSpace) => {
       void loadSpaces(backend).then((manifest) => {
         setSpacesManifest(manifest);
