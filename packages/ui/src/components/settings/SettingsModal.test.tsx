@@ -174,6 +174,28 @@ describe('SettingsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('shows export/import space buttons on settings tab when handlers provided', () => {
+    const onExportSpace = vi.fn();
+    const onImportSpace = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <SettingsModal
+        {...defaultProps}
+        initialTab="settings"
+        onExportSpace={onExportSpace}
+        onImportSpace={onImportSpace}
+        onClose={onClose}
+      />,
+    );
+    const exportBtn = screen.getByTestId('settings-export-space-btn');
+    const importBtn = screen.getByTestId('settings-import-space-btn');
+    expect(exportBtn).toBeDefined();
+    expect(importBtn).toBeDefined();
+    exportBtn.click();
+    expect(onExportSpace).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('shows data tab with clear all data button', () => {
     render(<SettingsModal {...defaultProps} initialTab="data" />);
     expect(screen.getByTestId('settings-panel-data')).toBeDefined();

@@ -80,6 +80,11 @@ export function Sidebar({
     position: { x: number; y: number };
   } | null>(null);
 
+  // Sync editSpaceNameValue when spaceName prop changes (e.g., after creating or switching spaces)
+  useEffect(() => {
+    setEditSpaceNameValue(spaceName ?? 'Space');
+  }, [spaceName]);
+
   const handleContextMenu = useCallback(
     (id: string, title: string, position: { x: number; y: number }) => {
       setContextMenu({ pageId: id, pageTitle: title, position });
