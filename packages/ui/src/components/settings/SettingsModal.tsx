@@ -310,13 +310,12 @@ export function SettingsModal({
                               data-testid={`switch-space-${space.id}`}
                             >
                               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
-                                <polyline points="2,3 2,6.5 5.5,6.5" />
-                                <polyline points="14,13 14,9.5 10.5,9.5" />
+                                <path d="M6 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6" />
+                                <path d="M2 8h8M7 5l3 3-3 3" />
                               </svg>
                             </button>
                           )}
-                          {space.remoteUrl && onRefreshSpace && (
+                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
                             <button
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
@@ -455,7 +454,7 @@ export function SettingsModal({
                   setSelectedSpaceId(null);
                 }}
                 onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
-                onRefresh={selectedSpace.remoteUrl && onRefreshSpace ? () => handleRefreshSpace(selectedSpace.id) : undefined}
+                onRefresh={selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs' ? () => handleRefreshSpace(selectedSpace.id) : undefined}
                 isRefreshing={refreshingSpaceId === selectedSpace.id}
               />
             )}
