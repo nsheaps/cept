@@ -1124,6 +1124,42 @@ export function App() {
     setDocsPages((prev) => toggleNode(prev, id));
   }, []);
 
+  // Track cached stats for inactive spaces
+  const [inactiveSpaceStats, setInactiveSpaceStats] = useState<Record<string, { pageCount: number; contentSize: number }>>({});
+
+  // Load stats for inactive spaces asynchronously
+  useEffect(() => {
+    if (!spacesManifest) return;
+    const loadStats = async () => {
+      const stats: Record<string, { pageCount: number; contentSize: number }> = {};
+      for (const space of spacesManifest.spaces) {
+        if (space.id === userSpaceId) continue;
+        try {
+          const state = await loadSpaceState(backend, space.id);
+          if (state) {
+            const spacePages = state.pages ?? [];
+            const count = flattenPages(spacePages).length;
+            // Estimate content size from stored page contents
+            let size = 0;
+            for (const page of flattenPages(spacePages)) {
+              try {
+                const content = await readSpacePageContent(backend, space.id, page.id);
+                if (content) size += content.length;
+              } catch {
+                // ignore
+              }
+            }
+            stats[space.id] = { pageCount: count, contentSize: size };
+          }
+        } catch {
+          // Space state not available
+        }
+      }
+      setInactiveSpaceStats(stats);
+    };
+    void loadStats();
+  }, [spacesManifest, userSpaceId, backend]);
+
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
     const defaultSource = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
@@ -1148,12 +1184,14 @@ export function App() {
             lastSyncedAt: space.lastSyncedAt,
           });
         } else {
+          // Use cached stats for inactive spaces
+          const cached = inactiveSpaceStats[space.id];
           list.push({
             id: space.id,
             name: space.name,
             source: spaceSource,
-            pageCount: 0,
-            contentSize: 0,
+            pageCount: cached?.pageCount ?? 0,
+            contentSize: cached?.contentSize ?? 0,
             createdAt: space.createdAt,
             remoteUrl: space.remoteUrl,
             branch: space.branch,
@@ -1175,7 +1213,7 @@ export function App() {
     }
     list.push(DOCS_SPACE_INFO);
     return list;
-  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type]);
+  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
