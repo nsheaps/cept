@@ -337,16 +337,18 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          <button
-                            className="cept-settings-icon-btn cept-settings-icon-btn--danger"
-                            onClick={() => onDeleteSpace(space.id)}
-                            title="Delete space"
-                            data-testid={`delete-space-${space.id}`}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                              <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
-                            </svg>
-                          </button>
+                          {space.id !== 'cept-docs' && (
+                            <button
+                              className="cept-settings-icon-btn cept-settings-icon-btn--danger"
+                              onClick={() => onDeleteSpace(space.id)}
+                              title="Delete space"
+                              data-testid={`delete-space-${space.id}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                              </svg>
+                            </button>
+                          )}
                           <button
                             className="cept-settings-icon-btn"
                             onClick={() => setSelectedSpaceId(space.id)}

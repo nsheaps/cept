@@ -23,16 +23,16 @@ export function AddSpaceWizardModal({
 }: AddSpaceWizardModalProps) {
   const [step, setStep] = useState<WizardStep>('choose-type');
   const [newSpaceName, setNewSpaceName] = useState('');
-  const [remoteUrl, setRemoteUrl] = useState('');
+  const [remoteUrl, setRemoteUrl] = useState('github.com/nsheaps/cept');
   const [remoteBranch, setRemoteBranch] = useState('main');
-  const [remoteSubPath, setRemoteSubPath] = useState('');
+  const [remoteSubPath, setRemoteSubPath] = useState('docs/');
 
   const resetAndClose = useCallback(() => {
     setStep('choose-type');
     setNewSpaceName('');
-    setRemoteUrl('');
+    setRemoteUrl('github.com/nsheaps/cept');
     setRemoteBranch('main');
-    setRemoteSubPath('');
+    setRemoteSubPath('docs/');
     onClose();
   }, [onClose]);
 

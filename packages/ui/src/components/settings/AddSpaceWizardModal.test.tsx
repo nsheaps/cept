@@ -55,12 +55,12 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('wizard-remote-subpath-input')).toBeDefined();
   });
 
-  it('git form starts with empty fields and default branch', () => {
+  it('git form starts with default docs repo values', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
-    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('');
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
     expect((screen.getByTestId('wizard-remote-branch-input') as HTMLInputElement).value).toBe('main');
-    expect((screen.getByTestId('wizard-remote-subpath-input') as HTMLInputElement).value).toBe('');
+    expect((screen.getByTestId('wizard-remote-subpath-input') as HTMLInputElement).value).toBe('docs/');
   });
 
   it('calls onAddRemoteRepo with form values when confirmed', () => {
@@ -83,6 +83,7 @@ describe('AddSpaceWizardModal', () => {
   it('disables add remote button when URL is empty', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: '' } });
     expect(screen.getByTestId('wizard-add-remote-confirm').hasAttribute('disabled')).toBe(true);
   });
 
@@ -158,13 +159,12 @@ describe('AddSpaceWizardModal', () => {
     const onAddRemoteRepo = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={onAddRemoteRepo} />);
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
-    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'github.com/nsheaps/cept' } });
     const subpathInput = screen.getByTestId('wizard-remote-subpath-input');
     fireEvent.keyDown(subpathInput, { key: 'Enter' });
     expect(onAddRemoteRepo).toHaveBeenCalledWith({
       url: 'github.com/nsheaps/cept',
       branch: 'main',
-      subPath: '',
+      subPath: 'docs/',
     });
   });
 
@@ -176,6 +176,6 @@ describe('AddSpaceWizardModal', () => {
     // Reopen
     rerender(<AddSpaceWizardModal {...defaultProps} />);
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
-    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('');
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
   });
 });
