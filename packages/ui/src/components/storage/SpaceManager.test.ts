@@ -12,7 +12,9 @@ import {
   spacePagesDir,
   generateRemoteSpaceId,
   parseRemoteSpaceId,
+  resolveRouteToSpace,
 } from './SpaceManager.js';
+import type { SpacesManifest } from './SpaceManager.js';
 
 describe('SpaceManager', () => {
   let backend: MemoryBackend;
@@ -206,6 +208,53 @@ describe('SpaceManager', () => {
     it('non-default spaces use nested paths', () => {
       expect(spaceWorkspaceFile('space-123')).toBe('.cept/spaces/space-123/workspace-state.json');
       expect(spacePagesDir('space-123')).toBe('.cept/spaces/space-123/pages');
+    });
+  });
+
+  describe('resolveRouteToSpace', () => {
+    const testManifest: SpacesManifest = {
+      activeSpaceId: 'default',
+      spaces: [
+        { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+        { id: 'github.com/nsheaps/cept@main/docs', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs' },
+        { id: 'github.com/nsheaps/cept@main', name: 'Cept Root', createdAt: '2024-01-01', branch: 'main' },
+        { id: 'github.com/other/repo@dev', name: 'Other Repo', createdAt: '2024-01-01', branch: 'dev' },
+      ],
+    };
+
+    it('returns exact match for local spaces', () => {
+      const result = resolveRouteToSpace(testManifest, 'default', undefined);
+      expect(result).toEqual({ spaceId: 'default', pageId: undefined });
+    });
+
+    it('returns exact match when spaceId matches directly', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main/docs', 'getting-started.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'getting-started.md' });
+    });
+
+    it('resolves minimal spaceId to space with matching subPath', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'docs/getting-started.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'getting-started.md' });
+    });
+
+    it('resolves nested file path with subPath prefix', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'docs/guides/quick-start.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'guides/quick-start.md' });
+    });
+
+    it('falls back to space without subPath when file path does not match subPath', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'README.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main', pageId: 'README.md' });
+    });
+
+    it('returns original values when no matching space is found', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/unknown/repo@main', 'file.md');
+      expect(result).toEqual({ spaceId: 'github.com/unknown/repo@main', pageId: 'file.md' });
+    });
+
+    it('handles undefined pageId with exact match', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main', pageId: undefined });
     });
   });
 });

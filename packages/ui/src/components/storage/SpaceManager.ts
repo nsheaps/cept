@@ -235,3 +235,64 @@ export function spacePagesDir(spaceId: string): string {
   if (spaceId === DEFAULT_SPACE_ID) return 'pages';
   return `.cept/spaces/${spaceId}/pages`;
 }
+
+/**
+ * Resolve a route's space ID and page ID to a configured space.
+ *
+ * When the router parses a file URL (e.g., /g/.../blob/main/docs/getting-started.md),
+ * it returns a minimal spaceId (repo@branch) and the full file path as pageId.
+ * This function finds the best matching configured space (which may have a subPath)
+ * and adjusts the pageId to be relative to that space's subPath.
+ *
+ * @returns The matched space ID and adjusted page ID, or the original values if no match.
+ */
+export function resolveRouteToSpace(
+  manifest: SpacesManifest,
+  routeSpaceId: string,
+  routePageId: string | undefined,
+): { spaceId: string; pageId: string | undefined } {
+  // For non-remote spaces, do a simple exact match
+  const routeParsed = parseRemoteSpaceId(routeSpaceId);
+  if (!routeParsed) {
+    return { spaceId: routeSpaceId, pageId: routePageId };
+  }
+
+  // If the exact space ID exists AND it has a subPath (meaning the URL parser already
+  // determined the full space ID), return it directly
+  const exact = manifest.spaces.find((s) => s.id === routeSpaceId);
+  if (exact && routeParsed.subPath) {
+    return { spaceId: routeSpaceId, pageId: routePageId };
+  }
+
+  // If no page ID, the URL is a space root — return exact or as-is
+  if (!routePageId) {
+    if (exact) return { spaceId: routeSpaceId, pageId: undefined };
+    return { spaceId: routeSpaceId, pageId: undefined };
+  }
+
+  // Find all spaces that match the same repo and branch
+  const candidates = manifest.spaces
+    .map((s) => ({ meta: s, parsed: parseRemoteSpaceId(s.id) }))
+    .filter(({ parsed }) => parsed !== null && parsed.repo === routeParsed.repo && parsed.branch === routeParsed.branch);
+
+  // Sort by subPath length descending (most specific match first)
+  candidates.sort((a, b) => (b.parsed?.subPath?.length ?? 0) - (a.parsed?.subPath?.length ?? 0));
+
+  for (const { meta, parsed } of candidates) {
+    if (parsed?.subPath) {
+      // Check if the file path starts with this space's subPath
+      const prefix = parsed.subPath.endsWith('/') ? parsed.subPath : parsed.subPath + '/';
+      if (routePageId.startsWith(prefix)) {
+        return { spaceId: meta.id, pageId: routePageId.substring(prefix.length) };
+      }
+      if (routePageId === parsed.subPath) {
+        return { spaceId: meta.id, pageId: undefined };
+      }
+    } else {
+      // Space with no subPath — matches everything
+      return { spaceId: meta.id, pageId: routePageId };
+    }
+  }
+
+  return { spaceId: routeSpaceId, pageId: routePageId };
+}

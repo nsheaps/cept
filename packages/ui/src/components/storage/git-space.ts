@@ -112,7 +112,7 @@ async function walkMarkdownFiles(
   // Process markdown files
   for (const file of files) {
     const filePath = relativePath ? `${relativePath}/${file.name}` : file.name;
-    const pageId = `git-${filePath.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+    const pageId = filePath;
     const title = extractTitleFromFilename(file.name);
 
     // Read the file content
@@ -137,7 +137,7 @@ async function walkMarkdownFiles(
   // Process subdirectories (creating folder-style parent pages)
   for (const dir of dirs) {
     const dirPath = relativePath ? `${relativePath}/${dir.name}` : dir.name;
-    const folderId = `git-${dirPath.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+    const folderId = dirPath;
     const folderTitle = dir.name.charAt(0).toUpperCase() + dir.name.slice(1).replace(/-/g, ' ');
 
     const children: PageTreeNode[] = [];

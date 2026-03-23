@@ -40,7 +40,7 @@ import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp, parseRemoteSpaceId } from './storage/SpaceManager.js';
+import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp, parseRemoteSpaceId, resolveRouteToSpace } from './storage/SpaceManager.js';
 import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
@@ -315,32 +315,37 @@ export function App() {
       if (route.pageId) setDocsSelectedPageId(route.pageId);
     } else if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
       // URL points to a different space — try to switch to it
-      const switchToExistingSpace = (manifest: SpacesManifest, spaceId: string) => {
-        const space = manifest.spaces.find((s) => s.id === spaceId);
-        if (!space) return;
-        void switchSpaceInBackend(backend, spaceId).then(() => {
-          setUserSpaceId(spaceId);
-          setSpacesManifest(manifest);
-          void loadAndApplySpaceState(spaceId, space.name).then(() => {
-            if (route.pageId) {
-              setSelectedPageId(route.pageId);
-              setPages((prev) => expandToNode(prev, route.pageId!));
-            }
-          });
-        });
-      };
-
       void loadSpaces(backend).then((manifest) => {
+        // Resolve the route to a configured space (handles minimal spaceId from URL parser)
+        const resolved = resolveRouteToSpace(manifest, route.spaceId, route.pageId);
+        const resolvedSpaceId = resolved.spaceId;
+        const resolvedPageId = resolved.pageId;
+
+        const switchToExistingSpace = (m: SpacesManifest, sid: string) => {
+          const space = m.spaces.find((s) => s.id === sid);
+          if (!space) return;
+          void switchSpaceInBackend(backend, sid).then(() => {
+            setUserSpaceId(sid);
+            setSpacesManifest(m);
+            void loadAndApplySpaceState(sid, space.name).then(() => {
+              if (resolvedPageId) {
+                setSelectedPageId(resolvedPageId);
+                setPages((prev) => expandToNode(prev, resolvedPageId));
+              }
+            });
+          });
+        };
+
         // Check if this exact space ID exists
-        const existingSpace = manifest.spaces.find((s) => s.id === route.spaceId);
+        const existingSpace = manifest.spaces.find((s) => s.id === resolvedSpaceId);
         if (existingSpace) {
-          switchToExistingSpace(manifest, route.spaceId);
+          switchToExistingSpace(manifest, resolvedSpaceId);
           return;
         }
 
         // Space not found — if it's a remote space ID, auto-create it by cloning
-        if (isRemoteSpaceId(route.spaceId) && backend instanceof BrowserFsBackend) {
-          const parsed = parseRemoteSpaceId(route.spaceId);
+        if (isRemoteSpaceId(resolvedSpaceId) && backend instanceof BrowserFsBackend) {
+          const parsed = parseRemoteSpaceId(resolvedSpaceId);
           if (parsed) {
             const autoSetupGitSpace = async () => {
               const repoName = parsed.repo.split('/').pop() ?? 'Remote';
@@ -400,9 +405,9 @@ export function App() {
 
                 setCloneStatus({ active: false });
 
-                if (route.pageId) {
-                  setSelectedPageId(route.pageId);
-                  setPages((prev) => expandToNode(prev, route.pageId!));
+                if (resolvedPageId) {
+                  setSelectedPageId(resolvedPageId);
+                  setPages((prev) => expandToNode(prev, resolvedPageId));
                 }
               } catch (err) {
                 const message = err instanceof Error ? err.message : 'Clone failed';
@@ -541,18 +546,23 @@ export function App() {
         if (route.pageId) setDocsSelectedPageId(route.pageId);
       } else {
         setActiveSpace('user');
-        if (route.pageId && route.pageId !== selectedPageId) {
-          const node = findNode(pages, route.pageId);
+        // Resolve the route to account for subPath splitting
+        const resolved = spacesManifest
+          ? resolveRouteToSpace(spacesManifest, route.spaceId, route.pageId)
+          : { spaceId: route.spaceId, pageId: route.pageId };
+        const pid = resolved.pageId;
+        if (pid && pid !== selectedPageId) {
+          const node = findNode(pages, pid);
           if (node) {
-            setSelectedPageId(route.pageId);
-            setPages((prev) => expandToNode(prev, route.pageId!));
+            setSelectedPageId(pid);
+            setPages((prev) => expandToNode(prev, pid));
           }
         }
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedPageId, pages]);
+  }, [selectedPageId, pages, spacesManifest]);
 
   // Persist tree state to backend (debounced) — page content is saved separately per-file
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
