@@ -129,14 +129,20 @@ export function isRemoteSpaceId(spaceId: string): boolean {
 
 /**
  * Convert a git space ID to a URL path (without base or /g/ prefix).
- * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs"
+ * Handles both new `::` separator and legacy `/` separator for subPath.
+ *
+ * e.g., "github.com/nsheaps/cept@main::docs" → "github.com/nsheaps/cept/blob/main/docs"
+ * e.g., "github.com/nsheaps/cept@claude/fix" → "github.com/nsheaps/cept/blob/claude/fix"
+ * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs" (legacy)
  */
 function spaceIdToUrlPath(spaceId: string): string {
   const atIdx = spaceId.indexOf('@');
   if (atIdx < 0) return spaceId;
   const repo = spaceId.substring(0, atIdx);
   const rest = spaceId.substring(atIdx + 1);
-  return `${repo}/blob/${rest}`;
+  // Replace :: with / for URL path (branch::subPath → branch/subPath)
+  const urlPath = rest.replace('::', '/');
+  return `${repo}/blob/${urlPath}`;
 }
 
 /** Known file extensions that indicate a page (file) rather than a directory. */

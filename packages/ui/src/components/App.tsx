@@ -46,6 +46,7 @@ import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
 import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
+import { NotFoundPage } from './not-found/NotFoundPage.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -120,6 +121,7 @@ export function App() {
   const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
   const [cloneStatus, setCloneStatus] = useState<{ active: boolean; message?: string; error?: string }>({ active: false });
   const [spaceLoadError, setSpaceLoadError] = useState<string | undefined>(undefined);
+  const [notFound, setNotFound] = useState<{ path?: string; message?: string } | null>(null);
   const { messages: toastMessages, addToast, dismissToast } = useToast();
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -411,13 +413,17 @@ export function App() {
                 }
               } catch (err) {
                 const message = err instanceof Error ? err.message : 'Clone failed';
-                setCloneStatus({ active: false, error: message });
+                setCloneStatus({ active: false });
+                const currentPath = window.location.pathname;
+                setNotFound({ path: currentPath, message: `Could not load remote repository: ${message}` });
               }
             };
             void autoSetupGitSpace();
           }
+        } else {
+          // Non-remote space not found — show 404
+          setNotFound({ path: window.location.pathname, message: 'The requested space does not exist.' });
         }
-        // Non-remote space not found — stay on current space
       });
     } else if (route.pageId) {
       const node = findNode(pages, route.pageId);
@@ -1375,6 +1381,20 @@ export function App() {
                 </button>
               </div>
             </div>
+          ) : notFound ? (
+            <NotFoundPage
+              path={notFound.path}
+              message={notFound.message}
+              onGoHome={() => {
+                setNotFound(null);
+                replaceRoute({ space: 'user', spaceId: 'default' });
+              }}
+              onGoToDocs={() => {
+                setNotFound(null);
+                setActiveSpace('docs');
+                pushRoute({ space: 'docs' });
+              }}
+            />
           ) : showOnboarding ? (
             <LandingPage
               onStartWriting={handleStartWriting}

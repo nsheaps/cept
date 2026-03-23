@@ -93,19 +93,34 @@ export async function createSpace(
 }
 
 /**
+ * Separator between branch and subPath in a remote space ID.
+ * Using `::` avoids ambiguity with `/` in branch names like `claude/fix-issues`.
+ *
+ * Format: `repo@branch[::subPath]`
+ * e.g., "github.com/nsheaps/cept@main::docs"
+ * e.g., "github.com/nsheaps/cept@claude/setup-fix::docs"
+ *
+ * Legacy format (still supported for parsing): `repo@branch[/subPath]`
+ */
+const SUBPATH_SEPARATOR = '::';
+
+/**
  * Generate a deterministic space ID from repo URL, branch, and optional sub-path.
- * Uses `@` to separate repo from branch for unambiguous parsing.
- * e.g., "https://github.com/nsheaps/cept" + "main" + "docs/" → "github.com/nsheaps/cept@main/docs"
+ * Uses `@` to separate repo from branch and `::` to separate branch from subPath.
+ * This avoids ambiguity when branch names contain `/` (e.g., "claude/fix-issues").
+ *
+ * e.g., "https://github.com/nsheaps/cept" + "main" + "docs/" → "github.com/nsheaps/cept@main::docs"
+ * e.g., "https://github.com/nsheaps/cept" + "claude/fix" → "github.com/nsheaps/cept@claude/fix"
  */
 export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath?: string): string {
   // Strip protocol and trailing slashes
   const repo = remoteUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
   let id = `${repo}@${branch}`;
-  // Append sub-path if present
+  // Append sub-path if present, using :: separator
   if (subPath) {
     const cleanSubPath = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
     if (cleanSubPath) {
-      id += `/${cleanSubPath}`;
+      id += `${SUBPATH_SEPARATOR}${cleanSubPath}`;
     }
   }
   return id;
@@ -113,6 +128,7 @@ export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath
 
 /**
  * Parse a remote space ID back into its components.
+ * Supports both new format (`repo@branch::subPath`) and legacy (`repo@branch/subPath`).
  * Returns null if the ID is not a valid remote space ID.
  */
 export function parseRemoteSpaceId(spaceId: string): { repo: string; branch: string; subPath?: string } | null {
@@ -120,6 +136,17 @@ export function parseRemoteSpaceId(spaceId: string): { repo: string; branch: str
   if (atIdx < 0) return null;
   const repo = spaceId.substring(0, atIdx);
   const rest = spaceId.substring(atIdx + 1);
+
+  // New format: branch::subPath (unambiguous even with / in branch names)
+  const sepIdx = rest.indexOf(SUBPATH_SEPARATOR);
+  if (sepIdx >= 0) {
+    const branch = rest.substring(0, sepIdx);
+    const subPath = rest.substring(sepIdx + SUBPATH_SEPARATOR.length);
+    return subPath ? { repo, branch, subPath } : { repo, branch };
+  }
+
+  // Legacy format: branch/subPath (ambiguous for branches with /)
+  // For backward compatibility, split on first /
   const slashIdx = rest.indexOf('/');
   if (slashIdx < 0) {
     return { repo, branch: rest };
@@ -270,28 +297,70 @@ export function resolveRouteToSpace(
     return { spaceId: routeSpaceId, pageId: undefined };
   }
 
-  // Find all spaces that match the same repo and branch
-  const candidates = manifest.spaces
-    .map((s) => ({ meta: s, parsed: parseRemoteSpaceId(s.id) }))
-    .filter(({ parsed }) => parsed !== null && parsed.repo === routeParsed.repo && parsed.branch === routeParsed.branch);
+  // Find all spaces that match the same repo.
+  // Use SpaceMeta.branch (explicitly stored) instead of parsing from the ID,
+  // since branch names may contain `/` making ID parsing ambiguous.
+  const repoCandidates = manifest.spaces
+    .filter((s) => {
+      const p = parseRemoteSpaceId(s.id);
+      return p !== null && p.repo === routeParsed.repo;
+    });
 
-  // Sort by subPath length descending (most specific match first)
-  candidates.sort((a, b) => (b.parsed?.subPath?.length ?? 0) - (a.parsed?.subPath?.length ?? 0));
+  // Try matching with the router's branch guess first, then try multi-segment branches.
+  // The router only takes the first segment after `blob` as the branch, but the actual
+  // branch might be multi-segment (e.g., "claude/setup-fix").
+  //
+  // Strategy: the router's pageId might start with extra branch segments.
+  // e.g., branch="claude", pageId="setup-fix/docs/intro.md" when actual branch is "claude/setup-fix"
+  //
+  // We try matching against each space's explicitly stored branch field.
 
-  for (const { meta, parsed } of candidates) {
-    if (parsed?.subPath) {
-      // Check if the file path starts with this space's subPath
-      const prefix = parsed.subPath.endsWith('/') ? parsed.subPath : parsed.subPath + '/';
-      if (routePageId.startsWith(prefix)) {
-        return { spaceId: meta.id, pageId: routePageId.substring(prefix.length) };
-      }
-      if (routePageId === parsed.subPath) {
-        return { spaceId: meta.id, pageId: undefined };
+  // Build a combined "branchAndRest" string: everything after repo@
+  // e.g., if router says branch="claude" pageId="setup-fix/docs/intro.md"
+  // then fullPath = "claude/setup-fix/docs/intro.md"
+  const fullPath = routePageId
+    ? `${routeParsed.branch}/${routePageId}`
+    : routeParsed.branch;
+
+  // Score candidates by how well they match
+  type Match = { meta: SpaceMeta; branch: string; subPath?: string; pageId: string | undefined; score: number };
+  const matches: Match[] = [];
+
+  for (const space of repoCandidates) {
+    const spaceBranch = space.branch ?? parseRemoteSpaceId(space.id)?.branch;
+    if (!spaceBranch) continue;
+
+    // Check if fullPath starts with this space's branch
+    if (fullPath === spaceBranch) {
+      // Exact branch match, no remaining path
+      matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: undefined, score: spaceBranch.length * 10 });
+      continue;
+    }
+
+    if (!fullPath.startsWith(spaceBranch + '/')) continue;
+
+    const afterBranch = fullPath.substring(spaceBranch.length + 1);
+    // afterBranch now contains: [subPath/][pageId]
+
+    if (space.subPath) {
+      const spPrefix = space.subPath.endsWith('/') ? space.subPath : space.subPath + '/';
+      if (afterBranch.startsWith(spPrefix)) {
+        const adjustedPageId = afterBranch.substring(spPrefix.length) || undefined;
+        matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: adjustedPageId, score: spaceBranch.length * 10 + (space.subPath?.length ?? 0) });
+      } else if (afterBranch === space.subPath) {
+        matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: undefined, score: spaceBranch.length * 10 + (space.subPath?.length ?? 0) });
       }
     } else {
-      // Space with no subPath — matches everything
-      return { spaceId: meta.id, pageId: routePageId };
+      // No subPath — the rest is the pageId
+      matches.push({ meta: space, branch: spaceBranch, pageId: afterBranch || undefined, score: spaceBranch.length * 10 });
     }
+  }
+
+  if (matches.length > 0) {
+    // Pick the most specific match (highest score)
+    matches.sort((a, b) => b.score - a.score);
+    const best = matches[0];
+    return { spaceId: best.meta.id, pageId: best.pageId };
   }
 
   return { spaceId: routeSpaceId, pageId: routePageId };
