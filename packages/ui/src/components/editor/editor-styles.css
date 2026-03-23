@@ -165,13 +165,23 @@
 /* Color swatch for inline code containing CSS color values */
 .cept-color-swatch {
   display: inline-block;
+  position: relative;
   width: 0.8em;
   height: 0.8em;
   border-radius: 2px;
   margin-right: 0.25em;
   vertical-align: -0.05em;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  /* Checkerboard pattern to reveal transparency in alpha colors */
+  /* background-color is set via inline style in the widget */
+}
+
+/* Checkerboard behind the color — only visible through transparent/semi-transparent colors */
+.cept-color-swatch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: -1;
   background-image:
     linear-gradient(45deg, #ccc 25%, transparent 25%),
     linear-gradient(-45deg, #ccc 25%, transparent 25%),
