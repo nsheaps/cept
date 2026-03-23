@@ -1437,6 +1437,7 @@ export function App() {
                   content={currentContent}
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
+                  editable={!isRemoteSpaceId(userSpaceId)}
                 />
               ) : (
                 <div className="text-center text-gray-400 mt-8" data-testid="page-loading">Loading...</div>
