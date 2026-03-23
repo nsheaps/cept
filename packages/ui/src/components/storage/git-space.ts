@@ -6,7 +6,7 @@
  */
 
 import { GitBackend, BrowserFsBackend } from '@cept/core';
-import type { GitHttp, GitFs } from '@cept/core';
+import type { GitHttp, GitFs, DirEntry } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
 /** Result of cloning a remote repo into a space */
@@ -83,8 +83,107 @@ export async function cloneRemoteRepo(
   return { pages, pageContents };
 }
 
+/** Names that serve as folder index/readme files */
+const INDEX_NAMES = new Set(['readme', 'index']);
+
+/** Check if a filename is a folder index (README.md, index.md, etc.) */
+function isFolderIndex(filename: string): boolean {
+  const name = filename.replace(/\.(md|markdown)$/i, '').toLowerCase();
+  return INDEX_NAMES.has(name);
+}
+
+/**
+ * Configuration from a .cept.yaml file.
+ * Only configuration settings, not metadata (titles come from frontmatter).
+ */
+export interface CeptFolderConfig {
+  /** Files or directories to hide from the sidebar */
+  hide?: string[];
+}
+
+/**
+ * Try to read and parse a .cept.yaml file from a directory.
+ * Returns null if the file doesn't exist or can't be parsed.
+ */
+async function readCeptYaml(backend: BrowserFsBackend, dirPath: string): Promise<CeptFolderConfig | null> {
+  try {
+    const data = await backend.readFile(`${dirPath}/.cept.yaml`);
+    if (!data) return null;
+    const content = new TextDecoder().decode(data);
+    // Simple YAML parser for the subset we need (hide: [list])
+    return parseCeptYaml(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Minimal YAML parser for .cept.yaml files.
+ * Supports: `hide:` with a list of strings (either inline `[a, b]` or block `- a`).
+ */
+export function parseCeptYaml(content: string): CeptFolderConfig {
+  const config: CeptFolderConfig = {};
+  const lines = content.split('\n');
+  let inHideList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Inline array: hide: [specs, tests]
+    const inlineMatch = trimmed.match(/^hide:\s*\[(.+)]$/);
+    if (inlineMatch) {
+      config.hide = inlineMatch[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, ''));
+      inHideList = false;
+      continue;
+    }
+
+    // Block list start: hide:
+    if (trimmed === 'hide:') {
+      config.hide = [];
+      inHideList = true;
+      continue;
+    }
+
+    // Block list item: - specs
+    if (inHideList && trimmed.startsWith('- ')) {
+      const value = trimmed.substring(2).trim().replace(/^['"]|['"]$/g, '');
+      config.hide?.push(value);
+      continue;
+    }
+
+    // Any non-indented key ends the list
+    if (inHideList && trimmed && !trimmed.startsWith('-') && !trimmed.startsWith(' ')) {
+      inHideList = false;
+    }
+  }
+
+  return config;
+}
+
+/**
+ * Extract YAML front matter from markdown content and return it as key-value pairs.
+ * Returns null if no front matter is found.
+ */
+function extractFrontMatter(content: string): Record<string, string> | null {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+  const result: Record<string, string> = {};
+  for (const line of match[1].split('\n')) {
+    const kvMatch = line.match(/^(\w+):\s*(.+)$/);
+    if (kvMatch) {
+      result[kvMatch[1]] = kvMatch[2].trim().replace(/^['"]|['"]$/g, '');
+    }
+  }
+  return result;
+}
+
 /**
  * Recursively walk a directory and collect markdown files as pages.
+ *
+ * - README.md / index.md in a folder becomes the folder's page content
+ *   (not a separate page). Frontmatter provides titles.
+ * - .cept.yaml in a folder can hide files/folders from the sidebar.
+ * - Applies to the folder and its subfolders.
  */
 async function walkMarkdownFiles(
   backend: BrowserFsBackend,
@@ -92,6 +191,7 @@ async function walkMarkdownFiles(
   relativePath: string,
   pages: PageTreeNode[],
   pageContents: Record<string, string>,
+  parentHidden?: Set<string>,
 ): Promise<void> {
   const currentDir = relativePath ? `${baseDir}/${relativePath}` : baseDir;
 
@@ -102,33 +202,43 @@ async function walkMarkdownFiles(
     return; // Directory doesn't exist or can't be read
   }
 
+  // Read .cept.yaml for folder configuration
+  const config = await readCeptYaml(backend, currentDir);
+  const hiddenSet = new Set<string>(config?.hide ?? []);
+  // Merge parent's hidden patterns if applicable
+  if (parentHidden) {
+    for (const h of parentHidden) hiddenSet.add(h);
+  }
+
   // Sort: directories first, then files alphabetically
-  const dirs = entries.filter((e) => e.isDirectory && !e.name.startsWith('.'));
+  const dirs = entries.filter((e) => e.isDirectory && !e.name.startsWith('.') && !hiddenSet.has(e.name));
   const files = entries.filter((e) => e.isFile && (e.name.endsWith('.md') || e.name.endsWith('.markdown')));
 
   dirs.sort((a, b) => a.name.localeCompare(b.name));
   files.sort((a, b) => a.name.localeCompare(b.name));
 
-  // Process markdown files
-  for (const file of files) {
+  // Separate index files (README.md, index.md) from regular files
+  const indexFiles = files.filter((f) => isFolderIndex(f.name));
+  const regularFiles = files.filter((f) => !isFolderIndex(f.name) && !hiddenSet.has(f.name));
+
+  // Process regular markdown files (not index files)
+  for (const file of regularFiles) {
     const filePath = relativePath ? `${relativePath}/${file.name}` : file.name;
     const pageId = filePath;
-    const title = extractTitleFromFilename(file.name);
 
-    // Read the file content
     const fullPath = `${baseDir}/${filePath}`;
     const data = await backend.readFile(fullPath);
     if (data) {
-      const content = new TextDecoder().decode(data);
-      const strippedContent = stripYamlFrontMatter(content);
-
-      // Try to extract title from first heading
+      const rawContent = new TextDecoder().decode(data);
+      const frontMatter = extractFrontMatter(rawContent);
+      const strippedContent = stripYamlFrontMatter(rawContent);
       const headingTitle = extractTitleFromContent(strippedContent);
+      const fmTitle = frontMatter?.title;
 
       pageContents[pageId] = strippedContent;
       pages.push({
         id: pageId,
-        title: headingTitle ?? title,
+        title: fmTitle ?? headingTitle ?? extractTitleFromFilename(file.name),
         children: [],
       });
     }
@@ -138,7 +248,7 @@ async function walkMarkdownFiles(
   for (const dir of dirs) {
     const dirPath = relativePath ? `${relativePath}/${dir.name}` : dir.name;
     const folderId = dirPath;
-    const folderTitle = dir.name.charAt(0).toUpperCase() + dir.name.slice(1).replace(/-/g, ' ');
+    let folderTitle = dir.name.charAt(0).toUpperCase() + dir.name.slice(1).replace(/-/g, ' ');
 
     const children: PageTreeNode[] = [];
     const folderNode: PageTreeNode = {
@@ -148,14 +258,66 @@ async function walkMarkdownFiles(
       children,
     };
 
-    await walkMarkdownFiles(backend, baseDir, dirPath, children, pageContents);
+    await walkMarkdownFiles(backend, baseDir, dirPath, children, pageContents, hiddenSet);
 
     // Only add the folder if it has content
-    if (children.length > 0) {
-      // Generate a simple index page for the folder
-      const childLinks = children.map((c) => `- **${c.title}**`).join('\n');
-      pageContents[folderId] = `# ${folderTitle}\n\n${childLinks}`;
+    if (children.length > 0 || indexFiles.length > 0) {
+      // Check subdirectory for a README/index to use as folder content
+      const subDir = `${baseDir}/${dirPath}`;
+      let subEntries: DirEntry[];
+      try {
+        subEntries = await backend.listDirectory(subDir);
+      } catch {
+        subEntries = [];
+      }
+      const subIndexFiles = subEntries.filter((e) => e.isFile && isFolderIndex(e.name));
+
+      let folderContent: string | null = null;
+      for (const idx of subIndexFiles) {
+        const data = await backend.readFile(`${subDir}/${idx.name}`);
+        if (data) {
+          const rawContent = new TextDecoder().decode(data);
+          const frontMatter = extractFrontMatter(rawContent);
+          if (frontMatter?.title) {
+            folderTitle = frontMatter.title;
+            folderNode.title = folderTitle;
+          }
+          folderContent = stripYamlFrontMatter(rawContent);
+          break;
+        }
+      }
+
+      if (!folderContent) {
+        // No README/index — auto-generate index page
+        const childLinks = children.map((c) => `- **${c.title}**`).join('\n');
+        folderContent = `# ${folderTitle}\n\n${childLinks}`;
+      }
+
+      pageContents[folderId] = folderContent;
       pages.push(folderNode);
+    }
+  }
+
+  // If this is the root level and there are index files, use them for the space root
+  // (the index file content is read by the caller for the space's root page)
+  if (!relativePath) {
+    for (const idx of indexFiles) {
+      const fullPath = `${baseDir}/${idx.name}`;
+      const data = await backend.readFile(fullPath);
+      if (data) {
+        const rawContent = new TextDecoder().decode(data);
+        const strippedContent = stripYamlFrontMatter(rawContent);
+        // Store with the index file path as page ID
+        pageContents[idx.name] = strippedContent;
+        const frontMatter = extractFrontMatter(rawContent);
+        const headingTitle = extractTitleFromContent(strippedContent);
+        pages.unshift({
+          id: idx.name,
+          title: frontMatter?.title ?? headingTitle ?? 'Index',
+          children: [],
+        });
+        break; // Only use the first index file found
+      }
     }
   }
 }
