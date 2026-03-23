@@ -263,11 +263,11 @@ async function migrateSpacePageContentsToFiles(
 
 /**
  * Normalize a page ID to a storage filename.
- * If the page ID already ends with .md or .markdown, use it as-is.
+ * If the page ID already has a known content extension, use it as-is.
  * Otherwise, append .md.
  */
 function pageIdToFilename(pageId: string): string {
-  if (pageId.endsWith('.md') || pageId.endsWith('.markdown')) return pageId;
+  if (/\.(md|markdown|mdx|txt|html)$/i.test(pageId)) return pageId;
   return `${pageId}.md`;
 }
 

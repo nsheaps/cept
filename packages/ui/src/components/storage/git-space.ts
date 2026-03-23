@@ -164,7 +164,7 @@ export function parseCeptYaml(content: string): CeptFolderConfig {
  * Extract YAML front matter from markdown content and return it as key-value pairs.
  * Returns null if no front matter is found.
  */
-function extractFrontMatter(content: string): Record<string, string> | null {
+export function extractFrontMatter(content: string): Record<string, string> | null {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return null;
   const result: Record<string, string> = {};

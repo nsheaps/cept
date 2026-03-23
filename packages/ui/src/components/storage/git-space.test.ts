@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeRepoUrl, parseCeptYaml } from './git-space.js';
+import { normalizeRepoUrl, parseCeptYaml, extractFrontMatter } from './git-space.js';
 
 describe('normalizeRepoUrl', () => {
   it('should add https:// to bare domain', () => {
@@ -47,5 +47,26 @@ describe('parseCeptYaml', () => {
   it('stops reading list at next key', () => {
     const config = parseCeptYaml('hide:\n  - specs\nother: value');
     expect(config.hide).toEqual(['specs']);
+  });
+});
+
+describe('extractFrontMatter', () => {
+  it('extracts key-value pairs from front matter', () => {
+    const result = extractFrontMatter('---\ntitle: My Page\nauthor: Test\n---\n# Content');
+    expect(result).toEqual({ title: 'My Page', author: 'Test' });
+  });
+
+  it('returns null when no front matter', () => {
+    expect(extractFrontMatter('# Just a heading\n\nSome content')).toBeNull();
+  });
+
+  it('strips quotes from values', () => {
+    const result = extractFrontMatter("---\ntitle: 'Quoted Title'\n---\n");
+    expect(result).toEqual({ title: 'Quoted Title' });
+  });
+
+  it('handles empty front matter', () => {
+    const result = extractFrontMatter('---\n\n---\n# Content');
+    expect(result).toEqual({});
   });
 });

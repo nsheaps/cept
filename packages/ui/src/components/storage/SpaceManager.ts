@@ -284,83 +284,64 @@ export function resolveRouteToSpace(
     return { spaceId: routeSpaceId, pageId: routePageId };
   }
 
-  // If the exact space ID exists AND it has a subPath (meaning the URL parser already
-  // determined the full space ID), return it directly
+  // If the exact space ID exists AND it has a subPath, return it directly
   const exact = manifest.spaces.find((s) => s.id === routeSpaceId);
   if (exact && routeParsed.subPath) {
     return { spaceId: routeSpaceId, pageId: routePageId };
   }
 
-  // If no page ID, the URL is a space root — return exact or as-is
+  // If no page ID, the URL is a space root — return as-is
   if (!routePageId) {
-    if (exact) return { spaceId: routeSpaceId, pageId: undefined };
     return { spaceId: routeSpaceId, pageId: undefined };
   }
 
-  // Find all spaces that match the same repo.
-  // Use SpaceMeta.branch (explicitly stored) instead of parsing from the ID,
-  // since branch names may contain `/` making ID parsing ambiguous.
-  const repoCandidates = manifest.spaces
-    .filter((s) => {
-      const p = parseRemoteSpaceId(s.id);
-      return p !== null && p.repo === routeParsed.repo;
-    });
+  // Build a combined path: everything after repo@.
+  // The router may have split a multi-segment branch incorrectly
+  // (e.g., branch="claude", pageId="setup-fix/docs/intro.md"
+  //  when actual branch is "claude/setup-fix").
+  const fullPath = `${routeParsed.branch}/${routePageId}`;
 
-  // Try matching with the router's branch guess first, then try multi-segment branches.
-  // The router only takes the first segment after `blob` as the branch, but the actual
-  // branch might be multi-segment (e.g., "claude/setup-fix").
-  //
-  // Strategy: the router's pageId might start with extra branch segments.
-  // e.g., branch="claude", pageId="setup-fix/docs/intro.md" when actual branch is "claude/setup-fix"
-  //
-  // We try matching against each space's explicitly stored branch field.
+  // Find the best matching space using longest-prefix matching.
+  // Longer matches (branch + subPath) are preferred over shorter ones.
+  const repoCandidates = manifest.spaces.filter((s) => {
+    const p = parseRemoteSpaceId(s.id);
+    return p !== null && p.repo === routeParsed.repo;
+  });
 
-  // Build a combined "branchAndRest" string: everything after repo@
-  // e.g., if router says branch="claude" pageId="setup-fix/docs/intro.md"
-  // then fullPath = "claude/setup-fix/docs/intro.md"
-  const fullPath = routePageId
-    ? `${routeParsed.branch}/${routePageId}`
-    : routeParsed.branch;
-
-  // Score candidates by how well they match
-  type Match = { meta: SpaceMeta; branch: string; subPath?: string; pageId: string | undefined; score: number };
-  const matches: Match[] = [];
+  let bestMatch: { space: SpaceMeta; pageId: string | undefined; matchLen: number } | null = null;
 
   for (const space of repoCandidates) {
     const spaceBranch = space.branch ?? parseRemoteSpaceId(space.id)?.branch;
     if (!spaceBranch) continue;
 
-    // Check if fullPath starts with this space's branch
-    if (fullPath === spaceBranch) {
-      // Exact branch match, no remaining path
-      matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: undefined, score: spaceBranch.length * 10 });
-      continue;
-    }
+    if (!fullPath.startsWith(spaceBranch + '/') && fullPath !== spaceBranch) continue;
 
-    if (!fullPath.startsWith(spaceBranch + '/')) continue;
-
-    const afterBranch = fullPath.substring(spaceBranch.length + 1);
-    // afterBranch now contains: [subPath/][pageId]
+    const afterBranch = fullPath === spaceBranch ? '' : fullPath.substring(spaceBranch.length + 1);
 
     if (space.subPath) {
       const spPrefix = space.subPath.endsWith('/') ? space.subPath : space.subPath + '/';
       if (afterBranch.startsWith(spPrefix)) {
+        const matchLen = spaceBranch.length + space.subPath.length;
         const adjustedPageId = afterBranch.substring(spPrefix.length) || undefined;
-        matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: adjustedPageId, score: spaceBranch.length * 10 + (space.subPath?.length ?? 0) });
+        if (!bestMatch || matchLen > bestMatch.matchLen) {
+          bestMatch = { space, pageId: adjustedPageId, matchLen };
+        }
       } else if (afterBranch === space.subPath) {
-        matches.push({ meta: space, branch: spaceBranch, subPath: space.subPath, pageId: undefined, score: spaceBranch.length * 10 + (space.subPath?.length ?? 0) });
+        const matchLen = spaceBranch.length + space.subPath.length;
+        if (!bestMatch || matchLen > bestMatch.matchLen) {
+          bestMatch = { space, pageId: undefined, matchLen };
+        }
       }
     } else {
-      // No subPath — the rest is the pageId
-      matches.push({ meta: space, branch: spaceBranch, pageId: afterBranch || undefined, score: spaceBranch.length * 10 });
+      const matchLen = spaceBranch.length;
+      if (!bestMatch || matchLen > bestMatch.matchLen) {
+        bestMatch = { space, pageId: afterBranch || undefined, matchLen };
+      }
     }
   }
 
-  if (matches.length > 0) {
-    // Pick the most specific match (highest score)
-    matches.sort((a, b) => b.score - a.score);
-    const best = matches[0];
-    return { spaceId: best.meta.id, pageId: best.pageId };
+  if (bestMatch) {
+    return { spaceId: bestMatch.space.id, pageId: bestMatch.pageId };
   }
 
   return { spaceId: routeSpaceId, pageId: routePageId };

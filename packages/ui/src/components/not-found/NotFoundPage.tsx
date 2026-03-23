@@ -14,9 +14,11 @@ export interface NotFoundPageProps {
   onGoHome: () => void;
   /** Navigate to the docs space */
   onGoToDocs: () => void;
+  /** Navigate back (if history is available) */
+  onGoBack?: () => void;
 }
 
-export function NotFoundPage({ path, message, onGoHome, onGoToDocs }: NotFoundPageProps) {
+export function NotFoundPage({ path, message, onGoHome, onGoToDocs, onGoBack }: NotFoundPageProps) {
   return (
     <div className="cept-not-found" data-testid="not-found-page">
       <div className="cept-not-found-content">
@@ -47,13 +49,15 @@ export function NotFoundPage({ path, message, onGoHome, onGoToDocs }: NotFoundPa
           >
             View Docs
           </button>
-          <button
-            className="cept-not-found-btn"
-            onClick={() => window.history.back()}
-            data-testid="not-found-go-back"
-          >
-            Go Back
-          </button>
+          {onGoBack && (
+            <button
+              className="cept-not-found-btn"
+              onClick={onGoBack}
+              data-testid="not-found-go-back"
+            >
+              Go Back
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -546,6 +546,7 @@ export function App() {
   // Listen for back/forward navigation (popstate)
   useEffect(() => {
     const handlePopState = () => {
+      setNotFound(null); // Clear 404 on navigation
       const route = parseRoute();
       if (route.space === 'docs') {
         setActiveSpace('docs');
@@ -1124,40 +1125,38 @@ export function App() {
     setDocsPages((prev) => toggleNode(prev, id));
   }, []);
 
-  // Track cached stats for inactive spaces
+  // Track cached stats for inactive spaces (page count from workspace state)
   const [inactiveSpaceStats, setInactiveSpaceStats] = useState<Record<string, { pageCount: number; contentSize: number }>>({});
 
-  // Load stats for inactive spaces asynchronously
+  // Load stats for inactive spaces asynchronously.
+  // Only loads page count from workspace state — avoids reading all page content.
   useEffect(() => {
     if (!spacesManifest) return;
+    let cancelled = false;
     const loadStats = async () => {
       const stats: Record<string, { pageCount: number; contentSize: number }> = {};
       for (const space of spacesManifest.spaces) {
+        if (cancelled) return;
         if (space.id === userSpaceId) continue;
         try {
           const state = await loadSpaceState(backend, space.id);
-          if (state) {
+          if (state && !cancelled) {
             const spacePages = state.pages ?? [];
-            const count = flattenPages(spacePages).length;
-            // Estimate content size from stored page contents
-            let size = 0;
-            for (const page of flattenPages(spacePages)) {
-              try {
-                const content = await readSpacePageContent(backend, space.id, page.id);
-                if (content) size += content.length;
-              } catch {
-                // ignore
-              }
-            }
-            stats[space.id] = { pageCount: count, contentSize: size };
+            stats[space.id] = {
+              pageCount: flattenPages(spacePages).length,
+              contentSize: 0, // Would require reading all files; show 0 for inactive
+            };
           }
         } catch {
           // Space state not available
         }
       }
-      setInactiveSpaceStats(stats);
+      if (!cancelled) {
+        setInactiveSpaceStats(stats);
+      }
     };
     void loadStats();
+    return () => { cancelled = true; };
   }, [spacesManifest, userSpaceId, backend]);
 
   const spaceInfoList = useMemo((): SpaceInfo[] => {
@@ -1215,6 +1214,23 @@ export function App() {
     return list;
   }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats]);
 
+  /** Known Git hosting domains — only these produce "View on GitHub" links. */
+  const KNOWN_GIT_HOSTS = ['github.com', 'gitlab.com', 'bitbucket.org'];
+
+  const currentGithubUrl = useMemo((): string | undefined => {
+    if (activeSpace === 'docs' && docsSelectedPageId) {
+      return getDocsSourceUrl(docsSelectedPageId) ?? undefined;
+    }
+    if (activeSpace !== 'user' || !selectedPageId || !isRemoteSpaceId(userSpaceId)) return undefined;
+    const parsed = parseRemoteSpaceId(userSpaceId);
+    if (!parsed) return undefined;
+    // Only link to known Git hosting domains to prevent open redirect
+    const host = parsed.repo.split('/')[0];
+    if (!KNOWN_GIT_HOSTS.includes(host)) return undefined;
+    const subPath = parsed.subPath ? `${parsed.subPath}/` : '';
+    return `https://${parsed.repo}/blob/${parsed.branch}/${subPath}${selectedPageId}`;
+  }, [activeSpace, docsSelectedPageId, selectedPageId, userSpaceId]);
+
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
     { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
@@ -1263,16 +1279,7 @@ export function App() {
         <AppMenu
           pageId={activeSpace === 'user' ? selectedPageId : undefined}
           isFavorite={selectedPageId ? favorites.some((f) => f.id === selectedPageId) : false}
-          githubUrl={(() => {
-            if (activeSpace === 'docs' && docsSelectedPageId) {
-              return getDocsSourceUrl(docsSelectedPageId) ?? undefined;
-            }
-            if (activeSpace !== 'user' || !selectedPageId || !isRemoteSpaceId(userSpaceId)) return undefined;
-            const parsed = parseRemoteSpaceId(userSpaceId);
-            if (!parsed) return undefined;
-            const subPath = parsed.subPath ? `${parsed.subPath}/` : '';
-            return `https://${parsed.repo}/blob/${parsed.branch}/${subPath}${selectedPageId}`;
-          })()}
+          githubUrl={currentGithubUrl}
           onToggleFavorite={handleToggleFavorite}
           onRename={() => {
             const titleEl = document.querySelector('[data-testid="page-title"]') as HTMLElement;
@@ -1428,6 +1435,10 @@ export function App() {
                 setActiveSpace('docs');
                 pushRoute({ space: 'docs' });
               }}
+              onGoBack={window.history.length > 1 ? () => {
+                setNotFound(null);
+                window.history.back();
+              } : undefined}
             />
           ) : showOnboarding ? (
             <LandingPage
