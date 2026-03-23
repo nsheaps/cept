@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SettingsModal, DEFAULT_SETTINGS } from './SettingsModal.js';
 import type { SpaceInfo } from './SettingsModal.js';
 
@@ -185,6 +185,43 @@ describe('SettingsModal', () => {
     expect(screen.getByTestId('settings-panel-about')).toBeDefined();
     const versionEl = screen.getByTestId('about-version');
     expect(versionEl.textContent).toContain('Version');
+  });
+
+  it('shows licenses, privacy policy, and terms links in about tab', () => {
+    render(<SettingsModal {...defaultProps} initialTab="about" />);
+    expect(screen.getByTestId('about-licenses-btn')).toBeDefined();
+    expect(screen.getByTestId('about-privacy-link')).toBeDefined();
+    expect(screen.getByTestId('about-terms-link')).toBeDefined();
+  });
+
+  it('navigates to licenses subpage when licenses button clicked', () => {
+    render(<SettingsModal {...defaultProps} initialTab="about" />);
+    fireEvent.click(screen.getByTestId('about-licenses-btn'));
+    expect(screen.getByTestId('licenses-disclosure')).toBeDefined();
+    expect(screen.queryByTestId('settings-panel-about')).toBeNull();
+  });
+
+  it('navigates back from licenses subpage', () => {
+    render(<SettingsModal {...defaultProps} initialTab="about" />);
+    fireEvent.click(screen.getByTestId('about-licenses-btn'));
+    expect(screen.getByTestId('licenses-disclosure')).toBeDefined();
+    fireEvent.click(screen.getByTestId('licenses-back'));
+    expect(screen.getByTestId('settings-panel-about')).toBeDefined();
+    expect(screen.queryByTestId('licenses-disclosure')).toBeNull();
+  });
+
+  it('privacy policy link points to docs site', () => {
+    render(<SettingsModal {...defaultProps} initialTab="about" />);
+    const link = screen.getByTestId('about-privacy-link');
+    expect(link.getAttribute('href')).toBe('https://nsheaps.github.io/cept/privacy-policy');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('terms of service link points to docs site', () => {
+    render(<SettingsModal {...defaultProps} initialTab="about" />);
+    const link = screen.getByTestId('about-terms-link');
+    expect(link.getAttribute('href')).toBe('https://nsheaps.github.io/cept/terms-of-service');
+    expect(link.getAttribute('target')).toBe('_blank');
   });
 
   it('resets settings when reset button clicked', () => {

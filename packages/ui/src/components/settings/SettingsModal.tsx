@@ -114,6 +114,7 @@ export function SettingsModal({
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
   const [refreshingSpaceId, setRefreshingSpaceId] = useState<string | null>(null);
+  const [showLicenses, setShowLicenses] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -121,6 +122,7 @@ export function SettingsModal({
       setActiveTab(initialTab);
       setSelectedSpaceId(null);
       setBrowsingSpaceId(null);
+      setShowLicenses(false);
     }
   }, [isOpen, initialTab]);
 
@@ -491,7 +493,7 @@ export function SettingsModal({
             )}
 
 
-            {activeTab === 'about' && (
+            {activeTab === 'about' && !showLicenses && (
               <div className="cept-settings-about" data-testid="settings-panel-about">
                 <div className="cept-settings-about-logo">C</div>
                 <h3>Cept</h3>
@@ -506,11 +508,125 @@ export function SettingsModal({
                 <p className="cept-settings-about-footer">
                   Built with React, TipTap, and love.
                 </p>
+                <div className="cept-settings-section-divider" />
+                <div className="cept-settings-about-links">
+                  <button
+                    className="cept-settings-about-link"
+                    onClick={() => setShowLicenses(true)}
+                    data-testid="about-licenses-btn"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" />
+                      <path d="M5 5h6M5 8h6M5 11h3" />
+                    </svg>
+                    Open Source Licenses
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="cept-settings-about-link-chevron">
+                      <path d="M6 4l4 4-4 4" />
+                    </svg>
+                  </button>
+                  <a
+                    className="cept-settings-about-link"
+                    href="https://nsheaps.github.io/cept/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="about-privacy-link"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8 1L3 3v4c0 3.5 2.5 6.5 5 7.5 2.5-1 5-4 5-7.5V3L8 1z" />
+                    </svg>
+                    Privacy Policy
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="cept-settings-about-link-chevron">
+                      <path d="M5 3l1-1h6v6l-1 1M3 7h6v6M9 7L3 13" />
+                    </svg>
+                  </a>
+                  <a
+                    className="cept-settings-about-link"
+                    href="https://nsheaps.github.io/cept/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="about-terms-link"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 2h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" />
+                      <path d="M5 6h6M5 9h6M5 12h4" />
+                    </svg>
+                    Terms of Service
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="cept-settings-about-link-chevron">
+                      <path d="M5 3l1-1h6v6l-1 1M3 7h6v6M9 7L3 13" />
+                    </svg>
+                  </a>
+                </div>
               </div>
+            )}
+
+            {activeTab === 'about' && showLicenses && (
+              <LicensesDisclosure onBack={() => setShowLicenses(false)} />
             )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface LicenseEntry {
+  name: string;
+  license: string;
+  url: string;
+}
+
+const LICENSES: LicenseEntry[] = [
+  { name: 'React', license: 'MIT', url: 'https://github.com/facebook/react' },
+  { name: 'TipTap', license: 'MIT', url: 'https://github.com/ueberdosis/tiptap' },
+  { name: 'ProseMirror', license: 'MIT', url: 'https://github.com/ProseMirror/prosemirror' },
+  { name: 'isomorphic-git', license: 'MIT', url: 'https://github.com/nicolo-ribaudo/isomorphic-git' },
+  { name: 'LightningFS', license: 'MIT', url: 'https://github.com/nicolo-ribaudo/lightning-fs' },
+  { name: 'KaTeX', license: 'MIT', url: 'https://github.com/KaTeX/KaTeX' },
+  { name: 'Mermaid', license: 'MIT', url: 'https://github.com/mermaid-js/mermaid' },
+  { name: 'lowlight', license: 'MIT', url: 'https://github.com/wooorm/lowlight' },
+  { name: 'Tippy.js', license: 'MIT', url: 'https://github.com/atomiks/tippyjs' },
+  { name: 'unified', license: 'MIT', url: 'https://github.com/unifiedjs/unified' },
+  { name: 'remark', license: 'MIT', url: 'https://github.com/remarkjs/remark' },
+  { name: 'js-yaml', license: 'MIT', url: 'https://github.com/nodeca/js-yaml' },
+];
+
+function LicensesDisclosure({ onBack }: { onBack: () => void }) {
+  return (
+    <div data-testid="licenses-disclosure">
+      <button
+        className="cept-settings-back-btn"
+        onClick={onBack}
+        data-testid="licenses-back"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M10 4l-4 4 4 4" />
+        </svg>
+        Back
+      </button>
+      <h3 className="cept-settings-section-title">Open Source Licenses</h3>
+      <p className="cept-settings-licenses-intro">
+        Cept is built with the following open source software. We are grateful to the authors and contributors of these projects.
+      </p>
+      <div className="cept-settings-licenses-list">
+        {LICENSES.map((entry) => (
+          <div key={entry.name} className="cept-settings-license-row">
+            <a
+              href={entry.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cept-settings-license-name"
+            >
+              {entry.name}
+            </a>
+            <span className="cept-settings-license-badge">{entry.license}</span>
+          </div>
+        ))}
+      </div>
+      <div className="cept-settings-section-divider" />
+      <p className="cept-settings-licenses-footer">
+        Cept itself is released under the{' '}
+        <a href="https://github.com/nsheaps/cept/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
+      </p>
     </div>
   );
 }
