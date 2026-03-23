@@ -13,7 +13,9 @@ import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { useTheme } from './settings/useTheme.js';
-import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl, resolveDocsContent } from './docs/docs-content.js';
+import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, resolveDocsContent } from './docs/docs-content.js';
+import { loadDocs, getRemoteDocsSourceUrl } from './docs/docs-loader.js';
+import type { DocsLoadResult } from './docs/docs-loader.js';
 import {
   useStorage,
   useWorkspacePersistence,
@@ -113,6 +115,10 @@ export function App() {
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
   const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
+  const [docsContents, setDocsContents] = useState<Record<string, string>>(DOCS_CONTENT);
+  const [docsSource, setDocsSource] = useState<DocsLoadResult['source']>('bundled');
+  const [docsLoading, setDocsLoading] = useState(false);
+  const docsLoadedRef = useRef(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -954,10 +960,32 @@ export function App() {
 
   const handleOpenDocs = useCallback(() => {
     setActiveSpace('docs');
-    setDocsSelectedPageId('docs-index');
-    setDocsPages(DOCS_PAGES);
-    pushRoute({ space: 'docs', pageId: 'docs-index' });
-  }, []);
+    // Select the first page — remote pages use file-path IDs, bundled use 'docs-index'
+    const firstPageId = docsPages.length > 0 ? docsPages[0].id : 'docs-index';
+    setDocsSelectedPageId(firstPageId);
+    pushRoute({ space: 'docs', pageId: firstPageId });
+
+    // Trigger remote load if not loaded yet
+    if (!docsLoadedRef.current && backend instanceof BrowserFsBackend) {
+      docsLoadedRef.current = true;
+      setDocsLoading(true);
+      loadDocs(backend as BrowserFsBackend, false, (msg) => {
+        addToast(msg, 'info');
+      }).then((result) => {
+        setDocsPages(result.pages);
+        setDocsContents(result.pageContents);
+        setDocsSource(result.source);
+        // Select the first page of the loaded docs
+        if (result.pages.length > 0) {
+          setDocsSelectedPageId(result.pages[0].id);
+        }
+      }).catch(() => {
+        // Already falls back to bundled inside loadDocs
+      }).finally(() => {
+        setDocsLoading(false);
+      });
+    }
+  }, [backend, docsPages, addToast]);
 
   /** Handle "Add Space" from the remote repo form in the wizard. */
   const handleAddRemoteRepo = useCallback(async (config: RemoteSpaceConfig) => {
@@ -1210,16 +1238,20 @@ export function App() {
         contentSize,
       });
     }
-    list.push(DOCS_SPACE_INFO);
+    list.push({
+      ...DOCS_SPACE_INFO,
+      pageCount: Object.keys(docsContents).length,
+      contentSize: Object.values(docsContents).reduce((sum, c) => sum + c.length, 0),
+    });
     return list;
-  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats]);
+  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats, docsContents]);
 
   /** Known Git hosting domains — only these produce "View on GitHub" links. */
   const KNOWN_GIT_HOSTS = ['github.com', 'gitlab.com', 'bitbucket.org'];
 
   const currentGithubUrl = useMemo((): string | undefined => {
     if (activeSpace === 'docs' && docsSelectedPageId) {
-      return getDocsSourceUrl(docsSelectedPageId) ?? undefined;
+      return getRemoteDocsSourceUrl(docsSelectedPageId, docsSource);
     }
     if (activeSpace !== 'user' || !selectedPageId || !isRemoteSpaceId(userSpaceId)) return undefined;
     const parsed = parseRemoteSpaceId(userSpaceId);
@@ -1229,7 +1261,7 @@ export function App() {
     if (!KNOWN_GIT_HOSTS.includes(host)) return undefined;
     const subPath = parsed.subPath ? `${parsed.subPath}/` : '';
     return `https://${parsed.repo}/blob/${parsed.branch}/${subPath}${selectedPageId}`;
-  }, [activeSpace, docsSelectedPageId, selectedPageId, userSpaceId]);
+  }, [activeSpace, docsSelectedPageId, docsSource, selectedPageId, userSpaceId]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
@@ -1369,18 +1401,28 @@ export function App() {
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
           {isDocsActive ? (
-            docsSelectedPageId && DOCS_CONTENT[docsSelectedPageId] ? (
+            docsLoading ? (
+              <div className="text-center text-gray-400 mt-20" data-testid="docs-loading">
+                <p>Loading documentation...</p>
+              </div>
+            ) : docsSelectedPageId && docsContents[docsSelectedPageId] ? (
               <>
                 <div className="cept-docs-banner" data-testid="docs-banner">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <rect x="2" y="1" width="12" height="14" rx="1" />
                     <path d="M5 5h6M5 8h6M5 11h3" />
                   </svg>
-                  <span>Read-only &mdash; sourced from docs/ in the Git repository</span>
+                  <span>
+                    Read-only &mdash; {docsSource === 'bundled'
+                      ? 'sourced from bundled docs (offline fallback)'
+                      : docsSource === 'cache'
+                        ? 'sourced from cached Git clone'
+                        : 'sourced from docs/ in the Git repository'}
+                  </span>
                 </div>
                 <CeptEditor
                   key={`docs-${docsSelectedPageId}`}
-                  content={resolveDocsContent(DOCS_CONTENT[docsSelectedPageId])}
+                  content={docsSource === 'bundled' ? resolveDocsContent(docsContents[docsSelectedPageId]) : docsContents[docsSelectedPageId]}
                   placeholder=""
                   onUpdate={() => {/* read-only */}}
                   editable={false}
