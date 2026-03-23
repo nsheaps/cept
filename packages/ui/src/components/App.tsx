@@ -13,9 +13,7 @@ import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { useTheme } from './settings/useTheme.js';
-import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, resolveDocsContent } from './docs/docs-content.js';
-import { loadDocs, getRemoteDocsSourceUrl } from './docs/docs-loader.js';
-import type { DocsLoadResult } from './docs/docs-loader.js';
+import { ensureDocsSpace } from './docs/docs-loader.js';
 import {
   useStorage,
   useWorkspacePersistence,
@@ -47,7 +45,7 @@ import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
-import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
+import { restoreRoute, replaceRoute, parseRoute, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
 import { NotFoundPage } from './not-found/NotFoundPage.js';
 
 
@@ -112,13 +110,6 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'spaces'>('settings');
   const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
-  const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
-  const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
-  const [docsPages, setDocsPages] = useState<PageTreeNode[]>(DOCS_PAGES);
-  const [docsContents, setDocsContents] = useState<Record<string, string>>(DOCS_CONTENT);
-  const [docsSource, setDocsSource] = useState<DocsLoadResult['source']>('bundled');
-  const [docsLoading, setDocsLoading] = useState(false);
-  const docsLoadedRef = useRef(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -319,8 +310,8 @@ export function App() {
 
     const route = restoreRoute();
     if (route.space === 'docs') {
-      setActiveSpace('docs');
-      if (route.pageId) setDocsSelectedPageId(route.pageId);
+      // /docs URL — open docs as a regular remote space
+      void handleOpenDocs();
     } else if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
       // URL points to a different space — try to switch to it
       void loadSpaces(backend).then((manifest) => {
@@ -387,7 +378,7 @@ export function App() {
                 const updatedManifest = await loadSpaces(backend);
                 setSpacesManifest(updatedManifest);
                 setUserSpaceId(newSpace.id);
-                setActiveSpace('user');
+
                 setPages(clonedPages);
                 setPageContents(clonedContents);
                 setSelectedPageId(clonedPages[0]?.id);
@@ -538,16 +529,14 @@ export function App() {
     if (!initializedRef.current || !routeRestoredRef.current) return;
     if (!hasStarted) return;
 
-    if (activeSpace === 'docs') {
-      replaceRoute({ space: 'docs', pageId: docsSelectedPageId });
-    } else if (selectedPageId) {
+    if (selectedPageId) {
       replaceRoute({ space: 'user', spaceId: userSpaceId, pageId: selectedPageId });
     } else if (userSpaceId !== 'default') {
       replaceRoute({ space: 'user', spaceId: userSpaceId });
     } else {
       replaceRoute({ space: 'user', spaceId: 'default' });
     }
-  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId, hasStarted]);
+  }, [selectedPageId, userSpaceId, hasStarted]);
 
   // Listen for back/forward navigation (popstate)
   useEffect(() => {
@@ -555,10 +544,8 @@ export function App() {
       setNotFound(null); // Clear 404 on navigation
       const route = parseRoute();
       if (route.space === 'docs') {
-        setActiveSpace('docs');
-        if (route.pageId) setDocsSelectedPageId(route.pageId);
+        void handleOpenDocs();
       } else {
-        setActiveSpace('user');
         // Resolve the route to account for subPath splitting
         const resolved = spacesManifest
           ? resolveRouteToSpace(spacesManifest, route.spaceId, route.pageId)
@@ -898,8 +885,6 @@ export function App() {
     // Save current space state before switching
     saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
     setSpaceLoadError(undefined);
-    // Switch to user view (important when creating from docs view)
-    setActiveSpace('user');
     void createSpaceInBackend(backend, name).then((newSpace) => {
       void loadSpaces(backend).then((manifest) => {
         setSpacesManifest(manifest);
@@ -958,34 +943,32 @@ export function App() {
     setSettingsOpen(true);
   }, []);
 
-  const handleOpenDocs = useCallback(() => {
-    setActiveSpace('docs');
-    // Select the first page — remote pages use file-path IDs, bundled use 'docs-index'
-    const firstPageId = docsPages.length > 0 ? docsPages[0].id : 'docs-index';
-    setDocsSelectedPageId(firstPageId);
-    pushRoute({ space: 'docs', pageId: firstPageId });
+  const handleOpenDocs = useCallback(async () => {
+    if (!(backend instanceof BrowserFsBackend)) return;
 
-    // Trigger remote load if not loaded yet
-    if (!docsLoadedRef.current && backend instanceof BrowserFsBackend) {
-      docsLoadedRef.current = true;
-      setDocsLoading(true);
-      loadDocs(backend as BrowserFsBackend, false, (msg) => {
-        addToast(msg, 'info');
-      }).then((result) => {
-        setDocsPages(result.pages);
-        setDocsContents(result.pageContents);
-        setDocsSource(result.source);
-        // Select the first page of the loaded docs
-        if (result.pages.length > 0) {
-          setDocsSelectedPageId(result.pages[0].id);
-        }
-      }).catch(() => {
-        // Already falls back to bundled inside loadDocs
-      }).finally(() => {
-        setDocsLoading(false);
+    // Save current space state before switching
+    saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+
+    setCloneStatus({ active: true, message: 'Loading documentation...' });
+    try {
+      // Ensure the docs space exists (creates + clones on first call, no-op after)
+      const docsId = await ensureDocsSpace(backend, (msg) => {
+        setCloneStatus({ active: true, message: msg });
       });
+
+      // Reload manifest and switch to the docs space
+      const manifest = await loadSpaces(backend);
+      setSpacesManifest(manifest);
+      setUserSpaceId(docsId);
+
+      const space = manifest.spaces.find((s) => s.id === docsId);
+      await loadAndApplySpaceState(docsId, space?.name ?? 'Cept Docs');
+      setCloneStatus({ active: false });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load docs';
+      setCloneStatus({ active: false, error: message });
     }
-  }, [backend, docsPages, addToast]);
+  }, [backend, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState, loadAndApplySpaceState]);
 
   /** Handle "Add Space" from the remote repo form in the wizard. */
   const handleAddRemoteRepo = useCallback(async (config: RemoteSpaceConfig) => {
@@ -1020,7 +1003,6 @@ export function App() {
     try {
       // Save current space state before switching
       saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
-      setActiveSpace('user');
 
       // Clone the remote repo and extract pages
       const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
@@ -1141,18 +1123,6 @@ export function App() {
     setSpacesManifest(updatedManifest);
   }, [backend, userSpaceId]);
 
-  const handleDocsPageSelect = useCallback((id: string) => {
-    setDocsSelectedPageId(id);
-    setDocsPages((prev) => expandToNode(prev, id));
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, []);
-
-  const handleDocsPageToggle = useCallback((id: string) => {
-    setDocsPages((prev) => toggleNode(prev, id));
-  }, []);
-
   // Track cached stats for inactive spaces (page count from workspace state)
   const [inactiveSpaceStats, setInactiveSpaceStats] = useState<Record<string, { pageCount: number; contentSize: number }>>({});
 
@@ -1238,22 +1208,14 @@ export function App() {
         contentSize,
       });
     }
-    list.push({
-      ...DOCS_SPACE_INFO,
-      pageCount: Object.keys(docsContents).length,
-      contentSize: Object.values(docsContents).reduce((sum, c) => sum + c.length, 0),
-    });
     return list;
-  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats, docsContents]);
+  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type, inactiveSpaceStats]);
 
   /** Known Git hosting domains — only these produce "View on GitHub" links. */
   const KNOWN_GIT_HOSTS = ['github.com', 'gitlab.com', 'bitbucket.org'];
 
   const currentGithubUrl = useMemo((): string | undefined => {
-    if (activeSpace === 'docs' && docsSelectedPageId) {
-      return getRemoteDocsSourceUrl(docsSelectedPageId, docsSource);
-    }
-    if (activeSpace !== 'user' || !selectedPageId || !isRemoteSpaceId(userSpaceId)) return undefined;
+    if (!selectedPageId || !isRemoteSpaceId(userSpaceId)) return undefined;
     const parsed = parseRemoteSpaceId(userSpaceId);
     if (!parsed) return undefined;
     // Only link to known Git hosting domains to prevent open redirect
@@ -1261,7 +1223,7 @@ export function App() {
     if (!KNOWN_GIT_HOSTS.includes(host)) return undefined;
     const subPath = parsed.subPath ? `${parsed.subPath}/` : '';
     return `https://${parsed.repo}/blob/${parsed.branch}/${subPath}${selectedPageId}`;
-  }, [activeSpace, docsSelectedPageId, docsSource, selectedPageId, userSpaceId]);
+  }, [selectedPageId, userSpaceId]);
 
   const commandItems: CommandItem[] = useMemo(() => [
     { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
@@ -1275,11 +1237,8 @@ export function App() {
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
   const contentLoaded = selectedPageId ? (selectedPageId in pageContents) : false;
-  const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
-
-  const isDocsActive = activeSpace === 'docs';
 
   // Show loading state while backend loads persisted data
   if (!ready) {
@@ -1309,7 +1268,7 @@ export function App() {
         )}
         <div className="ml-auto" />
         <AppMenu
-          pageId={activeSpace === 'user' ? selectedPageId : undefined}
+          pageId={selectedPageId}
           isFavorite={selectedPageId ? favorites.some((f) => f.id === selectedPageId) : false}
           githubUrl={currentGithubUrl}
           onToggleFavorite={handleToggleFavorite}
@@ -1325,7 +1284,7 @@ export function App() {
         {sidebarOpen && (
           <div className="cept-sidebar-backdrop" onClick={() => setSidebarOpen(false)} data-testid="sidebar-backdrop" />
         )}
-        {sidebarOpen && activeSpace === 'user' && (
+        {sidebarOpen && (
           <Sidebar
             pages={pages}
             favorites={favorites}
@@ -1351,95 +1310,13 @@ export function App() {
             onSpaceRename={(name) => handleSpaceRename(userSpaceId, name)}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
             activeSpaceId={userSpaceId}
-            onSwitchSpace={(id) => {
-              if (id === DOCS_SPACE_INFO.id) {
-                handleOpenDocs();
-              } else {
-                handleSwitchSpace(id);
-              }
-            }}
-            themeMode={settings.themeMode}
-            onThemeModeChange={(mode) => handleSettingsChange({ ...settings, themeMode: mode })}
-          />
-        )}
-        {sidebarOpen && isDocsActive && (
-          <Sidebar
-            pages={docsPages}
-            favorites={[]}
-            recentPages={[]}
-            trash={[]}
-            selectedPageId={docsSelectedPageId}
-            onPageSelect={handleDocsPageSelect}
-            onPageToggle={handleDocsPageToggle}
-            onPageAdd={() => {/* read-only */}}
-            onPageRename={() => {/* read-only */}}
-            onPageDuplicate={() => {/* read-only */}}
-            onPageDelete={() => {/* read-only */}}
-            onPageMoveToRoot={() => {/* read-only */}}
-            onToggleFavorite={() => {/* read-only */}}
-            onRestoreFromTrash={() => {/* read-only */}}
-            onPermanentDelete={() => {/* read-only */}}
-            onEmptyTrash={() => {/* read-only */}}
-            onSearch={() => setSearchOpen(true)}
-            onOpenSettings={handleOpenSettings}
-            onOpenDocs={handleOpenDocs}
-            readOnly
-            spaceName={DOCS_SPACE_INFO.name}
-            spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
-            activeSpaceId={DOCS_SPACE_INFO.id}
-            onSwitchSpace={(id) => {
-              if (id === DOCS_SPACE_INFO.id) {
-                handleOpenDocs();
-              } else {
-                setActiveSpace('user');
-                handleSwitchSpace(id);
-              }
-            }}
+            onSwitchSpace={handleSwitchSpace}
             themeMode={settings.themeMode}
             onThemeModeChange={(mode) => handleSettingsChange({ ...settings, themeMode: mode })}
           />
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
-          {isDocsActive ? (
-            docsLoading ? (
-              <div className="text-center text-gray-400 mt-20" data-testid="docs-loading">
-                <p>Loading documentation...</p>
-              </div>
-            ) : docsSelectedPageId && docsContents[docsSelectedPageId] ? (
-              <>
-                <div className="cept-docs-banner" data-testid="docs-banner">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="2" y="1" width="12" height="14" rx="1" />
-                    <path d="M5 5h6M5 8h6M5 11h3" />
-                  </svg>
-                  <span>
-                    Read-only &mdash; {docsSource === 'bundled'
-                      ? 'sourced from bundled docs (offline fallback)'
-                      : docsSource === 'cache'
-                        ? 'sourced from cached Git clone'
-                        : 'sourced from docs/ in the Git repository'}
-                  </span>
-                </div>
-                <CeptEditor
-                  key={`docs-${docsSelectedPageId}`}
-                  content={docsSource === 'bundled' ? resolveDocsContent(docsContents[docsSelectedPageId]) : docsContents[docsSelectedPageId]}
-                  placeholder=""
-                  onUpdate={() => {/* read-only */}}
-                  editable={false}
-                />
-                {docsSelectedNode && docsSelectedNode.children.length > 0 && (
-                  <FolderView
-                    children={docsSelectedNode.children}
-                    onPageSelect={handleDocsPageSelect}
-                  />
-                )}
-              </>
-            ) : (
-              <div className="text-center text-gray-400 mt-20">
-                <p>Select a documentation page from the sidebar</p>
-              </div>
-            )
-          ) : spaceLoadError ? (
+          {spaceLoadError ? (
             <div className="cept-space-error" data-testid="space-load-error">
               <svg width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="8" cy="8" r="7" />
@@ -1474,8 +1351,7 @@ export function App() {
               }}
               onGoToDocs={() => {
                 setNotFound(null);
-                setActiveSpace('docs');
-                pushRoute({ space: 'docs' });
+                void handleOpenDocs();
               }}
               onGoBack={window.history.length > 1 ? () => {
                 setNotFound(null);

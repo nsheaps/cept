@@ -356,7 +356,7 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
+                          {space.remoteUrl && onRefreshSpace && (
                             <button
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
@@ -496,8 +496,8 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
-                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
-                onRefresh={selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs' ? () => handleRefreshSpace(selectedSpace.id) : undefined}
+                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+                onRefresh={selectedSpace.remoteUrl && onRefreshSpace ? () => handleRefreshSpace(selectedSpace.id) : undefined}
                 isRefreshing={refreshingSpaceId === selectedSpace.id}
               />
             )}
