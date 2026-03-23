@@ -44,7 +44,7 @@ import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
-import { restoreRoute, replaceRoute, pushRoute, parseRoute, buildPath, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
+import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
