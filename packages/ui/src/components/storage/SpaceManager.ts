@@ -290,8 +290,45 @@ export function resolveRouteToSpace(
     return { spaceId: routeSpaceId, pageId: routePageId };
   }
 
-  // If no page ID, the URL is a space root — return as-is
+  // If no page ID, the URL is a space root.  However, the route may contain a
+  // partial subPath (e.g., "docs") while the configured space has a more-specific
+  // subPath (e.g., "docs/content").  Try to match on a path-boundary prefix so
+  // that navigating to `/g/repo/blob/main/docs/` resolves to the existing space
+  // instead of triggering a redundant clone.
   if (!routePageId) {
+    if (routeParsed.subPath) {
+      const repoCandidates = manifest.spaces.filter((s) => {
+        const p = parseRemoteSpaceId(s.id);
+        return p !== null && p.repo === routeParsed.repo;
+      });
+
+      let bestMatch: SpaceMeta | null = null;
+      let bestLen = 0;
+
+      for (const space of repoCandidates) {
+        const spaceParsed = parseRemoteSpaceId(space.id);
+        if (!spaceParsed) continue;
+        const spaceBranch = space.branch ?? spaceParsed.branch;
+        if (spaceBranch !== routeParsed.branch) continue;
+
+        const sp = space.subPath ?? spaceParsed.subPath;
+        if (!sp) continue;
+
+        // Match when the space's subPath equals or extends the route's subPath
+        // on a path boundary (e.g., "docs" matches "docs/content" but not "docs2").
+        const isExact = sp === routeParsed.subPath;
+        const isChild = sp.startsWith(routeParsed.subPath + '/');
+        if ((isExact || isChild) && sp.length > bestLen) {
+          bestMatch = space;
+          bestLen = sp.length;
+        }
+      }
+
+      if (bestMatch) {
+        return { spaceId: bestMatch.id, pageId: undefined };
+      }
+    }
+
     return { spaceId: routeSpaceId, pageId: undefined };
   }
 

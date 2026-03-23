@@ -289,5 +289,38 @@ describe('SpaceManager', () => {
       const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@claude', 'setup-fix/docs/getting-started.md');
       expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@claude/setup-fix::docs', pageId: 'getting-started.md' });
     });
+
+    it('resolves partial subPath URL to space with more-specific subPath', () => {
+      // A manifest with a more-specific subPath than the URL
+      const manifestWithDeepSubPath: SpacesManifest = {
+        activeSpaceId: 'default',
+        spaces: [
+          { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+          { id: 'github.com/nsheaps/cept@main::docs/content', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs/content' },
+        ],
+      };
+      // URL /g/github.com/nsheaps/cept/blob/main/docs/ → legacy spaceId with subPath "docs"
+      const result = resolveRouteToSpace(manifestWithDeepSubPath, 'github.com/nsheaps/cept@main/docs', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs/content', pageId: undefined });
+    });
+
+    it('does not match partial subPath on non-path-boundary', () => {
+      // "doc" should NOT match "docs/content"
+      const manifestWithDeepSubPath: SpacesManifest = {
+        activeSpaceId: 'default',
+        spaces: [
+          { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+          { id: 'github.com/nsheaps/cept@main::docs/content', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs/content' },
+        ],
+      };
+      const result = resolveRouteToSpace(manifestWithDeepSubPath, 'github.com/nsheaps/cept@main/doc', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main/doc', pageId: undefined });
+    });
+
+    it('resolves exact subPath match without pageId', () => {
+      // URL subPath exactly matches a space's subPath
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main/docs', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs', pageId: undefined });
+    });
   });
 });
