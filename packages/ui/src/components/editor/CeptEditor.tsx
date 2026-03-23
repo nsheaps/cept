@@ -27,6 +27,7 @@ import { MathBlock, InlineMath } from './extensions/math.js';
 import { Mermaid } from './extensions/mermaid.js';
 import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
+import { CodeColorSwatch } from './extensions/code-color-swatch.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import { InlineToolbar } from './InlineToolbar.js';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
@@ -149,6 +150,7 @@ export function CeptEditor({
         },
       }),
       Mermaid,
+      CodeColorSwatch,
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
