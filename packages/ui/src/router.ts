@@ -2,11 +2,17 @@
  * Lightweight path-based router for Cept.
  *
  * URL scheme:
- *   /{base}/                     — landing / onboarding
- *   /{base}/s/{spaceId}          — space root (no page selected)
- *   /{base}/s/{spaceId}/{pageId} — specific page in a user space
- *   /{base}/docs                 — docs space index
- *   /{base}/docs/{pageId}        — specific docs page
+ *   /{base}/                                                      — landing / onboarding
+ *   /{base}/s/{spaceId}                                           — local space root
+ *   /{base}/s/{spaceId}/{pageId}                                  — page in a local space
+ *   /{base}/s/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]     — git space root
+ *   /{base}/s/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]/{pageId} — page in a git space
+ *   /{base}/docs                                                  — docs space index
+ *   /{base}/docs/{pageId}                                         — specific docs page
+ *
+ * Git space IDs use the format: host/owner/repo@branch[/subpath]
+ * The `blob` segment in the URL separates the repo path from the branch,
+ * mirroring GitHub's URL format.
  *
  * Works with the GitHub Pages 404.html hack: when the server can't find
  * a path, 404.html redirects to `/?route=<encoded-path>`. On load, the
@@ -99,6 +105,63 @@ function stripBase(pathname: string): string {
 }
 
 /**
+ * Check if a space ID is a git-based remote space (contains `@` for branch).
+ */
+export function isRemoteSpaceId(spaceId: string): boolean {
+  return spaceId.includes('@');
+}
+
+/**
+ * Convert a git space ID to a URL path (without base or /s/ prefix).
+ * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs"
+ */
+function spaceIdToUrlPath(spaceId: string): string {
+  const atIdx = spaceId.indexOf('@');
+  if (atIdx < 0) return spaceId;
+  const repo = spaceId.substring(0, atIdx);
+  const rest = spaceId.substring(atIdx + 1);
+  return `${repo}/blob/${rest}`;
+}
+
+/**
+ * Parse a git-style URL path (segments after /s/) back into a space ID and page ID.
+ * The URL contains `blob` as a delimiter between the repo path and the branch.
+ *
+ * e.g., ["github.com","nsheaps","cept","blob","main","docs","git-page-id"]
+ * → { spaceId: "github.com/nsheaps/cept@main/docs", pageId: "git-page-id" }
+ */
+function parseGitSpaceUrl(segments: string[]): { spaceId: string; pageId: string | undefined } {
+  const blobIdx = segments.indexOf('blob');
+  if (blobIdx < 0 || blobIdx + 1 >= segments.length) {
+    // No blob found — treat as simple space ID
+    return { spaceId: segments[0], pageId: segments[1] };
+  }
+
+  const repo = segments.slice(0, blobIdx).join('/');
+  const branch = segments[blobIdx + 1];
+  const rest = segments.slice(blobIdx + 2);
+
+  if (rest.length === 0) {
+    // Space root, no page: /s/github.com/nsheaps/cept/blob/main
+    return { spaceId: `${repo}@${branch}`, pageId: undefined };
+  }
+
+  // Determine if the last segment is a page ID.
+  // Git page IDs start with "git-" by convention (from git-space.ts).
+  const last = rest[rest.length - 1];
+  if (last.startsWith('git-')) {
+    // Last segment is a page ID
+    const subPath = rest.slice(0, -1).join('/');
+    const spaceId = subPath ? `${repo}@${branch}/${subPath}` : `${repo}@${branch}`;
+    return { spaceId, pageId: last };
+  }
+
+  // All segments are sub-path (space root view)
+  const subPath = rest.join('/');
+  return { spaceId: `${repo}@${branch}/${subPath}`, pageId: undefined };
+}
+
+/**
  * Parse the current URL into an AppRoute.
  */
 export function parseRoute(pathname?: string): AppRoute {
@@ -119,12 +182,21 @@ export function parseRoute(pathname?: string): AppRoute {
     };
   }
 
-  // /s/{spaceId} or /s/{spaceId}/{pageId}
+  // /s/... — space routes
   if (segments[0] === 's' && segments.length >= 2) {
+    const spaceSegments = segments.slice(1);
+
+    // Check for git-style URL (contains 'blob' segment)
+    if (spaceSegments.includes('blob')) {
+      const { spaceId, pageId } = parseGitSpaceUrl(spaceSegments);
+      return { space: 'user', spaceId, pageId };
+    }
+
+    // Simple space ID (local spaces): /s/{spaceId}[/{pageId}]
     return {
       space: 'user',
-      spaceId: segments[1],
-      pageId: segments[2] ?? undefined,
+      spaceId: spaceSegments[0],
+      pageId: spaceSegments[1] ?? undefined,
     };
   }
 
@@ -155,6 +227,17 @@ export function buildPath(route: Partial<AppRoute>): string {
   }
 
   const spaceId = route.spaceId ?? 'default';
+
+  if (isRemoteSpaceId(spaceId)) {
+    // Git space — use blob-style URL
+    const urlPath = spaceIdToUrlPath(spaceId);
+    if (route.pageId) {
+      return `${base}s/${urlPath}/${route.pageId}`;
+    }
+    return `${base}s/${urlPath}`;
+  }
+
+  // Local space
   if (route.pageId) {
     return `${base}s/${spaceId}/${route.pageId}`;
   }

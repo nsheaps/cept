@@ -19,42 +19,55 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('add-space-wizard-modal')).toBeDefined();
   });
 
-  it('shows type chooser initially', () => {
+  it('shows type chooser with Local, Git, and S3 options', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
-    expect(screen.getByTestId('wizard-choose-empty')).toBeDefined();
-    expect(screen.getByTestId('wizard-choose-remote')).toBeDefined();
+    expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
+    expect(screen.getByTestId('wizard-choose-git')).toBeDefined();
+    expect(screen.getByTestId('wizard-choose-s3')).toBeDefined();
   });
 
-  it('shows create form when empty space selected', () => {
+  it('does not show back button on type chooser', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    expect(screen.queryByTestId('wizard-back')).toBeNull();
+  });
+
+  it('S3 option is disabled', () => {
+    render(<AddSpaceWizardModal {...defaultProps} />);
+    const s3 = screen.getByTestId('wizard-choose-s3');
+    // S3 is a div, not a button — no click handler
+    expect(s3.tagName).toBe('DIV');
+  });
+
+  it('shows create form when Local selected', () => {
+    render(<AddSpaceWizardModal {...defaultProps} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     expect(screen.getByTestId('wizard-create-form')).toBeDefined();
     expect(screen.getByTestId('wizard-space-name-input')).toBeDefined();
   });
 
-  it('shows remote form when add from remote selected', () => {
-    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteDocs={vi.fn()} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    expect(screen.getByTestId('wizard-remote-chooser')).toBeDefined();
+  it('shows git form when Git selected', () => {
+    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={vi.fn()} />);
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    expect(screen.getByTestId('wizard-git-form')).toBeDefined();
     expect(screen.getByTestId('wizard-remote-url-input')).toBeDefined();
     expect(screen.getByTestId('wizard-remote-branch-input')).toBeDefined();
     expect(screen.getByTestId('wizard-remote-subpath-input')).toBeDefined();
   });
 
-  it('pre-populates remote form with docs repo defaults', () => {
+  it('git form starts with empty fields and default branch', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('');
     expect((screen.getByTestId('wizard-remote-branch-input') as HTMLInputElement).value).toBe('main');
-    expect((screen.getByTestId('wizard-remote-subpath-input') as HTMLInputElement).value).toBe('docs/');
+    expect((screen.getByTestId('wizard-remote-subpath-input') as HTMLInputElement).value).toBe('');
   });
 
   it('calls onAddRemoteRepo with form values when confirmed', () => {
     const onAddRemoteRepo = vi.fn();
     const onClose = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={onAddRemoteRepo} onClose={onClose} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
     fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'github.com/other/repo' } });
     fireEvent.change(screen.getByTestId('wizard-remote-branch-input'), { target: { value: 'develop' } });
     fireEvent.change(screen.getByTestId('wizard-remote-subpath-input'), { target: { value: 'content/' } });
@@ -69,8 +82,7 @@ describe('AddSpaceWizardModal', () => {
 
   it('disables add remote button when URL is empty', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: '' } });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
     expect(screen.getByTestId('wizard-add-remote-confirm').hasAttribute('disabled')).toBe(true);
   });
 
@@ -78,7 +90,7 @@ describe('AddSpaceWizardModal', () => {
     const onCreateSpace = vi.fn();
     const onClose = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onCreateSpace={onCreateSpace} onClose={onClose} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     const input = screen.getByTestId('wizard-space-name-input');
     fireEvent.change(input, { target: { value: 'Test Space' } });
     act(() => { fireEvent.click(screen.getByTestId('wizard-create-confirm')); });
@@ -89,7 +101,7 @@ describe('AddSpaceWizardModal', () => {
   it('calls onCreateSpace when Enter pressed in input', () => {
     const onCreateSpace = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onCreateSpace={onCreateSpace} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     const input = screen.getByTestId('wizard-space-name-input');
     fireEvent.change(input, { target: { value: 'Enter Space' } });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -99,32 +111,25 @@ describe('AddSpaceWizardModal', () => {
   it('does not submit empty name', () => {
     const onCreateSpace = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onCreateSpace={onCreateSpace} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     act(() => { fireEvent.click(screen.getByTestId('wizard-create-confirm')); });
     expect(onCreateSpace).not.toHaveBeenCalled();
   });
 
   it('navigates back from create form to type chooser', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     expect(screen.getByTestId('wizard-create-form')).toBeDefined();
     act(() => { fireEvent.click(screen.getByTestId('wizard-back')); });
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
   });
 
-  it('navigates back from remote chooser to type chooser', () => {
+  it('navigates back from git form to type chooser', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    expect(screen.getByTestId('wizard-remote-chooser')).toBeDefined();
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    expect(screen.getByTestId('wizard-git-form')).toBeDefined();
     act(() => { fireEvent.click(screen.getByTestId('wizard-back')); });
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
-  });
-
-  it('closes when back clicked on type chooser', () => {
-    const onClose = vi.fn();
-    render(<AddSpaceWizardModal {...defaultProps} onClose={onClose} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-back')); });
-    expect(onClose).toHaveBeenCalled();
   });
 
   it('closes when X button clicked', () => {
@@ -134,25 +139,9 @@ describe('AddSpaceWizardModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows already added state for remote docs when hasRemoteDocs is true', () => {
-    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteDocs={vi.fn()} hasRemoteDocs />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    expect(screen.getByTestId('wizard-remote-docs-added')).toBeDefined();
-  });
-
-  it('calls onAddRemoteDocs and closes when quick-add docs clicked', () => {
-    const onAddRemoteDocs = vi.fn();
-    const onClose = vi.fn();
-    render(<AddSpaceWizardModal {...defaultProps} onAddRemoteDocs={onAddRemoteDocs} onClose={onClose} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    act(() => { fireEvent.click(screen.getByTestId('wizard-add-remote-docs')); });
-    expect(onAddRemoteDocs).toHaveBeenCalled();
-    expect(onClose).toHaveBeenCalled();
-  });
-
   it('goes back when Escape pressed in name input', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     const input = screen.getByTestId('wizard-space-name-input');
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
@@ -160,7 +149,7 @@ describe('AddSpaceWizardModal', () => {
 
   it('disables create button when name is empty', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-empty')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-local')); });
     const btn = screen.getByTestId('wizard-create-confirm');
     expect(btn.hasAttribute('disabled')).toBe(true);
   });
@@ -168,24 +157,25 @@ describe('AddSpaceWizardModal', () => {
   it('submits remote form when Enter pressed in subpath input', () => {
     const onAddRemoteRepo = vi.fn();
     render(<AddSpaceWizardModal {...defaultProps} onAddRemoteRepo={onAddRemoteRepo} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'github.com/nsheaps/cept' } });
     const subpathInput = screen.getByTestId('wizard-remote-subpath-input');
     fireEvent.keyDown(subpathInput, { key: 'Enter' });
     expect(onAddRemoteRepo).toHaveBeenCalledWith({
       url: 'github.com/nsheaps/cept',
       branch: 'main',
-      subPath: 'docs/',
+      subPath: '',
     });
   });
 
-  it('resets remote form fields on close and reopen', () => {
+  it('resets git form fields on close and reopen', () => {
     const { rerender } = render(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
     fireEvent.change(screen.getByTestId('wizard-remote-url-input'), { target: { value: 'changed' } });
     act(() => { fireEvent.click(screen.getByTestId('wizard-close')); });
     // Reopen
     rerender(<AddSpaceWizardModal {...defaultProps} />);
-    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-remote')); });
-    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
+    act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
+    expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('');
   });
 });

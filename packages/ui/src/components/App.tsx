@@ -35,6 +35,7 @@ import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
+import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
@@ -43,7 +44,7 @@ import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
-import { restoreRoute, replaceRoute, pushRoute, parseRoute } from '../router.js';
+import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId } from '../router.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -116,6 +117,9 @@ export function App() {
   const [userSpaceId, setUserSpaceId] = useState('default');
   const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
   const [cloneStatus, setCloneStatus] = useState<{ active: boolean; message?: string; error?: string }>({ active: false });
+  const [spaceLoadError, setSpaceLoadError] = useState<string | undefined>(undefined);
+  const { messages: toastMessages, addToast, dismissToast } = useToast();
+  const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
 
@@ -160,29 +164,51 @@ export function App() {
 
   /** Load a space's state from storage and apply it to React state */
   const loadAndApplySpaceState = useCallback(async (spaceId: string, name: string) => {
-    const state = await loadSpaceState(backend, spaceId);
-    if (state) {
-      setPages(state.pages);
-      setSelectedPageId(state.selectedPageId);
-      setFavorites(state.favorites ?? []);
-      setRecentPages(state.recentPages ?? []);
-      setSpaceName(state.spaceName ?? name);
-      setPageContents({});
-      setTrash([]);
-      setHasStarted(true);
-      // Load selected page content
-      if (state.selectedPageId) {
-        const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
-        setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
+    setSpaceLoadError(undefined);
+    try {
+      const state = await loadSpaceState(backend, spaceId);
+      if (state && state.pages.length > 0) {
+        setPages(state.pages);
+        setSelectedPageId(state.selectedPageId);
+        setFavorites(state.favorites ?? []);
+        setRecentPages(state.recentPages ?? []);
+        setSpaceName(state.spaceName ?? name);
+        setPageContents({});
+        setTrash([]);
+        setHasStarted(true);
+        // Load selected page content
+        if (state.selectedPageId) {
+          const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
+          setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
+        }
+      } else if (isRemoteSpaceId(spaceId)) {
+        // Remote space with no persisted content — show error
+        setPages([]);
+        setPageContents({});
+        setSelectedPageId(undefined);
+        setFavorites([]);
+        setRecentPages([]);
+        setTrash([]);
+        setSpaceName(name);
+        setHasStarted(true);
+        setSpaceLoadError(`Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`);
+      } else {
+        // Empty local space
+        setPages([]);
+        setPageContents({});
+        setSelectedPageId(undefined);
+        setFavorites([]);
+        setRecentPages([]);
+        setTrash([]);
+        setSpaceName(name);
+        setHasStarted(true);
       }
-    } else {
-      // Empty space
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load space';
+      setSpaceLoadError(`Error loading "${name}": ${message}`);
       setPages([]);
       setPageContents({});
       setSelectedPageId(undefined);
-      setFavorites([]);
-      setRecentPages([]);
-      setTrash([]);
       setSpaceName(name);
       setHasStarted(true);
     }
@@ -196,57 +222,65 @@ export function App() {
 
     setSettings(initialSettings);
 
-    // Load spaces manifest
+    // Load spaces manifest and then determine which space to restore
     void loadSpaces(backend).then((manifest) => {
       setSpacesManifest(manifest);
-      setUserSpaceId(manifest.activeSpaceId);
-    });
+      const activeId = manifest.activeSpaceId;
+      setUserSpaceId(activeId);
 
-    if (persisted) {
-      setPages(persisted.pages);
-      setSelectedPageId(persisted.selectedPageId);
-      setFavorites(persisted.favorites ?? []);
-      setRecentPages(persisted.recentPages ?? []);
-      setSpaceName(persisted.spaceName ?? 'My Space');
-      setHasStarted(true);
-      setTrash([]);
-      // Also save to per-space file so switching back works
-      void saveSpaceState(backend, 'default', persisted);
-      // Load selected page content from backend
-      if (persisted.selectedPageId) {
-        void readPageContent(backend, persisted.selectedPageId).then((content) => {
-          // Always set content (even if null/missing) so the page doesn't stay stuck on "Loading..."
-          setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content ?? '' }));
-        });
+      // If the active space is NOT the default, load it from its per-space storage
+      if (activeId !== 'default') {
+        const space = manifest.spaces.find((s) => s.id === activeId);
+        void loadAndApplySpaceState(activeId, space?.name ?? 'My Space');
+        // Still save the default persisted state for backward compat
+        if (persisted) {
+          void saveSpaceState(backend, 'default', persisted);
+        }
+        return;
       }
-    } else if (shouldShowDemo) {
-      setPages(DEMO_PAGES);
-      setSelectedPageId('welcome');
-      const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
-      setPageContents(demoContents);
-      setSpaceName('Demo Space');
-      setHasStarted(true);
-      // Write demo content to individual files (both legacy location and per-space)
-      void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
-      // Save demo state so switching back works
-      void saveSpaceState(backend, 'default', {
-        pages: DEMO_PAGES,
-        favorites: [],
-        recentPages: [],
-        selectedPageId: 'welcome',
-        spaceName: 'Demo Space',
-      });
-      // Update manifest to reflect demo space name
-      void loadSpaces(backend).then((manifest) => {
+
+      // Active space is 'default' — use the loaded persisted state
+      if (persisted) {
+        setPages(persisted.pages);
+        setSelectedPageId(persisted.selectedPageId);
+        setFavorites(persisted.favorites ?? []);
+        setRecentPages(persisted.recentPages ?? []);
+        setSpaceName(persisted.spaceName ?? 'My Space');
+        setHasStarted(true);
+        setTrash([]);
+        // Also save to per-space file so switching back works
+        void saveSpaceState(backend, 'default', persisted);
+        // Load selected page content from backend
+        if (persisted.selectedPageId) {
+          void readPageContent(backend, persisted.selectedPageId).then((content) => {
+            setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content ?? '' }));
+          });
+        }
+      } else if (shouldShowDemo) {
+        setPages(DEMO_PAGES);
+        setSelectedPageId('welcome');
+        const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+        setPageContents(demoContents);
+        setSpaceName('Demo Space');
+        setHasStarted(true);
+        void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+        void saveSpaceState(backend, 'default', {
+          pages: DEMO_PAGES,
+          favorites: [],
+          recentPages: [],
+          selectedPageId: 'welcome',
+          spaceName: 'Demo Space',
+        });
+        // Update manifest to reflect demo space name
         const defaultSpace = manifest.spaces.find((s) => s.id === 'default');
         if (defaultSpace && defaultSpace.name === 'My Space') {
           defaultSpace.name = 'Demo Space';
           void saveSpacesManifest(backend, manifest);
+          setSpacesManifest({ ...manifest });
         }
-        setSpacesManifest(manifest);
-      });
-    }
-  }, [ready, persisted, initialSettings, shouldShowDemo, backend]);
+      }
+    });
+  }, [ready, persisted, initialSettings, shouldShowDemo, backend, loadAndApplySpaceState]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -273,19 +307,123 @@ export function App() {
     if (route.space === 'docs') {
       setActiveSpace('docs');
       if (route.pageId) setDocsSelectedPageId(route.pageId);
+    } else if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
+      // URL points to a different space — switch to it and load its content
+      void switchSpaceInBackend(backend, route.spaceId).then(() => {
+        setUserSpaceId(route.spaceId);
+        void loadSpaces(backend).then((manifest) => {
+          const space = manifest.spaces.find((s) => s.id === route.spaceId);
+          void loadAndApplySpaceState(route.spaceId, space?.name ?? 'My Space').then(() => {
+            if (route.pageId) {
+              setSelectedPageId(route.pageId);
+              setPages((prev) => expandToNode(prev, route.pageId!));
+            }
+          });
+        });
+      }).catch(() => {
+        // Space not found — stay on current space
+      });
     } else if (route.pageId) {
       const node = findNode(pages, route.pageId);
       if (node) {
         setSelectedPageId(route.pageId);
         setPages((prev) => expandToNode(prev, route.pageId!));
       }
-      if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
-        void switchSpaceInBackend(backend, route.spaceId).then(() => {
-          setUserSpaceId(route.spaceId);
-        });
+    }
+  }, [hasStarted, pages, persisted, backend, userSpaceId, loadAndApplySpaceState]);
+
+  // Background sync: auto-refresh remote spaces every 5 minutes
+  const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+  useEffect(() => {
+    if (!hasStarted || !spacesManifest || !isRemoteSpaceId(userSpaceId)) return;
+    if (!(backend instanceof BrowserFsBackend)) return;
+
+    const spaceMeta = spacesManifest.spaces.find((s) => s.id === userSpaceId);
+    if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
+
+    // Check if we've synced recently enough
+    const lastCheck = lastSyncCheckRef.current[userSpaceId] ?? 0;
+    const now = Date.now();
+    if (now - lastCheck < SYNC_INTERVAL_MS) return;
+
+    // Also check lastSyncedAt from metadata
+    if (spaceMeta.lastSyncedAt) {
+      const lastSynced = new Date(spaceMeta.lastSyncedAt).getTime();
+      if (now - lastSynced < SYNC_INTERVAL_MS) {
+        lastSyncCheckRef.current[userSpaceId] = now;
+        return;
       }
     }
-  }, [hasStarted, pages, persisted, backend, userSpaceId]);
+
+    lastSyncCheckRef.current[userSpaceId] = now;
+
+    // Start background sync
+    const syncSpace = async () => {
+      addToast(`Syncing ${spaceMeta.name}...`, 'info');
+
+      try {
+        const httpModule = await import('isomorphic-git/http/web');
+        const gitHttp = httpModule.default as GitHttp;
+
+        const oldPageIds = new Set(pages.map((p) => p.id));
+
+        const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+          backend,
+          gitHttp,
+          spaceMeta.remoteUrl!,
+          spaceMeta.branch!,
+          spaceMeta.subPath || undefined,
+          'https://cors.isomorphic-git.org',
+        );
+
+        await updateSpaceSyncTimestamp(backend, userSpaceId);
+
+        // Persist the refreshed pages
+        await saveSpaceState(backend, userSpaceId, {
+          pages: clonedPages,
+          favorites: [],
+          recentPages: [],
+          selectedPageId: clonedPages[0]?.id,
+          spaceName: spaceMeta.name,
+        });
+
+        for (const [pageId, content] of Object.entries(clonedContents)) {
+          if (content) {
+            void writeSpacePageContent(backend, userSpaceId, pageId, content);
+          }
+        }
+
+        // Update UI state
+        setPages(clonedPages);
+        setPageContents(clonedContents);
+        if (!selectedPageId || !clonedContents[selectedPageId]) {
+          setSelectedPageId(clonedPages[0]?.id);
+        }
+
+        // Update manifest
+        const manifest = await loadSpaces(backend);
+        setSpacesManifest(manifest);
+
+        // Check if current page was updated
+        const newPageIds = new Set(clonedPages.map((p) => p.id));
+        const hasChanges = oldPageIds.size !== newPageIds.size ||
+          [...oldPageIds].some((id) => !newPageIds.has(id));
+
+        if (hasChanges) {
+          addToast(`"${spaceMeta.name}" updated with new content.`, 'success');
+        } else {
+          addToast(`"${spaceMeta.name}" is up to date.`, 'success');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Sync failed';
+        addToast(`Sync failed for "${spaceMeta.name}": ${message}`, 'error');
+      }
+    };
+
+    void syncSpace();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, userSpaceId, spacesManifest, backend]);
+
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -646,6 +784,7 @@ export function App() {
   const handleCreateSpace = useCallback((name: string) => {
     // Save current space state before switching
     saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+    setSpaceLoadError(undefined);
     // Switch to user view (important when creating from docs view)
     setActiveSpace('user');
     void createSpaceInBackend(backend, name).then((newSpace) => {
@@ -667,6 +806,7 @@ export function App() {
   const handleSwitchSpace = useCallback((id: string) => {
     // Save current space state before switching
     saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
+    setSpaceLoadError(undefined);
     void switchSpaceInBackend(backend, id).then(() => {
       setUserSpaceId(id);
       void loadSpaces(backend).then((manifest) => {
@@ -1107,6 +1247,31 @@ export function App() {
                 <p>Select a documentation page from the sidebar</p>
               </div>
             )
+          ) : spaceLoadError ? (
+            <div className="cept-space-error" data-testid="space-load-error">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="8" cy="8" r="7" />
+                <path d="M8 4v5M8 11v1" />
+              </svg>
+              <h2>Space content unavailable</h2>
+              <p>{spaceLoadError}</p>
+              <div className="cept-space-error-actions">
+                <button
+                  className="cept-space-error-btn"
+                  onClick={() => handleOpenSettings('spaces')}
+                  data-testid="space-error-settings"
+                >
+                  Open Settings
+                </button>
+                <button
+                  className="cept-space-error-btn cept-space-error-btn--secondary"
+                  onClick={() => { setSpaceLoadError(undefined); handleSwitchSpace('default'); }}
+                  data-testid="space-error-switch-default"
+                >
+                  Switch to default space
+                </button>
+              </div>
+            </div>
           ) : showOnboarding ? (
             <LandingPage
               onStartWriting={handleStartWriting}
@@ -1240,9 +1405,7 @@ export function App() {
         isOpen={addSpaceWizardOpen}
         onClose={() => setAddSpaceWizardOpen(false)}
         onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
-        onAddRemoteDocs={() => { handleOpenDocs(); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
         onAddRemoteRepo={(config) => { handleAddRemoteRepo(config); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
-        hasRemoteDocs={activeSpace === 'docs'}
       />
       <ImportDialog
         isOpen={importDialogOpen}
@@ -1280,6 +1443,7 @@ export function App() {
           </div>
         </div>
       )}
+      <Toast messages={toastMessages} onDismiss={dismissToast} />
     </div>
   );
 }

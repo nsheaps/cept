@@ -92,6 +92,41 @@ export async function createSpace(
   return newSpace;
 }
 
+/**
+ * Generate a deterministic space ID from repo URL, branch, and optional sub-path.
+ * Uses `@` to separate repo from branch for unambiguous parsing.
+ * e.g., "https://github.com/nsheaps/cept" + "main" + "docs/" → "github.com/nsheaps/cept@main/docs"
+ */
+export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath?: string): string {
+  // Strip protocol and trailing slashes
+  const repo = remoteUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+  let id = `${repo}@${branch}`;
+  // Append sub-path if present
+  if (subPath) {
+    const cleanSubPath = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
+    if (cleanSubPath) {
+      id += `/${cleanSubPath}`;
+    }
+  }
+  return id;
+}
+
+/**
+ * Parse a remote space ID back into its components.
+ * Returns null if the ID is not a valid remote space ID.
+ */
+export function parseRemoteSpaceId(spaceId: string): { repo: string; branch: string; subPath?: string } | null {
+  const atIdx = spaceId.indexOf('@');
+  if (atIdx < 0) return null;
+  const repo = spaceId.substring(0, atIdx);
+  const rest = spaceId.substring(atIdx + 1);
+  const slashIdx = rest.indexOf('/');
+  if (slashIdx < 0) {
+    return { repo, branch: rest };
+  }
+  return { repo, branch: rest.substring(0, slashIdx), subPath: rest.substring(slashIdx + 1) };
+}
+
 /** Create a new space linked to a remote Git repository. */
 export async function createRemoteSpace(
   backend: StorageBackend,
@@ -101,8 +136,9 @@ export async function createRemoteSpace(
   subPath?: string,
 ): Promise<SpaceMeta> {
   const manifest = await loadSpaces(backend);
+  const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
   const newSpace: SpaceMeta = {
-    id: `space-${Date.now()}`,
+    id,
     name,
     createdAt: new Date().toISOString(),
     remoteUrl,
@@ -111,7 +147,13 @@ export async function createRemoteSpace(
     readOnly: true,
     lastSyncedAt: new Date().toISOString(),
   };
-  manifest.spaces.push(newSpace);
+  // Replace existing space with same ID (re-clone) or add new
+  const existingIdx = manifest.spaces.findIndex((s) => s.id === id);
+  if (existingIdx >= 0) {
+    manifest.spaces[existingIdx] = newSpace;
+  } else {
+    manifest.spaces.push(newSpace);
+  }
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
   return newSpace;
