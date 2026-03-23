@@ -5,6 +5,8 @@ import { FileBrowser } from './FileBrowser.js';
 export interface CeptSettings {
   autoSave: boolean;
   showDemoContent: boolean;
+  /** When true, URLs for git-backed spaces use the shareable /g/ prefix instead of /s/. Default: true */
+  redirectToGitUrl: boolean;
 }
 
 function isNsheapsDeployment(): boolean {
@@ -18,6 +20,7 @@ function isNsheapsDeployment(): boolean {
 export const DEFAULT_SETTINGS: CeptSettings = {
   autoSave: true,
   showDemoContent: isNsheapsDeployment(),
+  redirectToGitUrl: true,
 };
 
 const SETTINGS_KEY = 'cept-settings';
@@ -58,6 +61,7 @@ export interface SpaceInfo {
   remoteUrl?: string;
   branch?: string;
   subPath?: string;
+  lastSyncedAt?: string;
 }
 
 export interface SettingsModalProps {
@@ -80,6 +84,7 @@ export interface SettingsModalProps {
   onExport?: () => void;
   backend?: StorageBackend;
   onNavigateToPage?: (pageId: string) => void;
+  onRefreshSpace?: (id: string) => Promise<void>;
 }
 
 export function SettingsModal({
@@ -102,11 +107,13 @@ export function SettingsModal({
   onExport,
   backend,
   onNavigateToPage,
+  onRefreshSpace,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
+  const [refreshingSpaceId, setRefreshingSpaceId] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -116,6 +123,16 @@ export function SettingsModal({
       setBrowsingSpaceId(null);
     }
   }, [isOpen, initialTab]);
+
+  const handleRefreshSpace = useCallback(async (spaceId: string) => {
+    if (!onRefreshSpace || refreshingSpaceId) return;
+    setRefreshingSpaceId(spaceId);
+    try {
+      await onRefreshSpace(spaceId);
+    } finally {
+      setRefreshingSpaceId(null);
+    }
+  }, [onRefreshSpace, refreshingSpaceId]);
 
   const flashSaved = useCallback(() => {
     setSavedIndicator(true);
@@ -224,6 +241,24 @@ export function SettingsModal({
                   </button>
                 </label>
 
+                <label className="cept-settings-toggle-row" data-testid="setting-redirect-git-url">
+                  <div className="cept-settings-toggle-label">
+                    <span className="cept-settings-toggle-name">Shareable git URLs</span>
+                    <span className="cept-settings-toggle-desc">
+                      Use /g/ URLs for git-backed spaces so shared links auto-create the space for recipients
+                    </span>
+                  </div>
+                  <button
+                    className={`cept-settings-switch ${settings.redirectToGitUrl ? 'is-on' : ''}`}
+                    onClick={() => handleSettingChange('redirectToGitUrl', !settings.redirectToGitUrl)}
+                    role="switch"
+                    aria-checked={settings.redirectToGitUrl}
+                    data-testid="setting-redirect-git-url-toggle"
+                  >
+                    <span className="cept-settings-switch-thumb" />
+                  </button>
+                </label>
+
                 <div className="cept-settings-section-divider" />
                 <h3 className="cept-settings-section-title">Content</h3>
                 <label className="cept-settings-toggle-row" data-testid="setting-show-demo">
@@ -296,22 +331,45 @@ export function SettingsModal({
                               data-testid={`switch-space-${space.id}`}
                             >
                               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
-                                <polyline points="2,3 2,6.5 5.5,6.5" />
-                                <polyline points="14,13 14,9.5 10.5,9.5" />
+                                <path d="M6 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6" />
+                                <path d="M2 8h8M7 5l3 3-3 3" />
                               </svg>
                             </button>
                           )}
-                          <button
-                            className="cept-settings-icon-btn cept-settings-icon-btn--danger"
-                            onClick={() => onDeleteSpace(space.id)}
-                            title="Delete space"
-                            data-testid={`delete-space-${space.id}`}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                              <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
-                            </svg>
-                          </button>
+                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
+                            <button
+                              className="cept-settings-icon-btn"
+                              onClick={() => handleRefreshSpace(space.id)}
+                              disabled={refreshingSpaceId === space.id}
+                              title={refreshingSpaceId === space.id ? 'Syncing...' : 'Refresh from remote'}
+                              data-testid={`refresh-space-${space.id}`}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                className={refreshingSpaceId === space.id ? 'cept-spin' : ''}
+                              >
+                                <path d="M14 2v4h-4M2 14v-4h4" />
+                                <path d="M13.46 5.54A6 6 0 002.54 10.46M2.54 10.46A6 6 0 0013.46 5.54" />
+                              </svg>
+                            </button>
+                          )}
+                          {space.id !== 'cept-docs' && (
+                            <button
+                              className="cept-settings-icon-btn cept-settings-icon-btn--danger"
+                              onClick={() => onDeleteSpace(space.id)}
+                              title="Delete space"
+                              data-testid={`delete-space-${space.id}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+                              </svg>
+                            </button>
+                          )}
                           <button
                             className="cept-settings-icon-btn"
                             onClick={() => setSelectedSpaceId(space.id)}
@@ -419,6 +477,8 @@ export function SettingsModal({
                   setSelectedSpaceId(null);
                 }}
                 onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+                onRefresh={selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs' ? () => handleRefreshSpace(selectedSpace.id) : undefined}
+                isRefreshing={refreshingSpaceId === selectedSpace.id}
               />
             )}
 
@@ -461,12 +521,16 @@ function SpaceDetails({
   onDelete,
   onRename,
   onBrowseFiles,
+  onRefresh,
+  isRefreshing,
 }: {
   space: SpaceInfo;
   onBack: () => void;
   onDelete: () => void;
   onRename: (name: string) => void;
   onBrowseFiles?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
@@ -562,10 +626,41 @@ function SpaceDetails({
         {space.createdAt && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Created</span>
-            <span className="cept-settings-detail-value">{space.createdAt}</span>
+            <span className="cept-settings-detail-value">{formatTimestamp(space.createdAt)}</span>
+          </div>
+        )}
+        {space.lastSyncedAt && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Last synced</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-last-synced">{formatTimestamp(space.lastSyncedAt)}</span>
           </div>
         )}
       </div>
+      {onRefresh && (
+        <>
+          <div className="cept-settings-section-divider" />
+          <button
+            className="cept-settings-action-btn"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            data-testid="space-details-refresh"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className={isRefreshing ? 'cept-spin' : ''}
+            >
+              <path d="M14 2v4h-4M2 14v-4h4" />
+              <path d="M13.46 5.54A6 6 0 002.54 10.46M2.54 10.46A6 6 0 0013.46 5.54" />
+            </svg>
+            {isRefreshing ? 'Syncing from remote...' : 'Refresh from remote'}
+          </button>
+        </>
+      )}
       {onBrowseFiles && (
         <>
           <div className="cept-settings-section-divider" />
@@ -594,6 +689,21 @@ function SpaceDetails({
       </button>
     </div>
   );
+}
+
+function formatTimestamp(iso: string): string {
+  try {
+    const date = new Date(iso);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function formatBytes(bytes: number): string {

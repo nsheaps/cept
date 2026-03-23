@@ -283,6 +283,7 @@ export function Sidebar({
                 node={page}
                 depth={0}
                 selectedId={selectedPageId}
+                readOnly={readOnly}
                 onSelect={onPageSelect}
                 onToggle={onPageToggle}
                 onAdd={(parentId) => onPageAdd?.(parentId)}
@@ -312,69 +313,67 @@ export function Sidebar({
           </button>
         )}
         <div className="cept-sidebar-footer-divider" />
-        {!readOnly && (
-          <div className="cept-sidebar-app-menu-wrapper" ref={appMenuRef}>
-            <button
-              className="cept-sidebar-action-btn"
-              onClick={() => setAppMenuOpen((prev) => !prev)}
-              data-testid="sidebar-app-menu-trigger"
-              title="App menu"
-            >
-              <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="8" cy="3" r="1.5" />
-                <circle cx="8" cy="8" r="1.5" />
-                <circle cx="8" cy="13" r="1.5" />
-              </svg>
-              <span>More</span>
-            </button>
-            {appMenuOpen && (
-              <div className="cept-sidebar-app-menu" data-testid="sidebar-app-menu">
-                <button
-                  className="cept-sidebar-app-menu-item"
-                  onClick={() => {
-                    setAppMenuOpen(false);
-                    onOpenSettings?.('settings');
-                  }}
-                  data-testid="sidebar-app-menu-settings"
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <circle cx="8" cy="8" r="2.5" />
-                    <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
-                  </svg>
-                  Settings
-                </button>
-                <button
-                  className="cept-sidebar-app-menu-item"
-                  onClick={() => {
-                    setAppMenuOpen(false);
-                    onOpenDocs?.();
-                  }}
-                  data-testid="sidebar-app-menu-help"
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <circle cx="8" cy="8" r="6.5" />
-                    <path d="M6 6a2 2 0 114 0c0 1-1.5 1.5-2 2M8 11.5v.5" />
-                  </svg>
-                  Help &amp; Docs
-                </button>
-                <button
-                  className="cept-sidebar-app-menu-item"
-                  onClick={() => {
-                    setAppMenuOpen(false);
-                    onOpenSettings?.('about');
-                  }}
-                  data-testid="sidebar-app-menu-about"
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <circle cx="8" cy="8" r="6.5" />
-                    <path d="M8 7v4M8 4.5v.5" />
-                  </svg>
-                  About Cept
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="cept-sidebar-app-menu-wrapper" ref={appMenuRef}>
+          <button
+            className="cept-sidebar-action-btn"
+            onClick={() => setAppMenuOpen((prev) => !prev)}
+            data-testid="sidebar-app-menu-trigger"
+            title="App menu"
+          >
+            <svg className="cept-sidebar-action-svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3" r="1.5" />
+              <circle cx="8" cy="8" r="1.5" />
+              <circle cx="8" cy="13" r="1.5" />
+            </svg>
+            <span>More</span>
+          </button>
+          {appMenuOpen && (
+            <div className="cept-sidebar-app-menu" data-testid="sidebar-app-menu">
+              <button
+                className="cept-sidebar-app-menu-item"
+                onClick={() => {
+                  setAppMenuOpen(false);
+                  onOpenSettings?.('settings');
+                }}
+                data-testid="sidebar-app-menu-settings"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="2.5" />
+                  <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+                </svg>
+                Settings
+              </button>
+              <button
+                className="cept-sidebar-app-menu-item"
+                onClick={() => {
+                  setAppMenuOpen(false);
+                  onOpenDocs?.();
+                }}
+                data-testid="sidebar-app-menu-help"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="6.5" />
+                  <path d="M6 6a2 2 0 114 0c0 1-1.5 1.5-2 2M8 11.5v.5" />
+                </svg>
+                Help &amp; Docs
+              </button>
+              <button
+                className="cept-sidebar-app-menu-item"
+                onClick={() => {
+                  setAppMenuOpen(false);
+                  onOpenSettings?.('about');
+                }}
+                data-testid="sidebar-app-menu-about"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="8" cy="8" r="6.5" />
+                  <path d="M8 7v4M8 4.5v.5" />
+                </svg>
+                About Cept
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {contextMenu && !readOnly && (

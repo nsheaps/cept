@@ -17,6 +17,7 @@ const rootPkg = require('../../package.json') as { version: string };
  * plugin returns an empty module for any `node:*` import so the build
  * succeeds and the final bundle contains no Node.js references.
  */
+
 function nodeStubs(): Plugin {
   // Returns a module that re-exports a Proxy as default so any named import
   // (e.g. `import { watch } from "node:fs"`) resolves to a no-op.
@@ -34,6 +35,7 @@ function nodeStubs(): Plugin {
     'export const readdir = noop;',
     'export const stat = noop;',
     'export const unlink = noop;',
+    'export const rm = noop;',
     'export const rename = noop;',
     'export const access = noop;',
     'export const resolve = noop;',
@@ -91,11 +93,24 @@ export default defineConfig({
     __PRODUCTION_URL__: JSON.stringify(process.env.PRODUCTION_URL || ''),
     __IS_PREVIEW__: JSON.stringify(process.env.VITE_IS_PREVIEW === 'true'),
     __HEAD_BRANCH__: JSON.stringify(process.env.HEAD_BRANCH || 'main'),
+    // isomorphic-git checks process.platform at runtime
+    'process.platform': JSON.stringify('browser'),
   },
   resolve: {
     alias: {
       '@cept/core': path.resolve(__dirname, '../core/src'),
       '@cept/ui': path.resolve(__dirname, '../ui/src'),
+    },
+  },
+  optimizeDeps: {
+    // Ensure isomorphic-git and buffer are pre-bundled together so
+    // Buffer is available when isomorphic-git CJS code is evaluated.
+    include: ['buffer', 'isomorphic-git'],
+    esbuildOptions: {
+      // Make Buffer available as a global in esbuild pre-bundling
+      define: {
+        Buffer: 'Buffer',
+      },
     },
   },
   server: {

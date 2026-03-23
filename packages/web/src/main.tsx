@@ -1,3 +1,7 @@
+// Buffer polyfill — isomorphic-git requires Node's Buffer global in the browser
+import { Buffer } from 'buffer';
+globalThis.Buffer = Buffer;
+
 import { StrictMode, useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import { App, StorageProvider } from '@cept/ui';

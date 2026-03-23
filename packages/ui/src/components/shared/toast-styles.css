@@ -1,0 +1,83 @@
+.cept-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 360px;
+}
+
+.cept-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  animation: cept-toast-in 0.2s ease-out;
+}
+
+@keyframes cept-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cept-toast--info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.cept-toast--success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.cept-toast--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.cept-toast-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cept-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: inherit;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.cept-toast-close:hover {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cept-toast--info {
+    background: #1e293b;
+    border-color: #334155;
+    color: #93c5fd;
+  }
+  .cept-toast--success {
+    background: #14291e;
+    border-color: #22543d;
+    color: #86efac;
+  }
+  .cept-toast--error {
+    background: #2d1515;
+    border-color: #4c1d1d;
+    color: #fca5a5;
+  }
+}

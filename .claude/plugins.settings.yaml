@@ -1,0 +1,12 @@
+# Project-level plugin configuration overrides.
+# These settings take precedence over plugin defaults.
+# See each plugin's <plugin-name>.settings.yaml for available options.
+
+github:
+  # gh is managed by mise (see .mise.toml).
+  # The plugin still runs gh auth status to verify authentication.
+  autoInstall: false
+
+mise:
+  autoInstallTools: true
+  autoTrust: true

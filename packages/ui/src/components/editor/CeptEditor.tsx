@@ -219,7 +219,6 @@ export function CeptEditor({
     content,
     editable,
     onUpdate: ({ editor: ed }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       onUpdate?.((ed.storage as unknown as { markdown: MarkdownStorage }).markdown.getMarkdown());
     },
     editorProps: {

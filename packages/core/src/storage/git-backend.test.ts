@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { LocalFsBackend } from './local-fs.js';
 import { GitBackend } from './git-backend.js';
+import type { GitHttp } from './git-backend.js';
 
 describe('GitBackend', () => {
   let testDir: string;
@@ -324,6 +325,53 @@ describe('GitBackend', () => {
       await backend.remote.remove('origin');
       const remotes = await backend.remote.list();
       expect(remotes.length).toBe(0);
+    });
+  });
+
+  describe('clone', () => {
+    it('should throw without http client', async () => {
+      // backend has no http client configured
+      await expect(
+        backend.clone('https://github.com/test/repo'),
+      ).rejects.toThrow('http client required');
+    });
+
+    it('should accept http and corsProxy options', () => {
+      const mockHttp: GitHttp = { request: () => Promise.reject(new Error('mock')) };
+      const gitWithHttp = new GitBackend({
+        underlying,
+        dir: testDir,
+        fs: nodeFs,
+        http: mockHttp,
+        corsProxy: 'https://cors.example.com',
+      });
+      // Should not throw — options are stored for later use
+      expect(gitWithHttp.type).toBe('git');
+    });
+  });
+
+  describe('fetch', () => {
+    it('should throw without http client', async () => {
+      await backend.initialize({ name: 'Test' });
+      await expect(backend.fetch()).rejects.toThrow('http client required');
+    });
+  });
+
+  describe('push', () => {
+    it('should throw without http client', async () => {
+      await backend.initialize({ name: 'Test' });
+      await backend.writeFile('test.txt', new TextEncoder().encode('data'));
+      await backend.commit('test', ['test.txt']);
+      await expect(backend.push()).rejects.toThrow('http client required');
+    });
+  });
+
+  describe('pull', () => {
+    it('should throw without http client', async () => {
+      await backend.initialize({ name: 'Test' });
+      await backend.writeFile('test.txt', new TextEncoder().encode('data'));
+      await backend.commit('test', ['test.txt']);
+      await expect(backend.pull()).rejects.toThrow('http client required');
     });
   });
 });

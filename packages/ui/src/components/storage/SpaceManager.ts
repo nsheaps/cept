@@ -14,6 +14,16 @@ export interface SpaceMeta {
   name: string;
   icon?: string;
   createdAt: string;
+  /** Remote Git repository URL (e.g., "https://github.com/user/repo") */
+  remoteUrl?: string;
+  /** Branch to track (e.g., "main") */
+  branch?: string;
+  /** Sub-path within the repo to scope the space to (e.g., "docs/") */
+  subPath?: string;
+  /** Whether this space is read-only (true for cloned remote spaces) */
+  readOnly?: boolean;
+  /** ISO timestamp of the last successful sync/clone from the remote */
+  lastSyncedAt?: string;
 }
 
 export interface SpacesManifest {
@@ -80,6 +90,85 @@ export async function createSpace(
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
   return newSpace;
+}
+
+/**
+ * Generate a deterministic space ID from repo URL, branch, and optional sub-path.
+ * Uses `@` to separate repo from branch for unambiguous parsing.
+ * e.g., "https://github.com/nsheaps/cept" + "main" + "docs/" → "github.com/nsheaps/cept@main/docs"
+ */
+export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath?: string): string {
+  // Strip protocol and trailing slashes
+  const repo = remoteUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+  let id = `${repo}@${branch}`;
+  // Append sub-path if present
+  if (subPath) {
+    const cleanSubPath = subPath.replace(/^\/+/, '').replace(/\/+$/, '');
+    if (cleanSubPath) {
+      id += `/${cleanSubPath}`;
+    }
+  }
+  return id;
+}
+
+/**
+ * Parse a remote space ID back into its components.
+ * Returns null if the ID is not a valid remote space ID.
+ */
+export function parseRemoteSpaceId(spaceId: string): { repo: string; branch: string; subPath?: string } | null {
+  const atIdx = spaceId.indexOf('@');
+  if (atIdx < 0) return null;
+  const repo = spaceId.substring(0, atIdx);
+  const rest = spaceId.substring(atIdx + 1);
+  const slashIdx = rest.indexOf('/');
+  if (slashIdx < 0) {
+    return { repo, branch: rest };
+  }
+  return { repo, branch: rest.substring(0, slashIdx), subPath: rest.substring(slashIdx + 1) };
+}
+
+/** Create a new space linked to a remote Git repository. */
+export async function createRemoteSpace(
+  backend: StorageBackend,
+  name: string,
+  remoteUrl: string,
+  branch: string,
+  subPath?: string,
+): Promise<SpaceMeta> {
+  const manifest = await loadSpaces(backend);
+  const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
+  const newSpace: SpaceMeta = {
+    id,
+    name,
+    createdAt: new Date().toISOString(),
+    remoteUrl,
+    branch,
+    subPath,
+    readOnly: true,
+    lastSyncedAt: new Date().toISOString(),
+  };
+  // Replace existing space with same ID (re-clone) or add new
+  const existingIdx = manifest.spaces.findIndex((s) => s.id === id);
+  if (existingIdx >= 0) {
+    manifest.spaces[existingIdx] = newSpace;
+  } else {
+    manifest.spaces.push(newSpace);
+  }
+  manifest.activeSpaceId = newSpace.id;
+  await saveSpaces(backend, manifest);
+  return newSpace;
+}
+
+/** Update the lastSyncedAt timestamp for a space. */
+export async function updateSpaceSyncTimestamp(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<void> {
+  const manifest = await loadSpaces(backend);
+  const space = manifest.spaces.find((s) => s.id === spaceId);
+  if (!space) throw new Error(`Space not found: ${spaceId}`);
+  space.lastSyncedAt = new Date().toISOString();
+  await saveSpaces(backend, manifest);
 }
 
 /** Switch the active space. */

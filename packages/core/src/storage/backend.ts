@@ -156,6 +156,8 @@ export interface GitStorageBackend extends StorageBackend {
   readonly type: 'git';
 
   // Git operations
+  clone(url: string, options?: { ref?: string; depth?: number; singleBranch?: boolean }): Promise<void>;
+  fetch(branch?: string): Promise<void>;
   commit(message: string, paths?: string[]): Promise<CommitHash>;
   push(branch?: string): Promise<PushResult>;
   pull(branch?: string): Promise<MergeResult>;
