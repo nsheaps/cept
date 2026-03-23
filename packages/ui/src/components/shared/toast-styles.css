@@ -64,20 +64,18 @@
   opacity: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-  .cept-toast--info {
-    background: #1e293b;
-    border-color: #334155;
-    color: #93c5fd;
-  }
-  .cept-toast--success {
-    background: #14291e;
-    border-color: #22543d;
-    color: #86efac;
-  }
-  .cept-toast--error {
-    background: #2d1515;
-    border-color: #4c1d1d;
-    color: #fca5a5;
-  }
+.dark .cept-toast--info {
+  background: #1e293b;
+  border-color: #334155;
+  color: #93c5fd;
+}
+.dark .cept-toast--success {
+  background: #14291e;
+  border-color: #22543d;
+  color: #86efac;
+}
+.dark .cept-toast--error {
+  background: #2d1515;
+  border-color: #4c1d1d;
+  color: #fca5a5;
 }

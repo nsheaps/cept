@@ -330,7 +330,7 @@ export function useWorkspacePersistence(backend: StorageBackend) {
     state: PersistedState | null;
     settings: CeptSettings;
     ready: boolean;
-  }>({ state: null, settings: { autoSave: true, showDemoContent: false, redirectToGitUrl: true }, ready: false });
+  }>({ state: null, settings: { autoSave: true, showDemoContent: false, redirectToGitUrl: true, themeMode: 'system' }, ready: false });
 
   useEffect(() => {
     let cancelled = false;

@@ -1,12 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
+import { ThemeToggle } from './ThemeToggle.js';
+
+export type ThemeMode = 'dark' | 'system' | 'light';
 
 export interface CeptSettings {
   autoSave: boolean;
   showDemoContent: boolean;
   /** When true, URLs for git-backed spaces use the shareable /g/ prefix instead of /s/. Default: true */
   redirectToGitUrl: boolean;
+  themeMode: ThemeMode;
 }
 
 function isNsheapsDeployment(): boolean {
@@ -21,6 +25,7 @@ export const DEFAULT_SETTINGS: CeptSettings = {
   autoSave: true,
   showDemoContent: isNsheapsDeployment(),
   redirectToGitUrl: true,
+  themeMode: 'system',
 };
 
 const SETTINGS_KEY = 'cept-settings';
@@ -222,6 +227,21 @@ export function SettingsModal({
           <div className="cept-settings-content">
             {activeTab === 'settings' && (
               <div data-testid="settings-panel-settings">
+                <h3 className="cept-settings-section-title">Appearance</h3>
+                <div className="cept-settings-toggle-row" data-testid="setting-theme-mode">
+                  <div className="cept-settings-toggle-label">
+                    <span className="cept-settings-toggle-name">Theme</span>
+                    <span className="cept-settings-toggle-desc">
+                      Choose dark, light, or match your system
+                    </span>
+                  </div>
+                  <ThemeToggle
+                    value={settings.themeMode}
+                    onChange={(mode) => handleSettingChange('themeMode', mode)}
+                  />
+                </div>
+
+                <div className="cept-settings-section-divider" />
                 <h3 className="cept-settings-section-title">Editor</h3>
                 <label className="cept-settings-toggle-row" data-testid="setting-auto-save">
                   <div className="cept-settings-toggle-label">

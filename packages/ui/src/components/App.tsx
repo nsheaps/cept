@@ -12,6 +12,7 @@ import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
+import { useTheme } from './settings/useTheme.js';
 import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl, resolveDocsContent } from './docs/docs-content.js';
 import {
   useStorage,
@@ -104,6 +105,7 @@ export function App() {
   const [favorites, setFavorites] = useState<SidebarPageRef[]>([]);
   const [recentPages, setRecentPages] = useState<SidebarPageRef[]>([]);
   const [settings, setSettings] = useState<CeptSettings>({ ...DEFAULT_SETTINGS });
+  useTheme(settings.themeMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'spaces'>('settings');
   const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
@@ -1253,6 +1255,8 @@ export function App() {
                 handleSwitchSpace(id);
               }
             }}
+            themeMode={settings.themeMode}
+            onThemeModeChange={(mode) => handleSettingsChange({ ...settings, themeMode: mode })}
           />
         )}
         {sidebarOpen && isDocsActive && (
@@ -1288,6 +1292,8 @@ export function App() {
                 handleSwitchSpace(id);
               }
             }}
+            themeMode={settings.themeMode}
+            onThemeModeChange={(mode) => handleSettingsChange({ ...settings, themeMode: mode })}
           />
         )}
         <section className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">

@@ -143,20 +143,18 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .cept-app-menu-trigger { color: #71717a; }
-  .cept-app-menu-trigger:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
-  .cept-app-menu-item { color: #d4d4d8; }
-  .cept-app-menu-item:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-app-menu-item:disabled { color: #71717a; }
-  .cept-app-menu-badge { background: #333; color: #71717a; }
-  .cept-app-menu-item--danger { color: #ef4444; }
-  .cept-app-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
-  .cept-app-menu-divider { background: #404040; }
-  .cept-about-dialog { background: #262626; }
-  .cept-about-dialog h2 { color: #e5e5e5; }
-  .cept-about-dialog p { color: #a1a1aa; }
-  .cept-about-close { background: #333; border-color: #404040; color: #d4d4d8; }
-  .cept-about-close:hover { background: #404040; }
-}
+.dark .cept-app-menu-trigger { color: #71717a; }
+.dark .cept-app-menu-trigger:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.dark .cept-app-menu-item { color: #d4d4d8; }
+.dark .cept-app-menu-item:hover:not(:disabled) { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-app-menu-item:disabled { color: #71717a; }
+.dark .cept-app-menu-badge { background: #333; color: #71717a; }
+.dark .cept-app-menu-item--danger { color: #ef4444; }
+.dark .cept-app-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
+.dark .cept-app-menu-divider { background: #404040; }
+.dark .cept-about-dialog { background: #262626; }
+.dark .cept-about-dialog h2 { color: #e5e5e5; }
+.dark .cept-about-dialog p { color: #a1a1aa; }
+.dark .cept-about-close { background: #333; border-color: #404040; color: #d4d4d8; }
+.dark .cept-about-close:hover { background: #404040; }

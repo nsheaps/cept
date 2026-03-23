@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
 import { PageContextMenu } from './PageContextMenu.js';
+import { ThemeToggle } from '../settings/ThemeToggle.js';
+import type { ThemeMode } from '../settings/SettingsModal.js';
 
 export interface SidebarPageRef {
   id: string;
@@ -37,6 +39,8 @@ export interface SidebarProps {
   spaces?: Array<{ id: string; name: string }>;
   activeSpaceId?: string;
   onSwitchSpace?: (id: string) => void;
+  themeMode?: ThemeMode;
+  onThemeModeChange?: (mode: ThemeMode) => void;
 }
 
 export function Sidebar({
@@ -64,6 +68,8 @@ export function Sidebar({
   spaces,
   activeSpaceId,
   onSwitchSpace,
+  themeMode,
+  onThemeModeChange,
 }: SidebarProps) {
   const [editingSpaceName, setEditingSpaceName] = useState(false);
   const [editSpaceNameValue, setEditSpaceNameValue] = useState(spaceName ?? 'Space');
@@ -371,6 +377,15 @@ export function Sidebar({
                 </svg>
                 About Cept
               </button>
+              {themeMode && onThemeModeChange && (
+                <>
+                  <div className="cept-sidebar-app-menu-divider" />
+                  <div className="cept-sidebar-app-menu-theme" data-testid="sidebar-app-menu-theme">
+                    <span className="cept-sidebar-app-menu-theme-label">Theme</span>
+                    <ThemeToggle value={themeMode} onChange={onThemeModeChange} compact />
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
