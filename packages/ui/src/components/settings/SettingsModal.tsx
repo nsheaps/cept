@@ -505,6 +505,7 @@ export function SettingsModal({
             {activeTab === 'spaces' && browsingSpaceId && backend && (
               <FileBrowser
                 backend={backend}
+                rootPath={browsingSpaceId === 'default' ? '/' : `.cept/spaces/${browsingSpaceId}`}
                 onNavigateToPage={onNavigateToPage}
                 onClose={() => setBrowsingSpaceId(null)}
               />
