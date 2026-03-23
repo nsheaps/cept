@@ -510,7 +510,6 @@ export function App() {
     };
 
     void syncSpace();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasStarted, userSpaceId, spacesManifest, backend]);
 
 
@@ -1031,7 +1030,6 @@ export function App() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Clone failed';
       setCloneStatus({ active: false, error: message });
-      // eslint-disable-next-line no-console
       console.error('Failed to clone remote repo:', err);
     }
   }, [backend, handleCreateSpace, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
