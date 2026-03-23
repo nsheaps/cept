@@ -25,7 +25,8 @@ import { saveSpaceState, writeSpacePageContent } from '../storage/StorageContext
 import { DOCS_PAGES, DOCS_CONTENT, resolveDocsContent } from './docs-content.js';
 
 export const DOCS_REPO_URL = 'github.com/nsheaps/cept';
-export const DOCS_BRANCH = 'main';
+/** Use the PR branch for preview deploys, fall back to 'main' for production. */
+export const DOCS_BRANCH = typeof __HEAD_BRANCH__ !== 'undefined' && __HEAD_BRANCH__ ? __HEAD_BRANCH__ : 'main';
 export const DOCS_SUB_PATH = 'docs/content';
 const CORS_PROXY = 'https://cors.isomorphic-git.org';
 

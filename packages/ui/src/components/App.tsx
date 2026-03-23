@@ -224,8 +224,18 @@ export function App() {
     setSettings(initialSettings);
 
     // Load spaces manifest and then determine which space to restore
-    void loadSpaces(backend).then((manifest) => {
+    void loadSpaces(backend).then(async (manifest) => {
       setSpacesManifest(manifest);
+
+      // Auto-create the docs space in the background so it appears in the
+      // space switcher immediately (without requiring the user to click
+      // "Help & Docs" first).
+      if (backend instanceof BrowserFsBackend) {
+        void ensureDocsSpace(backend).then(async () => {
+          const updated = await loadSpaces(backend);
+          setSpacesManifest(updated);
+        });
+      }
       const activeId = manifest.activeSpaceId;
       setUserSpaceId(activeId);
 
