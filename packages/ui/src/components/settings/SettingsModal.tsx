@@ -82,6 +82,8 @@ export interface SettingsModalProps {
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
+  onExportSpace?: () => void;
+  onImportSpace?: () => void;
   backend?: StorageBackend;
   onNavigateToPage?: (pageId: string) => void;
   onRefreshSpace?: (id: string) => Promise<void>;
@@ -105,6 +107,8 @@ export function SettingsModal({
   onImportNotion,
   onImportObsidian,
   onExport,
+  onExportSpace,
+  onImportSpace,
   backend,
   onNavigateToPage,
   onRefreshSpace,
@@ -279,6 +283,39 @@ export function SettingsModal({
                   </button>
                 </label>
 
+                {(onExportSpace || onImportSpace) && (
+                  <>
+                    <div className="cept-settings-section-divider" />
+                    <h3 className="cept-settings-section-title">Import / Export</h3>
+                    <div className="cept-settings-actions">
+                      {onExportSpace && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onExportSpace(); onClose(); }}
+                          data-testid="settings-export-space-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M8 2v8M5 5l3-3 3 3M3 11v2h10v-2" />
+                          </svg>
+                          Export space as ZIP
+                        </button>
+                      )}
+                      {onImportSpace && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onImportSpace(); onClose(); }}
+                          data-testid="settings-import-space-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M8 10V2M5 7l3 3 3-3M3 11v2h10v-2" />
+                          </svg>
+                          Import space from ZIP
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+
                 <div className="cept-settings-section-divider" />
                 <button
                   className="cept-settings-danger-btn"
@@ -398,11 +435,44 @@ export function SettingsModal({
                   Create new space
                 </button>
 
-                {(onImportNotion || onImportObsidian || onExport) && (
+                {(onImportNotion || onImportObsidian || onExport || onExportSpace || onImportSpace) && (
                   <>
                     <div className="cept-settings-section-divider" />
                     <h3 className="cept-settings-section-title">Import / Export</h3>
                     <div className="cept-settings-actions">
+                      {onExportSpace && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onExportSpace(); onClose(); }}
+                          data-testid="export-space-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M8 2v8M5 5l3-3 3 3M3 11v2h10v-2" />
+                          </svg>
+                          Export space as ZIP
+                        </button>
+                      )}
+                      {onImportSpace && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onImportSpace(); onClose(); }}
+                          data-testid="import-space-btn"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M8 10V2M5 7l3 3 3-3M3 11v2h10v-2" />
+                          </svg>
+                          Import space from ZIP
+                        </button>
+                      )}
+                      {onExport && (
+                        <button
+                          className="cept-settings-action-btn"
+                          onClick={() => { onExport(); onClose(); }}
+                          data-testid="export-page-btn"
+                        >
+                          Export current page
+                        </button>
+                      )}
                       {onImportNotion && (
                         <button
                           className="cept-settings-action-btn"
@@ -421,15 +491,6 @@ export function SettingsModal({
                           data-testid="import-obsidian-btn"
                         >
                           Import from Obsidian (coming soon)
-                        </button>
-                      )}
-                      {onExport && (
-                        <button
-                          className="cept-settings-action-btn"
-                          onClick={() => { onExport(); onClose(); }}
-                          data-testid="export-page-btn"
-                        >
-                          Export current page
                         </button>
                       )}
                     </div>

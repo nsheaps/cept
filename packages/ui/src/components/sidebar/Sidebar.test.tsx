@@ -212,6 +212,14 @@ describe('Sidebar', () => {
     expect(screen.getByText('My Workspace')).toBeDefined();
   });
 
+  it('updates displayed space name when spaceName prop changes', () => {
+    const { rerender } = render(<Sidebar pages={mockPages} spaceName="Demo Space" />);
+    expect(screen.getByText('Demo Space')).toBeDefined();
+    rerender(<Sidebar pages={mockPages} spaceName="New Project" />);
+    expect(screen.getByText('New Project')).toBeDefined();
+    expect(screen.queryByText('Demo Space')).toBeNull();
+  });
+
   it('renders back button when onBackToSpace is provided', () => {
     const onBackToSpace = vi.fn();
     render(<Sidebar pages={mockPages} onBackToSpace={onBackToSpace} />);
@@ -270,5 +278,42 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
     fireEvent.click(screen.getByTestId('sidebar-app-menu-about'));
     expect(onOpenSettings).toHaveBeenCalledWith('about');
+  });
+
+  it('shows export space button in app menu when handler provided', () => {
+    const onExportSpace = vi.fn();
+    render(<Sidebar pages={mockPages} onExportSpace={onExportSpace} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    expect(screen.getByTestId('sidebar-app-menu-export-space')).toBeDefined();
+  });
+
+  it('calls onExportSpace when export space clicked in app menu', () => {
+    const onExportSpace = vi.fn();
+    render(<Sidebar pages={mockPages} onExportSpace={onExportSpace} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-export-space'));
+    expect(onExportSpace).toHaveBeenCalled();
+  });
+
+  it('shows import space button in app menu when handler provided', () => {
+    const onImportSpace = vi.fn();
+    render(<Sidebar pages={mockPages} onImportSpace={onImportSpace} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    expect(screen.getByTestId('sidebar-app-menu-import-space')).toBeDefined();
+  });
+
+  it('calls onImportSpace when import space clicked in app menu', () => {
+    const onImportSpace = vi.fn();
+    render(<Sidebar pages={mockPages} onImportSpace={onImportSpace} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-import-space'));
+    expect(onImportSpace).toHaveBeenCalled();
+  });
+
+  it('does not show export/import space buttons when handlers not provided', () => {
+    render(<Sidebar pages={mockPages} />);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    expect(screen.queryByTestId('sidebar-app-menu-export-space')).toBeNull();
+    expect(screen.queryByTestId('sidebar-app-menu-import-space')).toBeNull();
   });
 });
