@@ -18,3 +18,5 @@ export { Mermaid, defaultMermaidContent, mermaidExamples } from './mermaid.js';
 export type { MermaidOptions } from './mermaid.js';
 export { SlashCommand, defaultSlashCommands, filterSlashCommands, slashCommandPluginKey } from './slash-command.js';
 export type { SlashCommandItem, SlashCommandOptions } from './slash-command.js';
+export { CodeColorSwatch, colorSwatchPluginKey } from './code-color-swatch.js';
+export { detectCSSColor } from './color-utils.js';
