@@ -39,12 +39,12 @@ import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp } from './storage/SpaceManager.js';
+import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp, parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
-import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId } from '../router.js';
+import { restoreRoute, replaceRoute, pushRoute, parseRoute, buildPath, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
 
 
 const DEMO_PAGES: PageTreeNode[] = [
@@ -293,6 +293,10 @@ export function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Sync the router's git URL prefix setting with the app settings
+  useEffect(() => {
+    setUseGitPrefix(settings.redirectToGitUrl);
+  }, [settings.redirectToGitUrl]);
 
   // Deep linking: restore route from URL on load (handles 404 redirect + legacy hash)
   // Runs exactly once after initialization has populated pages.
@@ -308,20 +312,105 @@ export function App() {
       setActiveSpace('docs');
       if (route.pageId) setDocsSelectedPageId(route.pageId);
     } else if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
-      // URL points to a different space — switch to it and load its content
-      void switchSpaceInBackend(backend, route.spaceId).then(() => {
-        setUserSpaceId(route.spaceId);
-        void loadSpaces(backend).then((manifest) => {
-          const space = manifest.spaces.find((s) => s.id === route.spaceId);
-          void loadAndApplySpaceState(route.spaceId, space?.name ?? 'My Space').then(() => {
+      // URL points to a different space — try to switch to it
+      const switchToExistingSpace = (manifest: SpacesManifest, spaceId: string) => {
+        const space = manifest.spaces.find((s) => s.id === spaceId);
+        if (!space) return;
+        void switchSpaceInBackend(backend, spaceId).then(() => {
+          setUserSpaceId(spaceId);
+          setSpacesManifest(manifest);
+          void loadAndApplySpaceState(spaceId, space.name).then(() => {
             if (route.pageId) {
               setSelectedPageId(route.pageId);
               setPages((prev) => expandToNode(prev, route.pageId!));
             }
           });
         });
-      }).catch(() => {
-        // Space not found — stay on current space
+      };
+
+      void loadSpaces(backend).then((manifest) => {
+        // Check if this exact space ID exists
+        const existingSpace = manifest.spaces.find((s) => s.id === route.spaceId);
+        if (existingSpace) {
+          switchToExistingSpace(manifest, route.spaceId);
+          return;
+        }
+
+        // Space not found — if it's a remote space ID, auto-create it by cloning
+        if (isRemoteSpaceId(route.spaceId) && backend instanceof BrowserFsBackend) {
+          const parsed = parseRemoteSpaceId(route.spaceId);
+          if (parsed) {
+            const autoSetupGitSpace = async () => {
+              const repoName = parsed.repo.split('/').pop() ?? 'Remote';
+              const name = parsed.subPath
+                ? `${repoName}/${parsed.subPath.replace(/\/$/, '')}`
+                : repoName;
+              const displayName = `${name} (${parsed.branch})`;
+
+              setCloneStatus({ active: true, message: `Cloning ${parsed.repo}...` });
+              try {
+                const httpModule = await import('isomorphic-git/http/web');
+                const gitHttp = httpModule.default as GitHttp;
+
+                const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+                  backend,
+                  gitHttp,
+                  parsed.repo,
+                  parsed.branch,
+                  parsed.subPath || undefined,
+                  'https://cors.isomorphic-git.org',
+                );
+
+                const newSpace = await createRemoteSpaceInBackend(
+                  backend,
+                  displayName,
+                  normalizeRepoUrl(parsed.repo),
+                  parsed.branch,
+                  parsed.subPath || undefined,
+                );
+
+                const updatedManifest = await loadSpaces(backend);
+                setSpacesManifest(updatedManifest);
+                setUserSpaceId(newSpace.id);
+                setActiveSpace('user');
+                setPages(clonedPages);
+                setPageContents(clonedContents);
+                setSelectedPageId(clonedPages[0]?.id);
+                setFavorites([]);
+                setRecentPages([]);
+                setTrash([]);
+                setSpaceName(displayName);
+                setHasStarted(true);
+
+                await saveSpaceState(backend, newSpace.id, {
+                  pages: clonedPages,
+                  favorites: [],
+                  recentPages: [],
+                  selectedPageId: clonedPages[0]?.id,
+                  spaceName: displayName,
+                });
+
+                for (const [pageId, content] of Object.entries(clonedContents)) {
+                  if (content) {
+                    void writeSpacePageContent(backend, newSpace.id, pageId, content);
+                  }
+                }
+
+                setCloneStatus({ active: false });
+
+                if (route.pageId) {
+                  setSelectedPageId(route.pageId);
+                  setPages((prev) => expandToNode(prev, route.pageId!));
+                }
+              } catch (err) {
+                const message = err instanceof Error ? err.message : 'Clone failed';
+                setCloneStatus({ active: false, error: message });
+              }
+            };
+            void autoSetupGitSpace();
+          }
+        }
+        // Non-remote space not found — stay on current space
       });
     } else if (route.pageId) {
       const node = findNode(pages, route.pageId);

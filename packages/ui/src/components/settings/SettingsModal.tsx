@@ -5,6 +5,8 @@ import { FileBrowser } from './FileBrowser.js';
 export interface CeptSettings {
   autoSave: boolean;
   showDemoContent: boolean;
+  /** When true, URLs for git-backed spaces use the shareable /g/ prefix instead of /s/. Default: true */
+  redirectToGitUrl: boolean;
 }
 
 function isNsheapsDeployment(): boolean {
@@ -18,6 +20,7 @@ function isNsheapsDeployment(): boolean {
 export const DEFAULT_SETTINGS: CeptSettings = {
   autoSave: true,
   showDemoContent: isNsheapsDeployment(),
+  redirectToGitUrl: true,
 };
 
 const SETTINGS_KEY = 'cept-settings';
@@ -233,6 +236,24 @@ export function SettingsModal({
                     role="switch"
                     aria-checked={settings.autoSave}
                     data-testid="setting-auto-save-toggle"
+                  >
+                    <span className="cept-settings-switch-thumb" />
+                  </button>
+                </label>
+
+                <label className="cept-settings-toggle-row" data-testid="setting-redirect-git-url">
+                  <div className="cept-settings-toggle-label">
+                    <span className="cept-settings-toggle-name">Shareable git URLs</span>
+                    <span className="cept-settings-toggle-desc">
+                      Use /g/ URLs for git-backed spaces so shared links auto-create the space for recipients
+                    </span>
+                  </div>
+                  <button
+                    className={`cept-settings-switch ${settings.redirectToGitUrl ? 'is-on' : ''}`}
+                    onClick={() => handleSettingChange('redirectToGitUrl', !settings.redirectToGitUrl)}
+                    role="switch"
+                    aria-checked={settings.redirectToGitUrl}
+                    data-testid="setting-redirect-git-url-toggle"
                   >
                     <span className="cept-settings-switch-thumb" />
                   </button>

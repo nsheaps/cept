@@ -5,14 +5,20 @@
  *   /{base}/                                                      — landing / onboarding
  *   /{base}/s/{spaceId}                                           — local space root
  *   /{base}/s/{spaceId}/{pageId}                                  — page in a local space
- *   /{base}/s/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]     — git space root
- *   /{base}/s/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]/{pageId} — page in a git space
+ *   /{base}/g/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]     — git space root
+ *   /{base}/g/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]/{pageId} — page in a git space
  *   /{base}/docs                                                  — docs space index
  *   /{base}/docs/{pageId}                                         — specific docs page
  *
  * Git space IDs use the format: host/owner/repo@branch[/subpath]
  * The `blob` segment in the URL separates the repo path from the branch,
- * mirroring GitHub's URL format.
+ * mirroring GitHub's URL format. The `/g/` prefix distinguishes git spaces
+ * from local `/s/` spaces.
+ *
+ * When `redirectToGitUrl` is enabled, local `/s/` URLs that resolve to a
+ * git-backed space will redirect to the canonical `/g/` URL. This means
+ * shared links always point to the git-backed version so recipients
+ * auto-create the space on visit.
  *
  * Works with the GitHub Pages 404.html hack: when the server can't find
  * a path, 404.html redirects to `/?route=<encoded-path>`. On load, the
@@ -33,6 +39,16 @@ let cachedBasePath: string | null = null;
 
 /** Override for testing. When set, getBasePath() returns this value. */
 let basePathOverride: string | null = null;
+
+/**
+ * When true (default), buildPath uses /g/ for git-backed spaces.
+ * When false, uses /s/ (local-style URL, not shareable).
+ */
+let useGitPrefix = true;
+
+export function setUseGitPrefix(enabled: boolean): void {
+  useGitPrefix = enabled;
+}
 
 /**
  * Set a custom base path (for testing). Pass null to reset.
@@ -112,7 +128,7 @@ export function isRemoteSpaceId(spaceId: string): boolean {
 }
 
 /**
- * Convert a git space ID to a URL path (without base or /s/ prefix).
+ * Convert a git space ID to a URL path (without base or /g/ prefix).
  * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs"
  */
 function spaceIdToUrlPath(spaceId: string): string {
@@ -124,7 +140,7 @@ function spaceIdToUrlPath(spaceId: string): string {
 }
 
 /**
- * Parse a git-style URL path (segments after /s/) back into a space ID and page ID.
+ * Parse a git-style URL path (segments after /g/) back into a space ID and page ID.
  * The URL contains `blob` as a delimiter between the repo path and the branch.
  *
  * e.g., ["github.com","nsheaps","cept","blob","main","docs","git-page-id"]
@@ -142,7 +158,7 @@ function parseGitSpaceUrl(segments: string[]): { spaceId: string; pageId: string
   const rest = segments.slice(blobIdx + 2);
 
   if (rest.length === 0) {
-    // Space root, no page: /s/github.com/nsheaps/cept/blob/main
+    // Space root, no page: /g/github.com/nsheaps/cept/blob/main
     return { spaceId: `${repo}@${branch}`, pageId: undefined };
   }
 
@@ -182,11 +198,18 @@ export function parseRoute(pathname?: string): AppRoute {
     };
   }
 
-  // /s/... — space routes
+  // /g/... — git space routes (new canonical prefix)
+  if (segments[0] === 'g' && segments.length >= 2) {
+    const spaceSegments = segments.slice(1);
+    const { spaceId, pageId } = parseGitSpaceUrl(spaceSegments);
+    return { space: 'user', spaceId, pageId };
+  }
+
+  // /s/... — space routes (local spaces, and legacy git space URLs)
   if (segments[0] === 's' && segments.length >= 2) {
     const spaceSegments = segments.slice(1);
 
-    // Check for git-style URL (contains 'blob' segment)
+    // Check for git-style URL (contains 'blob' segment) — legacy /s/ git URLs
     if (spaceSegments.includes('blob')) {
       const { spaceId, pageId } = parseGitSpaceUrl(spaceSegments);
       return { space: 'user', spaceId, pageId };
@@ -229,12 +252,13 @@ export function buildPath(route: Partial<AppRoute>): string {
   const spaceId = route.spaceId ?? 'default';
 
   if (isRemoteSpaceId(spaceId)) {
-    // Git space — use blob-style URL
+    // Git space — use /g/ prefix (shareable) or /s/ (local-only) based on config
+    const prefix = useGitPrefix ? 'g' : 's';
     const urlPath = spaceIdToUrlPath(spaceId);
     if (route.pageId) {
-      return `${base}s/${urlPath}/${route.pageId}`;
+      return `${base}${prefix}/${urlPath}/${route.pageId}`;
     }
-    return `${base}s/${urlPath}`;
+    return `${base}${prefix}/${urlPath}`;
   }
 
   // Local space
