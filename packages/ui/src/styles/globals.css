@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../";
 @source "../../../web/src";
 @import '../components/editor/editor-styles.css';
