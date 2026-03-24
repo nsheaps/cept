@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SettingsModal, DEFAULT_SETTINGS } from './SettingsModal.js';
 import type { SpaceInfo } from './SettingsModal.js';
 
@@ -192,5 +192,12 @@ describe('SettingsModal', () => {
     render(<SettingsModal {...defaultProps} onResetSettings={onResetSettings} />);
     screen.getByTestId('reset-settings-btn').click();
     expect(onResetSettings).toHaveBeenCalled();
+  });
+
+  it('calls onClose on overlay click', () => {
+    const onClose = vi.fn();
+    render(<SettingsModal {...defaultProps} onClose={onClose} />);
+    fireEvent.click(screen.getByTestId('settings-modal'));
+    expect(onClose).toHaveBeenCalled();
   });
 });

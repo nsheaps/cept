@@ -153,8 +153,8 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
   const accept = source === 'notion' ? '.zip' : undefined;
 
   return (
-    <div className="cept-modal-overlay" data-testid="import-dialog">
-      <div className="cept-modal-content" style={{ maxWidth: 500 }}>
+    <div className="cept-modal-overlay" onClick={onClose} data-testid="import-dialog">
+      <div className="cept-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
         <div className="cept-modal-header">
           <h2>{title}</h2>
           <button

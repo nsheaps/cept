@@ -44,8 +44,8 @@ export function ExportDialog({ isOpen, onClose, page }: ExportDialogProps) {
   if (!isOpen || !page) return null;
 
   return (
-    <div className="cept-modal-overlay" data-testid="export-dialog">
-      <div className="cept-modal-content" style={{ maxWidth: 400 }}>
+    <div className="cept-modal-overlay" onClick={onClose} data-testid="export-dialog">
+      <div className="cept-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="cept-modal-header">
           <h2>Export Page</h2>
           <button

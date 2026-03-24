@@ -106,4 +106,13 @@ describe('ExportDialog', () => {
     screen.getByTestId('export-close').click();
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('calls onClose on overlay click', () => {
+    const onClose = vi.fn();
+    render(
+      <ExportDialog isOpen={true} onClose={onClose} page={testPage} />,
+    );
+    fireEvent.click(screen.getByTestId('export-dialog'));
+    expect(onClose).toHaveBeenCalled();
+  });
 });
