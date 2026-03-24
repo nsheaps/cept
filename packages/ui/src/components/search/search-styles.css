@@ -114,3 +114,19 @@
   color: #9ca3af;
   font-size: 0.875rem;
 }
+
+/* Dark mode */
+.dark .cept-search-overlay { background: rgba(0, 0, 0, 0.5); }
+.dark .cept-search-panel { background: #262626; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4); }
+.dark .cept-search-input-wrapper { border-bottom-color: #404040; }
+.dark .cept-search-input-icon { color: #71717a; }
+.dark .cept-search-input { color: #e5e5e5; }
+.dark .cept-search-input::placeholder { color: #71717a; }
+.dark .cept-search-result:hover,
+.dark .cept-search-result.is-selected { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-search-result-title { color: #e5e5e5; }
+.dark .cept-search-result-snippet { color: #a1a1aa; }
+.dark .cept-search-result-meta { color: #71717a; }
+.dark .cept-search-result-type { background: #333; color: #a1a1aa; }
+.dark .cept-search-loading,
+.dark .cept-search-empty { color: #71717a; }

@@ -257,3 +257,25 @@
   color: #9ca3af;
   font-size: 0.875rem;
 }
+
+/* Dark mode */
+.dark .cept-knowledge-graph { background: #1e1e1e; }
+.dark .cept-graph-control-btn { background: #262626; border-color: #404040; color: #d4d4d8; }
+.dark .cept-graph-control-btn:hover { background: #333; }
+.dark .cept-graph-depth-slider { background: #262626; border-color: #404040; color: #d4d4d8; }
+.dark .cept-graph-filter-chip { background: #262626; border-color: #404040; color: #d4d4d8; }
+.dark .cept-graph-filter-chip.is-active { border-color: #6366f1; background: #312e81; color: #a5b4fc; }
+.dark .cept-graph-toolbar { border-bottom-color: #404040; background: #262626; }
+.dark .cept-graph-mode-btn { border-color: #404040; background: #262626; color: #a1a1aa; }
+.dark .cept-graph-mode-btn:hover:not(:disabled) { background: #333; }
+.dark .cept-graph-mode-btn.is-active { background: #312e81; border-color: #6366f1; color: #a5b4fc; }
+.dark .cept-graph-toggle-label { color: #a1a1aa; }
+.dark .cept-graph-separator { background: #404040; }
+.dark .cept-graph-focus-label { color: #d4d4d8; }
+.dark .cept-graph-depth-control { color: #a1a1aa; }
+.dark .cept-graph-filter-bar { border-bottom-color: #404040; background: #1e1e1e; }
+.dark .cept-graph-filter-label { color: #71717a; }
+.dark .cept-graph-animation-controls { border-bottom-color: #404040; background: #262626; }
+.dark .cept-graph-animation-time { color: #d4d4d8; }
+.dark .cept-graph-animation-counter { color: #71717a; }
+.dark .cept-graph-animation-empty { color: #71717a; }

@@ -1141,3 +1141,145 @@
 .cept-prop-editor-readonly-value {
   color: #6b7280;
 }
+
+/* Dark mode */
+/* Schema editor */
+.dark .cept-schema-title { color: #d4d4d8; }
+.dark .cept-schema-add-btn { color: #818cf8; }
+.dark .cept-schema-add-btn:hover { background: #312e81; }
+.dark .cept-schema-property-view:hover { background: rgba(255, 255, 255, 0.03); }
+.dark .cept-schema-drag-handle { color: #525252; }
+.dark .cept-schema-property-name { color: #d4d4d8; }
+.dark .cept-schema-property-type { color: #a1a1aa; background: #333; }
+.dark .cept-schema-input { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-schema-input:focus { border-color: #6366f1; }
+.dark .cept-schema-select { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-schema-select:focus { border-color: #6366f1; }
+.dark .cept-schema-btn { color: #a1a1aa; }
+.dark .cept-schema-btn:hover { background: rgba(255, 255, 255, 0.06); }
+.dark .cept-schema-btn--save { color: #818cf8; }
+.dark .cept-schema-btn--save:hover { background: #312e81; }
+.dark .cept-schema-btn--danger { color: #ef4444; }
+.dark .cept-schema-btn--danger:hover { background: rgba(239, 68, 68, 0.1); }
+.dark .cept-schema-add-form { background: #1e1e1e; border-color: #404040; }
+
+/* Table view */
+.dark .cept-table-toolbar { border-bottom-color: #404040; }
+.dark .cept-table-toolbar-btn { border-color: #404040; background: #262626; color: #a1a1aa; }
+.dark .cept-table-toolbar-btn:hover { background: #333; }
+.dark .cept-table-active-filter { color: #a5b4fc; background: #312e81; }
+.dark .cept-table-clear-filter { color: #a1a1aa; }
+.dark .cept-table-row-count { color: #71717a; }
+.dark .cept-table-filter-form { border-bottom-color: #404040; background: #1e1e1e; }
+.dark .cept-table-filter-form select,
+.dark .cept-table-filter-form input { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-table-header { color: #a1a1aa; border-bottom-color: #404040; }
+.dark .cept-table-header:hover { background: #1e1e1e; }
+.dark .cept-table-row:hover { background: #1e1e1e; }
+.dark .cept-table-cell { color: #d4d4d8; border-bottom-color: #333; }
+.dark .cept-table-add-row { color: #71717a; }
+.dark .cept-table-add-row:hover { background: #1e1e1e; color: #a1a1aa; }
+
+/* Board view */
+.dark .cept-board-column { background: #1e1e1e; }
+.dark .cept-board-column.is-drag-over { background: #312e81; }
+.dark .cept-board-column-title { color: #d4d4d8; }
+.dark .cept-board-column-count { color: #71717a; }
+.dark .cept-board-card { background: #262626; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
+.dark .cept-board-card:hover { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.dark .cept-board-card-title { color: #e5e5e5; }
+.dark .cept-board-card-property-name { color: #71717a; }
+.dark .cept-board-card-property-value { color: #a1a1aa; }
+.dark .cept-board-add-card { color: #71717a; }
+.dark .cept-board-add-card:hover { color: #a1a1aa; }
+
+/* Calendar view */
+.dark .cept-calendar-toolbar { border-bottom-color: #404040; }
+.dark .cept-calendar-nav-btn { border-color: #404040; background: #262626; color: #a1a1aa; }
+.dark .cept-calendar-nav-btn:hover { background: #333; }
+.dark .cept-calendar-title { color: #d4d4d8; }
+.dark .cept-calendar-today-btn { border-color: #404040; background: #262626; color: #a1a1aa; }
+.dark .cept-calendar-today-btn:hover { background: #333; }
+.dark .cept-calendar-weekdays { border-bottom-color: #404040; }
+.dark .cept-calendar-weekday { color: #71717a; }
+.dark .cept-calendar-day { border-right-color: #333; border-bottom-color: #333; }
+.dark .cept-calendar-day.is-other-month { background: #1a1a1a; }
+.dark .cept-calendar-day.is-other-month .cept-calendar-day-number { color: #404040; }
+.dark .cept-calendar-day-number { color: #a1a1aa; }
+.dark .cept-calendar-event { background: #312e81; color: #a5b4fc; }
+.dark .cept-calendar-event:hover { background: #3730a3; }
+.dark .cept-calendar-add-event { color: #404040; }
+.dark .cept-calendar-day:hover .cept-calendar-add-event { color: #71717a; }
+
+/* Map view */
+.dark .cept-map-placeholder { background: #1e1e1e; color: #71717a; }
+.dark .cept-map-marker-list { border-top-color: #404040; }
+.dark .cept-map-marker-item { border-bottom-color: #333; }
+.dark .cept-map-marker-item:hover { background: #1e1e1e; }
+.dark .cept-map-marker-title { color: #d4d4d8; }
+.dark .cept-map-marker-coords { color: #71717a; }
+
+/* Gallery view */
+.dark .cept-gallery-card { border-color: #404040; }
+.dark .cept-gallery-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.dark .cept-gallery-cover { background: #1e1e1e; }
+.dark .cept-gallery-cover-empty { background: #1e1e1e; }
+.dark .cept-gallery-card-title { color: #e5e5e5; }
+.dark .cept-gallery-card-property-name { color: #71717a; }
+.dark .cept-gallery-card-property-value { color: #a1a1aa; }
+.dark .cept-gallery-add { border-color: #404040; color: #71717a; }
+.dark .cept-gallery-add:hover { border-color: #525252; color: #a1a1aa; }
+
+/* List view */
+.dark .cept-list-item { border-bottom-color: #333; }
+.dark .cept-list-item.is-expanded { background: #1e1e1e; }
+.dark .cept-list-item-header:hover { background: rgba(255, 255, 255, 0.03); }
+.dark .cept-list-item-toggle { color: #71717a; }
+.dark .cept-list-item-title { color: #d4d4d8; }
+.dark .cept-list-item-title:hover { color: #e5e5e5; }
+.dark .cept-list-item-property-name { color: #71717a; }
+.dark .cept-list-item-property-value { color: #a1a1aa; }
+.dark .cept-list-add { color: #71717a; }
+.dark .cept-list-add:hover { background: #1e1e1e; color: #a1a1aa; }
+
+/* Linked database */
+.dark .cept-linked-db { border-color: #404040; }
+.dark .cept-linked-db-header { border-bottom-color: #333; }
+.dark .cept-linked-db-icon { color: #818cf8; }
+.dark .cept-linked-db-name { color: #d4d4d8; }
+.dark .cept-linked-db-name:hover { color: #e5e5e5; }
+.dark .cept-linked-db-name-input { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-linked-db-name-input:focus { border-color: #6366f1; }
+.dark .cept-linked-db-source { color: #71717a; }
+.dark .cept-linked-db-toolbar { border-bottom-color: #404040; }
+.dark .cept-linked-db-tab { color: #a1a1aa; }
+.dark .cept-linked-db-tab:hover { color: #d4d4d8; }
+.dark .cept-linked-db-tab.is-active { color: #818cf8; border-bottom-color: #818cf8; }
+.dark .cept-linked-db-placeholder { color: #71717a; }
+
+/* Select / Multi-select */
+.dark .cept-select-trigger,
+.dark .cept-multiselect-trigger { border-color: #404040; }
+.dark .cept-select-trigger:hover,
+.dark .cept-multiselect-trigger:hover { border-color: #525252; }
+.dark .cept-select-placeholder { color: #71717a; }
+.dark .cept-select-tag { background: #333; color: #d4d4d8; }
+.dark .cept-select-clear { color: #71717a; }
+.dark .cept-select-clear:hover { color: #a1a1aa; }
+.dark .cept-select-dropdown { background: #262626; border-color: #404040; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+.dark .cept-select-search { border-bottom-color: #333; color: #e5e5e5; }
+.dark .cept-select-option { color: #d4d4d8; }
+.dark .cept-select-option:hover { background: #333; }
+.dark .cept-select-option.is-selected { background: #312e81; }
+.dark .cept-select-check { color: #818cf8; }
+.dark .cept-select-create { color: #818cf8; }
+.dark .cept-select-create:hover { background: #312e81; }
+.dark .cept-select-empty { color: #71717a; }
+
+/* Property editors */
+.dark .cept-prop-editor-input { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-prop-editor-input:focus { border-color: #6366f1; }
+.dark .cept-prop-editor-url-link { color: #818cf8; }
+.dark .cept-prop-editor-readonly { background: #1e1e1e; }
+.dark .cept-prop-editor-readonly-label { color: #71717a; }
+.dark .cept-prop-editor-readonly-value { color: #a1a1aa; }
