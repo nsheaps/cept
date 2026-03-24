@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0](https://github.com/nsheaps/cept/compare/v0.5.1...v0.6.0) (2026-03-24)
+
+### Features
+
+* add 3-way dark mode toggle ([#70](https://github.com/nsheaps/cept/issues/70)) ([23abaf8](https://github.com/nsheaps/cept/commit/23abaf8b1b9c0912c61805fa4c1c3148178b0ca0))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([dedb5fd](https://github.com/nsheaps/cept/commit/dedb5fd50bc2e8c6fad316c8e9b26041fa0b4b31))
+
 ## [0.5.1](https://github.com/nsheaps/cept/compare/v0.5.0...v0.5.1) (2026-03-23)
 
 ## [0.5.0](https://github.com/nsheaps/cept/compare/v0.4.1...v0.5.0) (2026-03-20)
