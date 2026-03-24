@@ -66,8 +66,8 @@ export function AddSpaceWizardModal({
   if (!isOpen) return null;
 
   return (
-    <div className="cept-wizard-overlay" data-testid="add-space-wizard-modal">
-      <div className="cept-wizard-dialog">
+    <div className="cept-wizard-overlay" onClick={resetAndClose} data-testid="add-space-wizard-modal">
+      <div className="cept-wizard-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="cept-wizard-header">
           {step !== 'choose-type' && (
             <button

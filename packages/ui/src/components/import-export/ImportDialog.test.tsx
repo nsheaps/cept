@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ImportDialog } from './ImportDialog.js';
 
 describe('ImportDialog', () => {
@@ -64,6 +64,20 @@ describe('ImportDialog', () => {
       />,
     );
     screen.getByTestId('import-close').click();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('calls onClose on overlay click', () => {
+    const onClose = vi.fn();
+    render(
+      <ImportDialog
+        isOpen={true}
+        source="notion"
+        onClose={onClose}
+        onImportComplete={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('import-dialog'));
     expect(onClose).toHaveBeenCalled();
   });
 });

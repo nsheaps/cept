@@ -178,4 +178,11 @@ describe('AddSpaceWizardModal', () => {
     act(() => { fireEvent.click(screen.getByTestId('wizard-choose-git')); });
     expect((screen.getByTestId('wizard-remote-url-input') as HTMLInputElement).value).toBe('github.com/nsheaps/cept');
   });
+
+  it('calls onClose on overlay click', () => {
+    const onClose = vi.fn();
+    render(<AddSpaceWizardModal {...defaultProps} onClose={onClose} />);
+    act(() => { fireEvent.click(screen.getByTestId('add-space-wizard-modal')); });
+    expect(onClose).toHaveBeenCalled();
+  });
 });

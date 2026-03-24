@@ -161,8 +161,8 @@ export function SettingsModal({
     : null;
 
   return (
-    <div className="cept-settings-overlay" data-testid="settings-modal">
-      <div className="cept-settings-dialog">
+    <div className="cept-settings-overlay" onClick={onClose} data-testid="settings-modal">
+      <div className="cept-settings-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="cept-settings-header">
           <h2>Settings</h2>
           {savedIndicator && (
