@@ -423,6 +423,99 @@
   color: #9ca3af;
 }
 
+/* About links */
+.cept-settings-about-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.cept-settings-about-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.12s;
+}
+
+.cept-settings-about-link:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.cept-settings-about-link-chevron {
+  margin-left: auto;
+  opacity: 0.4;
+}
+
+/* Licenses disclosure */
+.cept-settings-licenses-intro {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.cept-settings-licenses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cept-settings-license-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.cept-settings-license-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.cept-settings-license-name {
+  font-size: 0.8125rem;
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.cept-settings-license-name:hover {
+  text-decoration: underline;
+}
+
+.cept-settings-license-badge {
+  font-size: 0.6875rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.cept-settings-licenses-footer {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.cept-settings-licenses-footer a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.cept-settings-licenses-footer a:hover {
+  text-decoration: underline;
+}
+
 /* Mobile: full-page settings */
 @media (max-width: 640px) {
   .cept-settings-overlay {
@@ -499,6 +592,12 @@
   .cept-settings-about h3 { color: #e5e5e5; }
   .cept-settings-about p { color: #a1a1aa; }
   .cept-settings-rename-input { background: #333; border-color: #555; color: #e5e5e5; }
+  .cept-settings-about-link { color: #d4d4d8; }
+  .cept-settings-about-link:hover { background-color: rgba(255, 255, 255, 0.06); }
+  .cept-settings-licenses-intro { color: #a1a1aa; }
+  .cept-settings-license-row:hover { background-color: rgba(255, 255, 255, 0.04); }
+  .cept-settings-license-badge { background: #333; color: #a1a1aa; }
+  .cept-settings-licenses-footer { color: #71717a; }
   .cept-settings-wizard-desc { color: #71717a; }
   .cept-settings-type-card { background: #262626; border-color: #404040; }
   .cept-settings-type-card:hover { background: #333; border-color: #525252; }
