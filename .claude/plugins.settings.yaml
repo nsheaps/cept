@@ -10,3 +10,14 @@ github:
 mise:
   autoInstallTools: true
   autoTrust: true
+
+hookify:
+  enabled: true
+  watchFiles:
+    - "package.json"
+  reminderMessage: >-
+    Dependencies in package.json changed. Check if the LICENSES array
+    in packages/ui/src/components/settings/SettingsModal.tsx needs updating
+    to reflect added, removed, or changed dependencies.
+  checkFiles:
+    - "packages/ui/src/components/settings/SettingsModal.tsx"
