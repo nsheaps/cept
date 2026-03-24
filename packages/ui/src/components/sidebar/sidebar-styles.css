@@ -425,6 +425,26 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+.cept-sidebar-app-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.25rem 0;
+}
+
+.cept-sidebar-app-menu-theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.cept-sidebar-app-menu-theme-label {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
 /* Context menu */
 .cept-context-menu {
   position: fixed;
@@ -502,54 +522,55 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .cept-sidebar {
-    background: #1e1e1e;
-    border-right-color: #333;
-  }
-  .cept-sidebar-workspace-name { color: #e5e5e5; }
-  .cept-sidebar-space-switcher { background: #2d2d2d; border-color: #444; }
-  .cept-sidebar-space-switcher-item { color: #d1d5db; }
-  .cept-sidebar-space-switcher-item:hover { background: #3a3a3a; }
-  .cept-sidebar-space-switcher-item.is-active { color: #e5e5e5; }
-  .cept-sidebar-workspace-name-input { background: #333; border-color: #555; color: #e5e5e5; }
-  .cept-sidebar-search-btn { background: #2d2d2d; border-color: #404040; color: #71717a; }
-  .cept-sidebar-search-btn:hover { border-color: #525252; }
-  .cept-sidebar-action-btn { color: #a1a1aa; }
-  .cept-sidebar-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-sidebar-section-header { color: #71717a; }
-  .cept-sidebar-section-add { color: #71717a; }
-  .cept-sidebar-section-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-sidebar-item { color: #d4d4d8; }
-  .cept-sidebar-item:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-sidebar-item.is-selected { background-color: rgba(255, 255, 255, 0.1); }
-  .cept-sidebar-toggle { color: #71717a; }
-  .cept-sidebar-toggle:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-sidebar-add { color: #71717a; }
-  .cept-sidebar-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-sidebar-empty { color: #71717a; }
-  .cept-sidebar-badge { background: #333; color: #a1a1aa; }
-  .cept-sidebar-trash-item { color: #a1a1aa; }
-  .cept-sidebar-trash-action { color: #71717a; }
-  .cept-sidebar-trash-action:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-sidebar-trash-action--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
-  .cept-sidebar-empty-trash:hover { background-color: rgba(239, 68, 68, 0.1); }
-  .cept-context-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
-  .cept-context-menu-item { color: #d4d4d8; }
-  .cept-context-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-context-menu-item--danger { color: #ef4444; }
-  .cept-context-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
-  .cept-context-menu-divider { background: #404040; }
-  .cept-context-menu-rename-input { background: #333; border-color: #525252; color: #e5e5e5; }
-  .cept-context-menu-rename-input:focus { border-color: #3b82f6; }
-  .cept-sidebar-back-btn { color: #9ca3af; }
-  .cept-sidebar-back-btn:hover { background: #374151; color: #e5e5e5; }
-  .cept-sidebar-footer-divider { background: #333; }
-  .cept-sidebar-action-svg { color: #71717a; }
-  .cept-sidebar-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
-  .cept-sidebar-app-menu-item { color: #d4d4d8; }
-  .cept-sidebar-app-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-sidebar {
+  background: #1e1e1e;
+  border-right-color: #333;
 }
+.dark .cept-sidebar-workspace-name { color: #e5e5e5; }
+.dark .cept-sidebar-space-switcher { background: #2d2d2d; border-color: #444; }
+.dark .cept-sidebar-space-switcher-item { color: #d1d5db; }
+.dark .cept-sidebar-space-switcher-item:hover { background: #3a3a3a; }
+.dark .cept-sidebar-space-switcher-item.is-active { color: #e5e5e5; }
+.dark .cept-sidebar-workspace-name-input { background: #333; border-color: #555; color: #e5e5e5; }
+.dark .cept-sidebar-search-btn { background: #2d2d2d; border-color: #404040; color: #71717a; }
+.dark .cept-sidebar-search-btn:hover { border-color: #525252; }
+.dark .cept-sidebar-action-btn { color: #a1a1aa; }
+.dark .cept-sidebar-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-sidebar-section-header { color: #71717a; }
+.dark .cept-sidebar-section-add { color: #71717a; }
+.dark .cept-sidebar-section-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-sidebar-item { color: #d4d4d8; }
+.dark .cept-sidebar-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-sidebar-item.is-selected { background-color: rgba(255, 255, 255, 0.1); }
+.dark .cept-sidebar-toggle { color: #71717a; }
+.dark .cept-sidebar-toggle:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-sidebar-add { color: #71717a; }
+.dark .cept-sidebar-add:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-sidebar-empty { color: #71717a; }
+.dark .cept-sidebar-badge { background: #333; color: #a1a1aa; }
+.dark .cept-sidebar-trash-item { color: #a1a1aa; }
+.dark .cept-sidebar-trash-action { color: #71717a; }
+.dark .cept-sidebar-trash-action:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-sidebar-trash-action--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-sidebar-empty-trash:hover { background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-context-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.dark .cept-context-menu-item { color: #d4d4d8; }
+.dark .cept-context-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-context-menu-item--danger { color: #ef4444; }
+.dark .cept-context-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-context-menu-divider { background: #404040; }
+.dark .cept-context-menu-rename-input { background: #333; border-color: #525252; color: #e5e5e5; }
+.dark .cept-context-menu-rename-input:focus { border-color: #3b82f6; }
+.dark .cept-sidebar-back-btn { color: #9ca3af; }
+.dark .cept-sidebar-back-btn:hover { background: #374151; color: #e5e5e5; }
+.dark .cept-sidebar-footer-divider { background: #333; }
+.dark .cept-sidebar-action-svg { color: #71717a; }
+.dark .cept-sidebar-app-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.dark .cept-sidebar-app-menu-item { color: #d4d4d8; }
+.dark .cept-sidebar-app-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-sidebar-app-menu-divider { background: #404040; }
+.dark .cept-sidebar-app-menu-theme { color: #d4d4d8; }
+.dark .cept-sidebar-app-menu-theme-label { color: #a1a1aa; }
 
 /* Docs banner */
 .cept-docs-banner {
@@ -621,35 +642,33 @@
   background: #e0f2fe;
 }
 
-@media (prefers-color-scheme: dark) {
-  .cept-docs-banner {
-    background: #0c2d48;
-    border-color: #1e4d6e;
-    color: #7dd3fc;
-  }
-  .cept-docs-banner code {
-    background: rgba(125, 211, 252, 0.1);
-  }
-  .cept-docs-source-icon {
-    color: #7dd3fc;
-  }
-  .cept-docs-banner-link {
-    background: #1e3a5f;
-    border-color: #1e4d6e;
-    color: #7dd3fc;
-    text-decoration: none;
-  }
-  .cept-docs-banner-link:hover {
-    background: #264d73;
-  }
-  .cept-docs-banner-back {
-    background: #1e3a5f;
-    border-color: #1e4d6e;
-    color: #7dd3fc;
-  }
-  .cept-docs-banner-back:hover {
-    background: #264d73;
-  }
+.dark .cept-docs-banner {
+  background: #0c2d48;
+  border-color: #1e4d6e;
+  color: #7dd3fc;
+}
+.dark .cept-docs-banner code {
+  background: rgba(125, 211, 252, 0.1);
+}
+.dark .cept-docs-source-icon {
+  color: #7dd3fc;
+}
+.dark .cept-docs-banner-link {
+  background: #1e3a5f;
+  border-color: #1e4d6e;
+  color: #7dd3fc;
+  text-decoration: none;
+}
+.dark .cept-docs-banner-link:hover {
+  background: #264d73;
+}
+.dark .cept-docs-banner-back {
+  background: #1e3a5f;
+  border-color: #1e4d6e;
+  color: #7dd3fc;
+}
+.dark .cept-docs-banner-back:hover {
+  background: #264d73;
 }
 
 /* Space load error */
@@ -714,20 +733,18 @@
   background: #f9fafb;
 }
 
-@media (prefers-color-scheme: dark) {
-  .cept-space-error { color: #9ca3af; }
-  .cept-space-error h2 { color: #e5e5e5; }
-  .cept-space-error-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e5e5e5;
-  }
-  .cept-space-error-btn:hover {
-    background: #4b5563;
-  }
-  .cept-space-error-btn--secondary {
-    background: transparent;
-    border-color: #374151;
-    color: #9ca3af;
-  }
+.dark .cept-space-error { color: #9ca3af; }
+.dark .cept-space-error h2 { color: #e5e5e5; }
+.dark .cept-space-error-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #e5e5e5;
+}
+.dark .cept-space-error-btn:hover {
+  background: #4b5563;
+}
+.dark .cept-space-error-btn--secondary {
+  background: transparent;
+  border-color: #374151;
+  color: #9ca3af;
 }

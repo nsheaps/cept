@@ -168,19 +168,17 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .cept-page-header-title { color: #e5e5e5; background: transparent; border-color: transparent; }
-  .cept-page-header-title:hover { background: #262626; border-color: #404040; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
-  .cept-page-header-title-input { color: #e5e5e5; background: #262626; border-color: #3b82f6; }
-  .cept-page-header-menu-btn { color: #71717a; }
-  .cept-page-header-menu-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-page-header-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
-  .cept-page-header-menu-item { color: #d4d4d8; }
-  .cept-page-header-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-page-header-menu-item--danger { color: #ef4444; }
-  .cept-page-header-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
-  .cept-page-header-menu-divider { background: #404040; }
-}
+.dark .cept-page-header-title { color: #e5e5e5; background: transparent; border-color: transparent; }
+.dark .cept-page-header-title:hover { background: #262626; border-color: #404040; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.dark .cept-page-header-title-input { color: #e5e5e5; background: #262626; border-color: #3b82f6; }
+.dark .cept-page-header-menu-btn { color: #71717a; }
+.dark .cept-page-header-menu-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-page-header-menu { background: #262626; border-color: #404040; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.dark .cept-page-header-menu-item { color: #d4d4d8; }
+.dark .cept-page-header-menu-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-page-header-menu-item--danger { color: #ef4444; }
+.dark .cept-page-header-menu-item--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-page-header-menu-divider { background: #404040; }
 
 /* Empty state */
 .cept-empty-state {
@@ -306,18 +304,16 @@
 }
 
 /* Dark mode for empty state & trash */
-@media (prefers-color-scheme: dark) {
-  .cept-empty-state { color: #71717a; }
-  .cept-empty-state-link { color: #60a5fa; }
-  .cept-empty-state-link:hover { color: #93bbfd; }
-  .cept-trash-view-title { color: #e5e5e5; }
-  .cept-trash-view-empty { color: #71717a; }
-  .cept-trash-view-item:hover { background-color: rgba(255, 255, 255, 0.04); }
-  .cept-trash-view-item-title { color: #d4d4d8; }
-  .cept-trash-view-action { background: #333; border-color: #404040; color: #d4d4d8; }
-  .cept-trash-view-action:hover { background: #404040; }
-  .cept-trash-view-action--danger { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
-  .cept-trash-view-action--danger:hover { background: rgba(239, 68, 68, 0.1); }
-  .cept-trash-view-empty-btn { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
-  .cept-trash-view-empty-btn:hover { background: rgba(239, 68, 68, 0.1); }
-}
+.dark .cept-empty-state { color: #71717a; }
+.dark .cept-empty-state-link { color: #60a5fa; }
+.dark .cept-empty-state-link:hover { color: #93bbfd; }
+.dark .cept-trash-view-title { color: #e5e5e5; }
+.dark .cept-trash-view-empty { color: #71717a; }
+.dark .cept-trash-view-item:hover { background-color: rgba(255, 255, 255, 0.04); }
+.dark .cept-trash-view-item-title { color: #d4d4d8; }
+.dark .cept-trash-view-action { background: #333; border-color: #404040; color: #d4d4d8; }
+.dark .cept-trash-view-action:hover { background: #404040; }
+.dark .cept-trash-view-action--danger { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+.dark .cept-trash-view-action--danger:hover { background: rgba(239, 68, 68, 0.1); }
+.dark .cept-trash-view-empty-btn { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+.dark .cept-trash-view-empty-btn:hover { background: rgba(239, 68, 68, 0.1); }

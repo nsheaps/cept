@@ -931,51 +931,72 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .cept-editor .tiptap p.is-editor-empty:first-child::before { color: #52525b; }
-  .cept-editor .tiptap code { background-color: rgba(255, 255, 255, 0.1); }
-  .cept-editor .tiptap hr, .cept-editor .tiptap hr.cept-divider { border-top-color: #404040; }
-  .cept-editor .tiptap blockquote.cept-blockquote { border-left-color: #404040; color: #a1a1aa; }
-  .cept-editor .tiptap pre.cept-code-block { background-color: #1e1e1e; }
-  .cept-editor .tiptap .cept-mermaid { border-color: #404040; }
-  .cept-editor .tiptap .cept-mermaid-source { background-color: #1e1e1e; border-bottom-color: #404040; }
-  .cept-editor .tiptap .cept-mermaid-preview { background: #262626; }
-  .cept-editor .tiptap .cept-math-block { background-color: #1e1e1e; }
-  .cept-editor .tiptap figure.cept-image-block figcaption.cept-image-caption { color: #71717a; }
-  .cept-editor .tiptap figure.cept-image-block img:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.3); }
-  .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link { border-color: #404040; }
-  .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link:hover { background-color: rgba(255, 255, 255, 0.03); }
-  .cept-editor .tiptap .cept-bookmark-description { color: #a1a1aa; }
-  .cept-editor .tiptap .cept-bookmark-url { color: #71717a; }
-  .cept-editor .tiptap li.cept-task-item[data-checked="true"] > div > p { color: #52525b; }
-  .cept-editor .tiptap a.cept-link { color: #60a5fa; }
-  .cept-editor .tiptap a.cept-link:hover { color: #93bbfd; }
-  .cept-editor .tiptap mark { background-color: rgba(255, 212, 0, 0.25); }
-  .cept-slash-menu { background: #262626; border-color: #404040; }
-  .cept-slash-menu-empty { color: #71717a; }
-  .cept-slash-menu-group + .cept-slash-menu-group { border-top-color: #333; }
-  .cept-slash-menu-category { color: #71717a; }
-  .cept-slash-menu-item:hover, .cept-slash-menu-item.is-selected { background-color: #333; }
-  .cept-slash-menu-icon { background: #1e1e1e; border-color: #404040; }
-  .cept-slash-menu-title { color: #e5e5e5; }
-  .cept-slash-menu-description { color: #71717a; }
-  .cept-inline-toolbar { background: #262626; border-color: #404040; }
-  .cept-inline-toolbar-btn { color: #d4d4d8; }
-  .cept-inline-toolbar-btn:hover { background-color: #333; }
-  .cept-inline-toolbar-btn.is-active { background-color: #312e81; color: #a5b4fc; }
-  .cept-inline-toolbar-divider { background-color: #404040; }
-  .cept-inline-toolbar-link-input { background: #333; border-color: #525252; color: #e5e5e5; }
-  .cept-block-actions { background: #262626; border-color: #404040; }
-  .cept-block-action-item { color: #d4d4d8; }
-  .cept-block-action-item:hover { background-color: #333; }
-  .cept-block-action-divider { background-color: #404040; }
-  .cept-editor .tiptap table.cept-table td.cept-table-cell,
-  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { border-color: #404040; color: #d4d4d8; }
-  .cept-editor .tiptap table.cept-table th.cept-table-header-cell { background-color: #1e1e1e; color: #e5e5e5; }
-  .cept-editor .tiptap table.cept-table .selectedCell::after { background: rgba(99, 102, 241, 0.2); }
-  .cept-folder-view-item { color: #d4d4d8; }
-  .cept-folder-view-item:hover { background-color: #333; }
-  .cept-folder-view-count { color: #71717a; background: #333; }
-  .cept-editor .drag-handle::after { color: #4a4a4a; }
-  .cept-editor .drag-handle:hover::after { color: #71717a; }
-}
+.dark .cept-editor .tiptap p.is-editor-empty:first-child::before { color: #52525b; }
+.dark .cept-editor .tiptap code { background-color: rgba(255, 255, 255, 0.1); }
+.dark .cept-editor .tiptap hr, .dark .cept-editor .tiptap hr.cept-divider { border-top-color: #404040; }
+.dark .cept-editor .tiptap blockquote.cept-blockquote { border-left-color: #404040; color: #a1a1aa; }
+.dark .cept-editor .tiptap pre.cept-code-block { background-color: #1e1e1e; }
+.dark .cept-editor .tiptap .cept-mermaid { border-color: #404040; }
+.dark .cept-editor .tiptap .cept-mermaid-source { background-color: #1e1e1e; border-bottom-color: #404040; }
+.dark .cept-editor .tiptap .cept-mermaid-preview { background: #262626; }
+.dark .cept-editor .tiptap .cept-math-block { background-color: #1e1e1e; }
+.dark .cept-editor .tiptap figure.cept-image-block figcaption.cept-image-caption { color: #71717a; }
+.dark .cept-editor .tiptap figure.cept-image-block img:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.3); }
+.dark .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link { border-color: #404040; }
+.dark .cept-editor .tiptap aside.cept-bookmark a.cept-bookmark-link:hover { background-color: rgba(255, 255, 255, 0.03); }
+.dark .cept-editor .tiptap .cept-bookmark-description { color: #a1a1aa; }
+.dark .cept-editor .tiptap .cept-bookmark-url { color: #71717a; }
+.dark .cept-editor .tiptap li.cept-task-item[data-checked="true"] > div > p { color: #52525b; }
+.dark .cept-editor .tiptap a.cept-link { color: #60a5fa; }
+.dark .cept-editor .tiptap a.cept-link:hover { color: #93bbfd; }
+.dark .cept-editor .tiptap mark { background-color: rgba(255, 212, 0, 0.25); }
+.dark .cept-slash-menu { background: #262626; border-color: #404040; }
+.dark .cept-slash-menu-empty { color: #71717a; }
+.dark .cept-slash-menu-group + .dark .cept-slash-menu-group { border-top-color: #333; }
+.dark .cept-slash-menu-category { color: #71717a; }
+.dark .cept-slash-menu-item:hover, .dark .cept-slash-menu-item.is-selected { background-color: #333; }
+.dark .cept-slash-menu-icon { background: #1e1e1e; border-color: #404040; }
+.dark .cept-slash-menu-title { color: #e5e5e5; }
+.dark .cept-slash-menu-description { color: #71717a; }
+.dark .cept-inline-toolbar { background: #262626; border-color: #404040; }
+.dark .cept-inline-toolbar-btn { color: #d4d4d8; }
+.dark .cept-inline-toolbar-btn:hover { background-color: #333; }
+.dark .cept-inline-toolbar-btn.is-active { background-color: #312e81; color: #a5b4fc; }
+.dark .cept-inline-toolbar-divider { background-color: #404040; }
+.dark .cept-inline-toolbar-link-input { background: #333; border-color: #525252; color: #e5e5e5; }
+.dark .cept-block-actions { background: #262626; border-color: #404040; }
+.dark .cept-block-action-item { color: #d4d4d8; }
+.dark .cept-block-action-item:hover { background-color: #333; }
+.dark .cept-block-action-divider { background-color: #404040; }
+.dark .cept-editor .tiptap table.cept-table td.cept-table-cell,
+.dark .cept-editor .tiptap table.cept-table th.cept-table-header-cell { border-color: #404040; color: #d4d4d8; }
+.dark .cept-editor .tiptap table.cept-table th.cept-table-header-cell { background-color: #1e1e1e; color: #e5e5e5; }
+.dark .cept-editor .tiptap table.cept-table .selectedCell::after { background: rgba(99, 102, 241, 0.2); }
+.dark .cept-folder-view-item { color: #d4d4d8; }
+.dark .cept-folder-view-item:hover { background-color: #333; }
+.dark .cept-folder-view-count { color: #71717a; background: #333; }
+.dark .cept-editor .drag-handle::after { color: #4a4a4a; }
+.dark .cept-editor .drag-handle:hover::after { color: #71717a; }
+
+/* Dark mode syntax highlighting */
+.dark .cept-editor .tiptap pre code .hljs-comment,
+.dark .cept-editor .tiptap pre code .hljs-quote { color: #6b7280; }
+.dark .cept-editor .tiptap pre code .hljs-keyword,
+.dark .cept-editor .tiptap pre code .hljs-selector-tag { color: #c084fc; }
+.dark .cept-editor .tiptap pre code .hljs-string,
+.dark .cept-editor .tiptap pre code .hljs-addition { color: #86efac; }
+.dark .cept-editor .tiptap pre code .hljs-number,
+.dark .cept-editor .tiptap pre code .hljs-literal { color: #fb923c; }
+.dark .cept-editor .tiptap pre code .hljs-built_in,
+.dark .cept-editor .tiptap pre code .hljs-type { color: #fde047; }
+.dark .cept-editor .tiptap pre code .hljs-title,
+.dark .cept-editor .tiptap pre code .hljs-section { color: #93c5fd; }
+.dark .cept-editor .tiptap pre code .hljs-deletion { color: #fca5a5; }
+
+/* Dark mode callout blocks */
+.dark .cept-editor .tiptap div.cept-callout { background-color: rgba(255, 255, 255, 0.05); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="blue"] { background-color: rgba(59, 130, 246, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="green"] { background-color: rgba(34, 197, 94, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="yellow"] { background-color: rgba(234, 179, 8, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="red"] { background-color: rgba(239, 68, 68, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="purple"] { background-color: rgba(168, 85, 247, 0.15); }

@@ -83,3 +83,14 @@
   color: #9ca3af;
   font-size: 0.875rem;
 }
+
+/* Dark mode */
+.dark .cept-command-overlay { background: rgba(0, 0, 0, 0.5); }
+.dark .cept-command-palette { background: #262626; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4); }
+.dark .cept-command-input { border-bottom-color: #404040; color: #e5e5e5; }
+.dark .cept-command-input::placeholder { color: #71717a; }
+.dark .cept-command-category { color: #71717a; }
+.dark .cept-command-item { color: #d4d4d8; }
+.dark .cept-command-item:hover,
+.dark .cept-command-item.is-selected { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-command-empty { color: #71717a; }

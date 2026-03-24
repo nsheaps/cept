@@ -423,6 +423,70 @@
   color: #9ca3af;
 }
 
+/* Theme toggle (3-way) */
+.cept-theme-toggle-track {
+  display: flex;
+  position: relative;
+  background: #e5e7eb;
+  border-radius: 8px;
+  padding: 2px;
+  width: fit-content;
+}
+
+.cept-theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(100% / 3 - 1.33px);
+  height: calc(100% - 4px);
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+.cept-theme-toggle-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  color: #6b7280;
+  transition: color 0.15s;
+}
+
+.cept-theme-toggle-option.is-active {
+  color: #111827;
+}
+
+.cept-theme-toggle--compact {
+  display: inline-flex;
+}
+
+/* Dark mode theme toggle overrides */
+.dark .cept-theme-toggle-track {
+  background: #404040;
+}
+
+.dark .cept-theme-toggle-thumb {
+  background: #525252;
+}
+
+.dark .cept-theme-toggle-option {
+  color: #a1a1aa;
+}
+
+.dark .cept-theme-toggle-option.is-active {
+  color: #e5e5e5;
+}
+
 /* Mobile: full-page settings */
 @media (max-width: 640px) {
   .cept-settings-overlay {
@@ -462,50 +526,48 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .cept-settings-dialog { background: #1e1e1e; }
-  .cept-settings-header { border-color: #333; }
-  .cept-settings-header h2 { color: #e5e5e5; }
-  .cept-settings-close { color: #71717a; }
-  .cept-settings-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-settings-tabs { border-color: #333; }
-  .cept-settings-tab { color: #a1a1aa; }
-  .cept-settings-tab:hover { background-color: rgba(255, 255, 255, 0.06); color: #d4d4d8; }
-  .cept-settings-tab.is-active { background-color: rgba(255, 255, 255, 0.1); color: #e5e5e5; }
-  .cept-settings-section-title { color: #71717a; }
-  .cept-settings-section-divider { background: #333; }
-  .cept-settings-toggle-name { color: #e5e5e5; }
-  .cept-settings-toggle-desc { color: #71717a; }
-  .cept-settings-switch { background: #525252; }
-  .cept-settings-switch.is-on { background: #3b82f6; }
-  .cept-settings-space-item { color: #d4d4d8; }
-  .cept-settings-space-item:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-settings-space-name { color: #e5e5e5; }
-  .cept-settings-space-meta { color: #71717a; }
-  .cept-settings-space-branch { background: rgba(255, 255, 255, 0.1); }
-  .cept-settings-icon-btn { color: #71717a; }
-  .cept-settings-icon-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-settings-icon-btn--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
-  .cept-settings-action-btn { background: #333; border-color: #404040; color: #d4d4d8; }
-  .cept-settings-action-btn:hover { background: #404040; }
-  .cept-settings-danger-btn { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
-  .cept-settings-danger-btn:hover { background: rgba(239, 68, 68, 0.1); }
-  .cept-settings-back-btn { color: #a1a1aa; }
-  .cept-settings-back-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-settings-detail-label { color: #a1a1aa; }
-  .cept-settings-detail-value { color: #e5e5e5; }
-  .cept-settings-empty { color: #71717a; }
-  .cept-settings-about-logo { background: #3b82f6; }
-  .cept-settings-about h3 { color: #e5e5e5; }
-  .cept-settings-about p { color: #a1a1aa; }
-  .cept-settings-rename-input { background: #333; border-color: #555; color: #e5e5e5; }
-  .cept-settings-wizard-desc { color: #71717a; }
-  .cept-settings-type-card { background: #262626; border-color: #404040; }
-  .cept-settings-type-card:hover { background: #333; border-color: #525252; }
-  .cept-settings-type-card--disabled { background: #262626; border-color: #404040; }
-  .cept-settings-type-card-title { color: #e5e5e5; }
-  .cept-settings-type-card-desc { color: #71717a; }
-}
+.dark .cept-settings-dialog { background: #1e1e1e; }
+.dark .cept-settings-header { border-color: #333; }
+.dark .cept-settings-header h2 { color: #e5e5e5; }
+.dark .cept-settings-close { color: #71717a; }
+.dark .cept-settings-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-settings-tabs { border-color: #333; }
+.dark .cept-settings-tab { color: #a1a1aa; }
+.dark .cept-settings-tab:hover { background-color: rgba(255, 255, 255, 0.06); color: #d4d4d8; }
+.dark .cept-settings-tab.is-active { background-color: rgba(255, 255, 255, 0.1); color: #e5e5e5; }
+.dark .cept-settings-section-title { color: #71717a; }
+.dark .cept-settings-section-divider { background: #333; }
+.dark .cept-settings-toggle-name { color: #e5e5e5; }
+.dark .cept-settings-toggle-desc { color: #71717a; }
+.dark .cept-settings-switch { background: #525252; }
+.dark .cept-settings-switch.is-on { background: #3b82f6; }
+.dark .cept-settings-space-item { color: #d4d4d8; }
+.dark .cept-settings-space-item:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-settings-space-name { color: #e5e5e5; }
+.dark .cept-settings-space-meta { color: #71717a; }
+.dark .cept-settings-space-branch { background: rgba(255, 255, 255, 0.1); }
+.dark .cept-settings-icon-btn { color: #71717a; }
+.dark .cept-settings-icon-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-settings-icon-btn--danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-settings-action-btn { background: #333; border-color: #404040; color: #d4d4d8; }
+.dark .cept-settings-action-btn:hover { background: #404040; }
+.dark .cept-settings-danger-btn { border-color: rgba(239, 68, 68, 0.3); color: #ef4444; }
+.dark .cept-settings-danger-btn:hover { background: rgba(239, 68, 68, 0.1); }
+.dark .cept-settings-back-btn { color: #a1a1aa; }
+.dark .cept-settings-back-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-settings-detail-label { color: #a1a1aa; }
+.dark .cept-settings-detail-value { color: #e5e5e5; }
+.dark .cept-settings-empty { color: #71717a; }
+.dark .cept-settings-about-logo { background: #3b82f6; }
+.dark .cept-settings-about h3 { color: #e5e5e5; }
+.dark .cept-settings-about p { color: #a1a1aa; }
+.dark .cept-settings-rename-input { background: #333; border-color: #555; color: #e5e5e5; }
+.dark .cept-settings-wizard-desc { color: #71717a; }
+.dark .cept-settings-type-card { background: #262626; border-color: #404040; }
+.dark .cept-settings-type-card:hover { background: #333; border-color: #525252; }
+.dark .cept-settings-type-card--disabled { background: #262626; border-color: #404040; }
+.dark .cept-settings-type-card-title { color: #e5e5e5; }
+.dark .cept-settings-type-card-desc { color: #71717a; }
 
 /* Space rename in settings */
 .cept-settings-rename-row {
@@ -1144,56 +1206,55 @@
 }
 
 /* Dark mode wizard */
-@media (prefers-color-scheme: dark) {
-  .cept-wizard-dialog { background: #1e1e1e; }
-  .cept-wizard-header { border-color: #333; }
-  .cept-wizard-header h2 { color: #e5e5e5; }
-  .cept-wizard-back-btn { color: #a1a1aa; }
-  .cept-wizard-back-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
-  .cept-wizard-close { color: #71717a; }
-  .cept-wizard-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-wizard-desc { color: #a1a1aa; }
-  .cept-wizard-desc--muted { color: #71717a; }
-  .cept-wizard-divider { border-top-color: #404040; }
-  .cept-wizard-type-card { background: #262626; border-color: #404040; }
-  .cept-wizard-type-card:hover { background: #333; border-color: #525252; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
-  .cept-wizard-type-card--disabled { background: #262626; border-color: #404040; }
-  .cept-wizard-type-card svg { color: #a1a1aa; }
-  .cept-wizard-type-card-title { color: #e5e5e5; }
-  .cept-wizard-type-card-desc { color: #71717a; }
-  .cept-wizard-label { color: #d4d4d8; }
-  .cept-wizard-input { background: #333; border-color: #555; color: #e5e5e5; }
-  .cept-wizard-cancel-btn { background: #333; border-color: #404040; color: #a1a1aa; }
-  .cept-wizard-cancel-btn:hover { background: #404040; }
-}
+.dark .cept-wizard-dialog { background: #1e1e1e; }
+.dark .cept-wizard-header { border-color: #333; }
+.dark .cept-wizard-header h2 { color: #e5e5e5; }
+.dark .cept-wizard-back-btn { color: #a1a1aa; }
+.dark .cept-wizard-back-btn:hover { background-color: rgba(255, 255, 255, 0.06); }
+.dark .cept-wizard-close { color: #71717a; }
+.dark .cept-wizard-close:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-wizard-desc { color: #a1a1aa; }
+.dark .cept-wizard-desc--muted { color: #71717a; }
+.dark .cept-wizard-divider { border-top-color: #404040; }
+.dark .cept-wizard-type-card { background: #262626; border-color: #404040; }
+.dark .cept-wizard-type-card:hover { background: #333; border-color: #525252; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+.dark .cept-wizard-type-card--disabled { background: #262626; border-color: #404040; }
+.dark .cept-wizard-type-card svg { color: #a1a1aa; }
+.dark .cept-wizard-type-card-title { color: #e5e5e5; }
+.dark .cept-wizard-type-card-desc { color: #71717a; }
+.dark .cept-wizard-label { color: #d4d4d8; }
+.dark .cept-wizard-input { background: #333; border-color: #555; color: #e5e5e5; }
+.dark .cept-wizard-cancel-btn { background: #333; border-color: #404040; color: #a1a1aa; }
+.dark .cept-wizard-cancel-btn:hover { background: #404040; }
 
 /* Dark mode file browser */
-@media (prefers-color-scheme: dark) {
-  .cept-settings-space-row:hover { background-color: rgba(255, 255, 255, 0.03); }
-  .cept-settings-space-info-block.is-active .cept-settings-space-name { color: #60a5fa; }
-  .cept-settings-space-badge { color: #60a5fa; }
-  .cept-settings-action-btn:disabled:hover,
-  .cept-settings-action-btn[disabled]:hover { background: #333; }
-  .cept-fb-toggle { color: #a1a1aa; }
-  .cept-fb-breadcrumb { color: #a1a1aa; }
-  .cept-fb-breadcrumb-sep { color: #525252; }
-  .cept-fb-breadcrumb-current { color: #e5e5e5; }
-  .cept-fb-error { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-  .cept-fb-list { border-color: #333; }
-  .cept-fb-entry-row { border-color: #2a2a2a; }
-  .cept-fb-entry { color: #d4d4d8; }
-  .cept-fb-entry:hover { background-color: rgba(255, 255, 255, 0.04); }
-  .cept-fb-entry.is-selected { background-color: rgba(59, 130, 246, 0.1); }
-  .cept-fb-entry-icon { color: #71717a; }
-  .cept-fb-entry-size { color: #71717a; }
-  .cept-fb-action-btn { color: #71717a; }
-  .cept-fb-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
-  .cept-fb-action-btn--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
-  .cept-fb-preview { border-color: #333; }
-  .cept-fb-preview-header { background: #262626; border-color: #333; }
-  .cept-fb-preview-name { color: #e5e5e5; }
-  .cept-fb-preview-content { color: #d4d4d8; }
-}
+.dark .cept-settings-space-row:hover { background-color: rgba(255, 255, 255, 0.03); }
+.dark .cept-settings-space-info-block.is-active .cept-settings-space-name { color: #60a5fa; }
+.dark .cept-settings-space-badge { color: #60a5fa; }
+.dark .cept-settings-action-btn:disabled:hover,
+.dark .cept-settings-action-btn[disabled]:hover { background: #333; }
+.dark .cept-fb-toggle { color: #a1a1aa; }
+.dark .cept-fb-breadcrumb { color: #a1a1aa; }
+.dark .cept-fb-breadcrumb-sep { color: #525252; }
+.dark .cept-fb-breadcrumb-current { color: #e5e5e5; }
+.dark .cept-fb-error { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.dark .cept-fb-list { border-color: #333; }
+.dark .cept-fb-entry-row { border-color: #2a2a2a; }
+.dark .cept-fb-entry { color: #d4d4d8; }
+.dark .cept-fb-entry:hover { background-color: rgba(255, 255, 255, 0.04); }
+.dark .cept-fb-entry.is-selected { background-color: rgba(59, 130, 246, 0.1); }
+.dark .cept-fb-entry-icon { color: #71717a; }
+.dark .cept-fb-entry-size { color: #71717a; }
+.dark .cept-fb-action-btn { color: #71717a; }
+.dark .cept-fb-action-btn:hover { background-color: rgba(255, 255, 255, 0.06); color: #a1a1aa; }
+.dark .cept-fb-action-btn--danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+.dark .cept-fb-preview { border-color: #333; }
+.dark .cept-fb-preview-header { background: #262626; border-color: #333; }
+.dark .cept-fb-preview-name { color: #e5e5e5; }
+.dark .cept-fb-preview-content { color: #d4d4d8; }
+.dark .cept-fb-preview-meta { color: #71717a; }
+.dark .cept-fb-breadcrumb-link { color: #a1a1aa; }
+.dark .cept-fb-breadcrumb-link:hover { color: #d4d4d8; }
 
 /* Clone overlay */
 .cept-clone-overlay {
@@ -1244,9 +1305,7 @@
   to { transform: rotate(360deg); }
 }
 
-@media (prefers-color-scheme: dark) {
-  .cept-clone-dialog { background: #1e1e1e; }
-  .cept-clone-dialog p { color: #d4d4d8; }
-  .cept-clone-dialog--error p { color: #ef4444; }
-  .cept-clone-spinner { border-color: #404040; border-top-color: #60a5fa; }
-}
+.dark .cept-clone-dialog { background: #1e1e1e; }
+.dark .cept-clone-dialog p { color: #d4d4d8; }
+.dark .cept-clone-dialog--error p { color: #ef4444; }
+.dark .cept-clone-spinner { border-color: #404040; border-top-color: #60a5fa; }

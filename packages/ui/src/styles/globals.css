@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../";
 @source "../../../web/src";
 @import '../components/editor/editor-styles.css';
@@ -12,3 +13,4 @@
 @import '../components/app-menu/app-menu-styles.css';
 @import '../components/settings/settings-styles.css';
 @import '../components/shared/toast-styles.css';
+@import '../components/git/git-styles.css';

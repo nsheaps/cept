@@ -240,3 +240,29 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Dark mode */
+.dark .cept-repo-picker-message { color: #a1a1aa; }
+.dark .cept-repo-picker-signin { background: #404040; }
+.dark .cept-repo-picker-signin:hover { background: #525252; }
+.dark .cept-repo-picker-username { color: #e5e5e5; }
+.dark .cept-repo-picker-signout { border-color: #404040; color: #a1a1aa; }
+.dark .cept-repo-picker-search { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-repo-picker-filter { border-color: #404040; color: #a1a1aa; }
+.dark .cept-repo-picker-filter.is-active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.dark .cept-repo-picker-refresh,
+.dark .cept-repo-picker-back { border-color: #404040; color: #a1a1aa; }
+.dark .cept-repo-picker-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.dark .cept-repo-picker-list { border-color: #404040; }
+.dark .cept-repo-picker-item { border-bottom-color: #333; }
+.dark .cept-repo-picker-item:hover { background: #333; }
+.dark .cept-repo-picker-item-name { color: #e5e5e5; }
+.dark .cept-repo-picker-badge { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.dark .cept-repo-picker-item-desc { color: #a1a1aa; }
+.dark .cept-repo-picker-item-meta { color: #71717a; }
+.dark .cept-repo-picker-loading,
+.dark .cept-repo-picker-empty { color: #a1a1aa; }
+.dark .cept-repo-picker-create { border-color: #404040; }
+.dark .cept-repo-picker-label { color: #d4d4d8; }
+.dark .cept-repo-picker-input { border-color: #404040; background: #333; color: #e5e5e5; }
+.dark .cept-repo-picker-checkbox-label { color: #d4d4d8; }
