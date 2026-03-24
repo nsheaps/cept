@@ -69,7 +69,10 @@ export function KnowledgeGraph({
       .data(displayData.links)
       .join('line')
       .attr('class', 'cept-graph-link')
-      .attr('stroke', (d: GraphLink) => d.type === 'parent' ? '#d1d5db' : '#93c5fd')
+      .attr('stroke', (d: GraphLink) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        return d.type === 'parent' ? (isDark ? '#525252' : '#d1d5db') : (isDark ? '#60a5fa' : '#93c5fd');
+      })
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', (d: GraphLink) => d.type === 'mention' ? '4,4' : 'none');
 
@@ -93,7 +96,7 @@ export function KnowledgeGraph({
         if (d.group && colorGroups[d.group]) return colorGroups[d.group];
         return colorGroups['default'] ?? '#6366f1';
       })
-      .attr('stroke', '#fff')
+      .attr('stroke', document.documentElement.classList.contains('dark') ? '#1e1e1e' : '#fff')
       .attr('stroke-width', 2);
 
     if (showLabels) {
@@ -101,7 +104,7 @@ export function KnowledgeGraph({
         .attr('dx', 12)
         .attr('dy', 4)
         .attr('font-size', '11px')
-        .attr('fill', '#374151')
+        .attr('fill', document.documentElement.classList.contains('dark') ? '#d4d4d8' : '#374151')
         .text((d: GraphNode) => d.title);
     }
 

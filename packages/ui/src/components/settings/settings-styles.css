@@ -1252,6 +1252,9 @@
 .dark .cept-fb-preview-header { background: #262626; border-color: #333; }
 .dark .cept-fb-preview-name { color: #e5e5e5; }
 .dark .cept-fb-preview-content { color: #d4d4d8; }
+.dark .cept-fb-preview-meta { color: #71717a; }
+.dark .cept-fb-breadcrumb-link { color: #a1a1aa; }
+.dark .cept-fb-breadcrumb-link:hover { color: #d4d4d8; }
 
 /* Clone overlay */
 .cept-clone-overlay {

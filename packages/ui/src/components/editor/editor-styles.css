@@ -977,3 +977,26 @@
 .dark .cept-folder-view-count { color: #71717a; background: #333; }
 .dark .cept-editor .drag-handle::after { color: #4a4a4a; }
 .dark .cept-editor .drag-handle:hover::after { color: #71717a; }
+
+/* Dark mode syntax highlighting */
+.dark .cept-editor .tiptap pre code .hljs-comment,
+.dark .cept-editor .tiptap pre code .hljs-quote { color: #6b7280; }
+.dark .cept-editor .tiptap pre code .hljs-keyword,
+.dark .cept-editor .tiptap pre code .hljs-selector-tag { color: #c084fc; }
+.dark .cept-editor .tiptap pre code .hljs-string,
+.dark .cept-editor .tiptap pre code .hljs-addition { color: #86efac; }
+.dark .cept-editor .tiptap pre code .hljs-number,
+.dark .cept-editor .tiptap pre code .hljs-literal { color: #fb923c; }
+.dark .cept-editor .tiptap pre code .hljs-built_in,
+.dark .cept-editor .tiptap pre code .hljs-type { color: #fde047; }
+.dark .cept-editor .tiptap pre code .hljs-title,
+.dark .cept-editor .tiptap pre code .hljs-section { color: #93c5fd; }
+.dark .cept-editor .tiptap pre code .hljs-deletion { color: #fca5a5; }
+
+/* Dark mode callout blocks */
+.dark .cept-editor .tiptap div.cept-callout { background-color: rgba(255, 255, 255, 0.05); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="blue"] { background-color: rgba(59, 130, 246, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="green"] { background-color: rgba(34, 197, 94, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="yellow"] { background-color: rgba(234, 179, 8, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="red"] { background-color: rgba(239, 68, 68, 0.15); }
+.dark .cept-editor .tiptap div.cept-callout[data-color="purple"] { background-color: rgba(168, 85, 247, 0.15); }
