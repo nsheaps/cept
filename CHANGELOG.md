@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/nsheaps/cept/compare/v0.6.0...v0.7.0) (2026-03-24)
+
+### Features
+
+* close modals by clicking the backdrop veil ([#71](https://github.com/nsheaps/cept/issues/71)) ([d08236d](https://github.com/nsheaps/cept/commit/d08236d1b1db6f135bd28049c432e75c17075655))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([e3ffe3b](https://github.com/nsheaps/cept/commit/e3ffe3ba1e88a11eb18fbcd6c98eca669eee71ac))
+
 ## [0.6.0](https://github.com/nsheaps/cept/compare/v0.5.1...v0.6.0) (2026-03-24)
 
 ### Features
