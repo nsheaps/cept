@@ -129,22 +129,40 @@ export function isRemoteSpaceId(spaceId: string): boolean {
 
 /**
  * Convert a git space ID to a URL path (without base or /g/ prefix).
- * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs"
+ * Handles both new `::` separator and legacy `/` separator for subPath.
+ *
+ * e.g., "github.com/nsheaps/cept@main::docs" → "github.com/nsheaps/cept/blob/main/docs"
+ * e.g., "github.com/nsheaps/cept@claude/fix" → "github.com/nsheaps/cept/blob/claude/fix"
+ * e.g., "github.com/nsheaps/cept@main/docs" → "github.com/nsheaps/cept/blob/main/docs" (legacy)
  */
 function spaceIdToUrlPath(spaceId: string): string {
   const atIdx = spaceId.indexOf('@');
   if (atIdx < 0) return spaceId;
   const repo = spaceId.substring(0, atIdx);
   const rest = spaceId.substring(atIdx + 1);
-  return `${repo}/blob/${rest}`;
+  // Replace :: with / for URL path (branch::subPath → branch/subPath)
+  const urlPath = rest.replace('::', '/');
+  return `${repo}/blob/${urlPath}`;
 }
+
+/** Known file extensions that indicate a page (file) rather than a directory. */
+const FILE_EXTENSIONS = /\.(md|markdown|mdx|txt|html)$/i;
 
 /**
  * Parse a git-style URL path (segments after /g/) back into a space ID and page ID.
  * The URL contains `blob` as a delimiter between the repo path and the branch.
  *
- * e.g., ["github.com","nsheaps","cept","blob","main","docs","git-page-id"]
- * → { spaceId: "github.com/nsheaps/cept@main/docs", pageId: "git-page-id" }
+ * Page detection uses file extension heuristics: if the last segment of the path
+ * ends with a known file extension (e.g., `.md`), the full remaining path after
+ * the branch is treated as the page's file path. The space ID is then the minimal
+ * `repo@branch` (without subPath embedded). The app layer resolves the correct
+ * configured space by matching subPath prefixes.
+ *
+ * e.g., ["github.com","nsheaps","cept","blob","main","docs","getting-started.md"]
+ * → { spaceId: "github.com/nsheaps/cept@main", pageId: "docs/getting-started.md" }
+ *
+ * e.g., ["github.com","nsheaps","cept","blob","main","docs"]
+ * → { spaceId: "github.com/nsheaps/cept@main/docs", pageId: undefined }
  */
 function parseGitSpaceUrl(segments: string[]): { spaceId: string; pageId: string | undefined } {
   const blobIdx = segments.indexOf('blob');
@@ -162,17 +180,18 @@ function parseGitSpaceUrl(segments: string[]): { spaceId: string; pageId: string
     return { spaceId: `${repo}@${branch}`, pageId: undefined };
   }
 
-  // Determine if the last segment is a page ID.
-  // Git page IDs start with "git-" by convention (from git-space.ts).
+  // Detect if the path points to a file (page) by checking for a file extension
+  // on the last segment. This mirrors how GitHub distinguishes blob (file) URLs.
   const last = rest[rest.length - 1];
-  if (last.startsWith('git-')) {
-    // Last segment is a page ID
-    const subPath = rest.slice(0, -1).join('/');
-    const spaceId = subPath ? `${repo}@${branch}/${subPath}` : `${repo}@${branch}`;
-    return { spaceId, pageId: last };
+  if (FILE_EXTENSIONS.test(last)) {
+    // The full remaining path is the file path (page ID).
+    // The space ID is minimal (repo@branch only); the app layer resolves
+    // the correct configured space by matching subPath prefixes.
+    const filePath = rest.join('/');
+    return { spaceId: `${repo}@${branch}`, pageId: filePath };
   }
 
-  // All segments are sub-path (space root view)
+  // No file extension — treat entire rest as sub-path (directory / space root view)
   const subPath = rest.join('/');
   return { spaceId: `${repo}@${branch}/${subPath}`, pageId: undefined };
 }
