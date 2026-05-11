@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.2](https://github.com/nsheaps/cept/compare/v0.7.1...v0.7.2) (2026-05-11)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([7849708](https://github.com/nsheaps/cept/commit/784970831125dfb4f9feb96042d6e69b3b4d02a4))
+
+### Chores
+
+* **deps:** update dependency @amiceli/vitest-cucumber to v6.3.0 ([#73](https://github.com/nsheaps/cept/issues/73)) ([d0f5d89](https://github.com/nsheaps/cept/commit/d0f5d89b546745b5ee002a510ee5c4dc62cae186))
+
 ## [0.7.1](https://github.com/nsheaps/cept/compare/v0.7.0...v0.7.1) (2026-05-11)
 
 ### Chores
