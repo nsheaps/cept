@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1](https://github.com/nsheaps/cept/compare/v0.7.0...v0.7.1) (2026-05-11)
+
+### Chores
+
+* **deps:** update dependency @playwright/test to v1.59.1 ([#75](https://github.com/nsheaps/cept/issues/75)) ([840220d](https://github.com/nsheaps/cept/commit/840220d1bb53fa3ade131eb4e5bc43855eb47e61))
+
 ## [0.7.0](https://github.com/nsheaps/cept/compare/v0.6.0...v0.7.0) (2026-03-24)
 
 ### Features
