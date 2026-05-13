@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.3](https://github.com/nsheaps/cept/compare/v0.7.2...v0.7.3) (2026-05-13)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([6362f2c](https://github.com/nsheaps/cept/commit/6362f2c4223c76348920899b50835abf9227de8b))
+
+### Chores
+
+* **deps:** update node.js to v24 ([#39](https://github.com/nsheaps/cept/issues/39)) ([7d58917](https://github.com/nsheaps/cept/commit/7d58917c0fae4bf371b91b341ab0f444fe395dce))
+
 ## [0.7.2](https://github.com/nsheaps/cept/compare/v0.7.1...v0.7.2) (2026-05-11)
 
 ### Documentation
