@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.5](https://github.com/nsheaps/cept/compare/v0.7.4...v0.7.5) (2026-05-28)
+
+### Chores
+
+* **deps:** update eslint dependencies ([#80](https://github.com/nsheaps/cept/issues/80)) ([e47f071](https://github.com/nsheaps/cept/commit/e47f0719a0336653226c681f9dc66c36a60b9a24))
+
 ## [0.7.4](https://github.com/nsheaps/cept/compare/v0.7.3...v0.7.4) (2026-05-28)
 
 ### Documentation
