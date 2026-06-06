@@ -22,8 +22,28 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
+        timeout-minutes: 15
+        run: |
+          # Per-attempt timeout kills a hung install (e.g. stalled apt/--with-deps
+          # or a stalled browser download) so the retry can recover, instead of
+          # letting the step hang until the job's default 6h timeout.
+          for attempt in 1 2 3; do
+            if timeout 240 bunx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Playwright install attempt ${attempt} failed/timed out; retrying in 10s"
+            sleep 10
+          done
+          echo "::error::Playwright install failed after 3 attempts"
+          exit 1
 
       - name: Create screenshots directory
         run: mkdir -p docs/screenshots/features
