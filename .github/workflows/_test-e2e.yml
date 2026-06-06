@@ -16,8 +16,33 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-v1.59.1-noble
+
+      - name: Provision Playwright browsers from official image
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        # Playwright's browser CDN (storage.googleapis.com /
+        # playwright.download.prss.microsoft.com) stalls intermittently from this CI,
+        # hanging `playwright install` for the full job timeout. Instead, copy the
+        # browsers out of Playwright's official image (version-matched to
+        # @playwright/test 1.59.1), which avoids the CDN entirely.
+        run: |
+          set -euo pipefail
+          img=mcr.microsoft.com/playwright:v1.59.1-noble
+          docker pull "$img"
+          cid=$(docker create "$img")
+          mkdir -p ~/.cache/ms-playwright
+          docker cp "$cid:/ms-playwright/." ~/.cache/ms-playwright/
+          docker rm "$cid" >/dev/null
+          ls -1 ~/.cache/ms-playwright
+
+      - name: Install Playwright system dependencies
+        # apt-only (no browser download); installs the few libs the runner lacks.
+        run: bunx playwright install-deps chromium
 
       - name: Run E2E tests
         run: bun run test:e2e

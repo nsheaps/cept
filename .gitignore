@@ -56,6 +56,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Claude Code scratch (disposable working files)
+.claude/tmp/
+
 # OS
 .DS_Store
 .DS_Store?

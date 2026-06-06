@@ -87,7 +87,8 @@
       "Bash(du:*)",
       "Bash(tar:*)",
       "Bash(unzip:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(op read op://Agent-Jack/*)"
     ],
     "deny": ["Bash(rm -rf /:*)"],
     "ask": [
@@ -120,6 +121,7 @@
     "git-spice@nsheaps-ai-mktpl": true,
     "common-sense@nsheaps-ai-mktpl": true,
     "web-auto-approve@nsheaps-ai-mktpl": true,
+    "dangerous-bypass@nsheaps-ai-mktpl": true,
     "mise@nsheaps-ai-mktpl": true,
     "context-bloat-prevention@nsheaps-ai-mktpl": true,
     "command-help-skill@nsheaps-ai-mktpl": true,
