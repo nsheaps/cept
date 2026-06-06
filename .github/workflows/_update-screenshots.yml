@@ -30,23 +30,35 @@ jobs:
           restore-keys: ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
-          # FFmpeg is fetched from playwright.download.prss.microsoft.com, which is
-          # unreachable from this CI network and hangs the install indefinitely.
-          # FFmpeg is only used for video recording (not enabled in
-          # playwright.config.ts), so its download is best-effort: a connection
-          # timeout plus a hard `timeout` backstop bound the stall, and the step
-          # then requires only that Chromium (served from the reachable
-          # storage.googleapis.com) actually installed.
-          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "90000"
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "60000"
         run: |
           set -uo pipefail
-          if ! timeout 300 bunx playwright install --with-deps chromium; then
-            echo "::warning::playwright install did not complete cleanly (expected: FFmpeg host unreachable); verifying Chromium"
-          fi
-          if ! find ~/.cache/ms-playwright -path '*chromium-*/chrome-linux*/chrome' -type f | grep -q .; then
-            echo "::error::Chromium browser did not install"
+          # Authoritative check: Playwright writes INSTALLATION_COMPLETE only after a
+          # browser is fully downloaded AND extracted.
+          chromium_installed() {
+            find ~/.cache/ms-playwright -maxdepth 2 -path '*/chromium-*/INSTALLATION_COMPLETE' -type f 2>/dev/null | grep -q .
+          }
+          # Playwright's CDN downloads intermittently stall in this CI, and FFmpeg's
+          # host (playwright.download.prss.microsoft.com) is frequently unreachable.
+          # `playwright install` is idempotent (skips already-installed browsers), so
+          # retry with a per-attempt `timeout` that kills a stalled download; each
+          # retry accumulates progress. Stop as soon as Chromium is installed —
+          # FFmpeg is only used for video recording (not enabled in
+          # playwright.config.ts), so it is best-effort.
+          for attempt in 1 2 3 4 5 6; do
+            if timeout 150 bunx playwright install --with-deps chromium; then
+              break
+            fi
+            if chromium_installed; then
+              echo "::warning::Chromium installed; FFmpeg unavailable (not needed for these tests)"
+              break
+            fi
+            echo "::warning::install attempt ${attempt} incomplete (download stalled); retrying"
+          done
+          if ! chromium_installed; then
+            echo "::error::Chromium browser failed to install after retries"
             exit 1
           fi
           echo "Chromium installed: $(find ~/.cache/ms-playwright -maxdepth 1 -name 'chromium-*' -type d)"
