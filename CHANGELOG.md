@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.10](https://github.com/nsheaps/cept/compare/v0.7.9...v0.7.10) (2026-06-07)
+
+### Bug Fixes
+
+* **deps:** update tiptap monorepo to v3.23.1 ([#117](https://github.com/nsheaps/cept/issues/117)) ([36d6085](https://github.com/nsheaps/cept/commit/36d60852ad465bde897c562a40c6f7756a56ff3b))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([a885880](https://github.com/nsheaps/cept/commit/a885880c03769353c9bbb7f96ded62fa23fff5a8))
+
 ## [0.7.9](https://github.com/nsheaps/cept/compare/v0.7.8...v0.7.9) (2026-06-07)
 
 ### Chores
