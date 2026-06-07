@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.9](https://github.com/nsheaps/cept/compare/v0.7.8...v0.7.9) (2026-06-07)
+
+### Chores
+
+* **deps:** update dependency @types/node to v25.6.2 ([#115](https://github.com/nsheaps/cept/issues/115)) ([f874ece](https://github.com/nsheaps/cept/commit/f874ece30061b771a6bdcc75c5ab2c67b334a90a))
+
 ## [0.7.8](https://github.com/nsheaps/cept/compare/v0.7.7...v0.7.8) (2026-06-06)
 
 ### Documentation
