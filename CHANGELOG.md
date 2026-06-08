@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.11](https://github.com/nsheaps/cept/compare/v0.7.10...v0.7.11) (2026-06-08)
+
+### Chores
+
+* **deps:** update tailwindcss monorepo to v4.3.0 ([#118](https://github.com/nsheaps/cept/issues/118)) ([a19122b](https://github.com/nsheaps/cept/commit/a19122b3e0a5b422ca2069a01802b45e0e383443))
+
 ## [0.7.10](https://github.com/nsheaps/cept/compare/v0.7.9...v0.7.10) (2026-06-07)
 
 ### Bug Fixes
