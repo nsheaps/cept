@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.12](https://github.com/nsheaps/cept/compare/v0.7.11...v0.7.12) (2026-06-10)
+
+### Chores
+
+* **deps:** update dependency vite to v8.0.12 ([#119](https://github.com/nsheaps/cept/issues/119)) ([ef3b279](https://github.com/nsheaps/cept/commit/ef3b27916b559013cf722850b7553400333914c6))
+
 ## [0.7.11](https://github.com/nsheaps/cept/compare/v0.7.10...v0.7.11) (2026-06-08)
 
 ### Chores
