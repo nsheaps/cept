@@ -12,7 +12,9 @@ import {
   spacePagesDir,
   generateRemoteSpaceId,
   parseRemoteSpaceId,
+  resolveRouteToSpace,
 } from './SpaceManager.js';
+import type { SpacesManifest } from './SpaceManager.js';
 
 describe('SpaceManager', () => {
   let backend: MemoryBackend;
@@ -119,7 +121,7 @@ describe('SpaceManager', () => {
   describe('createRemoteSpace', () => {
     it('creates a remote space with repo-path-based ID', async () => {
       const space = await createRemoteSpace(backend, 'Docs', 'https://github.com/user/repo', 'main', 'docs/');
-      expect(space.id).toBe('github.com/user/repo@main/docs');
+      expect(space.id).toBe('github.com/user/repo@main::docs');
       expect(space.remoteUrl).toBe('https://github.com/user/repo');
       expect(space.branch).toBe('main');
       expect(space.subPath).toBe('docs/');
@@ -142,8 +144,8 @@ describe('SpaceManager', () => {
       expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main')).toBe('github.com/nsheaps/cept@main');
     });
 
-    it('generates ID with subpath', () => {
-      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main', 'docs/')).toBe('github.com/nsheaps/cept@main/docs');
+    it('generates ID with subpath using :: separator', () => {
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main', 'docs/')).toBe('github.com/nsheaps/cept@main::docs');
     });
 
     it('strips .git suffix', () => {
@@ -152,6 +154,14 @@ describe('SpaceManager', () => {
 
     it('handles URL without protocol', () => {
       expect(generateRemoteSpaceId('github.com/nsheaps/cept', 'main')).toBe('github.com/nsheaps/cept@main');
+    });
+
+    it('handles branch names with / in them', () => {
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'claude/setup-fix')).toBe('github.com/nsheaps/cept@claude/setup-fix');
+    });
+
+    it('handles branch with / and subpath', () => {
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'claude/fix', 'docs/')).toBe('github.com/nsheaps/cept@claude/fix::docs');
     });
   });
 
@@ -163,7 +173,23 @@ describe('SpaceManager', () => {
       });
     });
 
-    it('parses ID with subpath', () => {
+    it('parses ID with :: subpath separator', () => {
+      expect(parseRemoteSpaceId('github.com/nsheaps/cept@main::docs')).toEqual({
+        repo: 'github.com/nsheaps/cept',
+        branch: 'main',
+        subPath: 'docs',
+      });
+    });
+
+    it('parses branch with / correctly when using :: separator', () => {
+      expect(parseRemoteSpaceId('github.com/nsheaps/cept@claude/setup-fix::docs')).toEqual({
+        repo: 'github.com/nsheaps/cept',
+        branch: 'claude/setup-fix',
+        subPath: 'docs',
+      });
+    });
+
+    it('parses legacy ID with / subpath separator (backward compat)', () => {
       expect(parseRemoteSpaceId('github.com/nsheaps/cept@main/docs')).toEqual({
         repo: 'github.com/nsheaps/cept',
         branch: 'main',
@@ -206,6 +232,95 @@ describe('SpaceManager', () => {
     it('non-default spaces use nested paths', () => {
       expect(spaceWorkspaceFile('space-123')).toBe('.cept/spaces/space-123/workspace-state.json');
       expect(spacePagesDir('space-123')).toBe('.cept/spaces/space-123/pages');
+    });
+  });
+
+  describe('resolveRouteToSpace', () => {
+    const testManifest: SpacesManifest = {
+      activeSpaceId: 'default',
+      spaces: [
+        { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+        { id: 'github.com/nsheaps/cept@main::docs', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs' },
+        { id: 'github.com/nsheaps/cept@main', name: 'Cept Root', createdAt: '2024-01-01', branch: 'main' },
+        { id: 'github.com/other/repo@dev', name: 'Other Repo', createdAt: '2024-01-01', branch: 'dev' },
+        { id: 'github.com/nsheaps/cept@claude/setup-fix::docs', name: 'Feature Branch', createdAt: '2024-01-01', branch: 'claude/setup-fix', subPath: 'docs' },
+      ],
+    };
+
+    it('returns exact match for local spaces', () => {
+      const result = resolveRouteToSpace(testManifest, 'default', undefined);
+      expect(result).toEqual({ spaceId: 'default', pageId: undefined });
+    });
+
+    it('returns exact match when spaceId matches directly with :: separator', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main::docs', 'getting-started.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs', pageId: 'getting-started.md' });
+    });
+
+    it('resolves minimal spaceId to space with matching subPath', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'docs/getting-started.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs', pageId: 'getting-started.md' });
+    });
+
+    it('resolves nested file path with subPath prefix', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'docs/guides/quick-start.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs', pageId: 'guides/quick-start.md' });
+    });
+
+    it('falls back to space without subPath when file path does not match subPath', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', 'README.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main', pageId: 'README.md' });
+    });
+
+    it('returns original values when no matching space is found', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/unknown/repo@main', 'file.md');
+      expect(result).toEqual({ spaceId: 'github.com/unknown/repo@main', pageId: 'file.md' });
+    });
+
+    it('handles undefined pageId with exact match', () => {
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main', pageId: undefined });
+    });
+
+    it('resolves multi-segment branch names (branch with /)', () => {
+      // The router parses the first segment as branch, so branch="claude" and
+      // pageId="setup-fix/docs/getting-started.md". The resolver should match
+      // the space with branch "claude/setup-fix".
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@claude', 'setup-fix/docs/getting-started.md');
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@claude/setup-fix::docs', pageId: 'getting-started.md' });
+    });
+
+    it('resolves partial subPath URL to space with more-specific subPath', () => {
+      // A manifest with a more-specific subPath than the URL
+      const manifestWithDeepSubPath: SpacesManifest = {
+        activeSpaceId: 'default',
+        spaces: [
+          { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+          { id: 'github.com/nsheaps/cept@main::docs/content', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs/content' },
+        ],
+      };
+      // URL /g/github.com/nsheaps/cept/blob/main/docs/ → legacy spaceId with subPath "docs"
+      const result = resolveRouteToSpace(manifestWithDeepSubPath, 'github.com/nsheaps/cept@main/docs', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs/content', pageId: undefined });
+    });
+
+    it('does not match partial subPath on non-path-boundary', () => {
+      // "doc" should NOT match "docs/content"
+      const manifestWithDeepSubPath: SpacesManifest = {
+        activeSpaceId: 'default',
+        spaces: [
+          { id: 'default', name: 'Default', createdAt: '2024-01-01' },
+          { id: 'github.com/nsheaps/cept@main::docs/content', name: 'Cept Docs', createdAt: '2024-01-01', branch: 'main', subPath: 'docs/content' },
+        ],
+      };
+      const result = resolveRouteToSpace(manifestWithDeepSubPath, 'github.com/nsheaps/cept@main/doc', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main/doc', pageId: undefined });
+    });
+
+    it('resolves exact subPath match without pageId', () => {
+      // URL subPath exactly matches a space's subPath
+      const result = resolveRouteToSpace(testManifest, 'github.com/nsheaps/cept@main/docs', undefined);
+      expect(result).toEqual({ spaceId: 'github.com/nsheaps/cept@main::docs', pageId: undefined });
     });
   });
 });
