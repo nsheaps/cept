@@ -45,7 +45,7 @@
     "@typescript-eslint/eslint-plugin": "8.59.3",
     "@typescript-eslint/parser": "8.59.3",
     "@vitejs/plugin-react": "6.0.2",
-    "eslint": "10.3.0",
+    "eslint": "10.4.0",
     "eslint-config-prettier": "10.1.8",
     "fake-indexeddb": "6.2.5",
     "jsdom": "29.1.1",
