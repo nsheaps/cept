@@ -82,7 +82,7 @@
     "@tiptap/suggestion": "3.23.6",
     "@types/katex": "0.16.8",
     "buffer": "6.0.3",
-    "isomorphic-git": "1.38.2",
+    "isomorphic-git": "1.38.3",
     "js-yaml": "4.2.0",
     "katex": "0.17.0",
     "lowlight": "3.3.0",
