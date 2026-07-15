@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@amiceli/vitest-cucumber": "6.5.0",
-    "@playwright/test": "1.60.0",
+    "@playwright/test": "1.61.0",
     "@release-it/bumper": "7.0.6",
     "@release-it/conventional-changelog": "11.0.1",
     "@tailwindcss/vite": "4.3.1",
