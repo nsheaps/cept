@@ -11,7 +11,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import yaml from 'js-yaml';
+import { dump, load } from 'js-yaml';
 import type {
   Content,
   Heading,
@@ -56,7 +56,7 @@ export class CeptMarkdownParser {
       };
     }
 
-    const data = yaml.load(yamlNode.value) as Record<string, unknown>;
+    const data = load(yamlNode.value) as Record<string, unknown>;
     return {
       id: String(data.id ?? ''),
       title: String(data.title ?? ''),
@@ -88,7 +88,7 @@ export class CeptMarkdownParser {
     else obj.properties = {};
     if (meta.locked !== undefined) obj.locked = meta.locked;
 
-    return yaml.dump(obj, { lineWidth: -1, quotingType: '"', forceQuotes: true });
+    return dump(obj, { lineWidth: -1, quoteStyle: 'double', forceQuotes: true });
   }
 
   parseBlocks(markdown: string): Block[] {
