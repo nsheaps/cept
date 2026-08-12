@@ -5,7 +5,7 @@
  * Supports CRUD operations, filtering, sorting, grouping.
  */
 
-import * as yaml from 'js-yaml';
+import { dump, load } from 'js-yaml';
 import type { StorageBackend } from '../storage/backend.js';
 import type {
   DatabaseSchema,
@@ -209,7 +209,7 @@ export class CeptDatabaseEngine {
     if (!data) return null;
 
     const text = new TextDecoder().decode(data);
-    const parsed = yaml.load(text) as DatabaseFile;
+    const parsed = load(text) as DatabaseFile;
     if (!parsed || typeof parsed !== 'object') return null;
 
     // Ensure rows array exists
@@ -220,7 +220,7 @@ export class CeptDatabaseEngine {
   }
 
   private async writeDatabase(databaseId: string, db: DatabaseFile): Promise<void> {
-    const text = yaml.dump(db, { lineWidth: -1 });
+    const text = dump(db, { lineWidth: -1 });
     await this.backend.writeFile(
       this.databasePath(databaseId),
       new TextEncoder().encode(text),
