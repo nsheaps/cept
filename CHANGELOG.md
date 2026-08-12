@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.14](https://github.com/nsheaps/cept/compare/v0.7.13...v0.7.14) (2026-08-12)
+
+### Chores
+
+* **deps:** update dependency @typescript-eslint/eslint-plugin to v8.64.0 ([#248](https://github.com/nsheaps/cept/issues/248)) ([56ee3e4](https://github.com/nsheaps/cept/commit/56ee3e45e5bdb7ea31639c669635ed66ce1d1483))
+
 ## [0.7.13](https://github.com/nsheaps/cept/compare/v0.7.12...v0.7.13) (2026-08-12)
 
 ### Documentation
