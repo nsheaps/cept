@@ -5,7 +5,7 @@
  * Supports CRUD operations, filtering, sorting, grouping.
  */
 
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import type { StorageBackend } from '../storage/backend.js';
 import type {
   DatabaseSchema,
@@ -280,4 +280,3 @@ function compareValues(a: unknown, b: unknown): number {
 
   return String(a).localeCompare(String(b));
 }
-
