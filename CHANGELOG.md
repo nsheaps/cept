@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.15](https://github.com/nsheaps/cept/compare/v0.7.14...v0.7.15) (2026-08-12)
+
+### Bug Fixes
+
+* **deps:** update all patch updates to v3.27.4 ([#250](https://github.com/nsheaps/cept/issues/250)) ([d4bf603](https://github.com/nsheaps/cept/commit/d4bf603f02b3d45a85469253ceb4410ec4d714f6))
+
 ## [0.7.14](https://github.com/nsheaps/cept/compare/v0.7.13...v0.7.14) (2026-08-12)
 
 ### Chores
