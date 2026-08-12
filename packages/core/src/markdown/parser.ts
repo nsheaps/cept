@@ -88,7 +88,7 @@ export class CeptMarkdownParser {
     else obj.properties = {};
     if (meta.locked !== undefined) obj.locked = meta.locked;
 
-    return dump(obj, { lineWidth: -1, quotingType: '"', forceQuotes: true });
+    return dump(obj, { lineWidth: -1, quoteStyle: 'double', forceQuotes: true });
   }
 
   parseBlocks(markdown: string): Block[] {
