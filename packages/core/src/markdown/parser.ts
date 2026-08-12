@@ -11,7 +11,7 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import type {
   Content,
   Heading,
