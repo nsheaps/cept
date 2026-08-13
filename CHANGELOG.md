@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.16](https://github.com/nsheaps/cept/compare/v0.7.15...v0.7.16) (2026-08-13)
+
+### Chores
+
+* **deps:** update dependency nx to v23.1.0 ([#251](https://github.com/nsheaps/cept/issues/251)) ([232e2a5](https://github.com/nsheaps/cept/commit/232e2a5c4c8422b7e488cd3486cfb76c86de5f18))
+
 ## [0.7.15](https://github.com/nsheaps/cept/compare/v0.7.14...v0.7.15) (2026-08-12)
 
 ### Bug Fixes
