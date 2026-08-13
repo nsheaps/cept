@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.19](https://github.com/nsheaps/cept/compare/v0.7.18...v0.7.19) (2026-08-13)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([8970ad8](https://github.com/nsheaps/cept/commit/8970ad804d11146acc1384434a57f31dcc877ea6))
+
 ## [0.7.18](https://github.com/nsheaps/cept/compare/v0.7.17...v0.7.18) (2026-08-13)
 
 ### Documentation
