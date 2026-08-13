@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.17](https://github.com/nsheaps/cept/compare/v0.7.16...v0.7.17) (2026-08-13)
+
+### Chores
+
+* **deps:** update nsheaps/agents digest to 4dc6f60 ([#252](https://github.com/nsheaps/cept/issues/252)) ([6a0077c](https://github.com/nsheaps/cept/commit/6a0077c19db9a11fb650c19981245f79458eaa24))
+
 ## [0.7.16](https://github.com/nsheaps/cept/compare/v0.7.15...v0.7.16) (2026-08-13)
 
 ### Chores
