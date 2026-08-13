@@ -48,7 +48,7 @@
     "eslint-config-prettier": "10.1.8",
     "fake-indexeddb": "6.2.5",
     "jsdom": "29.1.1",
-    "nx": "23.0.2",
+    "nx": "23.1.0",
     "prettier": "3.9.5",
     "react": "19.2.7",
     "react-dom": "19.2.7",
