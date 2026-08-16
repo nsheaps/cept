@@ -67,7 +67,7 @@
     "prosemirror-view": "1.42.1"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.111.0",
+    "@anthropic-ai/sdk": "0.112.1",
     "@isomorphic-git/lightning-fs": "4.6.2",
     "@tiptap/core": "3.28.0",
     "@tiptap/extension-code-block-lowlight": "3.28.0",
