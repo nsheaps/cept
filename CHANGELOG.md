@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.22](https://github.com/nsheaps/cept/compare/v0.7.21...v0.7.22) (2026-08-16)
+
+### Bug Fixes
+
+* **deps:** update dependency @anthropic-ai/sdk to v0.112.1 ([#257](https://github.com/nsheaps/cept/issues/257)) ([3cea4b4](https://github.com/nsheaps/cept/commit/3cea4b4e67e11880b8bbab97570ab82725294284))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([c49646e](https://github.com/nsheaps/cept/commit/c49646ed9cf7ce962093228faa93fb9b88977e53))
+
 ## [0.7.21](https://github.com/nsheaps/cept/compare/v0.7.20...v0.7.21) (2026-08-15)
 
 ### Bug Fixes
