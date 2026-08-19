@@ -68,7 +68,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.112.3",
-    "@isomorphic-git/lightning-fs": "4.6.2",
+    "@isomorphic-git/lightning-fs": "4.6.3",
     "@tiptap/core": "3.28.0",
     "@tiptap/extension-code-block-lowlight": "3.28.0",
     "@tiptap/extension-color": "3.28.0",
