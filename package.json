@@ -49,7 +49,7 @@
     "fake-indexeddb": "6.2.5",
     "jsdom": "29.1.1",
     "nx": "23.1.0",
-    "prettier": "3.9.5",
+    "prettier": "3.9.6",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "release-it": "20.2.1",
@@ -67,7 +67,7 @@
     "prosemirror-view": "1.42.1"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.112.3",
+    "@anthropic-ai/sdk": "0.112.4",
     "@isomorphic-git/lightning-fs": "4.6.3",
     "@tiptap/core": "3.28.0",
     "@tiptap/extension-code-block-lowlight": "3.28.0",
