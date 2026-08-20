@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.26](https://github.com/nsheaps/cept/compare/v0.7.25...v0.7.26) (2026-08-20)
+
+### Bug Fixes
+
+* **deps:** update all patch updates ([#265](https://github.com/nsheaps/cept/issues/265)) ([10480d2](https://github.com/nsheaps/cept/commit/10480d24664e4b7d9802fc63464f504010bdd15f))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([a1a3890](https://github.com/nsheaps/cept/commit/a1a38907996c93ef0d79ac1dd7f85a46d57ea1c8))
+
 ## [0.7.25](https://github.com/nsheaps/cept/compare/v0.7.24...v0.7.25) (2026-08-20)
 
 ### Documentation
