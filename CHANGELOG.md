@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.25](https://github.com/nsheaps/cept/compare/v0.7.24...v0.7.25) (2026-08-20)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([2930a88](https://github.com/nsheaps/cept/commit/2930a881c4c7cdb0626ecee856a01b6cf014d239))
+
+### Chores
+
+* **deps:** update dependency @typescript-eslint/parser to v8.65.0 ([#263](https://github.com/nsheaps/cept/issues/263)) ([e036bdc](https://github.com/nsheaps/cept/commit/e036bdc9118bdb8c0e8d576feaef0ed4251cbeb2))
+
 ## [0.7.24](https://github.com/nsheaps/cept/compare/v0.7.23...v0.7.24) (2026-08-18)
 
 ### Bug Fixes
