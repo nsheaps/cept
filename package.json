@@ -43,7 +43,7 @@
     "@types/react-dom": "19.2.3",
     "@typescript-eslint/eslint-plugin": "8.65.0",
     "@typescript-eslint/parser": "8.65.0",
-    "@vitejs/plugin-react": "6.0.3",
+    "@vitejs/plugin-react": "6.0.4",
     "eslint": "10.7.0",
     "eslint-config-prettier": "10.1.8",
     "fake-indexeddb": "6.2.5",
@@ -67,7 +67,7 @@
     "prosemirror-view": "1.42.1"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.112.4",
+    "@anthropic-ai/sdk": "0.112.5",
     "@isomorphic-git/lightning-fs": "4.6.3",
     "@tiptap/core": "3.28.0",
     "@tiptap/extension-code-block-lowlight": "3.28.0",
@@ -86,7 +86,7 @@
     "@tiptap/suggestion": "3.28.0",
     "@types/katex": "0.16.8",
     "buffer": "6.0.3",
-    "isomorphic-git": "1.38.9",
+    "isomorphic-git": "1.38.10",
     "js-yaml": "5.2.2",
     "katex": "0.18.1",
     "lowlight": "3.3.0",
