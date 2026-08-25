@@ -6,7 +6,7 @@
       "name": "cept",
       "dependencies": {
         "@anthropic-ai/sdk": "0.115.0",
-        "@isomorphic-git/lightning-fs": "4.6.3",
+        "@isomorphic-git/lightning-fs": "4.7.0",
         "@tiptap/core": "3.29.0",
         "@tiptap/extension-code-block-lowlight": "3.29.0",
         "@tiptap/extension-color": "3.29.0",
@@ -288,7 +288,7 @@
 
     "@isomorphic-git/idb-keyval": ["@isomorphic-git/idb-keyval@3.3.2", "", {}, "sha512-r8/AdpiS0/WJCNR/t/gsgL+M8NMVj/ek7s60uz3LmpCaTF2mEVlZJlB01ZzalgYzRLXwSPC92o+pdzjM7PN/pA=="],
 
-    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.6.3", "", { "dependencies": { "@isomorphic-git/idb-keyval": "3.3.2", "isomorphic-textencoder": "1.0.1", "just-debounce-it": "1.1.0", "just-once": "1.1.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-uIXSSqutetjk+qHlswb5aKTzw7zOJ851R6r53szkkprtZ8Wp4A8gPNf7meeKS7uLDJaFvKhFTY7KISh3ULRojg=="],
+    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.7.0", "", { "dependencies": { "@isomorphic-git/idb-keyval": "3.3.2", "isomorphic-textencoder": "1.0.1", "just-debounce-it": "1.1.0", "just-once": "1.1.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-eJg541itXKCOyj3DBAnd0KNY1mNgi29GCpy7FgKWsgatu/ulEKv+dMxxjhUNL68Jh3uPTaGNfeAjdJiHUYEGnw=="],
 
     "@jest/diff-sequences": ["@jest/diff-sequences@30.0.1", "", {}, "sha512-n5H8QLDJ47QqbCNn5SuFjCRDrOLEZ0h8vAHCK5RL9Ls7Xa8AQLa/YxAc9UjFqoEDM48muwtBGjtMY5cr0PLDCw=="],
 
