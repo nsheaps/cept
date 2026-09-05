@@ -81,6 +81,23 @@
   background-color: #fef2f2 !important;
 }
 
+.cept-app-menu-item--disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.cept-github-btn {
+  text-decoration: none;
+  color: #9ca3af;
+}
+
+.cept-app-menu-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .cept-app-menu-divider {
   height: 1px;
   background: #e5e7eb;

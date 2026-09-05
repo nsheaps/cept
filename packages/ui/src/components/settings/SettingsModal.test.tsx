@@ -164,12 +164,12 @@ describe('SettingsModal', () => {
     expect(screen.queryByTestId('refresh-space-local')).toBeNull();
   });
 
-  it('does not show refresh button for cept-docs space', () => {
+  it('shows refresh button for remote docs space', () => {
     const spaces: SpaceInfo[] = [
-      { id: 'cept-docs', name: 'Cept Docs', source: 'Git (read-only)', pageCount: 19, contentSize: 1024, branch: 'main', remoteUrl: 'github.com/nsheaps/cept' },
+      { id: 'docs-space', name: 'Cept Docs', source: 'Git (read-only)', pageCount: 19, contentSize: 1024, branch: 'main', remoteUrl: 'https://github.com/nsheaps/cept' },
     ];
     render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" onRefreshSpace={vi.fn()} />);
-    expect(screen.queryByTestId('refresh-space-cept-docs')).toBeNull();
+    expect(screen.getByTestId('refresh-space-docs-space')).toBeTruthy();
   });
 
   it('does not show refresh button when onRefreshSpace not provided', () => {
