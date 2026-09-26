@@ -356,7 +356,7 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
+                          {space.remoteUrl && onRefreshSpace && (
                             <button
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
@@ -496,8 +496,8 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
-                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
-                onRefresh={selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs' ? () => handleRefreshSpace(selectedSpace.id) : undefined}
+                onBrowseFiles={backend ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
+                onRefresh={selectedSpace.remoteUrl && onRefreshSpace ? () => handleRefreshSpace(selectedSpace.id) : undefined}
                 isRefreshing={refreshingSpaceId === selectedSpace.id}
               />
             )}
@@ -505,6 +505,7 @@ export function SettingsModal({
             {activeTab === 'spaces' && browsingSpaceId && backend && (
               <FileBrowser
                 backend={backend}
+                rootPath={browsingSpaceId === 'default' ? '/' : `.cept/spaces/${browsingSpaceId}`}
                 onNavigateToPage={onNavigateToPage}
                 onClose={() => setBrowsingSpaceId(null)}
               />
@@ -656,9 +657,9 @@ function SpaceDetails({
           </div>
         )}
       </div>
-      {onRefresh && (
-        <>
-          <div className="cept-settings-section-divider" />
+      <div className="cept-settings-section-divider" />
+      <div className="cept-settings-actions-row">
+        {onRefresh && (
           <button
             className="cept-settings-action-btn"
             onClick={onRefresh}
@@ -677,13 +678,10 @@ function SpaceDetails({
               <path d="M14 2v4h-4M2 14v-4h4" />
               <path d="M13.46 5.54A6 6 0 002.54 10.46M2.54 10.46A6 6 0 0013.46 5.54" />
             </svg>
-            {isRefreshing ? 'Syncing from remote...' : 'Refresh from remote'}
+            {isRefreshing ? 'Syncing...' : 'Refresh'}
           </button>
-        </>
-      )}
-      {onBrowseFiles && (
-        <>
-          <div className="cept-settings-section-divider" />
+        )}
+        {onBrowseFiles && (
           <button
             className="cept-settings-action-btn"
             onClick={onBrowseFiles}
@@ -692,21 +690,20 @@ function SpaceDetails({
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M2 3h4l2 2h6v8H2z" />
             </svg>
-            Browse files
+            Browse
           </button>
-        </>
-      )}
-      <div className="cept-settings-section-divider" />
-      <button
-        className="cept-settings-danger-btn"
-        onClick={onDelete}
-        data-testid="space-details-delete"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
-        </svg>
-        Delete this space
-      </button>
+        )}
+        <button
+          className="cept-settings-danger-btn"
+          onClick={onDelete}
+          data-testid="space-details-delete"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
+          </svg>
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
