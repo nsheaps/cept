@@ -261,6 +261,16 @@ async function migrateSpacePageContentsToFiles(
   await backend.writeFile(spaceWorkspaceFile(spaceId), encode(state));
 }
 
+/**
+ * Normalize a page ID to a storage filename.
+ * If the page ID already has a known content extension, use it as-is.
+ * Otherwise, append .md.
+ */
+function pageIdToFilename(pageId: string): string {
+  if (/\.(md|markdown|mdx|txt|html)$/i.test(pageId)) return pageId;
+  return `${pageId}.md`;
+}
+
 /** Read page content for a specific space */
 export async function readSpacePageContent(
   backend: StorageBackend,
@@ -268,9 +278,12 @@ export async function readSpacePageContent(
   pageId: string,
 ): Promise<string | null> {
   const dir = spacePagesDir(spaceId);
-  const mdData = await backend.readFile(`${dir}/${pageId}.md`);
+  const filename = pageIdToFilename(pageId);
+  const mdData = await backend.readFile(`${dir}/${filename}`);
   if (mdData) return new TextDecoder().decode(mdData);
-  const htmlData = await backend.readFile(`${dir}/${pageId}.html`);
+  // Fallback: try with .html extension (legacy)
+  const htmlBase = pageId.replace(/\.(md|markdown)$/, '');
+  const htmlData = await backend.readFile(`${dir}/${htmlBase}.html`);
   if (htmlData) return new TextDecoder().decode(htmlData);
   return null;
 }
@@ -283,9 +296,12 @@ export async function writeSpacePageContent(
   content: string,
 ): Promise<void> {
   const dir = spacePagesDir(spaceId);
-  await backend.writeFile(`${dir}/${pageId}.md`, new TextEncoder().encode(content));
+  const filename = pageIdToFilename(pageId);
+  await backend.writeFile(`${dir}/${filename}`, new TextEncoder().encode(content));
+  // Clean up legacy .html version
+  const htmlBase = pageId.replace(/\.(md|markdown)$/, '');
   try {
-    await backend.deleteFile(`${dir}/${pageId}.html`);
+    await backend.deleteFile(`${dir}/${htmlBase}.html`);
   } catch {
     // Ignore — legacy file may not exist
   }
@@ -298,8 +314,10 @@ export async function deleteSpacePageContent(
   pageId: string,
 ): Promise<void> {
   const dir = spacePagesDir(spaceId);
-  try { await backend.deleteFile(`${dir}/${pageId}.md`); } catch { /* ignore */ }
-  try { await backend.deleteFile(`${dir}/${pageId}.html`); } catch { /* ignore */ }
+  const filename = pageIdToFilename(pageId);
+  try { await backend.deleteFile(`${dir}/${filename}`); } catch { /* ignore */ }
+  const htmlBase = pageId.replace(/\.(md|markdown)$/, '');
+  try { await backend.deleteFile(`${dir}/${htmlBase}.html`); } catch { /* ignore */ }
 }
 
 /** Clear all workspace data from the backend */
