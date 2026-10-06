@@ -10,7 +10,7 @@ This spec covers the installable Cept applications for Windows, macOS, Linux, An
 [Requirements index & traceability matrix](README.md) ·
 [01 Browser app & PWA](01-browser-app-and-pwa.md) ·
 [02 Static rendering](02-static-rendering.md) ·
-[03 Workspaces & storage](03-workspaces-and-storage.md) ·
+[03 Spaces & storage](03-spaces-and-storage.md) ·
 [04 Collaboration](04-collaboration.md) ·
 [05 CLI & daemon](05-cli-and-daemon.md) ·
 [06 VS Code extension](06-vscode-extension.md) ·
@@ -27,7 +27,7 @@ This spec covers the installable Cept applications for Windows, macOS, Linux, An
 - Desktop installers for Windows, macOS and Linux, and mobile apps for Android and iOS.
 - Choosing the native shell runtime (Electrobun, Electron or Capacitor).
 - The bridge abstraction between the shared UI and native capabilities: dialogs, menus, tray, notifications, secure storage, deep links and updates.
-- App-only local workspace storage when it runs inside a packaged app.
+- App-only local space storage when it runs inside a packaged app.
 - How packaged desktop apps relate to the local sync daemon.
 - Build, sign, version, publish and auto-update pipelines for native artifacts, plus PR-time validation of packaging.
 - Native-shell UI concerns on mobile (safe areas, keyboard, touch).
@@ -35,7 +35,7 @@ This spec covers the installable Cept applications for Windows, macOS, Linux, An
 ### Non-goals (covered elsewhere)
 
 - The browser UI itself, the service worker and the PWA. See [01](01-browser-app-and-pwa.md).
-- Storage backend semantics (git, gdrive, sftp, `workspace.ya?ml`, nesting). See [03](03-workspaces-and-storage.md).
+- Storage backend semantics (git, gdrive, sftp, `space.cept.ya?ml`, nesting). See [03](03-spaces-and-storage.md).
 - Daemon protocol and CLI. See [05](05-cli-and-daemon.md). This spec only says how apps use them.
 - OAuth proxy infrastructure and login app registration. See [09](09-remotes-and-auth.md).
 - General monorepo/CI conventions. See [10](10-engineering-and-ci.md). This spec covers only the native-specific targets and jobs.
@@ -43,29 +43,29 @@ This spec covers the installable Cept applications for Windows, macOS, Linux, An
 
 ## 2. Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-APP-001](#req-app-001--windows-packaged-app) | Windows packaged app | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-002](#req-app-002--macos-packaged-app) | macOS packaged app | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-003](#req-app-003--linux-packaged-app) | Linux packaged app | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-004](#req-app-004--android-packaged-app) | Android packaged app | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-005](#req-app-005--ios-packaged-app) | iOS packaged app | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-006](#req-app-006--native-shells-reuse-the-single-browser-component) | Native shells reuse the single browser component | MUST | stubbed | documented-as-desired | stale |
-| [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible) | Desktop shell runtime selection (Bun/TS where possible) | MUST | not-started | documented-differently | stale |
-| [REQ-APP-008](#req-app-008--unified-native-bridge-abstraction) | Unified native bridge abstraction | SHOULD | divergent | documented-differently | stale |
-| [REQ-APP-009](#req-app-009--app-only-local-workspace-storage) | App-only local workspace storage | MUST | stubbed | documented-differently | stale |
-| [REQ-APP-010](#req-app-010--packaged-app-integrates-with-the-local-sync-daemon) | Packaged app integrates with the local sync daemon | SHOULD | not-started | undocumented | n/a |
-| [REQ-APP-011](#req-app-011--release-pipeline-builds-per-platform-artifacts) | Release pipeline builds per-platform artifacts | MUST | stubbed | documented-differently | stale |
-| [REQ-APP-012](#req-app-012--artifacts-attached-to-github-releases) | Artifacts attached to GitHub Releases | MUST | stubbed | documented-as-desired | accurate |
-| [REQ-APP-013](#req-app-013--code-signing-and-notarization) | Code signing and notarization | MUST | not-started | documented-as-desired | stale |
-| [REQ-APP-014](#req-app-014--desktop-auto-update) | Desktop auto-update | MUST | stubbed | documented-as-desired | stale |
-| [REQ-APP-015](#req-app-015--distribution-channels) | Distribution channels | MUST | not-started | documented-differently | accurate |
-| [REQ-APP-016](#req-app-016--native-oauth-via-deep-link-for-packaged-apps) | Native OAuth via deep link for packaged apps | MUST | stubbed | documented-as-desired | stale |
-| [REQ-APP-017](#req-app-017--desktop-os-integration-deep-links-tray-menus) | Desktop OS integration (deep links, tray, menus) | SHOULD | stubbed | documented-as-desired | accurate |
-| [REQ-APP-018](#req-app-018--nxmise-targets-for-native-builds) | Nx/mise targets for native builds | MUST | partial | documented-differently | stale |
-| [REQ-APP-019](#req-app-019--pr-time-validation-of-packaging) | PR-time validation of packaging | SHOULD | not-started | undocumented | n/a |
-| [REQ-APP-020](#req-app-020--mobile-specific-ui-polish) | Mobile-specific UI polish | MUST | partial | undocumented | n/a |
-| [REQ-APP-021](#req-app-021--native-app-versions-track-releases) | Native app versions track releases | MUST | not-started | undocumented | n/a |
+| ID                                                                                | Requirement                                             | Priority | Impl status | Docs status            | Docs accurate |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-APP-001](#req-app-001--windows-packaged-app)                                 | Windows packaged app                                    | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-002](#req-app-002--macos-packaged-app)                                   | macOS packaged app                                      | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-003](#req-app-003--linux-packaged-app)                                   | Linux packaged app                                      | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-004](#req-app-004--android-packaged-app)                                 | Android packaged app                                    | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-005](#req-app-005--ios-packaged-app)                                     | iOS packaged app                                        | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-006](#req-app-006--native-shells-reuse-the-single-browser-component)     | Native shells reuse the single browser component        | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible) | Desktop shell runtime selection (Bun/TS where possible) | MUST     | not-started | documented-differently | stale         |
+| [REQ-APP-008](#req-app-008--unified-native-bridge-abstraction)                    | Unified native bridge abstraction                       | SHOULD   | divergent   | documented-differently | stale         |
+| [REQ-APP-009](#req-app-009--app-only-local-space-storage)                         | App-only local space storage                            | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-APP-010](#req-app-010--packaged-app-integrates-with-the-local-sync-daemon)   | Packaged app integrates with the local sync daemon      | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-APP-011](#req-app-011--release-pipeline-builds-per-platform-artifacts)       | Release pipeline builds per-platform artifacts          | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-APP-012](#req-app-012--artifacts-attached-to-github-releases)                | Artifacts attached to GitHub Releases                   | MUST     | stubbed     | documented-as-desired  | accurate      |
+| [REQ-APP-013](#req-app-013--code-signing-and-notarization)                        | Code signing and notarization                           | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-APP-014](#req-app-014--desktop-auto-update)                                  | Desktop auto-update                                     | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-APP-015](#req-app-015--distribution-channels)                                | Distribution channels                                   | MUST     | not-started | documented-differently | accurate      |
+| [REQ-APP-016](#req-app-016--native-oauth-via-deep-link-for-packaged-apps)         | Native OAuth via deep link for packaged apps            | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-APP-017](#req-app-017--desktop-os-integration-deep-links-tray-menus)         | Desktop OS integration (deep links, tray, menus)        | SHOULD   | stubbed     | documented-as-desired  | accurate      |
+| [REQ-APP-018](#req-app-018--nxmise-targets-for-native-builds)                     | Nx/mise targets for native builds                       | MUST     | partial     | documented-differently | stale         |
+| [REQ-APP-019](#req-app-019--pr-time-validation-of-packaging)                      | PR-time validation of packaging                         | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-APP-020](#req-app-020--mobile-specific-ui-polish)                            | Mobile-specific UI polish                               | MUST     | partial     | undocumented           | n/a           |
+| [REQ-APP-021](#req-app-021--native-app-versions-track-releases)                   | Native app versions track releases                      | MUST     | not-started | undocumented           | n/a           |
 
 The "Docs accurate" column judges the docs that describe the requirement as a whole. Where user-facing docs are accurate ("Coming soon") but README, CLAUDE.md, CHANGELOG or TASKS.md claim the feature exists, the row is marked stale. See [section 7](#7-stale-documentation).
 
@@ -86,7 +86,7 @@ flowchart TB
   end
 
   subgraph Desktop["Desktop shells (Windows, macOS, Linux)"]
-    DSHELL["Shell runtime (Electrobun preferred, Electron fallback)"]
+    DSHELL["Shell runtime (Electrobun — all desktop OSes)"]
     DMAIN["Main process: window, dialogs, menus, tray, cept:// protocol, updater"]
     DFS["Native fs backend (app-only local folder)"]
     DSHELL --> DMAIN
@@ -319,7 +319,9 @@ sequenceDiagram
 
 ### REQ-APP-007 — Desktop shell runtime selection (Bun/TS where possible)
 
-**Statement:** The desktop shell runtime MUST be chosen and documented. Per the handler's "bun/ts where possible", a Bun-based runtime (Electrobun) SHOULD be preferred on every desktop OS it supports, with Electron only as a documented fallback.
+**Statement:** The desktop shell runtime MUST be chosen and documented.
+
+> **Owner direction (D-17):** Electrobun is the desktop shell runtime on all desktop OSes (macOS, Windows, Linux); Electron is removed from scope. Mobile shells use Capacitor (iOS, Android).
 
 **Source:** Derived from the handler ("base code implementation using bun/ts where possible"), SPECIFICATION §2 and §8.1-8.2, and TASKS P6.4.
 
@@ -331,7 +333,7 @@ sequenceDiagram
 
 **Current state:** not-started. No runtime is integrated. `ElectronBridge` is a renderer-only IPC client, and there is no Electrobun code. TASKS P6.4 ("Evaluate Electrobun, implement or fall back") is unchecked. There is no evaluation record in `docs/research` or `docs/specs`.
 
-**Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) lines 82-83 and CLAUDE.md fix Electrobun for macOS and Electron for Windows/Linux, on the premise that Electrobun does not support Windows/Linux yet. That premise is unverified as of 2026-10 and may be outdated. The handler names no runtime.
+**Docs state:** documented-differently, stale — **Decided (D-17).** [SPECIFICATION.md](../../SPECIFICATION.md) lines 82-83 and CLAUDE.md previously fixed Electrobun for macOS and Electron for Windows/Linux on an unverified premise. D-17 resolves this: Electrobun on all desktop OSes; update SPECIFICATION.md, CLAUDE.md, README.md and platform-support.md accordingly.
 
 **Gap:** Needs the evaluation, a recorded decision and an implementation.
 
@@ -361,16 +363,16 @@ sequenceDiagram
 
 **Related:** TASKS P6.1, P6.2.
 
-### REQ-APP-009 — App-only local workspace storage
+### REQ-APP-009 — App-only local space storage
 
-**Statement:** Packaged apps MUST be able to open or create a workspace in a native local folder ("stored locally (app only)") through a native folder dialog. All persistence still goes through `StorageBackend`.
+**Statement:** Packaged apps MUST be able to open or create a space in a native local folder ("stored locally (app only)") through a native folder dialog. All persistence still goes through `StorageBackend`.
 
 **Source:** Handler ("stored locally (app only)").
 
 **Acceptance criteria:**
 
-- On desktop, "Open Folder" shows the native dialog, and the chosen folder becomes a workspace whose reads and writes go through a `StorageBackend`. A folder containing `workspace.yaml` or `workspace.yml` is recognized as a workspace root.
-- On Android and iOS, the app can create and open workspaces in app-sandbox storage (and, where the OS allows, user-picked folders) through a Capacitor filesystem backend.
+- On desktop, "Open Folder" shows the native dialog, and the chosen folder becomes a space whose reads and writes go through a `StorageBackend`. A folder containing `space.cept.yaml` or `space.cept.yml` is recognized as a space root.
+- On Android and iOS, the app can create and open spaces in app-sandbox storage (and, where the OS allows, user-picked folders) through a Capacitor filesystem backend.
 - Opening an existing folder modifies no files until the user edits (architecture rule 11).
 - The platform matrix in platform-support.md reflects actual support.
 
@@ -381,9 +383,9 @@ sequenceDiagram
 - On mobile, `WebMobileBridge.createStorageBackend` throws ([mobile-bridge.ts](../../../packages/mobile/src/mobile-bridge.ts) lines 115-117), and no native mobile filesystem backend exists.
 - TASKS P2.7 is relevant and P6.2 is unchecked.
 
-**Docs state:** documented-differently, stale. [platform-support.md](../../content/guides/platform-support.md) lines 52-58 (row at line 57) say Local Folder is available on desktop (no desktop app exists) and not on mobile, while the in-app docs ([docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) line 287) say Local Folder is "Coming soon" everywhere. [docs/specs/storage-backends.md](../storage-backends.md) FR-2 specifies `LocalFsBackend` without saying which shell hosts it. platform-support.md's "No" for mobile conflicts with the handler's "app only" requirement, which implies mobile support too. SPECIFICATION.md line 117 defers a `CapacitorFsBackend` to the future. The handler says "workspaces" where the code says "spaces".
+**Docs state:** documented-differently, stale. [platform-support.md](../../content/guides/platform-support.md) lines 52-58 (row at line 57) say Local Folder is available on desktop (no desktop app exists) and not on mobile, while the in-app docs ([docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) line 287) say Local Folder is "Coming soon" everywhere. [docs/specs/storage-backends.md](../storage-backends.md) FR-2 specifies `LocalFsBackend` without saying which shell hosts it. platform-support.md's "No" for mobile conflicts with the handler's "app only" requirement, which implies mobile support too. SPECIFICATION.md line 117 defers a `CapacitorFsBackend` to the future. The handler says "spaces" where the code says "spaces".
 
-**Gap:** Needs main-process fs handlers or Electrobun RPC, a dialog wired into the UI, a mobile filesystem backend and an updated matrix. The backend itself is specified in [03 REQ-WS-009](03-workspaces-and-storage.md#req-ws-009--local-app-only-native-filesystem-backend) and [03 REQ-WS-017](03-workspaces-and-storage.md#req-ws-017--backend-availability-matrix-per-platform).
+**Gap:** Needs main-process fs handlers or Electrobun RPC, a dialog wired into the UI, a mobile filesystem backend and an updated matrix. The backend itself is specified in [03 REQ-WS-009](03-spaces-and-storage.md#req-ws-009--local-app-only-native-filesystem-backend) and [03 REQ-WS-017](03-spaces-and-storage.md#req-ws-017--backend-availability-matrix-per-platform).
 
 **Related:** TASKS P6.2, P2.7.
 
@@ -397,7 +399,7 @@ sequenceDiagram
 
 - When a daemon is running, the desktop app discovers it with the protocol from [05 REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing) and [05 REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser) and delegates sync to it.
 - When no daemon is running, the app either launches its bundled daemon or uses in-process sync, and the choice is documented.
-- Two clients (for example the app and VS Code) editing the same workspace never run two competing sync loops.
+- Two clients (for example the app and VS Code) editing the same space never run two competing sync loops.
 
 **Current state:** not-started. No daemon, CLI or shell code exists, `packages/` has no CLI package, and neither bridge mentions a daemon.
 
@@ -420,11 +422,13 @@ sequenceDiagram
 - A deliberately broken packaging config makes the job fail (gate proven, per qontacts validation-first practice).
 - The spec names the actual workflow file(s).
 
+> **Owner direction (D-24):** These gates are scoped to Electrobun/Capacitor artifact jobs only. Platform jobs MUST fail (or emit `::warning::` and produce unsigned builds on PRs) when expected artifacts are missing. No `continue-on-error` and no `|| true` on any build, sync or upload step.
+
 **Current state:** stubbed.
 
 - [cd.yml](../../../.github/workflows/cd.yml) has `build-macos`, `build-windows`, `build-linux`, `build-ios` and `build-android` jobs. Each runs only `bun run build`, which excludes desktop and mobile because they have no build target, then uploads with `if-no-files-found: warn`. The `cap sync` steps use `continue-on-error: true`.
 - CD run 32660431419 (v0.7.31, `create` event) passed every job and produced no artifacts (artifact count 0).
-- Tags come from two places, both running release-it: [_tag-release.yml](../../../.github/workflows/_tag-release.yml) (called from CI on releasable merges to `main`) and the manual [release.yml](../../../.github/workflows/release.yml) (`workflow_dispatch` with an `increment` choice). `cd.yml` triggers on the tag's `create` event because the release commit carries `[skip ci]`. Neither tagging workflow builds or validates native packaging before the tag is pushed.
+- Tags come from two places, both running release-it: [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) (called from CI on releasable merges to `main`) and the manual [release.yml](../../../.github/workflows/release.yml) (`workflow_dispatch` with an `increment` choice). `cd.yml` triggers on the tag's `create` event because the release commit carries `[skip ci]`. Neither tagging workflow builds or validates native packaging before the tag is pushed.
 - TASKS T10.1 is marked done ([TASKS.md](../../../TASKS.md) line 142).
 
 **Docs state:** documented-differently, stale. SPECIFICATION §9.2 and §9.4 describe separate `release-desktop.yml` and `release-mobile.yml` with a target matrix. Neither file exists; the jobs live in `cd.yml`. [CHANGELOG.md](../../../CHANGELOG.md) line 560 claims "Release workflows for … desktop, and mobile". [continue.md](../../../.claude/prompts/continue.md) lines 750-752 list the non-existent workflows.
@@ -544,7 +548,7 @@ sequenceDiagram
 
 **Acceptance criteria:**
 
-- Opening a `cept://` link focuses the app and routes to the target page or workspace.
+- Opening a `cept://` link focuses the app and routes to the target page or space.
 - The native application menu mirrors the main commands, and menu actions reach the UI through the bridge.
 - The tray icon shows sync status (from the daemon when present) and offers open/quit.
 
@@ -594,7 +598,7 @@ sequenceDiagram
 - PRs that do not affect those packages skip the job.
 - A broken packaging config fails the PR.
 
-**Current state:** not-started. [_build.yml](../../../.github/workflows/_build.yml) only runs `bun run build` on ubuntu. No PR job packages desktop or mobile, so packaging is only tried on tags.
+**Current state:** not-started. [\_build.yml](../../../.github/workflows/_build.yml) only runs `bun run build` on ubuntu. No PR job packages desktop or mobile, so packaging is only tried on tags.
 
 **Docs state:** undocumented. SPECIFICATION §9.2 and §9.4 trigger only on a published release or `workflow_dispatch`.
 
@@ -645,19 +649,19 @@ sequenceDiagram
 
 ## 5. Conflicts and open questions
 
-The owner needs to decide each of these:
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
-1. **TASKS.md contradicts itself and the code.** T7.1, T7.2, T7.4, T7.6, T10.1, T10.2 and T10.3 are marked done ([TASKS.md](../../../TASKS.md) lines 116-121 and 142-145), while P6.1-P6.8 for the same work are unchecked (lines 219-226). The code matches the continuation view. *Decision:* uncheck the T-tasks, or annotate them as superseded by P6.
-2. **Desktop runtime.** The handler asks for "bun/ts where possible" and names no runtime. CLAUDE.md, README.md line 61, SPECIFICATION.md lines 82-83 and platform-support.md lines 10-12 fix Electrobun for macOS and Electron for Windows/Linux, based on an unverified premise that Electrobun lacks Windows/Linux support. *Decision:* Electrobun on all desktop OSes if it is now supported, the split, or Electron everywhere? See [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
-3. **One bridge or two.** SPECIFICATION §8.5 defines one `NativeShell` covering `capacitor-ios`/`capacitor-android`. The code has separate `PlatformBridge` and `MobileBridge` with different methods. *Decision:* unify, or document the split. Should the VS Code webview host share the same interface?
-4. **Release workflow layout.** SPECIFICATION §9.2/§9.4 and continue.md lines 750-752 specify `release-desktop.yml` and `release-mobile.yml`, but the jobs live in `cd.yml`. *Decision:* split the workflows to match the spec, or update the spec.
-5. **Weakened gates.** `cd.yml` reports success while producing nothing (`if-no-files-found: warn`, `continue-on-error: true`, `|| true`). This is the kind of gate weakening that qontacts' validation-first rule forbids. *Decision:* adopt the qontacts rule for cept.
-6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. *Decision:* is a mobile native filesystem backend required for v1?
-7. **Terminology.** The handler says "workspaces" with a `workspace.ya?ml` root, while the code, docs, TASKS P2.9 and PR #67 say "spaces". See [03 REQ-WS-022](03-workspaces-and-storage.md#req-ws-022--consistent-terminology-workspace-vs-space).
-8. **`node:fs` in core.** CLAUDE.md architecture rule 1 forbids `node:fs` in `@cept/core`, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8-10 import it, and that is the backend the desktop app would use. *Decision:* move it to a platform package, or inject an fs abstraction.
-9. **IPC-returned backend.** `ElectronBridge.createLocalBackend` cannot work over structured-clone IPC. *Decision:* adopt a renderer-side proxy backend design.
-10. **Store distribution.** SPECIFICATION §9.4 treats Play and TestFlight publishing as optional, while platform-support.md lines 13-14 promise the App Store and Play Store. *Decision:* required or optional for v1? Is an Apple Developer and Play Console account available?
-11. **Node version.** SPECIFICATION.md line 1305 says node 22.x is required for Electron, while `.mise.toml` pins node 24. *Decision:* re-check this against the chosen runtime.
+1. **TASKS.md contradicts itself and the code.** T7.1, T7.2, T7.4, T7.6, T10.1, T10.2 and T10.3 are marked done ([TASKS.md](../../../TASKS.md) lines 116-121 and 142-145), while P6.1-P6.8 for the same work are unchecked (lines 219-226). The code matches the continuation view. _Decision:_ uncheck the T-tasks, or annotate them as superseded by P6.
+2. **Desktop runtime — Decided (D-17).** The handler asked for "bun/ts where possible" and named no runtime. CLAUDE.md, README.md line 61, SPECIFICATION.md lines 82-83 and platform-support.md lines 10-12 previously fixed Electrobun for macOS and Electron for Windows/Linux on an unverified premise. **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed; mobile = Capacitor (iOS, Android). See [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
+3. **One bridge or two.** SPECIFICATION §8.5 defines one `NativeShell` covering `capacitor-ios`/`capacitor-android`. The code has separate `PlatformBridge` and `MobileBridge` with different methods. _Decision:_ unify, or document the split. Should the VS Code webview host share the same interface?
+4. **Release workflow layout.** SPECIFICATION §9.2/§9.4 and continue.md lines 750-752 specify `release-desktop.yml` and `release-mobile.yml`, but the jobs live in `cd.yml`. _Decision:_ split the workflows to match the spec, or update the spec.
+5. **Weakened gates.** `cd.yml` reports success while producing nothing (`if-no-files-found: warn`, `continue-on-error: true`, `|| true`). This is the kind of gate weakening that qontacts' validation-first rule forbids. _Decision:_ adopt the qontacts rule for cept.
+6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. _Decision:_ is a mobile native filesystem backend required for v1?
+7. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; docs and UI use "space"; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged (`WorkspaceConfig`, `workspace-state.json`, `cept-workspace`, `vscode.workspace`). See [03 REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
+8. **`node:fs` in core.** CLAUDE.md architecture rule 1 forbids `node:fs` in `@cept/core`, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8-10 import it, and that is the backend the desktop app would use. _Decision:_ move it to a platform package, or inject an fs abstraction.
+9. **IPC-returned backend.** `ElectronBridge.createLocalBackend` cannot work over structured-clone IPC. _Decision:_ adopt a renderer-side proxy backend design.
+10. **Store distribution.** SPECIFICATION §9.4 treats Play and TestFlight publishing as optional, while platform-support.md lines 13-14 promise the App Store and Play Store. _Decision:_ required or optional for v1? Is an Apple Developer and Play Console account available?
+11. **Node version.** SPECIFICATION.md line 1305 says node 22.x is required for Electron, while `.mise.toml` pins node 24. _Decision:_ re-check this against the chosen runtime.
 12. **Daemon in apps.** Should desktop apps bundle the CLI daemon, launch a system-installed one, or sync in-process when none is found? See [REQ-APP-010](#req-app-010--packaged-app-integrates-with-the-local-sync-daemon).
 
 ## 6. Open PRs and issues
@@ -689,15 +693,15 @@ These claims need fixing:
 
 ## 8. Cross-area dependencies
 
-| Depends on | Why | Link |
-| --- | --- | --- |
-| Browser component and web build | Shells load the `packages/web` dist, and the UI needs a bridge injection point, which `packages/ui` lacks today | [01 REQ-WEB-001](01-browser-app-and-pwa.md#req-web-001--shared-browser-ui-component) |
-| Service worker sync fallback | Mobile shells, and desktop shells without a daemon, likely fall back to the service-worker sync path ([packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts)) | [01 REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing) |
-| App-only local storage backend | Native fs backend, `workspace.ya?ml` root detection, platform availability matrix | [03 REQ-WS-009](03-workspaces-and-storage.md#req-ws-009--local-app-only-native-filesystem-backend), [03 REQ-WS-017](03-workspaces-and-storage.md#req-ws-017--backend-availability-matrix-per-platform) |
-| Terminology | Spaces versus workspaces in the app UI | [03 REQ-WS-022](03-workspaces-and-storage.md#req-ws-022--consistent-terminology-workspace-vs-space) |
-| Co-editing | Packaged apps join the same P2P WebRTC sessions as browser clients | [04 Collaboration](04-collaboration.md) |
-| Sync daemon | Desktop apps discover, launch or share the local daemon | [05 REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [05 REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [05 REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser) |
-| VS Code extension | Shares the browser component and daemon; the bridge abstraction should cover a webview host | [06 VS Code extension](06-vscode-extension.md) |
-| Editor | Same editor in all shells; no native-only editor features | [08 Editor](08-editor.md) |
-| Remotes and auth | Native `cept://` OAuth redirect allowed by the Cloudflare OAuth proxy (nsheaps/iac) and by the GitHub/Google login apps; secure token storage | [09 Remotes & auth](09-remotes-and-auth.md) |
-| CI, monorepo, versioning | nx targets and nx-affected scoping, mise pins for Java/Android/Xcode, release-it version propagation (`.release-it.json` bumper `out: []`). `cd.yml` and `_tag-release.yml` are shared with the web Pages deploy, so fixing artifact gating must not break web deploys | [10 Engineering & CI](10-engineering-and-ci.md) |
+| Depends on                      | Why                                                                                                                                                                                                                                                                    | Link                                                                                                                                                                                                                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Browser component and web build | Shells load the `packages/web` dist, and the UI needs a bridge injection point, which `packages/ui` lacks today                                                                                                                                                        | [01 REQ-WEB-001](01-browser-app-and-pwa.md#req-web-001--shared-browser-ui-component)                                                                                                                                                                                          |
+| Service worker sync fallback    | Mobile shells, and desktop shells without a daemon, likely fall back to the service-worker sync path ([packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts))                                                                               | [01 REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing)                                                                                                                                                                                       |
+| App-only local storage backend  | Native fs backend, `space.cept.ya?ml` root detection, platform availability matrix                                                                                                                                                                                     | [03 REQ-WS-009](03-spaces-and-storage.md#req-ws-009--local-app-only-native-filesystem-backend), [03 REQ-WS-017](03-spaces-and-storage.md#req-ws-017--backend-availability-matrix-per-platform)                                                                                |
+| Terminology                     | Space terminology alignment (D-1 decided)                                                                                                                                                                                                                              | [03 REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1)                                                                                                                                                                                |
+| Co-editing                      | Packaged apps join the same P2P WebRTC sessions as browser clients                                                                                                                                                                                                     | [04 Collaboration](04-collaboration.md)                                                                                                                                                                                                                                       |
+| Sync daemon                     | Desktop apps discover, launch or share the local daemon                                                                                                                                                                                                                | [05 REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [05 REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [05 REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser) |
+| VS Code extension               | Shares the browser component and daemon; the bridge abstraction should cover a webview host                                                                                                                                                                            | [06 VS Code extension](06-vscode-extension.md)                                                                                                                                                                                                                                |
+| Editor                          | Same editor in all shells; no native-only editor features                                                                                                                                                                                                              | [08 Editor](08-editor.md)                                                                                                                                                                                                                                                     |
+| Remotes and auth                | Native `cept://` OAuth redirect allowed by the Cloudflare OAuth proxy (nsheaps/iac) and by the GitHub/Google login apps; secure token storage                                                                                                                          | [09 Remotes & auth](09-remotes-and-auth.md)                                                                                                                                                                                                                                   |
+| CI, monorepo, versioning        | nx targets and nx-affected scoping, mise pins for Java/Android/Xcode, release-it version propagation (`.release-it.json` bumper `out: []`). `cd.yml` and `_tag-release.yml` are shared with the web Pages deploy, so fixing artifact gating must not break web deploys | [10 Engineering & CI](10-engineering-and-ci.md)                                                                                                                                                                                                                               |

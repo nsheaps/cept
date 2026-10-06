@@ -2,12 +2,12 @@
 
 **Status:** Draft, 2026-10-06 · **Area IDs:** `REQ-WEB-NNN`
 
-This spec states the requirements for Cept's browser-facing runtime. That covers the shared UI component (`@cept/ui`), the Vite single-page app that hosts it (`@cept/web`), the service worker, the installable progressive web app (PWA), the demo workspace, and the GitHub Pages deployment of the app with its read-only docs. Each requirement is checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
+This spec states the requirements for Cept's browser-facing runtime. That covers the shared UI component (`@cept/ui`), the Vite single-page app that hosts it (`@cept/web`), the service worker, the installable progressive web app (PWA), the demo space, and the GitHub Pages deployment of the app with its read-only docs. Each requirement is checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
 
 **Related:**
 [Requirements index & traceability matrix](README.md) ·
 [02 Static rendering](02-static-rendering.md) ·
-[03 Workspaces & storage](03-workspaces-and-storage.md) ·
+[03 Spaces & storage](03-spaces-and-storage.md) ·
 [04 Collaboration](04-collaboration.md) ·
 [05 CLI & daemon](05-cli-and-daemon.md) ·
 [06 VS Code extension](06-vscode-extension.md) ·
@@ -28,23 +28,23 @@ This spec states the requirements for Cept's browser-facing runtime. That covers
 - `@cept/web`: Vite SPA bootstrap, per-deployment storage namespacing, SPA deep-link fallback.
 - The service worker: offline app-shell caching, the update flow, and (as required by the owner) background syncing when no local daemon is present.
 - The PWA: manifest, installability, offline editing, and discovery of a local daemon.
-- The demo workspace (in-memory) and how users get into it.
+- The demo space (in-memory) and how users get into it.
 - The GitHub Pages deployment of the app alone (`/cept/app/`), PR previews (`/cept/pr-N/`), and the read-only docs shown inside the app.
 - Automated tests of the service worker and PWA against the built bundle.
 
 ### Non-goals (covered elsewhere)
 
-| Topic | Owner spec |
-| --- | --- |
-| Static, interface-free rendering of a workspace; the Cept docs static site | [02-static-rendering.md](02-static-rendering.md) |
-| Storage backends, workspace model, `workspace.ya?ml`, nesting | [03-workspaces-and-storage.md](03-workspaces-and-storage.md) |
-| Yjs / WebRTC co-editing, presence | [04-collaboration.md](04-collaboration.md) |
-| Daemon API and the CLI itself | [05-cli-and-daemon.md](05-cli-and-daemon.md) |
-| VS Code webview host | [06-vscode-extension.md](06-vscode-extension.md) |
-| Desktop / mobile shells | [07-native-apps.md](07-native-apps.md) |
-| Editor features (WYSIWYG, databases, mermaid, graph) | [08-editor.md](08-editor.md) |
-| Git / GDrive / SFTP remotes, OAuth, CORS proxy | [09-remotes-and-auth.md](09-remotes-and-auth.md) |
-| Nx/mise layout, CI scoping, auto-fix workflows | [10-engineering-and-ci.md](10-engineering-and-ci.md) |
+| Topic                                                                  | Owner spec                                           |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| Static, interface-free rendering of a space; the Cept docs static site | [02-static-rendering.md](02-static-rendering.md)     |
+| Storage backends, space model, `space.cept.ya?ml`, nesting             | [03-spaces-and-storage.md](03-spaces-and-storage.md) |
+| Yjs / WebRTC co-editing, presence                                      | [04-collaboration.md](04-collaboration.md)           |
+| Daemon API and the CLI itself                                          | [05-cli-and-daemon.md](05-cli-and-daemon.md)         |
+| VS Code webview host                                                   | [06-vscode-extension.md](06-vscode-extension.md)     |
+| Desktop / mobile shells                                                | [07-native-apps.md](07-native-apps.md)               |
+| Editor features (WYSIWYG, databases, mermaid, graph)                   | [08-editor.md](08-editor.md)                         |
+| Git / GDrive / SFTP remotes, OAuth, CORS proxy                         | [09-remotes-and-auth.md](09-remotes-and-auth.md)     |
+| Nx/mise layout, CI scoping, auto-fix workflows                         | [10-engineering-and-ci.md](10-engineering-and-ci.md) |
 
 ---
 
@@ -52,31 +52,31 @@ This spec states the requirements for Cept's browser-facing runtime. That covers
 
 Implementation status values: implemented, partial, stubbed, not-started, divergent. Docs status values: documented-as-desired, documented-differently, undocumented. Docs accuracy values: accurate, stale, n/a.
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-WEB-001](#req-web-001--shared-browser-ui-component) | Shared browser UI component mounted by every host | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-002](#req-web-002--ui-free-of-platform-imports) | UI free of platform imports | MUST | partial | documented-as-desired | accurate |
-| [REQ-WEB-003](#req-web-003--ui-talks-to-storage-only-through-the-injected-backend) | UI uses storage only through the injected backend | MUST | divergent | documented-as-desired | stale |
-| [REQ-WEB-004](#req-web-004--web-spa-boots-fully-functional-on-browser-only-storage) | Web SPA boots on browser-only storage | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-005](#req-web-005--service-worker-registered-with-correct-scope) | Service worker registered at base path | MUST | partial | documented-as-desired | accurate |
-| [REQ-WEB-006](#req-web-006--service-worker-caches-app-shell-for-offline-use) | Service worker precaches app shell for offline use | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-007](#req-web-007--service-worker-handles-syncing) | Service worker handles syncing | MUST | not-started | documented-differently | stale |
-| [REQ-WEB-008](#req-web-008--service-worker-update-flow) | Service worker update flow | SHOULD | partial | documented-as-desired | stale |
-| [REQ-WEB-009](#req-web-009--installable-pwa-manifest) | Installable PWA manifest | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-010](#req-web-010--pwa-shares-local-daemon-when-present) | PWA shares local daemon when present | MUST | not-started | documented-differently | accurate |
-| [REQ-WEB-011](#req-web-011--offline-editing-of-browser-workspace) | Offline editing of browser workspace | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-012](#req-web-012--demo-workspace-uses-in-memory-file-storage) | Demo workspace on in-memory storage | MUST | divergent | documented-differently | stale |
-| [REQ-WEB-013](#req-web-013--demo-entry-points) | Demo entry points (landing, URL, build flag) | SHOULD | partial | documented-differently | stale |
-| [REQ-WEB-014](#req-web-014--demo-reset) | Demo reset | SHOULD | partial | documented-as-desired | accurate |
-| [REQ-WEB-015](#req-web-015--github-pages-deployment-of-just-the-app) | GitHub Pages deployment of just the app | MUST | implemented | documented-as-desired | stale |
-| [REQ-WEB-016](#req-web-016--pages-deployment-configured-for-demo-workspace) | Pages deployment opens the demo workspace | MUST | partial | documented-differently | stale |
-| [REQ-WEB-017](#req-web-017--read-only-docs-in-the-pages-deployment) | Read-only docs in the Pages deployment | MUST | partial | documented-as-desired | stale |
-| [REQ-WEB-018](#req-web-018--bundled-docs-generated-from-docscontent) | Bundled docs generated from `docs/content` | SHOULD | not-started | undocumented | n/a |
-| [REQ-WEB-019](#req-web-019--pr-preview-deployments) | PR preview deployments | SHOULD | partial | documented-as-desired | stale |
-| [REQ-WEB-020](#req-web-020--per-deployment-storage-isolation) | Per-deployment storage isolation | MUST | partial | undocumented | n/a |
-| [REQ-WEB-021](#req-web-021--spa-deep-link-fallback-on-pages) | SPA deep-link fallback on Pages | MUST | implemented | documented-differently | stale |
-| [REQ-WEB-022](#req-web-022--automated-tests-for-swpwa-on-the-built-bundle) | Automated SW/PWA tests on the built bundle | MUST | partial | undocumented | n/a |
-| [REQ-WEB-023](#req-web-023--browser-only-local-folder-workspaces) | Browser-only local folder workspaces | SHOULD | stubbed | documented-differently | stale |
+| ID                                                                                  | Requirement                                        | Priority | Impl status | Docs status            | Docs accurate |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-WEB-001](#req-web-001--shared-browser-ui-component)                            | Shared browser UI component mounted by every host  | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-002](#req-web-002--ui-free-of-platform-imports)                            | UI free of platform imports                        | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-WEB-003](#req-web-003--ui-talks-to-storage-only-through-the-injected-backend)  | UI uses storage only through the injected backend  | MUST     | divergent   | documented-as-desired  | stale         |
+| [REQ-WEB-004](#req-web-004--web-spa-boots-fully-functional-on-browser-only-storage) | Web SPA boots on browser-only storage              | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-005](#req-web-005--service-worker-registered-with-correct-scope)           | Service worker registered at base path             | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-WEB-006](#req-web-006--service-worker-caches-app-shell-for-offline-use)        | Service worker precaches app shell for offline use | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-007](#req-web-007--service-worker-handles-syncing)                         | Service worker handles syncing                     | MUST     | not-started | documented-differently | stale         |
+| [REQ-WEB-008](#req-web-008--service-worker-update-flow)                             | Service worker update flow                         | SHOULD   | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-009](#req-web-009--installable-pwa-manifest)                               | Installable PWA manifest                           | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-010](#req-web-010--pwa-shares-local-daemon-when-present)                   | PWA shares local daemon when present               | MUST     | not-started | documented-differently | accurate      |
+| [REQ-WEB-011](#req-web-011--offline-editing-of-browser-space)                       | Offline editing of browser space                   | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-012](#req-web-012--demo-space-uses-in-memory-file-storage)                 | Demo space on in-memory storage                    | MUST     | divergent   | documented-differently | stale         |
+| [REQ-WEB-013](#req-web-013--demo-entry-points)                                      | Demo entry points (landing, URL, build flag)       | SHOULD   | partial     | documented-differently | stale         |
+| [REQ-WEB-014](#req-web-014--demo-reset)                                             | Demo reset                                         | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WEB-015](#req-web-015--github-pages-deployment-of-just-the-app)                | GitHub Pages deployment of just the app            | MUST     | implemented | documented-as-desired  | stale         |
+| [REQ-WEB-016](#req-web-016--pages-deployment-configured-for-demo-space)             | Pages deployment opens the demo space              | MUST     | partial     | documented-differently | stale         |
+| [REQ-WEB-017](#req-web-017--read-only-docs-in-the-pages-deployment)                 | Read-only docs in the Pages deployment             | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-018](#req-web-018--bundled-docs-generated-from-docscontent)                | Bundled docs generated from `docs/content`         | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-WEB-019](#req-web-019--pr-preview-deployments)                                 | PR preview deployments                             | SHOULD   | partial     | documented-as-desired  | stale         |
+| [REQ-WEB-020](#req-web-020--per-deployment-storage-isolation)                       | Per-deployment storage isolation                   | MUST     | partial     | undocumented           | n/a           |
+| [REQ-WEB-021](#req-web-021--spa-deep-link-fallback-on-pages)                        | SPA deep-link fallback on Pages                    | MUST     | implemented | documented-differently | stale         |
+| [REQ-WEB-022](#req-web-022--automated-tests-for-swpwa-on-the-built-bundle)          | Automated SW/PWA tests on the built bundle         | MUST     | partial     | undocumented           | n/a           |
+| [REQ-WEB-023](#req-web-023--browser-only-local-folder-spaces)                       | Browser-only local folder spaces                   | SHOULD   | stubbed     | documented-differently | stale         |
 
 Rollup (23 requirements): 2 implemented, 15 partial, 1 stubbed, 3 not-started, 2 divergent.
 
@@ -109,7 +109,7 @@ flowchart TB
   BFS <--> SW["Service worker: app-shell cache + background sync"]
   SW --> REM["Remotes: git, gdrive, sftp (09) via CORS/OAuth proxy"]
   DEMO["Demo: MemoryBackend (in-memory, isolated)"] --> HC
-  DOCS["Read-only docs workspace"] --> HC
+  DOCS["Read-only docs space"] --> HC
 ```
 
 ### 3.2 Current architecture (2026-10-06)
@@ -140,7 +140,7 @@ sequenceDiagram
   participant SW as "Service worker"
   participant Remote as "Remote (git/gdrive/sftp)"
   Page->>IDB: write page edit
-  Page->>SW: postMessage ENQUEUE_SYNC(workspaceId)
+  Page->>SW: postMessage ENQUEUE_SYNC(spaceId)
   SW->>SW: register Background Sync tag
   Note over SW: offline: queue persists
   SW->>IDB: read pending changes
@@ -263,7 +263,9 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-007 — Service worker handles syncing
 
-**Statement:** When no local daemon is available, the service worker MUST own background syncing of workspace changes to configured remotes. That includes queueing offline edits and replaying them on reconnect, using Background Sync or an equivalent.
+**Statement:** The service worker MUST handle offline caching (precache shell, runtime cache) and queued-write flushing only. Live sync and co-editing run in a SharedWorker (`SyncEngine` in `@cept/core`). The service worker MUST NOT attempt `RTCPeerConnection` or long-lived git operations (SW terminates in ~30 s). Where no SharedWorker is available, a leader tab elected via Web Locks + BroadcastChannel owns the sync loop.
+
+> **Owner direction (D-4+D-5):** SW = offline caching + queued-write flushing; SharedWorker = live sync leadership; `SyncEngine` in `@cept/core`. Proposed refinement on SharedWorker fallback detail pending owner ack.
 
 **Rationale / source:** Owner requirement ("service worker handles syncing").
 
@@ -335,9 +337,9 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 **Gap:** Depends entirely on the daemon API ([05-cli-and-daemon.md](05-cli-and-daemon.md)).
 
-### REQ-WEB-011 — Offline editing of browser workspace
+### REQ-WEB-011 — Offline editing of browser space
 
-**Statement:** Once the app shell is cached, users MUST be able to open and edit browser-stored workspaces fully offline, with the edits persisted locally.
+**Statement:** Once the app shell is cached, users MUST be able to open and edit browser-stored spaces fully offline, with the edits persisted locally.
 
 **Rationale / source:** Owner requirement (PWA with a service worker).
 
@@ -351,11 +353,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 **Gap:** Fix REQ-WEB-006 first, then add the offline e2e test.
 
-### REQ-WEB-012 — Demo workspace uses in-memory file storage
+### REQ-WEB-012 — Demo space uses in-memory file storage
 
-**Statement:** The demo workspace MUST run on an in-memory file storage backend that is isolated from the user's persisted workspaces and never writes to them. It is discarded or reset on reload.
+**Statement:** The demo space MUST run on an in-memory file storage backend that is isolated from the user's persisted spaces and never writes to them. It is discarded or reset on reload.
 
-**Rationale / source:** Owner requirement ("A demo workspace with in memory file storage").
+**Rationale / source:** Owner requirement ("A demo space with in memory file storage").
 
 **Acceptance criteria:**
 
@@ -367,7 +369,7 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 **Docs state:** documented-differently, stale. SPECIFICATION 5.10.7 says the demo is a "BrowserFsBackend with sample content". [quick-start.md](../../content/getting-started/quick-start.md) (line 13) says that adding `?demo` lets you try it "without affecting your data". That is false.
 
-**Gap:** Promote the test `MemoryBackend` (or a new one) into `@cept/core` with conformance tests (see [03-workspaces-and-storage.md](03-workspaces-and-storage.md)), mount the demo on it, and stop writing to the default space.
+**Gap:** Promote the test `MemoryBackend` (or a new one) into `@cept/core` with conformance tests (see [03-spaces-and-storage.md](03-spaces-and-storage.md)), mount the demo on it, and stop writing to the default space.
 
 ### REQ-WEB-013 — Demo entry points
 
@@ -388,15 +390,15 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-014 — Demo reset
 
-**Statement:** The UI SHOULD be able to reset the demo workspace to its pristine sample content.
+**Statement:** The UI SHOULD be able to reset the demo space to its pristine sample content.
 
 **Rationale / source:** Derived.
 
 **Acceptance criteria:**
 
-- A Settings action resets the demo. With `MemoryBackend` this is equivalent to a reload, and it never touches other workspaces.
+- A Settings action resets the demo. With `MemoryBackend` this is equivalent to a reload, and it never touches other spaces.
 
-**Current state:** partial. `handleResetDemo` in [App.tsx](../../../packages/ui/src/components/App.tsx) (lines 794-809) is wired to the "Recreate Demo Space" action in Settings (`onRecreateDemoSpace`, line 1488) and to the landing page's "Try the demo" button (line 1371). The acceptance criterion "never touches other workspaces" fails: reset overwrites the persisted `default` space, which may hold the user's own pages (the code comment says it "Always recreate[s]"). See REQ-WEB-012.
+**Current state:** partial. `handleResetDemo` in [App.tsx](../../../packages/ui/src/components/App.tsx) (lines 794-809) is wired to the "Recreate Demo Space" action in Settings (`onRecreateDemoSpace`, line 1488) and to the landing page's "Try the demo" button (line 1371). The acceptance criterion "never touches other spaces" fails: reset overwrites the persisted `default` space, which may hold the user's own pages (the code comment says it "Always recreate[s]"). See REQ-WEB-012.
 
 **Docs state:** documented-as-desired, accurate as to the action. [features.md](../../content/guides/features.md) (line 106) lists "recreate demo content" under Data & Cache, and the bundled quick-start in [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) (line 191) says "Go to Settings and click 'Recreate Demo Space' to start fresh". Neither warns that it overwrites the default space.
 
@@ -420,11 +422,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 **Gap:** Scope the build to the web app. Deploys run only on release tags, so production can lag `main`; document that.
 
-### REQ-WEB-016 — Pages deployment configured for demo workspace
+### REQ-WEB-016 — Pages deployment configured for demo space
 
-**Statement:** The GitHub Pages app deployment MUST be configured at build time to open the demo workspace by default.
+**Statement:** The GitHub Pages app deployment MUST be configured at build time to open the demo space by default.
 
-**Rationale / source:** Owner requirement ("set up for the demo workspace").
+**Rationale / source:** Owner requirement ("set up for the demo space").
 
 **Acceptance criteria:**
 
@@ -439,13 +441,13 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-017 — Read-only docs in the Pages deployment
 
-**Statement:** The GitHub Pages app deployment MUST expose Cept's documentation as a read-only workspace that can be browsed inside the app.
+**Statement:** The GitHub Pages app deployment MUST expose Cept's documentation as a read-only space that can be browsed inside the app.
 
 **Rationale / source:** Owner requirement ("a read-only docs site").
 
 **Acceptance criteria:**
 
-- `${BASE_URL}docs` opens a read-only docs workspace in which every mutation control is disabled.
+- `${BASE_URL}docs` opens a read-only docs space in which every mutation control is disabled.
 - Its content matches `docs/content` at the deployed commit (REQ-WEB-018).
 - If the docs are also published as a static site, the in-app docs link to it consistently (see [02-static-rendering.md](02-static-rendering.md)).
 
@@ -546,34 +548,34 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 
 **Gap:** Add the built-bundle e2e project (see [10-engineering-and-ci.md](10-engineering-and-ci.md)).
 
-### REQ-WEB-023 — Browser-only local folder workspaces
+### REQ-WEB-023 — Browser-only local folder spaces
 
-**Statement:** Where the browser supports the File System Access API, the browser app SHOULD let users open a local folder as a workspace.
+**Statement:** Where the browser supports the File System Access API, the browser app SHOULD let users open a local folder as a space.
 
 **Rationale / source:** Derived from the owner's "locally (browser only)" storage option.
 
 **Acceptance criteria:**
 
-- The add-workspace wizard offers "Local folder" only when `showDirectoryPicker` exists.
+- The add-space wizard offers "Local folder" only when `showDirectoryPicker` exists.
 - The folder is opened through `WebFsBackend`, and existing files are not modified until the user edits them (CLAUDE.md rule 11).
 
 **Current state:** stubbed. [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (`WebFsBackend`, line 62) exists with tests, but nothing in `packages/ui` or `packages/web` references it or `showDirectoryPicker`. The landing page shows a disabled "Local folder … coming soon" button ([LandingPage.tsx](../../../packages/ui/src/components/landing/LandingPage.tsx) lines 112-117). The "Local" option in [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) creates another IndexedDB space, not a folder.
 
 **Docs state:** documented-differently, stale. TASKS P2.7 ("Implement LocalFsBackend using File System Access API / Node fs") is checked, but [quick-start.md](../../content/getting-started/quick-start.md) (line 21) says "Local folder … (coming soon)". [platform-support.md](../../content/guides/platform-support.md) (lines 52-60) says web has File System Access support ("Chrome only"), which is not wired.
 
-**Gap:** Wire `WebFsBackend` into the wizard (see [03-workspaces-and-storage.md](03-workspaces-and-storage.md)).
+**Gap:** Wire `WebFsBackend` into the wizard (see [03-spaces-and-storage.md](03-spaces-and-storage.md)).
 
 ---
 
 ## 5. Conflicts & open questions
 
-These items need a decision from the owner.
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
-1. **Workspaces or spaces.** The owner's model is a workspace: a folder with up to 10 levels of nested workspaces, whose root is marked by `workspace.ya?ml`. The code's model is spaces stored inside one backend under `.cept/spaces/{id}/`, listed in `.cept/spaces.json`, and `BrowserFsBackend.initialize` writes `.cept/config.yaml` (browser-fs.ts, around line 150). Should the UI adopt the workspace model and its terms? (Decided in [03-workspaces-and-storage.md](03-workspaces-and-storage.md).)
-2. **Who syncs.** The owner says the service worker syncs. SPECIFICATION 8.3 gives the service worker only offline and install duties, and SPECIFICATION 6.5 defines a `SyncEngine` without naming the context that runs it (the guidelines suggest Web Workers for Git). Do we confirm that sync moves into the service worker (or a dedicated worker the service worker controls)? And what is the fallback on Safari and Firefox, which lack Background Sync?
+1. **Spaces terminology.** **Decided (D-1):** "space" is the canonical term; requirement IDs stay REQ-WS-NNN; protected code identifiers unchanged. The code already uses "space" in most places; remaining "workspace" references in `@cept/core` and SPECIFICATION are tracked in REQ-WS-022 and [03-spaces-and-storage.md](03-spaces-and-storage.md).
+2. **Who syncs.** **Decided (D-4+D-5):** Service worker = offline caching + queued-write flushing only (~30 s lifetime; no `RTCPeerConnection`). Live sync leadership runs in a SharedWorker (one per origin), falling back to a leader tab via Web Locks + BroadcastChannel. `SyncEngine` lives in `@cept/core`. Proposed refinement on SharedWorker fallback detail pending owner ack.
 3. **Demo storage.** The owner requires an in-memory demo. SPECIFICATION 5.10.7 and TASKS T0.12 say IndexedDB with `CEPT_DEMO_MODE`, and the code writes into the user's default space. Do we confirm `MemoryBackend` and drop demo writes to the default space?
-4. **Daemon and "client-only".** The README and SPECIFICATION describe Cept as client-only, while the owner wants the PWA to share a local daemon. Is the client-only framing retired?
-5. **Read-only docs form.** Should the docs be an in-app workspace (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
+4. **Daemon and "client-only".** **Decided (D-4):** Client-only framing retired; daemon is optional and additive. Browser app works alone. See Conflict 2 above for SW vs SharedWorker responsibilities.
+5. **Read-only docs form.** Should the docs be an in-app space (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
 6. **CORS proxy.** Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
 7. **Deploy cadence.** Production deploys only on `v*` tags. Should `main` deploy continuously to `/cept/app/`?
 8. **Stale task checkboxes.** TASKS T7.3, T0.12, T6.5, T5.8 and P2.7 are checked even though the work is broken, missing or not wired. Uncheck them, or move them to continuation tasks?
@@ -583,41 +585,41 @@ These items need a decision from the owner.
 
 ## 6. Stale documentation to fix
 
-| Location | Claim | Reality |
-| --- | --- | --- |
-| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) lines 1-7 | "background sync for pending operations" | No `sync` handler exists |
-| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) line 151 (offline page) | "Your changes will sync when reconnected" | No sync exists |
-| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 11 | Stored using localStorage | IndexedDB through lightning-fs |
-| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 13 | `?demo` tries the demo without affecting data | Not implemented; the demo mutates the default space |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 12 | "Browser storage backend (localStorage) — Done" | It is IndexedDB |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 28 | "PWA service worker — Done" | Precache targets and icons return 404 in production |
-| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) lines 25-31 | Install as app; all features work offline; auto-update | Precache broken, icons missing, `start_url` is `/` |
-| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) line 8 | "Changes sync when you're back online" | No sync is wired (P5.4 and P5.10 open) |
-| [packages/ui/src/components/docs/docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) | "Bundled documentation content from docs/content/" | Copied by hand and drifted (e.g. `MD_ROADMAP`) |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 5.10.7 and 9.1.1 | `CEPT_DEMO_MODE` flag | Not implemented; not set in preview-deploy.yml |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 8.3 | Deploy to `nsheaps.github.io/cept`; file `sw.ts` | The app is at `/cept/app/` and `/cept/pr-N/`; the file is `service-worker.ts` |
-| [CLAUDE.md](../../../CLAUDE.md) package table | `@cept/docs` is a Starlight/VitePress site | The build is an `echo` stub; `/cept/docs/` returns 404 |
-| [packages/web/public/manifest.json](../../../packages/web/public/manifest.json) | Describes the app as "backed by Git … Collaborative"; `start_url "/"`; icons under `/icons/` | Paths are wrong for `/cept/app/`, the icons are missing, and collaboration and sync are not wired |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) lines 48 and 109 | Deep linking "hash-based … Done", and also "Planned" | Path-based routing with a Pages 404 fallback |
-| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) lines 33-50 | Every platform shell wraps the same `@cept/ui` | Desktop and mobile do not import `@cept/ui` |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 9.1.1 | Preview builds with `nx run web:build` and `CEPT_DEMO_MODE` | The workflow runs `npx vite build` and sets no demo flag |
-| [TASKS.md](../../../TASKS.md) T0.12, T7.3, T5.8, T6.5, P2.7 | Checked complete | Not implemented, broken, or not wired |
+| Location                                                                                                    | Claim                                                                                        | Reality                                                                                           |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) lines 1-7                 | "background sync for pending operations"                                                     | No `sync` handler exists                                                                          |
+| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) line 151 (offline page)   | "Your changes will sync when reconnected"                                                    | No sync exists                                                                                    |
+| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 11         | Stored using localStorage                                                                    | IndexedDB through lightning-fs                                                                    |
+| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 13         | `?demo` tries the demo without affecting data                                                | Not implemented; the demo mutates the default space                                               |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 12                             | "Browser storage backend (localStorage) — Done"                                              | It is IndexedDB                                                                                   |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 28                             | "PWA service worker — Done"                                                                  | Precache targets and icons return 404 in production                                               |
+| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) lines 25-31             | Install as app; all features work offline; auto-update                                       | Precache broken, icons missing, `start_url` is `/`                                                |
+| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) line 8        | "Changes sync when you're back online"                                                       | No sync is wired (P5.4 and P5.10 open)                                                            |
+| [packages/ui/src/components/docs/docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) | "Bundled documentation content from docs/content/"                                           | Copied by hand and drifted (e.g. `MD_ROADMAP`)                                                    |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 5.10.7 and 9.1.1                                            | `CEPT_DEMO_MODE` flag                                                                        | Not implemented; not set in preview-deploy.yml                                                    |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 8.3                                                         | Deploy to `nsheaps.github.io/cept`; file `sw.ts`                                             | The app is at `/cept/app/` and `/cept/pr-N/`; the file is `service-worker.ts`                     |
+| [CLAUDE.md](../../../CLAUDE.md) package table                                                               | `@cept/docs` is a Starlight/VitePress site                                                   | The build is an `echo` stub; `/cept/docs/` returns 404                                            |
+| [packages/web/public/manifest.json](../../../packages/web/public/manifest.json)                             | Describes the app as "backed by Git … Collaborative"; `start_url "/"`; icons under `/icons/` | Paths are wrong for `/cept/app/`, the icons are missing, and collaboration and sync are not wired |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) lines 48 and 109                    | Deep linking "hash-based … Done", and also "Planned"                                         | Path-based routing with a Pages 404 fallback                                                      |
+| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) lines 33-50             | Every platform shell wraps the same `@cept/ui`                                               | Desktop and mobile do not import `@cept/ui`                                                       |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) 9.1.1                                                       | Preview builds with `nx run web:build` and `CEPT_DEMO_MODE`                                  | The workflow runs `npx vite build` and sets no demo flag                                          |
+| [TASKS.md](../../../TASKS.md) T0.12, T7.3, T5.8, T6.5, P2.7                                                 | Checked complete                                                                             | Not implemented, broken, or not wired                                                             |
 
 ---
 
 ## 7. Cross-area dependencies
 
-| This requirement | Depends on / affects | Sibling spec |
-| --- | --- | --- |
-| REQ-WEB-010 (daemon sharing) | Daemon API, discovery, pairing, Private Network Access | [05-cli-and-daemon.md](05-cli-and-daemon.md) (REQ-CLI-*) |
-| REQ-WEB-012, REQ-WEB-023 | `MemoryBackend`, `WebFsBackend` wiring, workspace model, `workspace.ya?ml`, nesting | [03-workspaces-and-storage.md](03-workspaces-and-storage.md) (REQ-WS-*) |
-| REQ-WEB-003, REQ-WEB-007 | Worker-safe `GitBackend`/`SyncEngine`, auth tokens in a worker, the nsheaps/iac Cloudflare proxy in place of `cors.isomorphic-git.org` | [09-remotes-and-auth.md](09-remotes-and-auth.md) (REQ-AUTH-*) |
-| REQ-WEB-007 | Sync must coordinate with Yjs/CRDT reconciliation; presence components are not wired (P5.7, P5.9) | [04-collaboration.md](04-collaboration.md) (REQ-COL-*) |
-| REQ-WEB-001, REQ-WEB-017 | The static renderer reuses `@cept/ui` in read-only/static mode; a real docs static site | [02-static-rendering.md](02-static-rendering.md) (REQ-SSG-*) |
-| REQ-WEB-001 | The VS Code webview mounts `@cept/ui` and shares the daemon | [06-vscode-extension.md](06-vscode-extension.md) (REQ-VSC-*) |
-| REQ-WEB-001 | Desktop and mobile shells mount `@cept/ui` | [07-native-apps.md](07-native-apps.md) (REQ-APP-*) |
-| REQ-WEB-001 | Editor features live inside `@cept/ui` | [08-editor.md](08-editor.md) (REQ-EDT-*) |
-| REQ-WEB-002, REQ-WEB-015, REQ-WEB-022 | Module-boundary lint, Nx-scoped web build, a built-bundle e2e project in CI | [10-engineering-and-ci.md](10-engineering-and-ci.md) (REQ-ENG-*) |
+| This requirement                      | Depends on / affects                                                                                                                   | Sibling spec                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| REQ-WEB-010 (daemon sharing)          | Daemon API, discovery, pairing, Private Network Access                                                                                 | [05-cli-and-daemon.md](05-cli-and-daemon.md) (REQ-CLI-\*)         |
+| REQ-WEB-012, REQ-WEB-023              | `MemoryBackend`, `WebFsBackend` wiring, space model, `space.cept.ya?ml`, nesting                                                       | [03-spaces-and-storage.md](03-spaces-and-storage.md) (REQ-WS-\*)  |
+| REQ-WEB-003, REQ-WEB-007              | Worker-safe `GitBackend`/`SyncEngine`, auth tokens in a worker, the nsheaps/iac Cloudflare proxy in place of `cors.isomorphic-git.org` | [09-remotes-and-auth.md](09-remotes-and-auth.md) (REQ-AUTH-\*)    |
+| REQ-WEB-007                           | Sync must coordinate with Yjs/CRDT reconciliation; presence components are not wired (P5.7, P5.9)                                      | [04-collaboration.md](04-collaboration.md) (REQ-COL-\*)           |
+| REQ-WEB-001, REQ-WEB-017              | The static renderer reuses `@cept/ui` in read-only/static mode; a real docs static site                                                | [02-static-rendering.md](02-static-rendering.md) (REQ-SSG-\*)     |
+| REQ-WEB-001                           | The VS Code webview mounts `@cept/ui` and shares the daemon                                                                            | [06-vscode-extension.md](06-vscode-extension.md) (REQ-VSC-\*)     |
+| REQ-WEB-001                           | Desktop and mobile shells mount `@cept/ui`                                                                                             | [07-native-apps.md](07-native-apps.md) (REQ-APP-\*)               |
+| REQ-WEB-001                           | Editor features live inside `@cept/ui`                                                                                                 | [08-editor.md](08-editor.md) (REQ-EDT-\*)                         |
+| REQ-WEB-002, REQ-WEB-015, REQ-WEB-022 | Module-boundary lint, Nx-scoped web build, a built-bundle e2e project in CI                                                            | [10-engineering-and-ci.md](10-engineering-and-ci.md) (REQ-ENG-\*) |
 
 **Open PRs touching this area:**
 

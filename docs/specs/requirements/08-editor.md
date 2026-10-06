@@ -2,14 +2,14 @@
 
 **Status:** Draft, 2026-10-06
 
-This document sets out the requirements for Cept's editing experience: the WYSIWYG block editor, how page content is stored as Markdown (with GitHub Flavored Markdown, footnotes, fenced-code "annotation" plugins such as ```` ```mermaid ````, and an HTML fallback), the database engine and its views, and the Obsidian-style knowledge graph built from crosslinks between files. Each requirement is checked against the current code, open PRs, `TASKS.md` and the published docs. The audit found that the base editor is real and working. Most of the richer features (databases, graph, mentions, wiki-links, live mermaid, math) exist only as unwired components or tested pure logic, while several docs present them as finished.
+This document sets out the requirements for Cept's editing experience: the WYSIWYG block editor, how page content is stored as Markdown (with GitHub Flavored Markdown, footnotes, fenced-code "annotation" plugins such as ` ```mermaid `, and an HTML fallback), the database engine and its views, and the Obsidian-style knowledge graph built from crosslinks between files. Each requirement is checked against the current code, open PRs, `TASKS.md` and the published docs. The audit found that the base editor is real and working. Most of the richer features (databases, graph, mentions, wiki-links, live mermaid, math) exist only as unwired components or tested pure logic, while several docs present them as finished.
 
 **Related:**
 
 - [Requirements index, architecture overview and traceability matrix](README.md)
 - [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md): the browser UI component that hosts the editor
 - [02-static-rendering.md](02-static-rendering.md): static rendering, which must reuse this area's block pipeline
-- [03-workspaces-and-storage.md](03-workspaces-and-storage.md): the StorageBackend that databases and the graph read through
+- [03-spaces-and-storage.md](03-spaces-and-storage.md): the StorageBackend that databases and the graph read through
 - [04-collaboration.md](04-collaboration.md): CRDT co-editing of editor documents and databases
 - [06-vscode-extension.md](06-vscode-extension.md): the VS Code extension, which embeds the same editor
 - [10-engineering-and-ci.md](10-engineering-and-ci.md): test and CI requirements
@@ -27,7 +27,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 
 **Non-goals (covered elsewhere)**
 
-- Storage backends, workspace roots and nesting: [03-workspaces-and-storage.md](03-workspaces-and-storage.md).
+- Storage backends, space roots and nesting: [03-spaces-and-storage.md](03-spaces-and-storage.md).
 - Real-time co-editing transport and CRDT sync: [04-collaboration.md](04-collaboration.md).
 - Static-site generation and publishing: [02-static-rendering.md](02-static-rendering.md). This document defines only the block pipeline that the static renderer must share.
 - Import and export formats (Notion, Obsidian, ZIP), except where they produce editor content.
@@ -35,33 +35,33 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 
 ## Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-EDT-001](#req-edt-001--fully-wysiwyg-block-editor-in-the-app) | Fully WYSIWYG block editor in the app | MUST | implemented | documented-as-desired | accurate |
-| [REQ-EDT-002](#req-edt-002--rich-custom-blocks-are-editable-in-wysiwyg-mode) | Rich custom blocks are editable in WYSIWYG mode | MUST | partial | documented-differently | stale |
-| [REQ-EDT-003](#req-edt-003--slash-menu-exposes-all-supported-blocks) | Slash menu exposes all supported blocks | MUST | partial | documented-as-desired | stale |
-| [REQ-EDT-004](#req-edt-004--inline-mentions-pagepersondate) | Inline mentions (@page/@person/@date) | SHOULD | stubbed | documented-as-desired | stale |
-| [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip) | Pages persist as Markdown with lossless WYSIWYG round-trip | MUST | divergent | documented-differently | stale |
-| [REQ-EDT-006](#req-edt-006--database-engine-crud-filter-sort-group-formula-relations-rollups) | Database engine (CRUD, filter, sort, group, formula, relations, rollups) | MUST | partial | documented-as-desired | stale |
-| [REQ-EDT-007](#req-edt-007--database-storage-in-multiple-formats) | Database storage in multiple formats | MUST | partial | documented-differently | n/a |
-| [REQ-EDT-008](#req-edt-008--database-views-rendered-from-real-data) | Database views rendered from real data | MUST | stubbed | documented-as-desired | stale |
-| [REQ-EDT-009](#req-edt-009--inline-and-linked-database-blocks-in-pages) | Inline and linked database blocks in pages | SHOULD | stubbed | documented-as-desired | stale |
-| [REQ-EDT-010](#req-edt-010--markdown-plugins-via-fenced-code-annotations) | Markdown plugins via fenced-code annotations | MUST | divergent | documented-as-desired | stale |
-| [REQ-EDT-011](#req-edt-011--fenced-annotation-blocks-serialize-back-to-fenced-code) | Fenced annotation blocks serialize back to fenced code | MUST | divergent | documented-differently | stale |
-| [REQ-EDT-012](#req-edt-012--math-rendering-block-and-inline) | Math rendering (block and inline) | SHOULD | partial | documented-as-desired | stale |
-| [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry) | Extensible annotation/plugin registry | SHOULD | not-started | documented-differently | n/a |
-| [REQ-EDT-014](#req-edt-014--github-flavored-markdown-core-syntax) | GitHub Flavored Markdown core syntax | MUST | partial | documented-as-desired | accurate |
-| [REQ-EDT-015](#req-edt-015--gfm-footnotes) | GFM footnotes | MUST | not-started | undocumented | n/a |
-| [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information) | Footnotes for repeated information | MUST | not-started | undocumented | n/a |
-| [REQ-EDT-017](#req-edt-017--wiki-link-crosslinks-between-files) | `[[wiki-link]]` crosslinks between files | MUST | not-started | documented-as-desired | stale |
-| [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-workspace-files) | Graph builder extracts crosslinks from workspace files | MUST | not-started | documented-as-desired | stale |
-| [REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app) | Browsable Obsidian-style graph view in the app | MUST | stubbed | documented-as-desired | stale |
-| [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model) | Single consistent graph data model | SHOULD | divergent | documented-differently | stale |
-| [REQ-EDT-021](#req-edt-021--backlinks-panel) | Backlinks panel | SHOULD | not-started | documented-as-desired | accurate |
-| [REQ-EDT-022](#req-edt-022--html-fallback-for-blocks-with-no-markdown-representation) | HTML fallback for blocks with no Markdown representation | MUST | partial | documented-as-desired | accurate |
-| [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss | MUST | partial | undocumented | n/a |
-| [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible) | Toggle block encoding is GFM-compatible | SHOULD | divergent | documented-differently | stale |
-| [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running) | Editor-area acceptance tests bound and running | MUST | partial | documented-as-desired | stale |
+| ID                                                                                               | Requirement                                                              | Priority | Impl status | Docs status            | Docs accurate |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-EDT-001](#req-edt-001--fully-wysiwyg-block-editor-in-the-app)                               | Fully WYSIWYG block editor in the app                                    | MUST     | implemented | documented-as-desired  | accurate      |
+| [REQ-EDT-002](#req-edt-002--rich-custom-blocks-are-editable-in-wysiwyg-mode)                     | Rich custom blocks are editable in WYSIWYG mode                          | MUST     | partial     | documented-differently | stale         |
+| [REQ-EDT-003](#req-edt-003--slash-menu-exposes-all-supported-blocks)                             | Slash menu exposes all supported blocks                                  | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-EDT-004](#req-edt-004--inline-mentions-pagepersondate)                                      | Inline mentions (@page/@person/@date)                                    | SHOULD   | stubbed     | documented-as-desired  | stale         |
+| [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)          | Pages persist as Markdown with lossless WYSIWYG round-trip               | MUST     | divergent   | documented-differently | stale         |
+| [REQ-EDT-006](#req-edt-006--database-engine-crud-filter-sort-group-formula-relations-rollups)    | Database engine (CRUD, filter, sort, group, formula, relations, rollups) | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-EDT-007](#req-edt-007--database-storage-in-multiple-formats)                                | Database storage in multiple formats                                     | MUST     | partial     | documented-differently | n/a           |
+| [REQ-EDT-008](#req-edt-008--database-views-rendered-from-real-data)                              | Database views rendered from real data                                   | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-EDT-009](#req-edt-009--inline-and-linked-database-blocks-in-pages)                          | Inline and linked database blocks in pages                               | SHOULD   | stubbed     | documented-as-desired  | stale         |
+| [REQ-EDT-010](#req-edt-010--markdown-plugins-via-fenced-code-annotations)                        | Markdown plugins via fenced-code annotations                             | MUST     | divergent   | documented-as-desired  | stale         |
+| [REQ-EDT-011](#req-edt-011--fenced-annotation-blocks-serialize-back-to-fenced-code)              | Fenced annotation blocks serialize back to fenced code                   | MUST     | divergent   | documented-differently | stale         |
+| [REQ-EDT-012](#req-edt-012--math-rendering-block-and-inline)                                     | Math rendering (block and inline)                                        | SHOULD   | partial     | documented-as-desired  | stale         |
+| [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)                                | Extensible annotation/plugin registry                                    | SHOULD   | not-started | documented-differently | n/a           |
+| [REQ-EDT-014](#req-edt-014--github-flavored-markdown-core-syntax)                                | GitHub Flavored Markdown core syntax                                     | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-EDT-015](#req-edt-015--gfm-footnotes)                                                       | GFM footnotes                                                            | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information)                                  | Footnotes for repeated information                                       | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-017](#req-edt-017--wiki-link-crosslinks-between-files)                                  | `[[wiki-link]]` crosslinks between files                                 | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)                  | Graph builder extracts crosslinks from space files                       | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app)                      | Browsable Obsidian-style graph view in the app                           | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model)                                  | Single consistent graph data model                                       | SHOULD   | divergent   | documented-differently | stale         |
+| [REQ-EDT-021](#req-edt-021--backlinks-panel)                                                     | Backlinks panel                                                          | SHOULD   | not-started | documented-as-desired  | accurate      |
+| [REQ-EDT-022](#req-edt-022--html-fallback-for-blocks-with-no-markdown-representation)            | HTML fallback for blocks with no Markdown representation                 | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | partial     | undocumented           | n/a           |
+| [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | divergent   | documented-differently | stale         |
+| [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running)                      | Editor-area acceptance tests bound and running                           | MUST     | partial     | documented-as-desired  | stale         |
 
 Priority is MUST for items the owner named directly and for their direct prerequisites. Derived refinements are SHOULD.
 
@@ -71,7 +71,7 @@ Priority is MUST for items the owner named directly and for their direct prerequ
 
 ```mermaid
 flowchart TD
-    MD["Workspace .md files (GFM + front matter)"] -->|load| PARSE["Single canonical Markdown parser/serializer"]
+    MD["Space .md files (GFM + front matter)"] -->|load| PARSE["Single canonical Markdown parser/serializer"]
     PARSE --> REG["Annotation registry (mermaid, math, ...)"]
     PARSE --> FB["HTML fallback (data-type elements)"]
     PARSE --> RAW["Raw passthrough for unknown syntax"]
@@ -98,7 +98,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    MD["Workspace .md files"] -->|load| TM["tiptap-markdown 0.9 (html: true)"]
+    MD["Space .md files"] -->|load| TM["tiptap-markdown 0.9 (html: true)"]
     TM --> PM["ProseMirror document"]
     PM --> ED["CeptEditor (no NodeViews)"]
     ED -->|"getMarkdown()"| TM
@@ -185,7 +185,7 @@ flowchart TD
 
 - Typing `@` opens a suggestion list of pages, people and dates.
 - An inserted mention survives save and reload, using a documented Markdown encoding.
-- Page mentions appear as edges in the graph ([REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-workspace-files)) and in backlinks.
+- Page mentions appear as edges in the graph ([REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)) and in backlinks.
 
 **Current state:** stubbed. [mention.ts](../../../packages/ui/src/components/editor/extensions/mention.ts) defines PageMention, PersonMention and DateMention with unit tests, but `CeptEditor.tsx` does not register them. The core [parser.ts](../../../packages/core/src/markdown/parser.ts) handles `<!-- cept:mention -->` comments, but that parser is not wired into the app.
 
@@ -217,7 +217,7 @@ flowchart TD
 
 ### REQ-EDT-006 — Database engine (CRUD, filter, sort, group, formula, relations, rollups)
 
-**Statement:** Cept MUST provide a database engine for databases stored in the workspace. It supports schema CRUD, row CRUD, filter, sort, group-by, formulas, relations and rollups.
+**Statement:** Cept MUST provide a database engine for databases stored in the space. It supports schema CRUD, row CRUD, filter, sort, group-by, formulas, relations and rollups.
 
 **Source:** handler ("Database support").
 
@@ -299,24 +299,24 @@ flowchart TD
 
 ### REQ-EDT-010 — Markdown plugins via fenced-code annotations
 
-**Statement:** A fenced code block whose info string names a registered renderer (for example ```` ```mermaid ```` or ```` ```math ````) MUST be parsed into the matching rich block on load and rendered live. Unknown info strings MUST remain ordinary syntax-highlighted code blocks.
+**Statement:** A fenced code block whose info string names a registered renderer (for example ` ```mermaid ` or ` ```math `) MUST be parsed into the matching rich block on load and rendered live. Unknown info strings MUST remain ordinary syntax-highlighted code blocks.
 
-**Source:** handler ("markdown plugins via ```` ```mermaid ```` sort of annotations").
+**Source:** handler ("markdown plugins via ` ```mermaid ` sort of annotations").
 
 **Acceptance criteria**
 
-- Loading a file that contains a ```` ```mermaid ```` fence shows a rendered diagram (an SVG is present in the DOM).
-- Loading ```` ```math ```` shows KaTeX output.
-- A fence such as ```` ```python ```` stays a highlighted code block.
+- Loading a file that contains a ` ```mermaid ` fence shows a rendered diagram (an SVG is present in the DOM).
+- Loading ` ```math ` shows KaTeX output.
+- A fence such as ` ```python ` stays a highlighted code block.
 - E2E tests load these blocks from Markdown, not only through slash insertion.
 
-**Current state:** divergent. [mermaid.ts](../../../packages/ui/src/components/editor/extensions/mermaid.ts) parses only `div[data-type="mermaid"]` (lines 116-122), so a loaded fence becomes a CodeBlockLowlight node. The `mermaid` package is a root dependency in [package.json](../../../package.json) but is never imported, and the preview div is empty (lines 124-136). The unused core parser does map ```` ```mermaid ```` to a mermaid block. Nothing handles ```` ```math ````.
+**Current state:** divergent. [mermaid.ts](../../../packages/ui/src/components/editor/extensions/mermaid.ts) parses only `div[data-type="mermaid"]` (lines 116-122), so a loaded fence becomes a CodeBlockLowlight node. The `mermaid` package is a root dependency in [package.json](../../../package.json) but is never imported, and the preview div is empty (lines 124-136). The unused core parser does map ` ```mermaid ` to a mermaid block. Nothing handles ` ```math `.
 
 **Docs:** documented-as-desired but stale. [markdown-extensions.md](../../content/guides/markdown-extensions.md) says mermaid uses fenced blocks, which is not true on load. TASKS T2.11 and [README.md](../../../README.md) line 25 claim live preview, 20+ diagram types and SVG/PNG export.
 
 **Gap:** Add a parse hook that maps `pre > code.language-<x>` to registered annotation nodes, integrate `mermaid.render()` and KaTeX, and add load-from-Markdown E2E tests.
 
-**Related:** TASKS T2.11 (claimed done), P7.7b, P7.7c. [PR #67](https://github.com/nsheaps/cept/pull/67) adds `docs-loader.ts`, which clones `docs/content/` into a real docs space, so Markdown docs with ```` ```mermaid ```` fences (for example `markdown-extensions.md` line 51) will load through this path and show as plain code blocks until this requirement is met.
+**Related:** TASKS T2.11 (claimed done), P7.7b, P7.7c. [PR #67](https://github.com/nsheaps/cept/pull/67) adds `docs-loader.ts`, which clones `docs/content/` into a real docs space, so Markdown docs with ` ```mermaid ` fences (for example `markdown-extensions.md` line 51) will load through this path and show as plain code blocks until this requirement is met.
 
 ### REQ-EDT-011 — Fenced annotation blocks serialize back to fenced code
 
@@ -326,7 +326,7 @@ flowchart TD
 
 **Acceptance criteria**
 
-- Loading a ```` ```mermaid ```` fence and saving it without edits produces an identical fence.
+- Loading a ` ```mermaid ` fence and saving it without edits produces an identical fence.
 - No `data-type` HTML is emitted for annotation blocks.
 
 **Current state:** divergent. Only [toggle.ts](../../../packages/ui/src/components/editor/extensions/toggle.ts) (line 121) and [image.ts](../../../packages/ui/src/components/editor/extensions/image.ts) (line 126) define Markdown serializers. With `html: true`, tiptap-markdown most likely emits `<div data-type="mermaid" ...>` for mermaid and math. This is inferred from library behaviour and was not verified at runtime because `node_modules` is absent. The core parser instead wraps the fence in a `cept:block` comment.
@@ -339,7 +339,7 @@ flowchart TD
 
 ### REQ-EDT-012 — Math rendering (block and inline)
 
-**Statement:** Math SHOULD render via KaTeX in the editor, and Markdown SHOULD accept `$$...$$`, `$...$` and/or ```` ```math ```` in both directions (load and save).
+**Statement:** Math SHOULD render via KaTeX in the editor, and Markdown SHOULD accept `$$...$$`, `$...$` and/or ` ```math ` in both directions (load and save).
 
 **Source:** derived (an annotation plugin example); [SPECIFICATION.md](../../SPECIFICATION.md) §5.1.
 
@@ -359,7 +359,7 @@ flowchart TD
 
 ### REQ-EDT-013 — Extensible annotation/plugin registry
 
-**Statement:** Annotation renderers SHOULD be registered through a plugin registry, so new ```` ```<lang> ```` renderers can be added without modifying core editor code.
+**Statement:** Annotation renderers SHOULD be registered through a plugin registry, so new ` ```<lang> ` renderers can be added without modifying core editor code.
 
 **Source:** derived from the handler's "markdown plugins".
 
@@ -438,7 +438,7 @@ flowchart TD
 
 ### REQ-EDT-017 — `[[wiki-link]]` crosslinks between files
 
-**Statement:** The editor MUST support `[[Page]]` and `[[path|alias]]` crosslinks. Typing `[[` offers autocomplete; links render as navigable links, persist in Markdown, and resolve to workspace files.
+**Statement:** The editor MUST support `[[Page]]` and `[[path|alias]]` crosslinks. Typing `[[` offers autocomplete; links render as navigable links, persist in Markdown, and resolve to space files.
 
 **Source:** derived. It is a prerequisite for "graph with crosslinks of files ... like obsidian".
 
@@ -447,7 +447,7 @@ flowchart TD
 - Typing `[[` offers page suggestions, and the chosen link navigates on click.
 - Unresolved targets are visibly marked, and creating the target page resolves them.
 - Wiki-links from imported Obsidian and Notion content render as links.
-- Resolution rules across nested workspace roots are defined ([03-workspaces-and-storage.md](03-workspaces-and-storage.md#req-ws-005--nested-workspaces-inside-a-parent-workspace)).
+- Resolution rules across nested space roots are defined ([03-spaces-and-storage.md](03-spaces-and-storage.md#req-ws-005--nested-spaces-inside-a-parent-space-deferred)).
 
 **Current state:** not-started. Neither `packages/ui/src` nor `core/src/markdown` handles `[[`. The importers emit `[[...]]` ([obsidian-importer.ts](../../../packages/core/src/importers/obsidian-importer.ts) lines 152-176, [notion-importer.ts](../../../packages/core/src/importers/notion-importer.ts) lines 147-153), and [exporter.ts](../../../packages/core/src/exporters/exporter.ts) line 75 converts them back. Imported pages therefore show wiki-links as plain text.
 
@@ -457,17 +457,17 @@ flowchart TD
 
 **Related:** TASKS P4.4.
 
-### REQ-EDT-018 — Graph builder extracts crosslinks from workspace files
+### REQ-EDT-018 — Graph builder extracts crosslinks from space files
 
-**Statement:** A graph builder MUST scan all workspace pages and extract edges from Markdown links, wiki-links, mentions, database relations and shared tags. It MUST include unresolved targets and produce `GraphData`.
+**Statement:** A graph builder MUST scan all space pages and extract edges from Markdown links, wiki-links, mentions, database relations and shared tags. It MUST include unresolved targets and produce `GraphData`.
 
 **Source:** handler ("graph with crosslinks of files").
 
 **Acceptance criteria**
 
-- Given a fixture workspace, the builder returns the expected nodes and edges for each link kind, including unresolved nodes.
+- Given a fixture space, the builder returns the expected nodes and edges for each link kind, including unresolved nodes.
 - The builder reads through StorageBackend and updates incrementally when a page is saved.
-- It runs off the main thread for large workspaces (Web Worker), with a benchmark test.
+- It runs off the main thread for large spaces (Web Worker), with a benchmark test.
 
 **Current state:** not-started. [core/src/graph/index.ts](../../../packages/core/src/graph/index.ts) contains only types. [graph-types.ts](../../../packages/ui/src/components/knowledge-graph/graph-types.ts) line 31 `buildGraphData()` takes precomputed links. Nothing parses page content.
 
@@ -532,7 +532,7 @@ flowchart TD
 
 **Docs:** documented-as-desired and accurate. [roadmap.md](../../content/reference/roadmap.md) line 80 says "Planned". SPEC §5.8 item 4.
 
-**Gap:** Build the panel on top of [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-workspace-files).
+**Gap:** Build the panel on top of [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files).
 
 **Related:** TASKS P4.3.
 
@@ -614,7 +614,7 @@ flowchart TD
 
 ## Conflicts and open questions
 
-The owner needs to decide each of these:
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **Canonical block encoding.** [SPECIFICATION.md](../../SPECIFICATION.md) §4.2 and [CLAUDE.md](../../../CLAUDE.md) rule 9 require `<!-- cept:block {...} -->` comments. [markdown-extensions.md](../../content/guides/markdown-extensions.md) and [content-formatting.md](../../../.claude/rules/content-formatting.md) specify `data-type` HTML elements. The running editor emits `data-type` HTML, and the unused core parser emits comments. The handler's "Fallback to HTML" matches the docs and the running editor. **Proposal:** adopt GFM, then fenced annotations, then `data-type` HTML, and retire `cept:block` comments (keeping a reader for migration).
 2. **Mermaid and math encoding.** SPEC §5.9 says to wrap the fence in a `cept:block` comment. The docs say a plain fence. The code likely emits a `data-type` div and cannot parse a fence. The handler wants fence-style annotations.
@@ -624,7 +624,7 @@ The owner needs to decide each of these:
 6. **Database storage formats.** The handler requires multiple formats, but SPEC §4.3, [database-engine.md](../database-engine.md) and CLAUDE.md rule 10 mandate YAML only. Which formats are required (CSV, JSON, Markdown table, folder of pages)?
 7. **Property type count.** The docs say 18, and [models/index.ts](../../../packages/core/src/models/index.ts) defines 20 (adding files and location).
 8. **TASKS.md contradiction.** T2.9, T2.11, T3.9-T3.12 and T4.1-T4.12 are checked, while P3.1-P3.12 and P4.1-P4.6 show the same features are not wired. Should the earlier items be unchecked or annotated "component only"?
-9. **Workspace vs space.** The handler says "workspaces", while the UI and roadmap say "spaces". This decides whether the graph, database scope and wiki-link resolution are per workspace (including nested ones) or per space. See [REQ-WS-022](03-workspaces-and-storage.md#req-ws-022--consistent-terminology-workspace-vs-space).
+9. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; the graph, database scope and wiki-link resolution are all per space; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged. See [REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 10. **Footnote reuse vs synced blocks.** Should "repeated info" be covered only by footnotes, or also by synced/transcluded blocks?
 11. **Autolinks.** `autolink: false` is set in the editor. Is that intended, given GFM autolinks?
 12. **Docs rendering.** SPEC §11 describes `@cept/docs` as a Starlight/VitePress site, but [docs/package.json](../../package.json) only echoes. In-app docs render through `CeptEditor` (App.tsx line 1324), so the editor's limitations (`$$` math, mermaid fences) apply to the docs themselves.
@@ -653,13 +653,13 @@ These are the specific claims to fix, either by marking them "Planned/In progres
 
 ## Cross-area dependencies
 
-- **Workspaces and storage** ([03-workspaces-and-storage.md](03-workspaces-and-storage.md)): the database engine and graph builder read through StorageBackend per workspace ([REQ-WS-008](03-workspaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface)). Nested workspaces ([REQ-WS-005](03-workspaces-and-storage.md#req-ws-005--nested-workspaces-inside-a-parent-workspace), [REQ-WS-006](03-workspaces-and-storage.md#req-ws-006--nesting-depth-limit-of-10)) need defined graph and database scope, and wiki-link resolution across roots marked by `workspace.ya?ml` ([REQ-WS-002](03-workspaces-and-storage.md#req-ws-002--workspaceyaml--workspaceyml-marks-the-workspace-root)). Database files live under `.cept/` ([REQ-WS-018](03-workspaces-and-storage.md#req-ws-018--cept-metadata-directory-conventions)). Non-destructive open ([REQ-WS-019](03-workspaces-and-storage.md#req-ws-019--opening-an-existing-folder-is-non-destructive)) depends on [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip) and [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss).
+- **Spaces and storage** ([03-spaces-and-storage.md](03-spaces-and-storage.md)): the database engine and graph builder read through StorageBackend per space ([REQ-WS-008](03-spaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface)). Nested spaces ([REQ-WS-005](03-spaces-and-storage.md#req-ws-005--nested-spaces-inside-a-parent-space-deferred), [REQ-WS-006](03-spaces-and-storage.md#req-ws-006--nesting-depth-limit-deferred)) need defined graph and database scope, and wiki-link resolution across roots marked by `space.cept.ya?ml` ([REQ-WS-002](03-spaces-and-storage.md#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)). Database files live under `.cept/` ([REQ-WS-018](03-spaces-and-storage.md#req-ws-018--cept-metadata-directory-conventions)). Non-destructive open ([REQ-WS-019](03-spaces-and-storage.md#req-ws-019--opening-an-existing-folder-is-non-destructive)) depends on [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip) and [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss).
 - **Static rendering** ([02-static-rendering.md](02-static-rendering.md)): the static renderer must reuse this block and annotation pipeline ([REQ-SSG-003](02-static-rendering.md#req-ssg-003--full-block-fidelity-in-static-output), [REQ-SSG-004](02-static-rendering.md#req-ssg-004--static-rendering-shares-the-editors-rendering-pipeline)), including mermaid, KaTeX, footnotes, the HTML fallback and wiki-link resolution ([REQ-SSG-005](02-static-rendering.md#req-ssg-005--navigation-cross-links-and-deep-links-in-static-site)). Today [exporter.ts](../../../packages/core/src/exporters/exporter.ts) line 113 uses an ad-hoc regex `markdownToHtml` that handles none of them.
 - **Browser component and VS Code extension** ([01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-001--shared-browser-ui-component), [06-vscode-extension.md](06-vscode-extension.md)): both embed the same `CeptEditor` and serializer, so the decision in [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip) applies to both.
 - **Collaboration** ([04-collaboration.md](04-collaboration.md)): [database-sync.ts](../../../packages/core/src/crdt/database-sync.ts) imports the database engine ([REQ-COL-010](04-collaboration.md#req-col-010--real-time-sync-of-database-tableboard-changes)). CRDT text sync ([REQ-COL-002](04-collaboration.md#req-col-002--crdt-based-reconciliation-of-text-edits-yjs)) depends on the canonical ProseMirror schema and Markdown encoding chosen here.
 - **CLI** ([05-cli-and-daemon.md](05-cli-and-daemon.md)): the static render command needs the same parser and annotation registry ([REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)).
 - **Import/export:** the Notion and Obsidian importers emit `[[wiki-links]]` and raw CSV "databases" that the editor and engine cannot consume yet ([REQ-EDT-007](#req-edt-007--database-storage-in-multiple-formats), [REQ-EDT-017](#req-edt-017--wiki-link-crosslinks-between-files)). [PR #24](https://github.com/nsheaps/cept/pull/24) may interact.
-- **Docs and demo workspace** ([01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-012--demo-workspace-uses-in-memory-file-storage), [REQ-SSG-016](02-static-rendering.md#req-ssg-016--single-source-of-truth-for-docs-content)): in-app docs ([docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts)) and demo content (App.tsx lines 1559-1724) are authored in `data-type` HTML and rendered by `CeptEditor`, so any change to the encoding must migrate them.
+- **Docs and demo space** ([01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-012--demo-space-uses-in-memory-file-storage), [REQ-SSG-016](02-static-rendering.md#req-ssg-016--single-source-of-truth-for-docs-content)): in-app docs ([docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts)) and demo content (App.tsx lines 1559-1724) are authored in `data-type` HTML and rendered by `CeptEditor`, so any change to the encoding must migrate them.
 - **Remotes and auth** ([09-remotes-and-auth.md](09-remotes-and-auth.md)): no direct dependency. Remote spaces supply the pages that the graph indexes.
 - **Engineering and CI** ([10-engineering-and-ci.md](10-engineering-and-ci.md)): the Gherkin steps and E2E tests for [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running), and test scoping with `nx affected` across `ui` and `core`.
 - **Plugin SDK** (TASKS P7.7b, P7.7c): [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry) is the editor half of that work.

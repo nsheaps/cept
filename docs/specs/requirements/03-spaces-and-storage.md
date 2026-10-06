@@ -1,8 +1,8 @@
-# Requirements: Workspaces and storage backends
+# Requirements: Spaces and storage backends
 
 **Status:** Draft, 2026-10-06
 
-This document sets out what a Cept **workspace** is: a folder in some filesystem whose root holds a `workspace.yaml` or `workspace.yml` marker. It covers how workspaces nest (up to 10 levels deep) and which storage backends must be able to hold one: native app filesystem, browser-only storage, Git, Google Drive and SFTP. Every requirement is checked against the code in `packages/*`, the open PRs and issues on `nsheaps/cept`, and the current documentation. Each requirement records whether it is implemented, whether it is documented as desired, and whether that documentation is accurate.
+This document sets out what a Cept **space** is: a folder in some filesystem whose root holds a `space.cept.yaml` or `space.cept.yml` marker. It covers how spaces nest (up to 10 levels deep) and which storage backends must be able to hold one: native app filesystem, browser-only storage, Git, Google Drive and SFTP. Every requirement is checked against the code in `packages/*`, the open PRs and issues on `nsheaps/cept`, and the current documentation. Each requirement records whether it is implemented, whether it is documented as desired, and whether that documentation is accurate.
 
 **Related:**
 
@@ -23,8 +23,8 @@ This document sets out what a Cept **workspace** is: a folder in some filesystem
 
 **In scope**
 
-- What a workspace is on disk, and its root marker (`workspace.yaml` / `workspace.yml`) with that file's schema.
-- Nested workspaces and the depth limit.
+- What a space is on disk, and its root marker (`space.cept.yaml` / `space.cept.yml`) with that file's schema.
+- Nested spaces and the depth limit.
 - The `StorageBackend` abstraction, plus each backend the owner listed: local (app only), local (browser only), Git, Google Drive and SFTP.
 - The `.cept/` metadata layout, rules for opening an existing folder safely, switching backends, and terminology.
 
@@ -39,32 +39,32 @@ This document sets out what a Cept **workspace** is: a folder in some filesystem
 
 ## Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-WS-001](#req-ws-001--workspace-is-a-folder-in-a-filesystem) | Workspace is a folder in a filesystem; folder hierarchy mirrors page tree | MUST | divergent | documented-differently | stale |
-| [REQ-WS-002](#req-ws-002--workspaceyaml--workspaceyml-marks-the-workspace-root) | `workspace.yaml` / `workspace.yml` marks the workspace root | MUST | not-started | documented-differently | n/a |
-| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted) | Both `.yaml` and `.yml` accepted, with defined precedence | MUST | not-started | undocumented | n/a |
-| [REQ-WS-004](#req-ws-004--workspaceyaml-schema) | Versioned, documented `workspace.yaml` schema | MUST | not-started | documented-differently | stale |
-| [REQ-WS-005](#req-ws-005--nested-workspaces-inside-a-parent-workspace) | Nested workspaces inside a parent workspace | MUST | not-started | undocumented | n/a |
-| [REQ-WS-006](#req-ws-006--nesting-depth-limit-of-10) | Nesting supported up to 10 levels deep | MUST | not-started | undocumented | n/a |
-| [REQ-WS-007](#req-ws-007--per-workspace-backend-selection) | Each workspace bound to its own backend; several open at once | MUST | divergent | documented-differently | stale |
-| [REQ-WS-008](#req-ws-008--common-extensible-storagebackend-interface) | Common, extensible `StorageBackend`; capability-gated features | MUST | partial | documented-as-desired | stale |
-| [REQ-WS-009](#req-ws-009--local-app-only-native-filesystem-backend) | Local (app only) native filesystem backend | MUST | stubbed | documented-as-desired | stale |
-| [REQ-WS-010](#req-ws-010--native-fs-backend-detects-external-edits) | Native-fs backend detects external edits | MUST | stubbed | documented-as-desired | accurate |
-| [REQ-WS-011](#req-ws-011--local-browser-only-indexeddb-storage) | Local (browser only) IndexedDB storage | MUST | implemented | documented-as-desired | stale |
-| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API | SHOULD | stubbed | documented-differently | stale |
-| [REQ-WS-013](#req-ws-013--git-backed-workspace-cloneread-from-remote) | Git-backed workspace: clone and read | MUST | partial | documented-as-desired | stale |
-| [REQ-WS-014](#req-ws-014--git-backed-workspace-write-commit-pushpull-sync) | Git-backed workspace: write, commit, push/pull | MUST | stubbed | documented-as-desired | stale |
-| [REQ-WS-015](#req-ws-015--google-drive-backend) | Google Drive backend | MUST | not-started | undocumented | n/a |
-| [REQ-WS-016](#req-ws-016--sftp-backend) | SFTP backend, served through app or daemon | MUST | not-started | undocumented | n/a |
-| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform) | Backend availability matrix per platform; UI offers only available ones | SHOULD | partial | documented-differently | stale |
-| [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions) | Documented `.cept/` metadata layout | MUST | partial | documented-differently | stale |
-| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive) | Opening an existing folder is non-destructive | MUST | divergent | documented-as-desired | accurate |
-| [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path) | Backend upgrade/switch path | SHOULD | partial | documented-as-desired | accurate |
-| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder) | Detect `.git/` in an opened folder | SHOULD | not-started | documented-as-desired | accurate |
-| [REQ-WS-022](#req-ws-022--consistent-terminology-workspace-vs-space) | One term (workspace vs space) used everywhere | MUST | divergent | documented-differently | stale |
+| ID                                                                                          | Requirement                                                             | Priority | Impl status | Docs status            | Docs accurate |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-WS-001](#req-ws-001--space-is-a-folder-in-a-filesystem)                                | Space is a folder in a filesystem; folder hierarchy mirrors page tree   | MUST     | divergent   | documented-differently | stale         |
+| [REQ-WS-002](#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)                 | `space.cept.yaml` / `space.cept.yml` marks the space root               | MUST     | not-started | documented-differently | n/a           |
+| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted)                            | Both `.yaml` and `.yml` accepted, with defined precedence               | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-004](#req-ws-004--spaceceptyaml-schema)                                             | Versioned, documented `space.cept.yaml` schema                          | MUST     | not-started | documented-differently | stale         |
+| [REQ-WS-005](#req-ws-005--nested-spaces-inside-a-parent-space-deferred)                     | Nested spaces inside a parent space                                     | MAY      | deferred    | undocumented           | n/a           |
+| [REQ-WS-006](#req-ws-006--nesting-depth-limit-deferred)                                     | Nesting depth limit                                                     | MAY      | deferred    | undocumented           | n/a           |
+| [REQ-WS-007](#req-ws-007--per-space-backend-selection)                                      | Each space bound to its own backend; several open at once               | MUST     | divergent   | documented-differently | stale         |
+| [REQ-WS-008](#req-ws-008--common-extensible-storagebackend-interface)                       | Common, extensible `StorageBackend`; capability-gated features          | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WS-009](#req-ws-009--local-app-only-native-filesystem-backend)                         | Local (app only) native filesystem backend                              | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-WS-010](#req-ws-010--native-fs-backend-detects-external-edits)                         | Native-fs backend detects external edits                                | MUST     | stubbed     | documented-as-desired  | accurate      |
+| [REQ-WS-011](#req-ws-011--local-browser-only-indexeddb-storage)                             | Local (browser only) IndexedDB storage                                  | MUST     | implemented | documented-as-desired  | stale         |
+| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API             | SHOULD   | stubbed     | documented-differently | stale         |
+| [REQ-WS-013](#req-ws-013--git-backed-space-cloneread-from-remote)                           | Git-backed space: clone and read                                        | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WS-014](#req-ws-014--git-backed-space-write-commit-pushpull-sync)                      | Git-backed space: write, commit, push/pull                              | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-WS-015](#req-ws-015--google-drive-backend)                                             | Google Drive backend                                                    | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-016](#req-ws-016--sftp-backend)                                                     | SFTP backend, served through app or daemon                              | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones | SHOULD   | partial     | documented-differently | stale         |
+| [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                     | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | divergent   | documented-as-desired  | accurate      |
+| [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | not-started | documented-as-desired  | accurate      |
+| [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
 
-Status counts: 1 implemented, 5 partial, 4 stubbed, 8 not-started, 4 divergent (22 requirements).
+Status counts: 1 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (22 requirements).
 
 ## Architecture
 
@@ -79,8 +79,8 @@ flowchart TB
         CLI["CLI / sync daemon"]
     end
 
-    REG["Workspace registry (one entry per open workspace)"]
-    DISC["Root discovery: find workspace.yaml / workspace.yml (max depth 10)"]
+    REG["Space registry (one entry per open space)"]
+    DISC["Root discovery: find space.cept.yaml / space.cept.yml (max depth 10)"]
 
     WEB --> REG
     APP --> REG
@@ -118,12 +118,12 @@ Required on-disk model (illustrative):
 
 ```mermaid
 flowchart TB
-    R["acme/ (workspace.yaml) depth 1"]
+    R["acme/ (space.cept.yaml) depth 1"]
     R --> RP["engineering/ (folder page, index.md)"]
     RP --> RPP["roadmap.md"]
-    R --> C["handbook/ (workspace.yaml) nested, depth 2"]
+    R --> C["handbook/ (space.cept.yaml) nested, depth 2"]
     C --> CP["onboarding.md"]
-    C --> CC["team-notes/ (workspace.yaml) nested, depth 3, may use a different backend"]
+    C --> CC["team-notes/ (space.cept.yaml) nested, depth 3, may use a different backend"]
     R --> M[".cept/ (databases, assets, templates)"]
 ```
 
@@ -150,11 +150,11 @@ flowchart TB
 
 ## Requirements
 
-### REQ-WS-001 — Workspace is a folder in a filesystem
+### REQ-WS-001 — Space is a folder in a filesystem
 
-**Statement.** A workspace MUST be a directory tree in some backing filesystem. Its pages MUST be stored as files whose folder hierarchy matches the workspace page tree, so other tools can read and edit the folder.
+**Statement.** A space MUST be a directory tree in some backing filesystem. Its pages MUST be stored as files whose folder hierarchy matches the space page tree, so other tools can read and edit the folder.
 
-**Source.** Owner: "Workspaces being a folder in some file system".
+**Source.** Owner: "Spaces being a folder in some file system".
 
 **Acceptance criteria**
 
@@ -180,20 +180,23 @@ flowchart TB
 
 **Related:** [#62](https://github.com/nsheaps/cept/issues/62) (folder structure should reflect the sidenav), [#64](https://github.com/nsheaps/cept/issues/64) (page URL collisions), [#67](https://github.com/nsheaps/cept/pull/67), TASKS P2.4b.
 
-### REQ-WS-002 — workspace.yaml / workspace.yml marks the workspace root
+### REQ-WS-002 — space.cept.yaml / space.cept.yml marks the space root
 
-**Statement.** A directory MUST be treated as a workspace root if and only if it contains `workspace.yaml` or `workspace.yml`. Cept MUST find workspace roots by locating this file.
+**Statement.** A directory MUST be treated as a space root if and only if it contains `space.cept.yaml` or `space.cept.yml`. Cept MUST find space roots by locating this file.
 
-**Source.** Owner: "workspace.ya?ml defines workspace root".
+**Source.** Owner: "space.cept.ya?ml defines space root".
 
 **Acceptance criteria**
 
-- Opening a folder that contains `workspace.yaml` loads it as a workspace. Opening a folder without the marker offers to initialize one; it never silently creates it.
+- Opening a folder that contains `space.cept.yaml` loads it as a space. Opening a folder without the marker offers to initialize one; it never silently creates it.
 - Discovery is a core (`@cept/core`) function that works against any `StorageBackend`, with unit tests on the in-memory backend.
-- Creating a new workspace writes the marker file.
+- Creating a new space writes the marker file.
 - Any legacy config location (`.cept/config.yaml`) is migrated or read as a fallback, and this is documented.
+- A single Git repository (or any folder tree) may contain multiple spaces in different subfolders, each marked by its own `space.cept.yaml`. Opening the repo or parent folder discovers and lists all spaces found; none is treated as the unique root.
+- A space is addressed by (backend location, path-within-backend). Two spaces at different subfolder paths within the same backend are independent.
+- Discovery does not descend into a subfolder that is itself a space root (nested spaces are reported as a warning; see REQ-WS-005). **Open question:** whether per-folder `.cept.yaml` (PR #67) should be in scope; D-3 defers nesting, so the per-folder override is out of scope for now — record as open question 13 below.
 
-**Current state: not-started.** A grep of `packages/`, `docs/`, `features/`, `e2e/` and `README.md` finds no `workspace.yaml` or `workspace.yml`. The nearest artifacts are:
+**Current state: not-started.** A grep of `packages/`, `docs/`, `features/`, `e2e/` and `README.md` finds no `space.cept.yaml` or `space.cept.yml`. The nearest artifacts are:
 
 - `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
 - A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, open, non-draft PR #67; not on `main`).
@@ -201,7 +204,7 @@ flowchart TB
 
 **Docs state: documented-differently, n/a.**
 
-- SPECIFICATION.md §4.6 and Appendix F define workspace settings in `.cept/config.yaml`.
+- SPECIFICATION.md §4.6 and Appendix F define space settings in `.cept/config.yaml`.
 - §5.10.4 Flow 2 loads a folder "containing `.cept/` config".
 - Issue #58 proposes `.cept/space-config.json`, and issue #62 proposes `.cept.yaml`.
 
@@ -211,7 +214,7 @@ flowchart TB
 
 ### REQ-WS-003 — Both .yaml and .yml extensions accepted
 
-**Statement.** Workspace root detection MUST accept both `workspace.yaml` and `workspace.yml`. If both exist in the same directory, Cept MUST apply a documented precedence or report an error.
+**Statement.** Space root detection MUST accept both `space.cept.yaml` and `space.cept.yml`. If both exist in the same directory, Cept MUST apply a documented precedence or report an error.
 
 **Source.** Owner (`ya?ml`).
 
@@ -228,17 +231,25 @@ flowchart TB
 
 **Related:** none.
 
-### REQ-WS-004 — workspace.yaml schema
+### REQ-WS-004 — space.cept.yaml schema
 
-**Statement.** `workspace.yaml` MUST have a versioned, documented schema that covers at least name, icon, default page and storage/remote configuration. It SHOULD also cover per-folder options such as hide lists.
+**Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements.
 
-**Source.** Derived, to make REQ-WS-002 concrete.
+**Source.** Derived from REQ-WS-002 and D-3 (owner direction: schema starts minimal).
+
+**Canonical example:**
+
+```yaml
+version: '1'
+name: My Engineering Notes
+slug: engineering-notes
+```
 
 **Acceptance criteria**
 
-- The schema is published (JSON Schema or Zod) with a `version` field.
-- The parser and serializer use a real YAML library, and a test round-trips names that contain `:`, `#` and quotes.
-- Unknown keys are preserved on write.
+- The schema is published (JSON Schema or Zod) with the three required fields above; unknown keys are preserved on write.
+- `slug` is validated: must match `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` or be a single character `[a-z0-9]`; duplicate slugs within a listing are an error.
+- The parser and serializer use a real YAML library (`js-yaml`), and a test round-trips names that contain `:`, `#` and quotes.
 - A reference page exists under `docs/content/reference/`.
 
 **Current state: not-started.** The closest analog is the TS type `WorkspaceConfig {name, icon?, defaultPage?}` in [packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) (lines ~40-44). It is serialized flat in camelCase by hand-built string templates without escaping (local-fs.ts ~161) and never read back, even though `js-yaml` is already a root dependency ([package.json](../../../package.json) line 90) used by the markdown parser and database engine.
@@ -249,30 +260,34 @@ flowchart TB
 
 **Related:** [#58](https://github.com/nsheaps/cept/issues/58).
 
-### REQ-WS-005 — Nested workspaces inside a parent workspace
+### REQ-WS-005 — Nested spaces inside a parent space (deferred)
 
-**Statement.** A workspace MAY contain child workspaces, meaning any subdirectory with its own `workspace.yaml`. The parent MUST show each child as a navigable subtree, and the child keeps its own configuration.
+> **Status: deferred (D-3).** This requirement is deferred until the core space-on-disk model (REQ-WS-001/002/004) is stable. Discovery does not descend into a found space; a nested marker is reported as a warning. See open question 13 for per-folder `.cept.yaml`.
 
-**Source.** Owner: "support for nested workspaces in a parent workspace".
+**Statement.** A space MAY contain child spaces, meaning any subdirectory with its own `space.cept.yaml`. The parent MUST show each child as a navigable subtree, and the child keeps its own configuration.
+
+**Source.** Owner: "support for nested spaces in a parent space".
 
 **Acceptance criteria**
 
-- Discovery returns a tree of workspace roots, and the sidebar shows each child workspace as a distinct, labelled subtree.
-- A child's `workspace.yaml` settings (name, icon, default page, hide list) apply inside the child and do not leak into the parent.
-- The spec defines how links, search, graph and databases resolve across workspace boundaries, and tests cover a parent-to-child link.
-- Opening a child workspace on its own, without its parent, works.
+- Discovery returns a tree of space roots, and the sidebar shows each child space as a distinct, labelled subtree.
+- A child's `space.cept.yaml` settings (name, icon, default page, hide list) apply inside the child and do not leak into the parent.
+- The spec defines how links, search, graph and databases resolve across space boundaries, and tests cover a parent-to-child link.
+- Opening a child space on its own, without its parent, works.
 
 **Current state: not-started.** Spaces are a flat sibling list in `.cept/spaces.json` (`SpacesManifest` in SpaceManager.ts), and `SpaceMeta` has no parent or child relation. The closest concept is `subPath` on remote git spaces (SpaceManager.ts ~lines 20-21, plus the longest-prefix `resolveRouteToSpace` in PR #67). That scopes one space to a repo subfolder; it is not nesting.
 
-**Docs state: undocumented, n/a.** "Nested infinitely" in SPECIFICATION.md §5.2 refers to pages, not workspaces.
+**Docs state: undocumented, n/a.** "Nested infinitely" in SPECIFICATION.md §5.2 refers to pages, not spaces.
 
 **Gap.** Design mount semantics, cross-boundary resolution, and whether a child may use another backend (REQ-WS-007).
 
 **Related:** [#46](https://github.com/nsheaps/cept/issues/46) (all-spaces view toggle), [#58](https://github.com/nsheaps/cept/issues/58).
 
-### REQ-WS-006 — Nesting depth limit of 10
+### REQ-WS-006 — Nesting depth limit (deferred)
 
-**Statement.** Workspace nesting MUST be supported to a depth of 10, with the root counted as level 1 (to be confirmed). Discovery MUST stop at the limit and MUST tell the user about deeper markers rather than load or skip them silently.
+> **Status: deferred (D-3).** Depends on REQ-WS-005 which is deferred.
+
+**Statement.** Space nesting MUST be supported to a depth of 10, with the root counted as level 1 (to be confirmed). Discovery MUST stop at the limit and MUST tell the user about deeper markers rather than load or skip them silently.
 
 **Source.** Owner: "up to 10 deep".
 
@@ -290,16 +305,16 @@ flowchart TB
 
 **Related:** none.
 
-### REQ-WS-007 — Per-workspace backend selection
+### REQ-WS-007 — Per-space backend selection
 
-**Statement.** Each workspace, nested ones included, MUST be bound to its own storage backend instance. Several workspaces on different backends MUST be able to be open at the same time.
+**Statement.** Each space, nested ones included, MUST be bound to its own storage backend instance. Several spaces on different backends MUST be able to be open at the same time.
 
 **Source.** Derived from REQ-WS-005 and the owner's backend list.
 
 **Acceptance criteria**
 
-- A workspace registry maps workspace id to a backend instance, and a backend factory takes a type id plus config.
-- An E2E test opens an IndexedDB workspace and a second workspace on a different backend in the same session.
+- A space registry maps space id to a backend instance, and a backend factory takes a type id plus config.
+- An E2E test opens an IndexedDB space and a second space on a different backend in the same session.
 - `@cept/ui` contains no `instanceof <ConcreteBackend>` checks.
 
 **Current state: divergent.**
@@ -308,7 +323,7 @@ flowchart TB
 - Every space, cloned git spaces included, is stored inside that single IndexedDB database. git-space.ts clones into `/.cept/git-clones/<ts>` on the same backend.
 - App.tsx checks `backend instanceof BrowserFsBackend` (~lines 342 and 956), and git spaces fall back to an empty local space on any other backend.
 
-**Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "Every workspace is backed by a StorageBackend. The user chooses their backend when creating or opening a workspace", which implies one backend per workspace. The app does not behave this way.
+**Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "Every workspace is backed by a StorageBackend. The user chooses their backend when creating or opening a workspace", which implies one backend per space. The app does not behave this way.
 
 **Gap.** Registry plus factories, and removal of the concrete-class checks.
 
@@ -342,7 +357,7 @@ flowchart TB
 
 ### REQ-WS-009 — Local (app-only) native filesystem backend
 
-**Statement.** Packaged desktop and mobile apps MUST be able to open a folder on the native filesystem as a workspace and read and write plain files in place.
+**Statement.** Packaged desktop and mobile apps MUST be able to open a folder on the native filesystem as a space and read and write plain files in place.
 
 **Source.** Owner: "stored locally (app only)".
 
@@ -381,7 +396,7 @@ flowchart TB
 
 - Modifying an open page's file externally updates the editor within a bounded time, or prompts the user when there are unsaved local edits.
 - External create, delete and rename show up in the page tree.
-- Browser File System Access workspaces use polling where native watch is not available.
+- Browser File System Access spaces use polling where native watch is not available.
 
 **Current state: stubbed.** `LocalFsBackend.watch` uses Node `fs.watch` and reports `watchForExternalChanges: true`, but the backend is not wired in. A grep found no UI subscription to `watch()` (not verified beyond grep). `WebFsBackend` reports `watchForExternalChanges: false` (web-fs.ts ~line 28).
 
@@ -393,7 +408,7 @@ flowchart TB
 
 ### REQ-WS-011 — Local (browser-only) IndexedDB storage
 
-**Statement.** In the browser, a workspace MUST be able to live entirely in browser storage (IndexedDB) with zero setup and persist across reloads.
+**Statement.** In the browser, a space MUST be able to live entirely in browser storage (IndexedDB) with zero setup and persist across reloads.
 
 **Source.** Owner: "locally (browser only)".
 
@@ -416,7 +431,7 @@ flowchart TB
 
 ### REQ-WS-012 — Local (browser-only) real-folder access via File System Access API
 
-**Statement.** Where the browser supports it, the user SHOULD be able to open a real folder from the web app or PWA as a workspace through the File System Access API. Permission for the handle MUST persist between visits, subject to the browser's re-prompt rules.
+**Statement.** Where the browser supports it, the user SHOULD be able to open a real folder from the web app or PWA as a space through the File System Access API. Permission for the handle MUST persist between visits, subject to the browser's re-prompt rules.
 
 **Source.** Owner ("locally (browser only)", interpreted as also covering real folders from the browser). See open questions.
 
@@ -430,24 +445,24 @@ flowchart TB
 
 **Current state: stubbed.** `WebFsBackend` and `pickDirectory`, `persistDirectoryHandle` and `loadDirectoryHandle` exist with tests in [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) and are exported from [packages/core/src/storage/index.ts](../../../packages/core/src/storage/index.ts) (~line 24). Nothing in `packages/ui` or `packages/web` calls them.
 
-**Docs state: documented-differently, stale.** [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 57 lists Local Folder on Web as "No*", while roadmap.md line 40 says it is done. No doc separates the IndexedDB case from the real-folder case.
+**Docs state: documented-differently, stale.** [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 57 lists Local Folder on Web as "No\*", while roadmap.md line 40 says it is done. No doc separates the IndexedDB case from the real-folder case.
 
-**Gap.** UI entry points (landing page and Add Space wizard), a distinct type id, docs and tests. See also [REQ-WEB-023 in 01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-workspaces).
+**Gap.** UI entry points (landing page and Add Space wizard), a distinct type id, docs and tests. See also [REQ-WEB-023 in 01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-spaces).
 
 **Related:** TASKS P2.7.
 
-### REQ-WS-013 — Git-backed workspace: clone/read from remote
+### REQ-WS-013 — Git-backed space: clone/read from remote
 
-**Statement.** A workspace MUST be able to be backed by a Git repository (any URL, optional branch and subpath), cloned and readable in both browser and app.
+**Statement.** A space MUST be able to be backed by a Git repository (any URL, optional branch and subpath), cloned and readable in both browser and app.
 
 **Source.** Owner: "git".
 
 **Acceptance criteria**
 
-- Adding a repo URL (`repo@branch[::subPath]` or a structured form) creates a workspace backed by a persistent `GitBackend`, not a copied snapshot.
+- Adding a repo URL (`repo@branch[::subPath]` or a structured form) creates a space backed by a persistent `GitBackend`, not a copied snapshot.
 - Re-sync uses `fetch` incrementally. No new clone directory is created per sync, and stale clones are cleaned up.
 - CORS goes through the project-owned proxy (see [09-remotes-and-auth.md](09-remotes-and-auth.md)), not `cors.isomorphic-git.org`.
-- The repo's `workspace.yaml` is honoured, and nested workspaces in the repo are discovered.
+- The repo's `space.cept.yaml` is honoured, and nested spaces in the repo are discovered.
 - The user docs describe remote spaces and the URL format.
 
 **Current state: partial.**
@@ -464,13 +479,13 @@ flowchart TB
 - features.md line 114 says Git is "Coming soon", which understates the read-only remote spaces that already ship.
 - No doc covers the read-only behaviour.
 
-**Gap.** Back the workspace with a real `GitBackend`, sync incrementally, use the owned proxy, and document it.
+**Gap.** Back the space with a real `GitBackend`, sync incrementally, use the owned proxy, and document it.
 
 **Related:** [#67](https://github.com/nsheaps/cept/pull/67), [#66](https://github.com/nsheaps/cept/issues/66), [#68](https://github.com/nsheaps/cept/issues/68), [#65](https://github.com/nsheaps/cept/issues/65), [#64](https://github.com/nsheaps/cept/issues/64), [#62](https://github.com/nsheaps/cept/issues/62), [#60](https://github.com/nsheaps/cept/issues/60), [#57](https://github.com/nsheaps/cept/issues/57), [#41](https://github.com/nsheaps/cept/issues/41), [#48](https://github.com/nsheaps/cept/issues/48).
 
-### REQ-WS-014 — Git-backed workspace: write, commit, push/pull sync
+### REQ-WS-014 — Git-backed space: write, commit, push/pull sync
 
-**Statement.** Edits in a Git-backed workspace MUST be committed and synced (push/pull) to the remote, by the app, the service worker or the sync daemon.
+**Statement.** Edits in a Git-backed space MUST be committed and synced (push/pull) to the remote, by the app, the service worker or the sync daemon.
 
 **Source.** Owner: "git", together with "a daemon that runs to sync changes to the remotes".
 
@@ -495,7 +510,7 @@ flowchart TB
 
 ### REQ-WS-015 — Google Drive backend
 
-**Statement.** A workspace MUST be able to be stored in a Google Drive folder, using Google sign-in, under the same `StorageBackend` contract.
+**Statement.** A space MUST be able to be stored in a Google Drive folder, using Google sign-in, under the same `StorageBackend` contract.
 
 **Source.** Owner: "gdrive".
 
@@ -503,7 +518,7 @@ flowchart TB
 
 - `GDriveBackend` passes the shared backend contract test suite against a mocked Drive API.
 - The spec documents path-to-fileId mapping, rename and move semantics, change detection (polling or push notifications), conflict handling and minimum OAuth scopes (prefer `drive.file`).
-- A folder in Drive containing `workspace.yaml` opens as a workspace.
+- A folder in Drive containing `space.cept.yaml` opens as a space.
 
 **Current state: not-started.** There is no Drive code in `packages/`, and SPECIFICATION.md §7.3 has no `google` auth type.
 
@@ -515,14 +530,14 @@ flowchart TB
 
 ### REQ-WS-016 — SFTP backend
 
-**Statement.** A workspace MUST be able to be stored on an SFTP server. Browsers cannot open SSH sockets, so SFTP MUST be served by the packaged app or the local daemon, and browser and PWA clients MUST reach it through the daemon.
+**Statement.** A space MUST be able to be stored on an SFTP server. Browsers cannot open SSH sockets, so SFTP MUST be served by the packaged app or the local daemon, and browser and PWA clients MUST reach it through the daemon.
 
 **Source.** Owner ("sftp"), plus the platform constraint above.
 
 **Acceptance criteria**
 
 - `SftpBackend` passes the shared backend contract tests against a containerised SFTP server.
-- Credentials (password or key) are stored in the OS keychain or daemon secret store and are never written to `workspace.yaml`.
+- Credentials (password or key) are stored in the OS keychain or daemon secret store and are never written to `space.cept.yaml`.
 - In a browser without a daemon, the SFTP option is hidden or disabled with an explanation.
 
 **Current state: not-started.** There is no sftp or ssh backend code. SPECIFICATION.md §7.3 lists `ssh` only as a git auth type.
@@ -541,15 +556,15 @@ flowchart TB
 
 **Required matrix (target; "D" means only via the local daemon):**
 
-| Backend | Web | PWA | Desktop app | Mobile app | VS Code (desktop) | VS Code (web) | CLI / daemon |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| IndexedDB (browser only) | yes | yes | n/a | n/a | n/a | open question | n/a |
-| File System Access folder | where supported | where supported | n/a | n/a | n/a | n/a | n/a |
-| Native fs (app only) | D | D | yes | yes (app sandbox) | yes | n/a | yes |
-| Git | yes (via proxy) | yes (via proxy) | yes | yes | yes | yes (via proxy) | yes |
-| Google Drive | yes | yes | yes | yes | yes | yes | yes |
-| SFTP | D | D | yes | open question | yes | no | yes |
-| In-memory (demo) | yes | yes | n/a | n/a | n/a | n/a | n/a |
+| Backend                   | Web             | PWA             | Desktop app | Mobile app        | VS Code (desktop) | VS Code (web)   | CLI / daemon |
+| ------------------------- | --------------- | --------------- | ----------- | ----------------- | ----------------- | --------------- | ------------ |
+| IndexedDB (browser only)  | yes             | yes             | n/a         | n/a               | n/a               | open question   | n/a          |
+| File System Access folder | where supported | where supported | n/a         | n/a               | n/a               | n/a             | n/a          |
+| Native fs (app only)      | D               | D               | yes         | yes (app sandbox) | yes               | n/a             | yes          |
+| Git                       | yes (via proxy) | yes (via proxy) | yes         | yes               | yes               | yes (via proxy) | yes          |
+| Google Drive              | yes             | yes             | yes         | yes               | yes               | yes             | yes          |
+| SFTP                      | D               | D               | yes         | open question     | yes               | no              | yes          |
+| In-memory (demo)          | yes             | yes             | n/a         | n/a               | n/a               | n/a             | n/a          |
 
 **Acceptance criteria**
 
@@ -566,7 +581,7 @@ flowchart TB
 
 ### REQ-WS-018 — .cept/ metadata directory conventions
 
-**Statement.** Cept-managed metadata MUST live under a documented layout (`.cept/` with `databases/`, `assets/`, `templates/` and any state files, plus the `workspace.yaml` marker). Every file Cept writes MUST be listed in the spec, with a note saying whether it is shared workspace content or per-device state that must not sync.
+**Statement.** Cept-managed metadata MUST live under a documented layout (`.cept/` with `databases/`, `assets/`, `templates/` and any state files, plus the `space.cept.yaml` marker). Every file Cept writes MUST be listed in the spec, with a note saying whether it is shared space content or per-device state that must not sync.
 
 **Source.** Existing spec (SPECIFICATION.md §4.6; CLAUDE.md rule 10).
 
@@ -589,17 +604,17 @@ flowchart TB
 
 ### REQ-WS-019 — Opening an existing folder is non-destructive
 
-**Statement.** Opening an existing folder or repo as a workspace MUST NOT create, modify or overwrite user files. Cept may add only its marker file and metadata directory, and only with consent, and it MUST NOT overwrite an existing config.
+**Statement.** Opening an existing folder or repo as a space MUST NOT create, modify or overwrite user files. Cept may add only its marker file and metadata directory, and only with consent, and it MUST NOT overwrite an existing config.
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.6; CLAUDE.md rule 11).
 
 **Acceptance criteria**
 
 - A regression test opens a populated temp folder and asserts that every pre-existing file is byte-identical afterwards and that no `pages/` directory or `pages/index.md` was created.
-- An existing `workspace.yaml` or legacy `.cept/config.yaml` is never overwritten on open.
-- "Initialize new workspace" and "open existing" are separate code paths.
+- An existing `space.cept.yaml` or legacy `.cept/config.yaml` is never overwritten on open.
+- "Initialize new space" and "open existing" are separate code paths.
 
-**Current state: divergent.** `LocalFsBackend.initialize` (local-fs.ts ~lines 153-185) always creates `pages/` outside `.cept/`, writes `pages/index.md` when it is missing, and always overwrites `.cept/config.yaml`. web-fs.ts (~204-231) and browser-fs.ts (~140-170) do the same. The web app runs this `initialize()` on every load (main.tsx line 18), and every remote clone re-runs it on the shared IndexedDB root with `name: 'git-clone'` (git-backend.ts ~line 261), overwriting the workspace config. No open-existing flow exists.
+**Current state: divergent.** `LocalFsBackend.initialize` (local-fs.ts ~lines 153-185) always creates `pages/` outside `.cept/`, writes `pages/index.md` when it is missing, and always overwrites `.cept/config.yaml`. web-fs.ts (~204-231) and browser-fs.ts (~140-170) do the same. The web app runs this `initialize()` on every load (main.tsx line 18), and every remote clone re-runs it on the shared IndexedDB root with `name: 'git-clone'` (git-backend.ts ~line 261), overwriting the space config. No open-existing flow exists.
 
 **Docs state: documented-as-desired, accurate.**
 
@@ -609,26 +624,26 @@ flowchart TB
 
 ### REQ-WS-020 — Backend upgrade/switch path
 
-**Statement.** A workspace SHOULD be movable between backends (browser to folder, browser to Git, folder to Git, and so on).
+**Statement.** A space SHOULD be movable between backends (browser to folder, browser to Git, folder to Git, and so on).
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.5).
 
 **Acceptance criteria**
 
 - A "Move/upgrade storage" flow copies every page, database and asset to the target backend and verifies the result with checksums.
-- Exporting a workspace produces a valid workspace folder (marker plus pages), so that "export, then open folder" is lossless.
+- Exporting a space produces a valid space folder (marker plus pages), so that "export, then open folder" is lossless.
 
-**Current state: partial.** No backend switching exists. On `main`, one-way paths exist: the Markdown/HTML exporter ([packages/core/src/exporters/exporter.ts](../../../packages/core/src/exporters/exporter.ts), wired via [packages/ui/src/components/import-export/ExportDialog.tsx](../../../packages/ui/src/components/import-export/ExportDialog.tsx)) and the Notion and Obsidian importers ([packages/core/src/importers/](../../../packages/core/src/importers/)); none of them round-trips a whole workspace. Draft PR #24 adds ZIP export/import of a space (`packages/core/src/spaces/space-archive.ts`, with a `manifest.json` and a SHA-256 per file). That is a portable move, but the archive bundles `workspace-state.json` and assumes the current JSON-tree layout.
+**Current state: partial.** No backend switching exists. On `main`, one-way paths exist: the Markdown/HTML exporter ([packages/core/src/exporters/exporter.ts](../../../packages/core/src/exporters/exporter.ts), wired via [packages/ui/src/components/import-export/ExportDialog.tsx](../../../packages/ui/src/components/import-export/ExportDialog.tsx)) and the Notion and Obsidian importers ([packages/core/src/importers/](../../../packages/core/src/importers/)); none of them round-trips a whole space. Draft PR #24 adds ZIP export/import of a space (`packages/core/src/spaces/space-archive.ts`, with a `manifest.json` and a SHA-256 per file). That is a portable move, but the archive bundles `workspace-state.json` and assumes the current JSON-tree layout.
 
 **Docs state: documented-as-desired, accurate** (SPECIFICATION.md §5.10.5 table).
 
-**Gap.** A migration flow, and a ZIP format aligned with the folder plus `workspace.yaml` model.
+**Gap.** A migration flow, and a ZIP format aligned with the folder plus `space.cept.yaml` model.
 
 **Related:** [#24](https://github.com/nsheaps/cept/pull/24).
 
 ### REQ-WS-021 — Detect .git in an opened folder
 
-**Statement.** When an opened workspace folder contains `.git/`, Cept SHOULD add git capabilities (history and sync) on top of the folder backend.
+**Statement.** When an opened space folder contains `.git/`, Cept SHOULD add git capabilities (history and sync) on top of the folder backend.
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.4 Flow 3).
 
@@ -636,7 +651,7 @@ flowchart TB
 
 - Opening a folder that contains a git repo enables history and sync UI through capabilities.
 - Opening a folder without `.git/` does not enable them.
-- If the workspace root is a subfolder of a repo, detection walks up to the repo root, and this is tested.
+- If the space root is a subfolder of a repo, detection walks up to the repo root, and this is tested.
 
 **Current state: not-started.** There is no detection code and no folder-open flow.
 
@@ -646,45 +661,49 @@ flowchart TB
 
 **Related:** none.
 
-### REQ-WS-022 — Consistent terminology: workspace vs space
+### REQ-WS-022 — Consistent terminology: "space" adopted (D-1)
 
-**Statement.** The project MUST choose one term, either "workspace" (the owner's word) or "space" (the current UI), define it in a glossary, and use it consistently in code, UI and docs.
+> **Status: decided (D-1).** The canonical term is **"space"** (matching the UI's `SpaceManager`, `AddSpaceWizardModal`, and commit d572437 "rename workspace to space", cited in `.claude/prompts/continue.md`). Code identifiers `WorkspaceConfig` and `cept-workspace` DB name remain unchanged for stability; they are considered legacy code names, not user-visible terms.
 
-**Source.** Derived, to resolve a conflict.
+**Statement.** The project MUST use "space" consistently in all user-facing copy, documentation, new code identifiers, and requirements text. Legacy code identifiers (`WorkspaceConfig`, `workspace-state.json`, `cept-workspace`) may be renamed as part of a future refactor but are not required to change immediately.
+
+**Source.** Owner decision D-1.
 
 **Acceptance criteria**
 
-- A glossary entry exists.
-- A grep for the term that was not chosen in `packages/` and `docs/content/` returns only intentional uses, such as migration code.
+- A glossary entry defines "space" as "a folder in some filesystem whose root holds `space.cept.yaml`".
+- `docs/` and `packages/` do not use "workspace" for this concept in user-facing strings, headings, or new API names. Exceptions: legacy code identifiers documented above, and unrelated uses (Bun/Nx package workspaces, VS Code workspaces).
+- `space.cept.yaml` / `space.cept.yml` (not `workspace.yaml` or `.cept/config.yaml`) is the marker file name.
 
-**Current state: divergent.**
+**Current state: partial.** The UI already uses "space" (`SpaceManager`, `AddSpaceWizardModal`). `@cept/core` still has `WorkspaceConfig` and `.cept/workspace-state.json`, and no code reads `space.cept.ya?ml`.
 
-- Core says "workspace" (`WorkspaceConfig`, the `cept-workspace` DB name, "Welcome to your new workspace").
-- The UI says "space" (`SpaceManager`, `AddSpaceWizardModal`, the settings Spaces tab, `.cept/spaces.json`).
-- [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) (~line 84) cites commit d572437, "rename workspace to space".
-
-**Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "workspace". docs/content (features.md line 105, roadmap.md lines 43-44, quick-start.md line 61) says "space".
-
-**Gap.** Make the decision (see open questions), then apply it.
+**Docs state: documented-differently, stale.** These requirement docs use "space". [SPECIFICATION.md](../../SPECIFICATION.md) and the user docs still say "workspace".
 
 **Related:** [#45](https://github.com/nsheaps/cept/issues/45).
 
 ## Conflicts and open questions
 
-The owner needs to decide each of these:
+**Decided (D-1, D-2, D-3):**
 
-1. **Config location.** The owner's `workspace.ya?ml` competes with three others: `.cept/config.yaml` (SPECIFICATION.md §4.6 and Appendix F, and the code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `workspace.yaml` is the only workspace-level config, folder-level overrides (such as hide lists) go either in `.cept.yaml` or as a section in `workspace.yaml`, and the other two are retired with migration.
-2. **`.yaml` vs `.yml` precedence.** If both files exist, is that an error, or does `.yaml` win with a warning?
-3. **Depth counting.** Is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
-4. **Nested workspace semantics.** Can a child workspace use a different backend or remote from its parent (for example, a Git child inside a Drive parent)? Do links, search, graph and databases cross the boundary?
-5. **Folder-as-tree migration.** Existing users have flat `pages/page-<ts>.md` plus `workspace-state.json`. What migration is required, and is a breaking change acceptable?
+- **D-1 — Terminology:** "space" is the canonical term. Code identifiers `WorkspaceConfig`, `cept-workspace`, `workspace-state.json` are legacy and need not be renamed immediately. _(Was open question 8.)_
+- **D-2 — Space root location:** `space.cept.yaml` lives at the space root; a space root is NOT necessarily the filesystem/repo root — one repo may contain multiple spaces in subfolders. Each space is addressed by (backend location + subfolder path). _(See REQ-WS-002 updated acceptance criteria.)_
+- **D-3 — Nesting deferred:** REQ-WS-005 (nested spaces) and REQ-WS-006 (nesting depth) are deferred. Discovery does not descend into a found space; a nested marker is reported as a warning. Schema starts minimal (name, slug, version only). _(Was part of open questions 3–4.)_
+
+**Open questions (owner to decide):**
+
+1. **Config location.** `space.cept.yaml` as the space-level config competes with three others: `.cept/config.yaml` (code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `space.cept.yaml` is the only space-level config; the others are retired with migration.
+2. **`.yaml` vs `.yml` precedence.** If both `space.cept.yaml` and `space.cept.yml` exist in the same folder, is that an error, or does `.yaml` win with a warning?
+3. **Nesting depth counting (deferred).** When nesting is undeferred: is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
+4. **Nested space semantics (deferred).** When undeferred: can a child space use a different backend or remote from its parent? Do links, search, graph and databases cross the boundary?
+5. **Folder-as-tree migration.** Existing users have flat `pages/page-<ts>.md` plus `workspace-state.json`. What migration is required?
 6. **Meaning of "locally (browser only)".** IndexedDB only, or does it also cover real folders through the File System Access API (REQ-WS-012)?
-7. **Backend list.** The owner listed local-app, local-browser, git, gdrive and sftp. The code's union is `browser | local | git`, the UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
-8. **Terminology.** "Workspace" (owner, core, SPECIFICATION.md) or "space" (UI, docs/content, commit d572437)?
-9. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? This must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md).
-10. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Should these be fixed before new backends are added?
-11. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `workspace.yaml` use?
-12. **CORS proxy.** Git cloning hard-codes the public `https://cors.isomorphic-git.org`, but the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md).
+7. **Backend list.** The owner listed local-app, local-browser, git, gdrive and sftp. The UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
+8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_
+9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
+10. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `space.cept.yaml` use for future fields?
+11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md).
+12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
+13. **Per-folder `.cept.yaml` (PR #67).** PR #67 adds a per-folder `.cept.yaml` for hide lists and similar folder-scoped options. This is out of scope while nesting is deferred (D-3). Revisit when REQ-WS-005 is undeferred.
 
 ## Stale documentation
 
@@ -719,13 +738,13 @@ The owner needs to decide each of these:
 
 - **CLI and daemon:** see [05-cli-and-daemon.md](05-cli-and-daemon.md). SFTP (REQ-WS-016), and native-fs access from browser, PWA and VS Code clients, depend on a local daemon hosting the backends. Git push/pull (REQ-WS-014) is likely owned by the daemon.
 - **Service worker and PWA:** see [REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing) and [REQ-WEB-010](01-browser-app-and-pwa.md#req-web-010--pwa-shares-local-daemon-when-present). When no daemon is present, the service worker owns sync. Today sync is a timer effect in App.tsx.
-- **Demo workspace:** see [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-workspace-uses-in-memory-file-storage). Only a test-only `MemoryBackend` exists ([packages/ui/src/components/storage/test-helpers.ts](../../../packages/ui/src/components/storage/test-helpers.ts), ~line 16). Shipping one needs the open `type` id from REQ-WS-008.
+- **Demo space:** see [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-space-uses-in-memory-file-storage). Only a test-only `MemoryBackend` exists ([packages/ui/src/components/storage/test-helpers.ts](../../../packages/ui/src/components/storage/test-helpers.ts), ~line 16). Shipping one needs the open `type` id from REQ-WS-008.
 - **Per-deployment isolation:** see [REQ-WEB-020](01-browser-app-and-pwa.md#req-web-020--per-deployment-storage-isolation), which relies on REQ-WS-011.
-- **Browser-only folders:** [REQ-WEB-023](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-workspaces) corresponds to REQ-WS-012.
+- **Browser-only folders:** [REQ-WEB-023](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-spaces) corresponds to REQ-WS-012.
 - **Remotes and auth:** see [09-remotes-and-auth.md](09-remotes-and-auth.md). The Git, Drive and SFTP backends need the AuthProvider abstraction (GitHub app, Google login, PAT), and the CORS proxy must move to the nsheaps/iac Cloudflare worker.
-- **Static rendering:** see [02-static-rendering.md](02-static-rendering.md) and [REQ-SSG-001](02-static-rendering.md#req-ssg-001--static-rendered-browser-component-exists). The renderer needs the folder plus `workspace.yaml` model (REQ-WS-001/002) to enumerate pages and nested workspaces without parsing `workspace-state.json`.
-- **VS Code extension:** see [06-vscode-extension.md](06-vscode-extension.md). Discovery via `workspace.yaml` has to work on `vscode.workspace.fs` in both desktop and web, which implies a VS Code-fs-backed `StorageBackend`.
+- **Static rendering:** see [02-static-rendering.md](02-static-rendering.md) and [REQ-SSG-001](02-static-rendering.md#req-ssg-001--static-rendered-browser-component-exists). The renderer needs the folder plus `space.cept.yaml` model (REQ-WS-001/002) to enumerate pages and nested spaces without parsing `workspace-state.json`.
+- **VS Code extension:** see [06-vscode-extension.md](06-vscode-extension.md). Discovery via `space.cept.yaml` has to work on `vscode.workspace.fs` in both desktop and web, which implies a VS Code-fs-backed `StorageBackend`.
 - **Native apps:** see [07-native-apps.md](07-native-apps.md). REQ-WS-009 is blocked on the shell decision (Electron, Electrobun or Tauri; TASKS P6.1/P6.4, issue [#27](https://github.com/nsheaps/cept/issues/27)) and on Capacitor filesystem support (P6.6).
-- **Collaboration:** see [REQ-COL-011](04-collaboration.md#req-col-011--collaboration-not-tied-to-git-backend). `GitBackend` currently advertises `collaboration: true`. Collaboration should be scoped per workspace, which depends on REQ-WS-007.
-- **Editor, databases, search and graph:** see [08-editor.md](08-editor.md). DatabaseContext and SearchContext read `.cept/databases` and pages through a single backend, so nested workspaces change their scoping. The "fallback to HTML" requirement interacts with the legacy `pages/<id>.html` reads in StorageContext.tsx and with the `.html`, `.mdx` and `.txt` handling in PR #67.
+- **Collaboration:** see [REQ-COL-011](04-collaboration.md#req-col-011--collaboration-not-tied-to-git-backend). `GitBackend` currently advertises `collaboration: true`. Collaboration should be scoped per space, which depends on REQ-WS-007.
+- **Editor, databases, search and graph:** see [08-editor.md](08-editor.md). DatabaseContext and SearchContext read `.cept/databases` and pages through a single backend, so nested spaces change their scoping. The "fallback to HTML" requirement interacts with the legacy `pages/<id>.html` reads in StorageContext.tsx and with the `.html`, `.mdx` and `.txt` handling in PR #67.
 - **Engineering and CI:** see [10-engineering-and-ci.md](10-engineering-and-ci.md). A shared backend contract test suite should run in scope for every backend package.

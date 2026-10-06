@@ -4,14 +4,14 @@
 
 This document sets the requirements for the Cept command-line tool (`cept`), the long-running local sync daemon it hosts, the local client protocol that lets the VS Code extension, PWA and desktop app share one daemon, and the `cept render` static-site command. Each requirement is checked against the code, open PRs and documentation as of the date above. Today the repo has **no CLI, no daemon, no local daemon API and no render command**. Some of the building blocks exist as unwired library code in `@cept/core`.
 
-**Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Workspaces & storage](03-workspaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [06 VS Code extension](06-vscode-extension.md) · [07 Native apps](07-native-apps.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · Original spec: [docs/SPECIFICATION.md](../../SPECIFICATION.md) · Task list: [TASKS.md](../../../TASKS.md)
+**Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Spaces & storage](03-spaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [06 VS Code extension](06-vscode-extension.md) · [07 Native apps](07-native-apps.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · Original spec: [docs/SPECIFICATION.md](../../SPECIFICATION.md) · Task list: [TASKS.md](../../../TASKS.md)
 
 ## Scope & non-goals
 
 **In scope**
 
 - The `cept` executable: packaging, subcommands, and distribution as a compiled binary.
-- The sync daemon: process model, the workspace registry, the watch-to-commit and pull/push loops, conflict surfacing, and sync to any remote kind.
+- The sync daemon: process model, the space registry, the watch-to-commit and pull/push loops, conflict surfacing, and sync to any remote kind.
 - The local client protocol (HTTP/WebSocket/IPC) that lets several clients share one daemon, plus its discovery and security.
 - `cept render`: the CLI entry point to static-site generation. The output contract itself is owned by [02-static-rendering.md](02-static-rendering.md).
 - One-shot CLI commands (`sync`, `status`) and where the planned MCP server is hosted.
@@ -19,33 +19,33 @@ This document sets the requirements for the Cept command-line tool (`cept`), the
 
 **Non-goals (owned elsewhere)**
 
-| Topic | Owner |
-| --- | --- |
-| Static output contract, read-only renderer UI | [02-static-rendering.md](02-static-rendering.md) |
-| `workspace.ya?ml` format, nesting rules, storage backends | [03-workspaces-and-storage.md](03-workspaces-and-storage.md) |
-| Realtime co-editing / WebRTC signaling | [04-collaboration.md](04-collaboration.md) |
-| Service-worker sync fallback implementation | [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) |
-| OAuth flows, PAT entry, Cloudflare OAuth proxy | [09-remotes-and-auth.md](09-remotes-and-auth.md) |
-| VS Code extension host and webview | [06-vscode-extension.md](06-vscode-extension.md) |
+| Topic                                                      | Owner                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| Static output contract, read-only renderer UI              | [02-static-rendering.md](02-static-rendering.md)       |
+| `space.cept.ya?ml` format, nesting rules, storage backends | [03-spaces-and-storage.md](03-spaces-and-storage.md)   |
+| Realtime co-editing / WebRTC signaling                     | [04-collaboration.md](04-collaboration.md)             |
+| Service-worker sync fallback implementation                | [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) |
+| OAuth flows, PAT entry, Cloudflare OAuth proxy             | [09-remotes-and-auth.md](09-remotes-and-auth.md)       |
+| VS Code extension host and webview                         | [06-vscode-extension.md](06-vscode-extension.md)       |
 
 ## Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-CLI-001](#req-cli-001--cept-cli-executable) | `cept` CLI executable (own Nx project, compiled binary) | MUST | not-started | undocumented | n/a |
-| [REQ-CLI-002](#req-cli-002--long-running-sync-daemon) | Long-running sync daemon (`cept daemon start/stop/status`) | MUST | not-started | documented-differently | stale |
-| [REQ-CLI-003](#req-cli-003--watch-to-commit-pipeline) | Watch-to-commit pipeline | MUST | stubbed | documented-differently | stale |
-| [REQ-CLI-004](#req-cli-004--pullpush-sync-loop-with-conflict-handling) | Pull/push sync loop with conflict handling | MUST | stubbed | documented-differently | stale |
-| [REQ-CLI-005](#req-cli-005--daemon-supports-all-remote-kinds) | Daemon supports git, Google Drive and SFTP remotes | MUST | stubbed | undocumented | n/a |
-| [REQ-CLI-006](#req-cli-006--local-client-protocol-for-daemon-sharing) | Versioned local client protocol for daemon sharing | MUST | not-started | undocumented | n/a |
-| [REQ-CLI-007](#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser) | Daemon discovery and fallback from PWA/browser | MUST | not-started | documented-differently | stale |
-| [REQ-CLI-008](#req-cli-008--daemon-security-for-localhost-api) | Daemon security for the localhost API | MUST | not-started | undocumented | n/a |
-| [REQ-CLI-009](#req-cli-009--nested-workspace-awareness-in-daemon) | Nested workspace awareness in the daemon | MUST | not-started | undocumented | n/a |
-| [REQ-CLI-010](#req-cli-010--cept-render-static-site-command) | `cept render` static site command | MUST | not-started | documented-differently | stale |
-| [REQ-CLI-011](#req-cli-011--render-command-exercised-by-cept-docs-site-e2e) | Docs site built by `cept render` (serves as e2e) | MUST | not-started | documented-differently | stale |
-| [REQ-CLI-012](#req-cli-012--cli-one-shot-syncstatus-commands) | One-shot `cept sync` / `cept status` | SHOULD | not-started | undocumented | n/a |
-| [REQ-CLI-013](#req-cli-013--mcp-server-surface-existing-plan) | MCP server hosted by CLI/daemon | SHOULD | not-started | documented-differently | accurate |
-| [REQ-CLI-014](#req-cli-014--clidaemon-ci-coverage) | CLI/daemon CI coverage incl. binary smoke test | MUST | not-started | undocumented | n/a |
+| ID                                                                          | Requirement                                                | Priority | Impl status | Docs status            | Docs accurate |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-CLI-001](#req-cli-001--cept-cli-executable)                            | `cept` CLI executable (own Nx project, compiled binary)    | MUST     | not-started | undocumented           | n/a           |
+| [REQ-CLI-002](#req-cli-002--long-running-sync-daemon)                       | Long-running sync daemon (`cept daemon start/stop/status`) | MUST     | not-started | documented-differently | stale         |
+| [REQ-CLI-003](#req-cli-003--watch-to-commit-pipeline)                       | Watch-to-commit pipeline                                   | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-CLI-004](#req-cli-004--pullpush-sync-loop-with-conflict-handling)      | Pull/push sync loop with conflict handling                 | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-CLI-005](#req-cli-005--daemon-supports-all-remote-kinds)               | Daemon supports git, Google Drive and SFTP remotes         | MUST     | stubbed     | undocumented           | n/a           |
+| [REQ-CLI-006](#req-cli-006--local-client-protocol-for-daemon-sharing)       | Versioned local client protocol for daemon sharing         | MUST     | not-started | undocumented           | n/a           |
+| [REQ-CLI-007](#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser)  | Daemon discovery and fallback from PWA/browser             | MUST     | not-started | documented-differently | stale         |
+| [REQ-CLI-008](#req-cli-008--daemon-security-for-localhost-api)              | Daemon security for the localhost API                      | MUST     | not-started | undocumented           | n/a           |
+| [REQ-CLI-009](#req-cli-009--space-discovery-in-the-daemon)                  | Nested space awareness in the daemon                       | MUST     | not-started | undocumented           | n/a           |
+| [REQ-CLI-010](#req-cli-010--cept-render-static-site-command)                | `cept render` static site command                          | MUST     | not-started | documented-differently | stale         |
+| [REQ-CLI-011](#req-cli-011--render-command-exercised-by-cept-docs-site-e2e) | Docs site built by `cept render` (serves as e2e)           | MUST     | not-started | documented-differently | stale         |
+| [REQ-CLI-012](#req-cli-012--cli-one-shot-syncstatus-commands)               | One-shot `cept sync` / `cept status`                       | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-CLI-013](#req-cli-013--mcp-server-surface-existing-plan)               | MCP server hosted by CLI/daemon                            | SHOULD   | not-started | documented-differently | accurate      |
+| [REQ-CLI-014](#req-cli-014--clidaemon-ci-coverage)                          | CLI/daemon CI coverage incl. binary smoke test             | MUST     | not-started | undocumented           | n/a           |
 
 Status vocabulary: implementation is one of `implemented`, `partial`, `stubbed` (code exists but is not wired), `not-started` or `divergent`. Docs status is one of `documented-as-desired`, `documented-differently` or `undocumented`. Docs accuracy is one of `accurate`, `stale` or `n/a`.
 
@@ -64,8 +64,8 @@ flowchart LR
 
   subgraph Daemon["cept daemon (per-user singleton)"]
     API["Local API: HTTP + WS on 127.0.0.1 / socket (token auth, Origin allowlist)"]
-    REG["Workspace registry (workspace.yaml discovery, nested up to 10)"]
-    W["FS watcher per workspace"]
+    REG["Space registry (space.cept.ya?ml discovery)"]
+    W["FS watcher per space"]
     AC["AutoCommitEngine (debounce, batch, excludes)"]
     SE["SyncEngine (pull then push, retry, offline queue, conflicts)"]
     RT["Remote transport interface"]
@@ -142,7 +142,7 @@ flowchart LR
 - A compile target produces a standalone binary for linux/macos/windows (x64 + arm64 where Bun supports it).
 - Unknown subcommands exit non-zero and print usage to stderr.
 
-**Current state + evidence.** not-started. No package declares a `cept` bin. The only `bin` in the monorepo is `cept-signaling` ([packages/signaling-server/package.json](../../../packages/signaling-server/package.json) line 7, pointing to [packages/signaling-server/src/server.ts](../../../packages/signaling-server/src/server.ts)). That is a Bun.serve Yjs relay, not a CLI. [package.json](../../../package.json) workspaces/scripts and [nx.json](../../../nx.json) have no CLI project or target.
+**Current state + evidence.** not-started. No package declares a `cept` bin. The only `bin` in the monorepo is `cept-signaling` ([packages/signaling-server/package.json](../../../packages/signaling-server/package.json) line 7, pointing to [packages/signaling-server/src/server.ts](../../../packages/signaling-server/src/server.ts)). That is a Bun.serve Yjs relay, not a CLI. [package.json](../../../package.json) spaces/scripts and [nx.json](../../../nx.json) have no CLI project or target.
 
 **Docs state.** undocumented / n/a. The CLI is not mentioned in [docs/SPECIFICATION.md](../../SPECIFICATION.md), `docs/specs/*.md`, `docs/content/**`, [README.md](../../../README.md) or [TASKS.md](../../../TASKS.md). The only "CLI" mention in [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) (around line 764) is about git-spice, which is unrelated.
 
@@ -152,29 +152,29 @@ flowchart LR
 
 ### REQ-CLI-002 — Long-running sync daemon
 
-**Statement.** `cept daemon` (`start` / `stop` / `status`) MUST run a long-lived background process. It watches one or more registered workspaces on the local filesystem and syncs changes to each workspace's configured remote(s) without the UI being open.
+**Statement.** `cept daemon` (`start` / `stop` / `status`) MUST run a long-lived background process. It watches one or more registered spaces on the local filesystem and syncs changes to each space's configured remote(s) without the UI being open.
 
 **Rationale / source.** Handler: "a daemon that runs to sync changes to the remotes".
 
 **Acceptance criteria**
 
 - `cept daemon start` detaches and writes a pidfile/lockfile. A second `start` reports the daemon is already running (per-user singleton).
-- `cept daemon status` reports pid, uptime, protocol version and per-workspace sync state.
+- `cept daemon status` reports pid, uptime, protocol version and per-space sync state.
 - `cept daemon stop` shuts down gracefully: it flushes pending commits and completes or aborts in-flight pushes cleanly.
 - An optional `cept daemon install` registers a user service (launchd / systemd user unit / Windows scheduled task or service).
-- With the daemon running and no UI open, editing a file in a registered git workspace results in a commit pushed to the remote (integration test).
+- With the daemon running and no UI open, editing a file in a registered git space results in a commit pushed to the remote (integration test).
 
 **Current state + evidence.** not-started. No daemon process exists. The building blocks have no host process: `SyncEngine.start()` uses `setInterval` ([packages/core/src/git/sync-engine.ts](../../../packages/core/src/git/sync-engine.ts)), and `LocalFsBackend.watch()` uses `node:fs` watch ([packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts)).
 
 **Docs state.** documented-differently / stale. [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43 (mirrored in [.claude/prompts/init.md](../../../.claude/prompts/init.md) line 43) says: "Client-only architecture — ... No server process, no database daemon." [README.md](../../../README.md) line 3 says "Client-only."
 
-**Gap.** Define the process model (singleton, lock, service install). Host one `AutoCommitEngine` and one `SyncEngine` per workspace. Amend the "no daemon" principle (see [Conflicts](#conflicts--open-questions)).
+**Gap.** Define the process model (singleton, lock, service install). Host one `AutoCommitEngine` and one `SyncEngine` per space. Amend the "no daemon" principle (see [Conflicts](#conflicts--open-questions)).
 
 **Related PRs/issues.** Issue [#48](https://github.com/nsheaps/cept/issues/48) (live remote demo space with auto-commit and sync) is adjacent.
 
 ### REQ-CLI-003 — Watch-to-commit pipeline
 
-**Statement.** The daemon MUST turn filesystem change events from a workspace into batched commits (debounced, honouring exclude patterns) for git-backed workspaces. For non-git remotes it MUST produce the equivalent upload unit.
+**Statement.** The daemon MUST turn filesystem change events from a space into batched commits (debounced, honouring exclude patterns) for git-backed spaces. For non-git remotes it MUST produce the equivalent upload unit.
 
 **Rationale / source.** Derived. This makes REQ-CLI-002 concrete.
 
@@ -183,7 +183,7 @@ flowchart LR
 - N writes within the debounce window produce one commit, and batches never exceed `maxBatchSize` files.
 - Paths that match exclude patterns (e.g. `.git/**`, editor swap files) never trigger commits.
 - Writes made by the daemon itself, such as pulls, do not trigger a commit loop.
-- Integration test: temp workspace plus temp git repo, write files, assert the commit count and contents.
+- Integration test: temp space plus temp git repo, write files, assert the commit count and contents.
 
 **Current state + evidence.** stubbed. `AutoCommitEngine.recordChange` / `flushNow` support debounce, `maxBatchSize` and `excludePatterns`, with unit tests ([packages/core/src/git/auto-commit.ts](../../../packages/core/src/git/auto-commit.ts), [packages/core/src/git/auto-commit.test.ts](../../../packages/core/src/git/auto-commit.test.ts)). Nothing feeds it `watch()` events, and nothing instantiates it outside its tests and the re-export in [packages/core/src/index.ts](../../../packages/core/src/index.ts) (around line 128). TASKS.md P5.3 "Wire auto-commit engine to app" is unchecked.
 
@@ -195,15 +195,15 @@ flowchart LR
 
 ### REQ-CLI-004 — Pull/push sync loop with conflict handling
 
-**Statement.** For each workspace remote, the daemon MUST run a pull-then-push cycle both periodically and on change. The cycle needs retry/backoff, offline detection and queued replay on reconnect. Conflicts MUST be surfaced to clients, never silently lost.
+**Statement.** For each space remote, the daemon MUST run a pull-then-push cycle both periodically and on change. The cycle needs retry/backoff, offline detection and queued replay on reconnect. Conflicts MUST be surfaced to clients, never silently lost.
 
 **Rationale / source.** Derived. This makes REQ-CLI-002 concrete.
 
 **Acceptance criteria**
 
 - A sync cycle pulls before it pushes. A rejected (non-fast-forward) push triggers pull, merge, then retry.
-- When the remote is unreachable, the workspace enters `offline`, queues operations and replays them on reconnect (test with a remote that is toggled off and on).
-- A conflicting edit on both sides sets workspace state `conflict` and emits a `conflict` event over the client protocol (REQ-CLI-006). No content is discarded.
+- When the remote is unreachable, the space enters `offline`, queues operations and replays them on reconnect (test with a remote that is toggled off and on).
+- A conflicting edit on both sides sets space state `conflict` and emits a `conflict` event over the client protocol (REQ-CLI-006). No content is discarded.
 - Backoff is bounded and configurable.
 
 **Current state + evidence.** stubbed. [packages/core/src/git/sync-engine.ts](../../../packages/core/src/git/sync-engine.ts) implements the loop, retries and conflict/offline states ([sync-engine.test.ts](../../../packages/core/src/git/sync-engine.test.ts)). [packages/core/src/crdt/offline-queue.ts](../../../packages/core/src/crdt/offline-queue.ts) and the auto-resolve in [packages/core/src/git/merge-engine.ts](../../../packages/core/src/git/merge-engine.ts) also exist. Each is tested in isolation and not referenced outside `packages/core/src/{git,crdt}` and `index.ts`. TASKS.md P5.4, P5.6 and P5.10 are unchecked. The running app only does a one-shot clone ([packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) around lines 353-363 and 962-987; [packages/ui/src/components/storage/git-space.ts](../../../packages/ui/src/components/storage/git-space.ts)).
@@ -236,7 +236,7 @@ flowchart LR
 
 ### REQ-CLI-006 — Local client protocol for daemon sharing
 
-**Statement.** The daemon MUST expose a versioned, documented local API, e.g. HTTP + WebSocket bound to `127.0.0.1` and/or a Unix socket or named pipe. The API covers listing and registering workspaces, reading and writing files, subscribing to change events, sync status and conflict events, and triggering a sync. Multiple clients (VS Code extension, PWA, desktop app) MUST be able to share one daemon concurrently.
+**Statement.** The daemon MUST expose a versioned, documented local API, e.g. HTTP + WebSocket bound to `127.0.0.1` and/or a Unix socket or named pipe. The API covers listing and registering spaces, reading and writing files, subscribing to change events, sync status and conflict events, and triggering a sync. Multiple clients (VS Code extension, PWA, desktop app) MUST be able to share one daemon concurrently.
 
 **Rationale / source.** Handler: VS Code plugin "shares local daemon"; PWA "can share local daemon".
 
@@ -297,35 +297,35 @@ flowchart LR
 
 **Related PRs/issues.** None.
 
-### REQ-CLI-009 — Nested workspace awareness in daemon
+### REQ-CLI-009 — Space discovery in the daemon
 
-**Statement.** The daemon MUST discover workspace roots through `workspace.yaml` / `workspace.yml`, including nested workspaces up to 10 levels deep. It MUST sync each nested workspace to its own remote without double-syncing parent and child content.
+**Statement.** The daemon MUST discover space roots through `space.cept.yaml` / `space.cept.yml`, including several sibling spaces in subfolders of one repo or folder (D-2). It MUST sync each space without double-syncing shared content. Nested spaces are deferred (D-3): discovery does not descend into a found space.
 
-**Rationale / source.** Derived from the handler's workspace model ("workspace.ya?ml defines workspace root", "nested ... up to 10 deep") applied to the daemon.
+**Rationale / source.** Derived from the owner's space model (D-1, D-2, D-3) applied to the daemon.
 
 **Acceptance criteria**
 
-- Registering a parent workspace discovers all descendant roots down to depth 10. Depth 11 is reported as an error and not synced.
-- A file inside a nested workspace is committed and pushed only to the nested workspace's remote, and the parent's sync excludes the child subtree.
-- Adding or removing a `workspace.yaml` at runtime updates the registry without a restart.
+- Registering a repo or folder discovers every space root in it; a `space.cept.ya?ml` found below another space root is reported as a warning and not registered.
+- Two spaces in one git repo share one clone and one push/pull cycle; each space's watcher covers only its own subtree.
+- Adding or removing a `space.cept.yaml` at runtime updates the registry without a restart.
 
-**Current state + evidence.** not-started. There is no `workspace.ya?ml` discovery code. The app stores a "spaces" manifest in browser storage (`loadSpaces` / `createRemoteSpace` in [packages/ui/src/components/storage/SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts), called from [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx)).
+**Current state + evidence.** not-started. There is no `space.cept.ya?ml` discovery code. The app stores a "spaces" manifest in browser storage (`loadSpaces` / `createRemoteSpace` in [packages/ui/src/components/storage/SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts), called from [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx)).
 
 **Docs state.** undocumented / n/a. [docs/SPECIFICATION.md](../../SPECIFICATION.md) uses a `.cept/` config folder, and the UI and roadmap say "spaces".
 
-**Gap.** A daemon workspace registry that depends on the workspace spec in [03-workspaces-and-storage.md](03-workspaces-and-storage.md).
+**Gap.** A daemon space registry that depends on the space spec in [03-spaces-and-storage.md](03-spaces-and-storage.md).
 
 **Related PRs/issues.** None.
 
 ### REQ-CLI-010 — `cept render` static site command
 
-**Statement.** The CLI MUST provide a command, e.g. `cept render <workspace> --out <dir>`, that produces the static, read-only site assets for a workspace. The output conforms to the static output contract in [02-static-rendering.md](02-static-rendering.md) and is suitable for upload to any static host.
+**Statement.** The CLI MUST provide a command, e.g. `cept render <space> --out <dir>`, that produces the static, read-only site assets for a space. The output conforms to the static output contract in [02-static-rendering.md](02-static-rendering.md) and is suitable for upload to any static host.
 
-**Rationale / source.** Handler: "A render static site command to generate the static assets for upload of a workspace".
+**Rationale / source.** Handler: "A render static site command to generate the static assets for upload of a space".
 
 **Acceptance criteria**
 
-- Running against a fixture workspace produces an output directory that passes the 02 contract checks (one HTML page per page, nav, assets, rendered mermaid, rendered databases, working cross-links).
+- Running against a fixture space produces an output directory that passes the 02 contract checks (one HTML page per page, nav, assets, rendered mermaid, rendered databases, working cross-links).
 - Running twice on unchanged input produces byte-identical output (deterministic).
 - Exit code is non-zero on broken internal links unless `--allow-broken-links` is passed.
 - The renderer is the shared read-only UI renderer, not a separate regex converter.
@@ -346,7 +346,7 @@ flowchart LR
 
 **Acceptance criteria**
 
-- The docs content is a Cept workspace (it has a `workspace.yaml`).
+- The docs content is a Cept space (it has a `space.cept.yaml`).
 - CI runs `cept render` on it for every PR that touches the CLI, the renderer or the docs, and fails on render errors or broken links.
 - The deploy workflow publishes exactly the rendered output.
 
@@ -354,7 +354,7 @@ flowchart LR
 
 **Docs state.** documented-differently / stale. [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.5 (lines 1272-1280) specifies a `.github/workflows/docs.yml` that builds the docs with "VitePress or Starlight" (also line 1639 and [CLAUDE.md](../../../CLAUDE.md) package table: "`@cept/docs` ... Starlight/VitePress documentation site"), not with Cept's own renderer. That workflow does not exist, so the description is stale. The roadmap ([roadmap.md](../../content/reference/roadmap.md) line 128) lists "Documentation site (Starlight)" as Planned.
 
-**Gap.** Make the docs a Cept workspace and render it in CI and deploy. Coordinate with [02-static-rendering.md](02-static-rendering.md) and [10-engineering-and-ci.md](10-engineering-and-ci.md).
+**Gap.** Make the docs a Cept space and render it in CI and deploy. Coordinate with [02-static-rendering.md](02-static-rendering.md) and [10-engineering-and-ci.md](10-engineering-and-ci.md).
 
 **Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) (docs as a real remote space) is a precursor.
 
@@ -366,8 +366,8 @@ flowchart LR
 
 **Acceptance criteria**
 
-- `cept sync <workspace>` runs one cycle. It exits 0 on success, uses a distinct non-zero code on conflict, and another on network failure.
-- `cept status [--json]` prints per-workspace state, and the JSON output is schema-validated.
+- `cept sync <space>` runs one cycle. It exits 0 on success, uses a distinct non-zero code on conflict, and another on network failure.
+- `cept status [--json]` prints per-space state, and the JSON output is schema-validated.
 - When a daemon is running, both commands go through the daemon instead of competing with it for locks.
 
 **Current state + evidence.** not-started. `SyncEngine.sync()` and `getStatus()` exist as library methods ([packages/core/src/git/sync-engine.ts](../../../packages/core/src/git/sync-engine.ts)), but there is no CLI wrapper.
@@ -380,7 +380,7 @@ flowchart LR
 
 ### REQ-CLI-013 — MCP server surface (existing plan)
 
-**Statement.** If the planned MCP server (P8.1-P8.3) is built, it SHOULD be hosted by the CLI/daemon (e.g. `cept mcp`) and reuse the daemon's workspace access rather than being a separate runtime.
+**Statement.** If the planned MCP server (P8.1-P8.3) is built, it SHOULD be hosted by the CLI/daemon (e.g. `cept mcp`) and reuse the daemon's space access rather than being a separate runtime.
 
 **Rationale / source.** Existing plan ([TASKS.md](../../../TASKS.md) lines 247-249; [roadmap.md](../../content/reference/roadmap.md) lines 133-151). The placement is derived.
 
@@ -399,7 +399,7 @@ flowchart LR
 
 ### REQ-CLI-014 — CLI/daemon CI coverage
 
-**Statement.** The CLI and daemon MUST have unit tests and integration tests (temp workspace plus a local bare git remote) that run in CI scoped to affected projects. They MUST also have a compiled-binary smoke test, mirroring the qontacts `server:smoke` pattern.
+**Statement.** The CLI and daemon MUST have unit tests and integration tests (temp space plus a local bare git remote) that run in CI scoped to affected projects. They MUST also have a compiled-binary smoke test, mirroring the qontacts `server:smoke` pattern.
 
 **Rationale / source.** Derived from the handler's CI requirements ("unit tests which can run in scope in PR") applied to this area.
 
@@ -419,14 +419,14 @@ flowchart LR
 
 ## Conflicts & open questions
 
-These items need a decision from the owner:
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
-1. **"Client-only, no daemon" principle versus the daemon requirement.** [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43 and [.claude/prompts/init.md](../../../.claude/prompts/init.md) line 43 say "No server process, no database daemon", and [README.md](../../../README.md) line 3 and the [package.json](../../../package.json) description say "Client-only". *Proposed resolution:* restate it as "the app MUST work fully without a daemon; the daemon is an optional accelerator shared by local clients."
-2. **Runtime drop-in renderer versus build-time `cept render`.** The roadmap ([roadmap.md](../../content/reference/roadmap.md) lines 155-160) and [continue.md](../../../.claude/prompts/continue.md) (around lines 455-459) specify a `<script>` renderer with "zero build step". The handler wants a CLI that generates static assets. *Decide:* support both (the same renderer bundle used at build time and at runtime), or drop the runtime model.
-3. **Terminology: "workspace" versus "space".** The handler says workspace (folder + `workspace.ya?ml`). The UI, roadmap and continue.md say "spaces". SPECIFICATION.md says workspace but uses a `.cept/` config folder. The daemon registry and CLI flags need one term.
-4. **Where sync lives.** SPECIFICATION.md §6.5 puts sync in the client (in-browser isomorphic-git). The handler puts it in the daemon, with the service worker as fallback. The current app does neither: it does a one-shot clone via the public `cors.isomorphic-git.org` proxy ([App.tsx](../../../packages/ui/src/components/App.tsx) around lines 363 and 987). *Decide:* does the in-app path keep a full `SyncEngine` when no daemon is available, or only SW background sync?
-5. **`node:fs` in `@cept/core`.** [CLAUDE.md](../../../CLAUDE.md) architecture rule 1 forbids it, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) imports `node:fs`, and [packages/web/vite.config.ts](../../../packages/web/vite.config.ts) (around lines 10-30) stubs `node:*` to cope. *Proposed:* move `LocalFsBackend` and the Node-side transports into a platform package (e.g. `packages/cli` or `packages/daemon`).
-6. **isomorphic-git ownership.** CLAUDE.md rule 5 (only `GitBackend` may import isomorphic-git) is violated by [App.tsx](../../../packages/ui/src/components/App.tsx), which dynamically imports `isomorphic-git/http/web` (lines 354, 456 and 965) to build the HTTP client it passes in. [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) itself complies: it goes through `GitBackend` from `@cept/core`. *Decide:* should the daemon-side git be the single owner of git transport whenever a daemon is present?
+1. **"Client-only, no daemon" principle versus the daemon requirement.** **Decided (D-4):** Client-only framing retired. The app MUST work fully without a daemon; the daemon is optional and adds background sync and shared access. [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43 and [README.md](../../../README.md) line 3 need updating.
+2. **Runtime drop-in renderer versus build-time `cept render`.** The roadmap ([roadmap.md](../../content/reference/roadmap.md) lines 155-160) and [continue.md](../../../.claude/prompts/continue.md) (around lines 455-459) specify a `<script>` renderer with "zero build step". The handler wants a CLI that generates static assets. _Decide:_ support both (the same renderer bundle used at build time and at runtime), or drop the runtime model.
+3. **Terminology.** **Decided (D-1):** "space" is the canonical term; `space.cept.ya?ml` marks the space root; daemon registry uses "space" throughout.
+4. **Where sync lives.** **Decided (D-4+D-5):** `SyncEngine` in `@cept/core`; service worker = offline caching + queued-write flushing only (~30 s lifetime); SharedWorker owns the live sync loop when no daemon is present; daemon is optional and additive. The in-app path runs `SyncEngine` in the SharedWorker, not the page thread.
+5. **`node:fs` in `@cept/core`.** [CLAUDE.md](../../../CLAUDE.md) architecture rule 1 forbids it, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) imports `node:fs`, and [packages/web/vite.config.ts](../../../packages/web/vite.config.ts) (around lines 10-30) stubs `node:*` to cope. _Proposed:_ move `LocalFsBackend` and the Node-side transports into a platform package (e.g. `packages/cli` or `packages/daemon`).
+6. **isomorphic-git ownership.** CLAUDE.md rule 5 (only `GitBackend` may import isomorphic-git) is violated by [App.tsx](../../../packages/ui/src/components/App.tsx), which dynamically imports `isomorphic-git/http/web` (lines 354, 456 and 965) to build the HTTP client it passes in. [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) itself complies: it goes through `GitBackend` from `@cept/core`. _Decide:_ should the daemon-side git be the single owner of git transport whenever a daemon is present?
 7. **Transport abstraction.** The engines are typed to `GitStorageBackend` only, but gdrive and sftp are required. What is the unit of sync for non-git remotes (file-level last-writer-wins, manifest diff, or CRDT snapshots)?
 8. **VS Code for Web.** The browser-hosted VS Code cannot reach a localhost daemon. Is in-extension sync acceptable there (see [06-vscode-extension.md](06-vscode-extension.md))?
 9. **Daemon and Yjs.** Should the daemon also relay Yjs updates between local clients, or is that always the signaling server's job (see [04-collaboration.md](04-collaboration.md))?
@@ -434,30 +434,30 @@ These items need a decision from the owner:
 
 ## Stale documentation
 
-| Path | Claim | Problem |
-| --- | --- | --- |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43 | "No server process, no database daemon" | Contradicts the daemon requirement. Needs amending. |
-| [TASKS.md](../../../TASKS.md) lines 99, 104, 112 | T5.3 auto-commit, T5.8 sync engine and T6.5 offline queue marked done | Library-only. P5.3, P5.4 and P5.10 (lines 207-214) show they are not wired. Annotate them as "library only". |
-| [TASKS.md](../../../TASKS.md) line 212 | P5.8 "Create signaling server entry point" unchecked | [packages/signaling-server/src/server.ts](../../../packages/signaling-server/src/server.ts) implements it, and the `cept-signaling` bin exists. |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 94 | "Signaling server — Planned" | The entry point exists. |
-| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) line 6 | "background sync for pending operations" | No `sync` / `periodicsync` handler exists. |
-| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) lines 8, 29 | "Changes sync when you're back online"; "Every edit becomes a Git commit" | Not wired at runtime. |
-| [README.md](../../../README.md) line 17 | Multi-device sync, "all automatic" | Not implemented at runtime. |
-| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) lines 22, 58-64 | Git "coming soon" alongside "Your space will sync automatically" | Self-contradictory, and auto-sync is not implemented. |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.5 lines 1272-1280 | Docs built by `docs.yml` with VitePress/Starlight | No such workflow exists, and the handler wants the docs built by `cept render` (REQ-CLI-011). |
-| [docs/package.json](../../package.json) line 9 | `build` is `echo 'Documentation site build'` | There is no static docs build. It should become `cept render` (REQ-CLI-011). |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) lines 155-160 | Renderer is "zero build step" | Needs reconciling with REQ-CLI-010. |
+| Path                                                                                                        | Claim                                                                     | Problem                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43                                                     | "No server process, no database daemon"                                   | Contradicts the daemon requirement. Needs amending.                                                                                             |
+| [TASKS.md](../../../TASKS.md) lines 99, 104, 112                                                            | T5.3 auto-commit, T5.8 sync engine and T6.5 offline queue marked done     | Library-only. P5.3, P5.4 and P5.10 (lines 207-214) show they are not wired. Annotate them as "library only".                                    |
+| [TASKS.md](../../../TASKS.md) line 212                                                                      | P5.8 "Create signaling server entry point" unchecked                      | [packages/signaling-server/src/server.ts](../../../packages/signaling-server/src/server.ts) implements it, and the `cept-signaling` bin exists. |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 94                             | "Signaling server — Planned"                                              | The entry point exists.                                                                                                                         |
+| [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) line 6                    | "background sync for pending operations"                                  | No `sync` / `periodicsync` handler exists.                                                                                                      |
+| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) lines 8, 29   | "Changes sync when you're back online"; "Every edit becomes a Git commit" | Not wired at runtime.                                                                                                                           |
+| [README.md](../../../README.md) line 17                                                                     | Multi-device sync, "all automatic"                                        | Not implemented at runtime.                                                                                                                     |
+| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) lines 22, 58-64 | Git "coming soon" alongside "Your space will sync automatically"          | Self-contradictory, and auto-sync is not implemented.                                                                                           |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.5 lines 1272-1280                                        | Docs built by `docs.yml` with VitePress/Starlight                         | No such workflow exists, and the handler wants the docs built by `cept render` (REQ-CLI-011).                                                   |
+| [docs/package.json](../../package.json) line 9                                                              | `build` is `echo 'Documentation site build'`                              | There is no static docs build. It should become `cept render` (REQ-CLI-011).                                                                    |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) lines 155-160                       | Renderer is "zero build step"                                             | Needs reconciling with REQ-CLI-010.                                                                                                             |
 
 ## Cross-area dependencies
 
-| Depends on / consumed by | What | This area's requirements |
-| --- | --- | --- |
-| [02-static-rendering.md](02-static-rendering.md) | Static output contract and the shared read-only renderer. `cept render` is a thin wrapper over it. | REQ-CLI-010, REQ-CLI-011 |
-| [03-workspaces-and-storage.md](03-workspaces-and-storage.md) | `workspace.ya?ml` root discovery, nesting (max 10), spaces-to-workspaces rename, gdrive/sftp backends | REQ-CLI-005, REQ-CLI-009 |
-| [09-remotes-and-auth.md](09-remotes-and-auth.md) | GitHub app/login, Google login, GitHub PAT, and the Cloudflare OAuth proxy (nsheaps/iac) supply the credentials the daemon stores and uses | REQ-CLI-005, REQ-CLI-008 |
-| [06-vscode-extension.md](06-vscode-extension.md) | Consumes the daemon client protocol on desktop. VS Code for Web needs a fallback. | REQ-CLI-006, REQ-CLI-008 |
-| [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) | Daemon discovery and the service-worker sync fallback (the SW currently has no sync handler) | REQ-CLI-007 |
-| [04-collaboration.md](04-collaboration.md) | The signaling server is separate from the daemon. Open question whether the daemon relays Yjs locally. | REQ-CLI-006 |
-| [07-native-apps.md](07-native-apps.md) | The desktop app may bundle or launch the daemon. `packages/desktop` currently has no main process (TASKS P6.1). | REQ-CLI-002, REQ-CLI-006 |
-| [10-engineering-and-ci.md](10-engineering-and-ci.md) | New `packages/cli` Nx project, affected-scoped tests, binary smoke job (qontacts `server:smoke` pattern) | REQ-CLI-001, REQ-CLI-014 |
-| [README.md](README.md) | Traceability matrix and architecture overview | All |
+| Depends on / consumed by                               | What                                                                                                                                       | This area's requirements |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| [02-static-rendering.md](02-static-rendering.md)       | Static output contract and the shared read-only renderer. `cept render` is a thin wrapper over it.                                         | REQ-CLI-010, REQ-CLI-011 |
+| [03-spaces-and-storage.md](03-spaces-and-storage.md)   | `space.cept.ya?ml` root discovery, nesting (max 10), spaces-to-spaces rename, gdrive/sftp backends                                         | REQ-CLI-005, REQ-CLI-009 |
+| [09-remotes-and-auth.md](09-remotes-and-auth.md)       | GitHub app/login, Google login, GitHub PAT, and the Cloudflare OAuth proxy (nsheaps/iac) supply the credentials the daemon stores and uses | REQ-CLI-005, REQ-CLI-008 |
+| [06-vscode-extension.md](06-vscode-extension.md)       | Consumes the daemon client protocol on desktop. VS Code for Web needs a fallback.                                                          | REQ-CLI-006, REQ-CLI-008 |
+| [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) | Daemon discovery and the service-worker sync fallback (the SW currently has no sync handler)                                               | REQ-CLI-007              |
+| [04-collaboration.md](04-collaboration.md)             | The signaling server is separate from the daemon. Open question whether the daemon relays Yjs locally.                                     | REQ-CLI-006              |
+| [07-native-apps.md](07-native-apps.md)                 | The desktop app may bundle or launch the daemon. `packages/desktop` currently has no main process (TASKS P6.1).                            | REQ-CLI-002, REQ-CLI-006 |
+| [10-engineering-and-ci.md](10-engineering-and-ci.md)   | New `packages/cli` Nx project, affected-scoped tests, binary smoke job (qontacts `server:smoke` pattern)                                   | REQ-CLI-001, REQ-CLI-014 |
+| [README.md](README.md)                                 | Traceability matrix and architecture overview                                                                                              | All                      |

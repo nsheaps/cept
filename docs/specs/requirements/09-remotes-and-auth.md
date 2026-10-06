@@ -2,12 +2,12 @@
 
 **Status:** Draft, 2026-10-06
 
-This document covers how Cept connects workspaces to remote storage and how it authenticates to those remotes. Remotes are GitHub-hosted Git, Google Drive and SFTP. Auth paths are a GitHub App login, a Google login app and a GitHub personal access token. All browser-side token exchange and Git CORS traffic goes through a Cloudflare Worker proxy that nsheaps/iac provisions. Each requirement records the owner's intent, the current implementation and docs status with evidence, and the gap still to close.
+This document covers how Cept connects spaces to remote storage and how it authenticates to those remotes. Remotes are GitHub-hosted Git, Google Drive and SFTP. Auth paths are a GitHub App login, a Google login app and a GitHub personal access token. All browser-side token exchange and Git CORS traffic goes through a Cloudflare Worker proxy that nsheaps/iac provisions. Each requirement records the owner's intent, the current implementation and docs status with evidence, and the gap still to close.
 
 **Related:**
 
 - [Requirements index and traceability matrix](README.md)
-- [03 Workspaces and storage backends](03-workspaces-and-storage.md): Git, Google Drive and SFTP backends that consume these credentials
+- [03 Spaces and storage backends](03-spaces-and-storage.md): Git, Google Drive and SFTP backends that consume these credentials
 - [05 CLI and sync daemon](05-cli-and-daemon.md): the headless client and shared credential holder
 - [06 VS Code extension](06-vscode-extension.md) and [01 Browser app and PWA](01-browser-app-and-pwa.md): clients that share the daemon's credentials
 - [07 Packaged native apps](07-native-apps.md): native OAuth redirects and secure storage
@@ -28,33 +28,33 @@ This document covers how Cept connects workspaces to remote storage and how it a
 
 **Non-goals**
 
-- The storage backend implementations themselves (Drive API file mapping, SFTP file I/O, Git commit and merge logic). See [03](03-workspaces-and-storage.md) and [05](05-cli-and-daemon.md).
+- The storage backend implementations themselves (Drive API file mapping, SFTP file I/O, Git commit and merge logic). See [03](03-spaces-and-storage.md) and [05](05-cli-and-daemon.md).
 - Identity for co-editing presence and authorization on the signaling server. See [04 Collaboration](04-collaboration.md).
 - GitLab, Bitbucket and Forgejo providers. The interface must allow them, but the owner did not ask for them.
 - Any Cept-operated backend that stores user data or tokens. The proxy must be stateless.
 
 ## Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-AUTH-001](#req-auth-001--provider-abstraction-for-all-remote-kinds) | Provider abstraction covers all remote kinds (git, gdrive, sftp) | MUST | partial | documented-differently | stale |
-| [REQ-AUTH-002](#req-auth-002--github-sign-in-via-a-github-app) | GitHub sign-in via a GitHub App (user-to-server) | MUST | divergent | documented-differently | stale |
-| [REQ-AUTH-003](#req-auth-003--browser-token-exchange-without-a-client-secret) | Browser code exchange with PKCE and a relay, no client secret | MUST | not-started | undocumented | n/a |
-| [REQ-AUTH-004](#req-auth-004--github-device-flow-for-headless-clients) | GitHub device flow for the CLI and daemon | MUST | partial | undocumented | n/a |
-| [REQ-AUTH-005](#req-auth-005--github-personal-access-token-entry) | GitHub personal access token entry | MUST | stubbed | documented-differently | stale |
-| [REQ-AUTH-006](#req-auth-006--google-sign-in-for-google-drive-remotes) | Google login app for Google Drive remotes | MUST | not-started | undocumented | n/a |
-| [REQ-AUTH-007](#req-auth-007--sftp-remote-credentials) | SFTP remote credentials (password or key) | MUST | not-started | undocumented | n/a |
-| [REQ-AUTH-008](#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac | MUST | stubbed | undocumented | n/a |
-| [REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy) | Configurable first-party proxy, no third-party proxy | MUST | divergent | undocumented | n/a |
-| [REQ-AUTH-010](#req-auth-010--authenticated-git-transport) | Authenticated Git clone, fetch, pull and push | MUST | partial | documented-as-desired | stale |
-| [REQ-AUTH-011](#req-auth-011--anonymous-read-only-access-to-public-remotes) | Anonymous read-only access to public remotes | SHOULD | partial | documented-as-desired | stale |
-| [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform) | Secure, persistent token storage on each platform | MUST | stubbed | documented-as-desired | accurate |
-| [REQ-AUTH-013](#req-auth-013--account-and-sign-in-ui) | Sign-in, account display and sign-out UI | MUST | stubbed | documented-differently | stale |
-| [REQ-AUTH-014](#req-auth-014--repo-listing-and-creation-after-sign-in) | Repo listing and creation after sign-in | SHOULD | stubbed | documented-as-desired | accurate |
-| [REQ-AUTH-015](#req-auth-015--automatic-token-refresh) | Automatic refresh of expiring tokens | MUST | not-started | undocumented | n/a |
-| [REQ-AUTH-016](#req-auth-016--native-oauth-for-packaged-apps) | Native OAuth via system browser and redirect for packaged apps | MUST | stubbed | documented-differently | stale |
-| [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon) | Shared credentials through the local daemon | SHOULD | not-started | undocumented | n/a |
-| [REQ-AUTH-018](#req-auth-018--no-secrets-in-client-bundles-or-the-repo) | No secrets in client bundles or the repo | MUST | partial | documented-as-desired | accurate |
+| ID                                                                                             | Requirement                                                      | Priority | Impl status | Docs status            | Docs accurate |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-AUTH-001](#req-auth-001--provider-abstraction-for-all-remote-kinds)                       | Provider abstraction covers all remote kinds (git, gdrive, sftp) | MUST     | partial     | documented-differently | stale         |
+| [REQ-AUTH-002](#req-auth-002--github-sign-in-via-a-github-app)                                 | GitHub sign-in via a GitHub App (user-to-server)                 | MUST     | divergent   | documented-differently | stale         |
+| [REQ-AUTH-003](#req-auth-003--browser-token-exchange-without-a-client-secret)                  | Browser code exchange with PKCE and a relay, no client secret    | MUST     | not-started | undocumented           | n/a           |
+| [REQ-AUTH-004](#req-auth-004--github-device-flow-for-headless-clients)                         | GitHub device flow for the CLI and daemon                        | MUST     | partial     | undocumented           | n/a           |
+| [REQ-AUTH-005](#req-auth-005--github-personal-access-token-entry)                              | GitHub personal access token entry                               | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-AUTH-006](#req-auth-006--google-sign-in-for-google-drive-remotes)                         | Google login app for Google Drive remotes                        | MUST     | not-started | undocumented           | n/a           |
+| [REQ-AUTH-007](#req-auth-007--sftp-remote-credentials)                                         | SFTP remote credentials (password or key)                        | MUST     | not-started | undocumented           | n/a           |
+| [REQ-AUTH-008](#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac           | MUST     | stubbed     | undocumented           | n/a           |
+| [REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy             | MUST     | divergent   | undocumented           | n/a           |
+| [REQ-AUTH-010](#req-auth-010--authenticated-git-transport)                                     | Authenticated Git clone, fetch, pull and push                    | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-AUTH-011](#req-auth-011--anonymous-read-only-access-to-public-remotes)                    | Anonymous read-only access to public remotes                     | SHOULD   | partial     | documented-as-desired  | stale         |
+| [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                | MUST     | stubbed     | documented-as-desired  | accurate      |
+| [REQ-AUTH-013](#req-auth-013--account-and-sign-in-ui)                                          | Sign-in, account display and sign-out UI                         | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-AUTH-014](#req-auth-014--repo-listing-and-creation-after-sign-in)                         | Repo listing and creation after sign-in                          | SHOULD   | stubbed     | documented-as-desired  | accurate      |
+| [REQ-AUTH-015](#req-auth-015--automatic-token-refresh)                                         | Automatic refresh of expiring tokens                             | MUST     | not-started | undocumented           | n/a           |
+| [REQ-AUTH-016](#req-auth-016--native-oauth-for-packaged-apps)                                  | Native OAuth via system browser and redirect for packaged apps   | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon)                     | Shared credentials through the local daemon                      | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-AUTH-018](#req-auth-018--no-secrets-in-client-bundles-or-the-repo)                        | No secrets in client bundles or the repo                         | MUST     | partial     | documented-as-desired  | accurate      |
 
 ## Architecture
 
@@ -151,7 +151,7 @@ flowchart LR
 
 **Statement:** All remote authentication MUST go through a provider abstraction (`AuthProvider`) whose type set covers every supported remote: Git (GitHub), Google Drive and SFTP. Adding a provider MUST NOT require changes outside its own implementation and registration.
 
-**Rationale / source:** Handler: "Support for remotes"; workspaces "stored ... git, gdrive, sftp".
+**Rationale / source:** Handler: "Support for remotes"; spaces "stored ... git, gdrive, sftp".
 
 **Acceptance criteria**
 
@@ -240,7 +240,7 @@ flowchart LR
 **Acceptance criteria**
 
 - Settings, or the add-space wizard, has a PAT field. The token is validated (for example with a `GET /user` call) before it is saved.
-- The PAT is persisted through the platform TokenStore ([REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)) and is never written to workspace files or logs.
+- The PAT is persisted through the platform TokenStore ([REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)) and is never written to space files or logs.
 - Clone, pull and push of a private repo succeed with only a PAT configured.
 - The user can remove the PAT.
 
@@ -254,16 +254,16 @@ flowchart LR
 
 ### REQ-AUTH-006 — Google sign-in for Google Drive remotes
 
-**Statement:** The app MUST support Google sign-in through an OAuth client ("login app") that grants Drive scopes, so workspaces can be stored on Google Drive.
+**Statement:** The app MUST support Google sign-in through an OAuth client ("login app") that grants Drive scopes, so spaces can be stored on Google Drive.
 
-**Rationale / source:** Handler: "google login app"; workspaces "stored ... gdrive".
+**Rationale / source:** Handler: "google login app"; spaces "stored ... gdrive".
 
 **Acceptance criteria**
 
 - A `GoogleAuthProvider` uses the authorization code flow with PKCE. On web, the exchange and refresh go through the proxy.
 - It requests the least Drive scope that works (for example `drive.file`, or `drive` for an existing folder). The owner must choose the scope.
 - Tokens refresh automatically ([REQ-AUTH-015](#req-auth-015--automatic-token-refresh)).
-- The GDrive backend ([REQ-WS-015](03-workspaces-and-storage.md#req-ws-015--google-drive-backend)) consumes the credentials.
+- The GDrive backend ([REQ-WS-015](03-spaces-and-storage.md#req-ws-015--google-drive-backend)) consumes the credentials.
 
 **Current state:** not-started. There is no Google or Drive code in `packages/*`, and no GDrive backend in `packages/core/src/storage/`.
 
@@ -277,7 +277,7 @@ flowchart LR
 
 **Statement:** The app MUST support SFTP remotes with password or SSH-key credentials, at least in contexts that have raw sockets (the daemon, desktop and possibly mobile).
 
-**Rationale / source:** Derived from the handler: workspaces "stored ... sftp".
+**Rationale / source:** Derived from the handler: spaces "stored ... sftp".
 
 **Acceptance criteria**
 
@@ -290,7 +290,7 @@ flowchart LR
 
 **Docs state:** undocumented. SFTP appears nowhere in `docs/`.
 
-**Gap:** Specify it and implement it together with [REQ-WS-016](03-workspaces-and-storage.md#req-ws-016--sftp-backend).
+**Gap:** Specify it and implement it together with [REQ-WS-016](03-spaces-and-storage.md#req-ws-016--sftp-backend).
 
 **Related PRs/issues:** none identified.
 
@@ -359,7 +359,7 @@ flowchart LR
 
 **Docs state:** documented-as-desired, stale. SPECIFICATION §7.1 matches the intent. [README.md](../../../README.md) line 17 and [quick-start.md](../../content/getting-started/quick-start.md) lines 55-64 overstate the current state ("sync automatically").
 
-**Gap:** Thread credentials through and wire push and pull (P5.4). See [REQ-WS-014](03-workspaces-and-storage.md#req-ws-014--git-backed-workspace-write-commit-pushpull-sync).
+**Gap:** Thread credentials through and wire push and pull (P5.4). See [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync).
 
 **Related PRs/issues:** none identified.
 
@@ -427,14 +427,14 @@ flowchart LR
 
 ### REQ-AUTH-014 — Repo listing and creation after sign-in
 
-**Statement:** After GitHub sign-in, users SHOULD be able to pick an existing repo or create a new one to back a workspace.
+**Statement:** After GitHub sign-in, users SHOULD be able to pick an existing repo or create a new one to back a space.
 
 **Rationale / source:** Existing spec: [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.2.
 
 **Acceptance criteria**
 
 - The picker lists the repositories the GitHub App can access (through installations), with search.
-- "Create repo" creates a repo and initializes the workspace (`workspace.yaml`, see [03](03-workspaces-and-storage.md)).
+- "Create repo" creates a repo and initializes the space (`space.cept.yaml`, see [03](03-spaces-and-storage.md)).
 - Component and e2e tests cover both paths.
 
 **Current state:** stubbed. `getRepos()` and `createRepo()` exist and are tested ([github.ts](../../../packages/core/src/auth/github.ts), [github.test.ts](../../../packages/core/src/auth/github.test.ts)). `RepoPicker` is not used. [TASKS.md](../../../TASKS.md) marks T5.2 done (line 98), but P5.2 is unchecked (line 206).
@@ -539,34 +539,34 @@ The owner needs to decide each of these.
 6. **Token exchange design.** SPECIFICATION §7.1 implies a direct browser code exchange, which CORS makes impossible. Is a client secret ever acceptable (Worker-only)? PKCE with a GitHub App removes the need for one.
 7. **SFTP in the browser.** It is impossible without the daemon. Should SFTP be desktop and daemon only, with browser access only through the daemon?
 8. **Credential ownership.** Is the daemon the single credential holder for PWA and VS Code, or does each client keep its own tokens?
-9. **Terminology.** The handler says "workspace", while the UI and code say "space". See [REQ-WS-022](03-workspaces-and-storage.md#req-ws-022--consistent-terminology-workspace-vs-space).
+9. **Terminology.** The handler originally said "workspace", while the UI and code say "space". See [REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 10. **Preview origins.** PR previews (`nsheaps.github.io/cept/pr-N`) share the `https://nsheaps.github.io` origin, which `ALLOWED_ORIGINS` already allows, so the origin check cannot tell previews, production Pages and other nsheaps Pages apps apart. Is that acceptable? Should the GitHub App and Google client also register the preview callback URLs?
 
 ## Stale documentation
 
-| Location | Claim | Problem |
-| --- | --- | --- |
-| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) lines 55-64 | "Authenticate with GitHub ... Your space will sync automatically" | There is no auth UI and no sync. Only anonymous read-only clone works. |
-| [packages/ui/src/components/docs/docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) line 223 | Same "Authenticate with GitHub" step in the bundled docs | Same as above. |
-| [README.md](../../../README.md) line 17 | Git gives "multi-device sync ... all automatic" | Remote Git is anonymous and read-only today. |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1 (lines 965-973) | "MVP: GitHub OAuth App", `repo` scope, direct code exchange | The owner wants a GitHub App with a Cloudflare relay. PAT, Google and the proxy are missing. |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 118 | AuthProvider is "only needed when using GitBackend" | Drive and SFTP also need it. |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) Appendix B (line 2600) | GitHub is the only external auth service | Google and the Cloudflare Worker are omitted. |
-| [TASKS.md](../../../TASKS.md) lines 97, 98, 121 | T5.1, T5.2 and T7.6 marked done | The code is library-only and unwired (contradicted by P5.1/P5.2/P6.5/P6.6 and [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) line 50). |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 92 | "Auth provider (GitHub OAuth, token) Planned" | It should say GitHub App, PAT, Google, SFTP and the proxy, and link to this spec. |
-| nsheaps/iac `cloudflare-apps/TASKS.md` | "Update GitHub OAuth App redirect URLs" | Assumes an OAuth App, but the owner wants a GitHub App. |
-| nsheaps/iac `cloudflare-apps/index.ts` line 75 | "Route the worker on a subdomain (optional: auth.nsheaps.dev)" | Only a CNAME exists, with no route or custom domain, and CI deploys the 503 placeholder. |
-| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 62 | Git in the browser needs "No server-side Git required" | Browser Git needs a CORS proxy, today the third-party `cors.isomorphic-git.org`. |
-| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 22, [docs/content/guides/features.md](../../content/guides/features.md) line 114, [App.tsx](../../../packages/ui/src/components/App.tsx) line 1724 | Git repository spaces are "coming soon" | Anonymous read-only remote spaces already ship (REQ-AUTH-011). |
+| Location                                                                                                                                                                                                                                            | Claim                                                             | Problem                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) lines 55-64                                                                                                                                             | "Authenticate with GitHub ... Your space will sync automatically" | There is no auth UI and no sync. Only anonymous read-only clone works.                                                                                      |
+| [packages/ui/src/components/docs/docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) line 223                                                                                                                                | Same "Authenticate with GitHub" step in the bundled docs          | Same as above.                                                                                                                                              |
+| [README.md](../../../README.md) line 17                                                                                                                                                                                                             | Git gives "multi-device sync ... all automatic"                   | Remote Git is anonymous and read-only today.                                                                                                                |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1 (lines 965-973)                                                                                                                                                                                | "MVP: GitHub OAuth App", `repo` scope, direct code exchange       | The owner wants a GitHub App with a Cloudflare relay. PAT, Google and the proxy are missing.                                                                |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 118                                                                                                                                                                                            | AuthProvider is "only needed when using GitBackend"               | Drive and SFTP also need it.                                                                                                                                |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) Appendix B (line 2600)                                                                                                                                                                              | GitHub is the only external auth service                          | Google and the Cloudflare Worker are omitted.                                                                                                               |
+| [TASKS.md](../../../TASKS.md) lines 97, 98, 121                                                                                                                                                                                                     | T5.1, T5.2 and T7.6 marked done                                   | The code is library-only and unwired (contradicted by P5.1/P5.2/P6.5/P6.6 and [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) line 50). |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 92                                                                                                                                                                     | "Auth provider (GitHub OAuth, token) Planned"                     | It should say GitHub App, PAT, Google, SFTP and the proxy, and link to this spec.                                                                           |
+| nsheaps/iac `cloudflare-apps/TASKS.md`                                                                                                                                                                                                              | "Update GitHub OAuth App redirect URLs"                           | Assumes an OAuth App, but the owner wants a GitHub App.                                                                                                     |
+| nsheaps/iac `cloudflare-apps/index.ts` line 75                                                                                                                                                                                                      | "Route the worker on a subdomain (optional: auth.nsheaps.dev)"    | Only a CNAME exists, with no route or custom domain, and CI deploys the 503 placeholder.                                                                    |
+| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 62                                                                                                                                                         | Git in the browser needs "No server-side Git required"            | Browser Git needs a CORS proxy, today the third-party `cors.isomorphic-git.org`.                                                                            |
+| [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 22, [docs/content/guides/features.md](../../content/guides/features.md) line 114, [App.tsx](../../../packages/ui/src/components/App.tsx) line 1724 | Git repository spaces are "coming soon"                           | Anonymous read-only remote spaces already ship (REQ-AUTH-011).                                                                                              |
 
 ## Cross-area dependencies
 
-- **Storage backends.** The Git backend uses provider credentials through `onAuth` ([REQ-WS-013](03-workspaces-and-storage.md#req-ws-013--git-backed-workspace-cloneread-from-remote), [REQ-WS-014](03-workspaces-and-storage.md#req-ws-014--git-backed-workspace-write-commit-pushpull-sync)). The Drive backend ([REQ-WS-015](03-workspaces-and-storage.md#req-ws-015--google-drive-backend)) needs REQ-AUTH-006, and the SFTP backend ([REQ-WS-016](03-workspaces-and-storage.md#req-ws-016--sftp-backend)) needs REQ-AUTH-007.
+- **Storage backends.** The Git backend uses provider credentials through `onAuth` ([REQ-WS-013](03-spaces-and-storage.md#req-ws-013--git-backed-space-cloneread-from-remote), [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync)). The Drive backend ([REQ-WS-015](03-spaces-and-storage.md#req-ws-015--google-drive-backend)) needs REQ-AUTH-006, and the SFTP backend ([REQ-WS-016](03-spaces-and-storage.md#req-ws-016--sftp-backend)) needs REQ-AUTH-007.
 - **CLI and daemon.** These need device-flow auth (REQ-AUTH-004), secure credential storage (REQ-AUTH-012) and support for all remote kinds ([REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [REQ-CLI-005](05-cli-and-daemon.md#req-cli-005--daemon-supports-all-remote-kinds)). The daemon is the proposed shared credential holder ([REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [REQ-CLI-008](05-cli-and-daemon.md#req-cli-008--daemon-security-for-localhost-api)).
 - **VS Code extension and PWA.** They share credentials through the daemon ([REQ-VSC-008](06-vscode-extension.md#req-vsc-008--share-the-local-cept-daemon-when-available), REQ-AUTH-017). The service worker sync ([REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing)) needs tokens it can read.
 - **Packaged apps.** They need native redirects and secure storage ([REQ-APP-016](07-native-apps.md#req-app-016--native-oauth-via-deep-link-for-packaged-apps), REQ-AUTH-012), which depend on the Capacitor project and desktop deep linking (P6.5/P6.6).
-- **Git history and conflicts.** TASKS P5.5 (HistoryViewer) and P5.6 (ConflictResolver) are outside auth, but they depend on authenticated pull and push (REQ-AUTH-010). See [03](03-workspaces-and-storage.md).
+- **Git history and conflicts.** TASKS P5.5 (HistoryViewer) and P5.6 (ConflictResolver) are outside auth, but they depend on authenticated pull and push (REQ-AUTH-010). See [03](03-spaces-and-storage.md).
 - **Collaboration.** Presence identity could reuse the GitHub user from `getUser()`. The signaling server has no auth today (unverified). See [04 Collaboration](04-collaboration.md).
 - **Engineering and CI.** The build injects client IDs and the proxy URL as `VITE_*` variables in the CD and preview workflows. A secret scanner is also needed. See [10 Engineering and CI](10-engineering-and-ci.md).
-- **Demo and docs deployment.** The demo workspace and read-only docs must keep working without auth (REQ-AUTH-011). See [02 Static rendering](02-static-rendering.md).
+- **Demo and docs deployment.** The demo space and read-only docs must keep working without auth (REQ-AUTH-011). See [02 Static rendering](02-static-rendering.md).
 - **Infra.** nsheaps/iac and nsheaps/cors-proxy own the Worker code, route or custom domain, allowed origins (including PR previews), and the GitHub App and Google client redirect URLs. github2 (`docs/specs/auth.md`, `relay/relay.worker.js`) is a reference implementation of the GitHub App + PKCE + relay pattern.

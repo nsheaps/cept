@@ -2,9 +2,9 @@
 
 **Status:** Draft, 2026-10-06 · **Area ID prefix:** `REQ-VSC` · **Owner:** nsheaps
 
-This document lists the requirements for a Cept extension for Visual Studio Code. The extension lets users open the Markdown pages of a Cept workspace inside VS Code and live-edit or live-render them with the same browser component the web app and PWA use. It shares the local Cept daemon when one is running, and it works in both VS Code desktop and VS Code for the Web (vscode.dev, github.dev). For each requirement, the document records the current implementation and documentation state, citing evidence. **Summary of the current state: no VS Code extension exists in Cept today, in code, docs, TASKS.md, issues or open PRs.** A few existing pieces of `@cept/ui` and `@cept/core` could serve as building blocks, and several architectural choices block an extension. Both are covered below.
+This document lists the requirements for a Cept extension for Visual Studio Code. The extension lets users open the Markdown pages of a Cept space inside VS Code and live-edit or live-render them with the same browser component the web app and PWA use. It shares the local Cept daemon when one is running, and it works in both VS Code desktop and VS Code for the Web (vscode.dev, github.dev). For each requirement, the document records the current implementation and documentation state, citing evidence. **Summary of the current state: no VS Code extension exists in Cept today, in code, docs, TASKS.md, issues or open PRs.** A few existing pieces of `@cept/ui` and `@cept/core` could serve as building blocks, and several architectural choices block an extension. Both are covered below.
 
-**Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Workspaces & storage](03-workspaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [05 CLI & daemon](05-cli-and-daemon.md) · [07 Native apps](07-native-apps.md) · [08 Editor](08-editor.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · [Original specification](../../SPECIFICATION.md) · [Storage backends spec](../storage-backends.md)
+**Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Spaces & storage](03-spaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [05 CLI & daemon](05-cli-and-daemon.md) · [07 Native apps](07-native-apps.md) · [08 Editor](08-editor.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · [Original specification](../../SPECIFICATION.md) · [Storage backends spec](../storage-backends.md)
 
 ## Contents
 
@@ -22,51 +22,51 @@ This document lists the requirements for a Cept extension for Visual Studio Code
 
 The owner's requirement, verbatim:
 
-> * A vscode plugin
->    * live edit/render that uses the same browser component
->    * shares local daemon
->    * full support for vscode on web as well as desktop
+> - A vscode plugin
+>   - live edit/render that uses the same browser component
+>   - shares local daemon
+>   - full support for vscode on web as well as desktop
 
 This document turns that requirement into:
 
 - the extension package, its manifest and its build (REQ-VSC-001)
-- a custom WYSIWYG editor and a live-rendered preview for workspace Markdown, both built on `@cept/ui` (REQ-VSC-002, 003, 005, 006)
+- a custom WYSIWYG editor and a live-rendered preview for space Markdown, both built on `@cept/ui` (REQ-VSC-002, 003, 005, 006)
 - the changes `@cept/ui` and `@cept/core` need before they can be embedded in a VS Code webview (REQ-VSC-004, 007, 010, 013)
 - daemon sharing, and fallback behaviour when no daemon is running (REQ-VSC-008, 009)
 - desktop and web extension hosts (REQ-VSC-010, 011)
-- workspace root detection through `workspace.ya?ml`, including nested workspaces (REQ-VSC-012)
+- space root detection through `space.cept.ya?ml`, including several spaces in one folder (REQ-VSC-012)
 - tests, packaging, publishing and documentation (REQ-VSC-014, 015, 016)
 
 ### Non-goals (covered elsewhere)
 
 - **Cept's own plugin system** (TASKS.md P7.7–P7.7c). That system extends Cept itself and is a different thing from a VS Code extension.
 - **The daemon itself, its protocol and its security.** These are defined in [05 CLI & daemon](05-cli-and-daemon.md). This document only covers the extension's client side.
-- **The `workspace.ya?ml` format and nested-workspace semantics.** Defined in [03 Workspaces & storage](03-workspaces-and-storage.md).
+- **The `space.cept.ya?ml` format and space discovery rules.** Defined in [03 Spaces & storage](03-spaces-and-storage.md).
 - **Editor features** (blocks, databases, mermaid, GFM, graph). Defined in [08 Editor](08-editor.md). The extension inherits them through the shared component.
 - **Co-editing inside the webview.** See [open question Q4](#5-conflicts--open-questions) and [04 Collaboration](04-collaboration.md).
 
 ## 2. Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-|---|---|---|---|---|---|
-| [REQ-VSC-001](#req-vsc-001--vs-code-extension-package-in-the-monorepo) | VS Code extension package in the monorepo | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-002](#req-vsc-002--cept-custom-editor-for-workspace-markdown-files) | Cept custom editor for workspace Markdown files | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-003](#req-vsc-003--reuse-the-same-browser-component-ceptui-in-the-webview) | Reuse the same browser component (`@cept/ui`) in the webview | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-004](#req-vsc-004--embeddable-ceptui-with-injected-host-backend) | Embeddable `@cept/ui` with injected host backend | MUST | partial | documented-differently | stale |
-| [REQ-VSC-005](#req-vsc-005--two-way-live-sync-between-webview-and-textdocument) | Two-way live sync between webview and `TextDocument` | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-006](#req-vsc-006--live-render-read-only-preview-mode) | Live render (read-only preview) mode | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-007](#req-vsc-007--webview-storagebackend-adapter-over-vscodeworkspacefs) | Webview `StorageBackend` adapter over `vscode.workspace.fs` | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-008](#req-vsc-008--share-the-local-cept-daemon-when-available) | Share the local Cept daemon when available | MUST | not-started | documented-differently | stale |
-| [REQ-VSC-009](#req-vsc-009--daemon-less-fallback) | Daemon-less fallback | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-010](#req-vsc-010--full-support-for-vs-code-for-the-web) | Full support for VS Code for the Web | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-011](#req-vsc-011--full-support-for-vs-code-desktop) | Full support for VS Code desktop | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-012](#req-vsc-012--workspace-root-detection-and-nested-workspaces) | Workspace root detection (`workspace.ya?ml`) and nested workspaces | MUST | not-started | documented-differently | stale |
-| [REQ-VSC-013](#req-vsc-013--webview-platform-constraints) | Webview platform constraints (CSP, no service worker, theming) | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-014](#req-vsc-014--automated-extension-tests-in-ci) | Automated extension tests in CI (desktop and web hosts, Nx-affected) | MUST | not-started | undocumented | n/a |
-| [REQ-VSC-015](#req-vsc-015--extension-packaging-and-publishing) | Extension packaging and publishing (Marketplace and Open VSX) | SHOULD | not-started | undocumented | n/a |
-| [REQ-VSC-016](#req-vsc-016--extension-user-and-developer-documentation) | Extension user and developer documentation | MUST | not-started | undocumented | n/a |
+| ID                                                                                  | Requirement                                                          | Priority | Impl status | Docs status            | Docs accurate |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-VSC-001](#req-vsc-001--vs-code-extension-package-in-the-monorepo)              | VS Code extension package in the monorepo                            | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-002](#req-vsc-002--cept-custom-editor-for-space-markdown-files)            | Cept custom editor for space Markdown files                          | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-003](#req-vsc-003--reuse-the-same-browser-component-ceptui-in-the-webview) | Reuse the same browser component (`@cept/ui`) in the webview         | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-004](#req-vsc-004--embeddable-ceptui-with-injected-host-backend)           | Embeddable `@cept/ui` with injected host backend                     | MUST     | partial     | documented-differently | stale         |
+| [REQ-VSC-005](#req-vsc-005--two-way-live-sync-between-webview-and-textdocument)     | Two-way live sync between webview and `TextDocument`                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-006](#req-vsc-006--live-render-read-only-preview-mode)                     | Live render (read-only preview) mode                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-007](#req-vsc-007--webview-storagebackend-adapter-over-vscodeworkspacefs)  | Webview `StorageBackend` adapter over `vscode.workspace.fs`          | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-008](#req-vsc-008--share-the-local-cept-daemon-when-available)             | Share the local Cept daemon when available                           | MUST     | not-started | documented-differently | stale         |
+| [REQ-VSC-009](#req-vsc-009--daemon-less-fallback)                                   | Daemon-less fallback                                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-010](#req-vsc-010--full-support-for-vs-code-for-the-web)                   | Full support for VS Code for the Web                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-011](#req-vsc-011--full-support-for-vs-code-desktop)                       | Full support for VS Code desktop                                     | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-012](#req-vsc-012--space-root-detection)                                   | Space root detection (`space.cept.ya?ml`) and nested spaces          | MUST     | not-started | documented-differently | stale         |
+| [REQ-VSC-013](#req-vsc-013--webview-platform-constraints)                           | Webview platform constraints (CSP, no service worker, theming)       | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-014](#req-vsc-014--automated-extension-tests-in-ci)                        | Automated extension tests in CI (desktop and web hosts, Nx-affected) | MUST     | not-started | undocumented           | n/a           |
+| [REQ-VSC-015](#req-vsc-015--extension-packaging-and-publishing)                     | Extension packaging and publishing (Marketplace and Open VSX)        | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-VSC-016](#req-vsc-016--extension-user-and-developer-documentation)             | Extension user and developer documentation                           | MUST     | not-started | undocumented           | n/a           |
 
-Status totals: 15 not-started, 1 partial. Source: 9 requirements come from the owner's list (001–003, 005, 006, 008, 010, 011, and 012, which applies the owner's workspace definition to the extension). The other 7 (004, 007, 009, 013–016) are derived because the owner's requirements depend on them.
+Status totals: 15 not-started, 1 partial. Source: 9 requirements come from the owner's list (001–003, 005, 006, 008, 010, 011, and 012, which applies the owner's space definition to the extension). The other 7 (004, 007, 009, 013–016) are derived because the owner's requirements depend on them.
 
 ## 3. Architecture
 
@@ -82,7 +82,7 @@ flowchart LR
       PRV["Preview panel 'cept.preview'"]
       FSB["VscodeFsBackend (vscode.workspace.fs + FileSystemWatcher)"]
       DC["Daemon client (desktop only)"]
-      WSD["Workspace detector (workspace.yaml / workspace.yml)"]
+      WSD["Space detector (space.cept.yaml / space.cept.yml)"]
     end
     subgraph WV["Webview (vscode-webview:// origin, strict CSP, no SW)"]
       UI["@cept/ui (same component as web/PWA)"]
@@ -118,7 +118,7 @@ sequenceDiagram
   participant D as Daemon (optional)
 
   U->>P: Open page.md with "Cept Editor"
-  P->>W: init { markdown, workspaceRoot, theme }
+  P->>W: init { markdown, spaceRoot, theme }
   U->>W: WYSIWYG edit
   W->>P: edit { markdown or minimal diff }
   P->>T: applyEdit(WorkspaceEdit)
@@ -159,7 +159,7 @@ What is in the repo today:
   - The router assumes an http(s) `location.pathname`.
   - Offline behaviour in the web shell relies on a service worker (`packages/web/src/service-worker.ts` does precaching and cache-first/network-first fetch handling only; it has no `sync` event handler). Remote-space sync itself runs on the main thread in `App.tsx`, not in the service worker.
   - The `@cept/core` barrel pulls in `node:fs`.
-  - There is no daemon and no `workspace.ya?ml` detection.
+  - There is no daemon and no `space.cept.ya?ml` detection.
 
 ## 4. Requirements
 
@@ -184,16 +184,16 @@ What is in the repo today:
 
 **Related PRs/issues:** None. An issue search for "vscode extension VS Code plugin webview" on nsheaps/cept returned 0 results. Going by title, open PRs [#69](https://github.com/nsheaps/cept/pull/69), [#37](https://github.com/nsheaps/cept/pull/37), [#24](https://github.com/nsheaps/cept/pull/24), [#283](https://github.com/nsheaps/cept/pull/283) and [#246](https://github.com/nsheaps/cept/pull/246) are unrelated (diffs not inspected). The file list of [#67](https://github.com/nsheaps/cept/pull/67) was inspected: it adds no extension package, but it affects REQ-VSC-004 (see there).
 
-### REQ-VSC-002 — Cept custom editor for workspace Markdown files
+### REQ-VSC-002 — Cept custom editor for space Markdown files
 
-**Statement:** The extension MUST register a custom editor (`CustomTextEditorProvider`) so that Markdown pages inside a Cept workspace open in a fully WYSIWYG Cept editor in a webview. "Reopen With…" MUST switch between this editor and the plain text editor.
+**Statement:** The extension MUST register a custom editor (`CustomTextEditorProvider`) so that Markdown pages inside a Cept space open in a fully WYSIWYG Cept editor in a webview. "Reopen With…" MUST switch between this editor and the plain text editor.
 
 **Rationale / source:** Owner requirement ("live edit … that uses the same browser component").
 
 **Acceptance criteria:**
 
 - `contributes.customEditors` declares a `viewType` (for example `cept.editor`) with a selector for `*.md`.
-- The editor offers to open (priority `option` or `default`, see [Q5](#5-conflicts--open-questions)) only for files inside a detected Cept workspace root (REQ-VSC-012).
+- The editor offers to open (priority `option` or `default`, see [Q5](#5-conflicts--open-questions)) only for files inside a detected Cept space root (REQ-VSC-012).
 - "Reopen With… → Text Editor" and back works without data loss. An integration test asserts that the file bytes are unchanged after an open/close round trip with no edits.
 - All block types defined in [08 Editor](08-editor.md) render and edit exactly as they do in the web app.
 
@@ -201,7 +201,7 @@ What is in the repo today:
 
 **Docs state:** undocumented. [SPECIFICATION.md](../../SPECIFICATION.md) (lines 34, 114, 710, 762, 859) mentions VS Code only as an external plain-text editor that users may point at Local Folder files.
 
-**Gap:** Implement the provider, the viewType and the workspace-scoped file selectors.
+**Gap:** Implement the provider, the viewType and the space-scoped file selectors.
 
 **Related PRs/issues:** none.
 
@@ -303,9 +303,9 @@ What is in the repo today:
 
 ### REQ-VSC-007 — Webview `StorageBackend` adapter over `vscode.workspace.fs`
 
-**Statement:** The extension MUST provide a `StorageBackend` implementation that forwards file operations from the webview over postMessage to the extension host's `vscode.workspace.fs` API, including `watch()` through `FileSystemWatcher`. This lets workspace-wide features (sidebar, graph, databases, backlinks, search) work on both local and virtual file systems (`file://`, `vscode-vfs://`, github.dev).
+**Statement:** The extension MUST provide a `StorageBackend` implementation that forwards file operations from the webview over postMessage to the extension host's `vscode.workspace.fs` API, including `watch()` through `FileSystemWatcher`. This lets space-wide features (sidebar, graph, databases, backlinks, search) work on both local and virtual file systems (`file://`, `vscode-vfs://`, github.dev).
 
-**Rationale / source:** Derived. REQ-VSC-003 and REQ-VSC-010 need it, because the full component needs access to the whole workspace, not just one document.
+**Rationale / source:** Derived. REQ-VSC-003 and REQ-VSC-010 need it, because the full component needs access to the whole space, not just one document.
 
 **Acceptance criteria:**
 
@@ -318,22 +318,22 @@ What is in the repo today:
 
 **Docs state:** undocumented. No `vscode` matches in `docs/specs/`, and [storage-backends.md](../storage-backends.md) lists no VS Code backend (line-level check unverified).
 
-**Gap:** Implement both backends. Widen the `type` union or remove reliance on it. Add the backends to the storage-backends spec and to [03 Workspaces & storage](03-workspaces-and-storage.md).
+**Gap:** Implement both backends. Widen the `type` union or remove reliance on it. Add the backends to the storage-backends spec and to [03 Spaces & storage](03-spaces-and-storage.md).
 
 **Related PRs/issues:** none.
 
 ### REQ-VSC-008 — Share the local Cept daemon when available
 
-**Statement:** On desktop, the extension MUST discover a running local Cept sync daemon (the same one the CLI and PWA use), connect to it, and delegate remote sync to it rather than running its own sync engine. It MUST NOT start a second, conflicting sync process for the same workspace.
+**Statement:** On desktop, the extension MUST discover a running local Cept sync daemon (the same one the CLI and PWA use), connect to it, and delegate remote sync to it rather than running its own sync engine. It MUST NOT start a second, conflicting sync process for the same space.
 
 **Rationale / source:** Owner requirement ("shares local daemon"). This is the client side of [REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing) and [REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser).
 
 **Acceptance criteria:**
 
 - The extension finds the daemon through the discovery mechanism defined in [05 CLI & daemon](05-cli-and-daemon.md), for example a port or socket file, and authenticates according to [REQ-CLI-008](05-cli-and-daemon.md#req-cli-008--daemon-security-for-localhost-api).
-- The status bar shows the daemon connection and the workspace's sync state (synced, pending, conflict, error).
-- An integration test starts a daemon, opens a workspace in the extension and edits a page, then asserts that the daemon (not the extension) performs the commit and push.
-- If the extension cannot reach a running daemon for the workspace, it never runs its own remote sync for that workspace. It may offer a "Start daemon" command.
+- The status bar shows the daemon connection and the space's sync state (synced, pending, conflict, error).
+- An integration test starts a daemon, opens a space in the extension and edits a page, then asserts that the daemon (not the extension) performs the commit and push.
+- If the extension cannot reach a running daemon for the space, it never runs its own remote sync for that space. It may offer a "Start daemon" command.
 
 **Current state:** not-started. No daemon exists. The only package with a `bin` entry is [packages/signaling-server/package.json](../../../packages/signaling-server/package.json) (line 7), and that is a Yjs relay, not a sync daemon.
 
@@ -345,7 +345,7 @@ What is in the repo today:
 
 ### REQ-VSC-009 — Daemon-less fallback
 
-**Statement:** When no daemon is reachable (which is always the case in VS Code for the Web), the extension MUST still fully support editing and rendering of workspace files. It MUST show the sync status, for example "Daemon unavailable — changes saved to workspace files; sync via VS Code SCM / remote file system".
+**Statement:** When no daemon is reachable (which is always the case in VS Code for the Web), the extension MUST still fully support editing and rendering of space files. It MUST show the sync status, for example "Daemon unavailable — changes saved to space files; sync via VS Code SCM / remote file system".
 
 **Rationale / source:** Derived from REQ-VSC-008 and REQ-VSC-010.
 
@@ -372,8 +372,8 @@ What is in the repo today:
 **Acceptance criteria:**
 
 - The `browser` entry bundle builds as a single webworker-compatible file. A build check fails if the bundle contains any `node:` specifier or Node built-in import.
-- `@vscode/test-web` integration tests run the custom editor, the preview and the workspace-wide features in Chromium.
-- A manual smoke test on github.dev against a sample Cept workspace repo is documented in the extension guide.
+- `@vscode/test-web` integration tests run the custom editor, the preview and the space-wide features in Chromium.
+- A manual smoke test on github.dev against a sample Cept space repo is documented in the extension guide.
 - `@cept/core` exposes Node-free entry points (subpath exports), so the extension does not need a `node:*` stub plugin.
 
 **Current state:** not-started, with a known blocker. The [@cept/core barrel](../../../packages/core/src/index.ts) (line 37) re-exports `LocalFsBackend`, and [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) (lines 8–10) imports `node:fs/promises`, `node:path` and `node:fs`. The web build only works because a custom Vite plugin stubs `node:*` imports in [packages/web/vite.config.ts](../../../packages/web/vite.config.ts) (around lines 14–53).
@@ -404,24 +404,24 @@ What is in the repo today:
 
 **Related PRs/issues:** none.
 
-### REQ-VSC-012 — Workspace root detection and nested workspaces
+### REQ-VSC-012 — Space root detection
 
-**Statement:** The extension MUST identify Cept workspaces in the opened VS Code folder or folders by the presence of `workspace.yaml` or `workspace.yml`. It MUST support nested workspaces up to 10 levels deep. It MUST activate when such a file exists (`workspaceContains` activation event), and it MUST scope the custom editor and sidebar to the correct (innermost) workspace.
+**Statement:** The extension MUST identify Cept spaces in the opened VS Code folder or folders by the presence of `space.cept.yaml` or `space.cept.yml`. An opened folder MAY contain several spaces in subfolders (D-2). It MUST activate when such a file exists (`workspaceContains` activation event), and it MUST scope the custom editor and sidebar to the space that contains the file.
 
-**Rationale / source:** Owner requirement: "workspace.ya?ml defines workspace root" and "nested workspaces … up to 10 deep", applied to the extension. The semantics are defined in [03 Workspaces & storage](03-workspaces-and-storage.md).
+**Rationale / source:** Owner decisions D-1, D-2 and D-3, applied to the extension. The semantics are defined in [03 Spaces & storage](03-spaces-and-storage.md).
 
 **Acceptance criteria:**
 
-- `activationEvents` includes `workspaceContains:**/workspace.{yaml,yml}`.
-- For a fixture with 10 nested workspaces, each page resolves to its innermost workspace root. An 11th nesting level is reported as a diagnostic, with behaviour as defined in 03.
-- Multi-root VS Code workspaces with several Cept workspaces work independently.
-- Markdown files outside any Cept workspace are not offered the Cept editor by default.
+- `activationEvents` includes `workspaceContains:**/space.cept.{yaml,yml}`.
+- For a fixture repo with two sibling spaces, each page resolves to its own space root. A marker below another space root is reported as a diagnostic (nesting is deferred, D-3).
+- Multi-root VS Code workspaces with several Cept spaces work independently.
+- Markdown files outside any Cept space are not offered the Cept editor by default.
 
-**Current state:** not-started. Nothing in the code implements `workspace.ya?ml`. Backends write `.cept/config.yaml` instead ([local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150). The UI uses the term "spaces" (`SpaceManager`, imported in [App.tsx](../../../packages/ui/src/components/App.tsx) around line 43).
+**Current state:** not-started. Nothing in the code implements `space.cept.ya?ml`. Backends write `.cept/config.yaml` instead ([local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150). The UI uses the term "spaces" (`SpaceManager`, imported in [App.tsx](../../../packages/ui/src/components/App.tsx) around line 43).
 
-**Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) defines workspace config under `.cept/`, and [roadmap.md](../../content/reference/roadmap.md) uses "Multi-space support".
+**Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) defines space config under `.cept/`, and [roadmap.md](../../content/reference/roadmap.md) uses "Multi-space support".
 
-**Gap:** Blocked on the workspace format in 03. After that, add the detector and activation events.
+**Gap:** Blocked on the space format in 03. After that, add the detector and activation events.
 
 **Related PRs/issues:** none.
 
@@ -478,7 +478,7 @@ What is in the repo today:
 - With `VSCE_PAT` and `OVSX_PAT` set, the release publishes to both registries. Without them, the job emits `::warning::` and skips.
 - The `.vsix` version matches the repo release version.
 
-**Current state:** not-started. [release.yml](../../../.github/workflows/release.yml), [cd.yml](../../../.github/workflows/cd.yml) and [_tag-release.yml](../../../.github/workflows/_tag-release.yml) contain no `vsce` or `ovsx` steps.
+**Current state:** not-started. [release.yml](../../../.github/workflows/release.yml), [cd.yml](../../../.github/workflows/cd.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) contain no `vsce` or `ovsx` steps.
 
 **Docs state:** undocumented.
 
@@ -511,14 +511,14 @@ What is in the repo today:
 
 The owner needs to decide on each of these.
 
-| # | Conflict / question | Evidence | Options |
-|---|---|---|---|
-| C1 | **Daemon versus client-only architecture.** The owner requires a shared local daemon, but SPECIFICATION.md says "No server process, no database daemon". | [SPECIFICATION.md](../../SPECIFICATION.md) line 43 | (a) Revise the spec to "client-first, optional local daemon" (recommended). (b) Keep the extension daemon-free. |
-| C2 | **`workspace.ya?ml` versus `.cept/config.yaml`; "workspaces" versus "spaces".** | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150; [roadmap.md](../../content/reference/roadmap.md) "Multi-space support" | Settled in [03 Workspaces & storage](03-workspaces-and-storage.md). The extension follows that decision. |
-| C3 | **Architecture rule 4 is broken in code.** UI features are gated by `instanceof BrowserFsBackend`, which would disable remote and sync features under VS Code. | [App.tsx](../../../packages/ui/src/components/App.tsx) lines 342, 430, 956, 1041 | Refactor to capability checks (REQ-VSC-004). This needs no decision, only prioritisation. |
-| C4 | **Architecture rule 1 is broken in code.** `@cept/core` imports `node:fs`, which the web build hides with a stub plugin. | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8–10; [core index.ts](../../../packages/core/src/index.ts) line 37; [vite.config.ts](../../../packages/web/vite.config.ts) | (a) Move `LocalFsBackend` to a Node-only subpath or package (recommended). (b) Replicate the stub in the extension build. |
-| C5 | The platform union lacks `vscode`. | [platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) line 75; SPECIFICATION.md §8.5 | Add `'vscode'`, or move host abstraction into `@cept/ui`. |
-| C6 | Electron is listed for Windows and Linux desktop, but the owner's list never mentions Electron. This is outside this area. | [CLAUDE.md](../../../CLAUDE.md) package table; SPECIFICATION.md §8.2 | See [07 Native apps](07-native-apps.md). |
+| #   | Conflict / question                                                                                                                                            | Evidence                                                                                                                                                                                                                                                                                       | Options                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| C1  | **Daemon versus client-only architecture.** The owner requires a shared local daemon, but SPECIFICATION.md says "No server process, no database daemon".       | [SPECIFICATION.md](../../SPECIFICATION.md) line 43                                                                                                                                                                                                                                             | (a) Revise the spec to "client-first, optional local daemon" (recommended). (b) Keep the extension daemon-free.           |
+| C2  | **`space.cept.ya?ml` versus `.cept/config.yaml`; "workspaces" versus "spaces".**                                                                               | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150; [roadmap.md](../../content/reference/roadmap.md) "Multi-space support" | Settled in [03 Spaces & storage](03-spaces-and-storage.md). The extension follows that decision.                          |
+| C3  | **Architecture rule 4 is broken in code.** UI features are gated by `instanceof BrowserFsBackend`, which would disable remote and sync features under VS Code. | [App.tsx](../../../packages/ui/src/components/App.tsx) lines 342, 430, 956, 1041                                                                                                                                                                                                               | Refactor to capability checks (REQ-VSC-004). This needs no decision, only prioritisation.                                 |
+| C4  | **Architecture rule 1 is broken in code.** `@cept/core` imports `node:fs`, which the web build hides with a stub plugin.                                       | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8–10; [core index.ts](../../../packages/core/src/index.ts) line 37; [vite.config.ts](../../../packages/web/vite.config.ts)                                                                                                 | (a) Move `LocalFsBackend` to a Node-only subpath or package (recommended). (b) Replicate the stub in the extension build. |
+| C5  | The platform union lacks `vscode`.                                                                                                                             | [platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) line 75; SPECIFICATION.md §8.5                                                                                                                                                                                          | Add `'vscode'`, or move host abstraction into `@cept/ui`.                                                                 |
+| C6  | Electron is listed for Windows and Linux desktop, but the owner's list never mentions Electron. This is outside this area.                                     | [CLAUDE.md](../../../CLAUDE.md) package table; SPECIFICATION.md §8.2                                                                                                                                                                                                                           | See [07 Native apps](07-native-apps.md).                                                                                  |
 
 Open questions:
 
@@ -526,7 +526,7 @@ Open questions:
 - **Q2 — Non-page files:** How should database YAML files (`.cept/databases/*.yaml`) open in VS Code: in a Cept database view, or as plain YAML only?
 - **Q3 — Remote auth in the extension:** When no daemon is present, should the extension use VS Code's built-in GitHub and Microsoft authentication providers for remotes, or leave remotes entirely to VS Code SCM and the daemon? See [09 Remotes & auth](09-remotes-and-auth.md).
 - **Q4 — Co-editing in the webview:** Should WebRTC peer-to-peer co-editing ([REQ-COL-003](04-collaboration.md#req-col-003--public-peer-to-peer-webrtc-transport)) work inside the webview? If so, how does it combine with VS Code Live Share and with `TextDocument` as the source of truth?
-- **Q5 — Default editor:** Should the Cept editor be the default for `*.md` inside a workspace (priority `default`), or opt-in (priority `option`)?
+- **Q5 — Default editor:** Should the Cept editor be the default for `*.md` inside a space (priority `default`), or opt-in (priority `option`)?
 - **Q6 — Marketplace identity:** Which publisher ID, and is Open VSX publishing required (needed for VSCodium and Cursor)?
 
 ## 6. Stale documentation to fix
@@ -542,14 +542,14 @@ Open questions:
 
 ## 7. Cross-area dependencies
 
-| This area needs | From area | Requirement(s) |
-|---|---|---|
-| A shared, host-embeddable UI component (capability gating, injected backend, no service worker assumption) | [01 Browser app & PWA](01-browser-app-and-pwa.md) | [REQ-WEB-001](01-browser-app-and-pwa.md#req-web-001--shared-browser-ui-component), [REQ-WEB-003](01-browser-app-and-pwa.md#req-web-003--ui-talks-to-storage-only-through-the-injected-backend), [REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing) |
-| One rendering pipeline shared by the preview and the static renderer | [02 Static rendering](02-static-rendering.md) | [REQ-SSG-004](02-static-rendering.md#req-ssg-004--static-rendering-shares-the-editors-rendering-pipeline) |
-| The `workspace.ya?ml` format, nested-workspace semantics (10 levels), the `StorageBackend` contract and Node-free core exports | [03 Workspaces & storage](03-workspaces-and-storage.md) | REQ-WS (workspace root, nesting and backend-interface requirements) |
-| A decision on co-editing inside webviews, and the signaling endpoints for the CSP | [04 Collaboration](04-collaboration.md) | [REQ-COL-003](04-collaboration.md#req-col-003--public-peer-to-peer-webrtc-transport) |
-| The daemon, its discovery mechanism, its local client protocol and its security | [05 CLI & daemon](05-cli-and-daemon.md) | [REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser), [REQ-CLI-008](05-cli-and-daemon.md#req-cli-008--daemon-security-for-localhost-api), [REQ-CLI-009](05-cli-and-daemon.md#req-cli-009--nested-workspace-awareness-in-daemon) |
-| A platform and shell abstraction that includes `vscode` | [07 Native apps](07-native-apps.md) | REQ-APP (shell abstraction) |
-| Editor feature parity (WYSIWYG, databases, mermaid, GFM, graph, HTML fallback) and stable Markdown round-trips | [08 Editor](08-editor.md) | REQ-EDT (all) |
-| Remote authentication when the extension runs without a daemon | [09 Remotes & auth](09-remotes-and-auth.md) | REQ-AUTH (auth providers) |
-| An Nx project, affected-scoped CI jobs, auto-fix formatting, and release and publishing | [10 Engineering & CI](10-engineering-and-ci.md) | REQ-ENG (Nx/mise monorepo, scoped CI, release) |
+| This area needs                                                                                                                   | From area                                         | Requirement(s)                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A shared, host-embeddable UI component (capability gating, injected backend, no service worker assumption)                        | [01 Browser app & PWA](01-browser-app-and-pwa.md) | [REQ-WEB-001](01-browser-app-and-pwa.md#req-web-001--shared-browser-ui-component), [REQ-WEB-003](01-browser-app-and-pwa.md#req-web-003--ui-talks-to-storage-only-through-the-injected-backend), [REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing)                                                                                                                                                     |
+| One rendering pipeline shared by the preview and the static renderer                                                              | [02 Static rendering](02-static-rendering.md)     | [REQ-SSG-004](02-static-rendering.md#req-ssg-004--static-rendering-shares-the-editors-rendering-pipeline)                                                                                                                                                                                                                                                                                                                                |
+| The `space.cept.ya?ml` format, space discovery rules (nesting deferred), the `StorageBackend` contract and Node-free core exports | [03 Spaces & storage](03-spaces-and-storage.md)   | REQ-WS (space root, nesting and backend-interface requirements)                                                                                                                                                                                                                                                                                                                                                                          |
+| A decision on co-editing inside webviews, and the signaling endpoints for the CSP                                                 | [04 Collaboration](04-collaboration.md)           | [REQ-COL-003](04-collaboration.md#req-col-003--public-peer-to-peer-webrtc-transport)                                                                                                                                                                                                                                                                                                                                                     |
+| The daemon, its discovery mechanism, its local client protocol and its security                                                   | [05 CLI & daemon](05-cli-and-daemon.md)           | [REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [REQ-CLI-007](05-cli-and-daemon.md#req-cli-007--daemon-discovery-and-fallback-from-pwabrowser), [REQ-CLI-008](05-cli-and-daemon.md#req-cli-008--daemon-security-for-localhost-api), [REQ-CLI-009](05-cli-and-daemon.md#req-cli-009--space-discovery-in-the-daemon) |
+| A platform and shell abstraction that includes `vscode`                                                                           | [07 Native apps](07-native-apps.md)               | REQ-APP (shell abstraction)                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Editor feature parity (WYSIWYG, databases, mermaid, GFM, graph, HTML fallback) and stable Markdown round-trips                    | [08 Editor](08-editor.md)                         | REQ-EDT (all)                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Remote authentication when the extension runs without a daemon                                                                    | [09 Remotes & auth](09-remotes-and-auth.md)       | REQ-AUTH (auth providers)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| An Nx project, affected-scoped CI jobs, auto-fix formatting, and release and publishing                                           | [10 Engineering & CI](10-engineering-and-ci.md)   | REQ-ENG (Nx/mise monorepo, scoped CI, release)                                                                                                                                                                                                                                                                                                                                                                                           |

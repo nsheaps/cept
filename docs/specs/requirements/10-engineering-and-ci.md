@@ -30,34 +30,34 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 
 - What the static renderer and CLI `render` command produce. This area covers only the CI that runs them: see [02](02-static-rendering.md) and [05](05-cli-and-daemon.md).
 - Native shell implementation (Electron/Electrobun/Capacitor projects): see [07](07-native-apps.md). This area requires only that CI builds whatever those projects define.
-- Demo workspace and docs-space runtime behaviour: see [01](01-browser-app-and-pwa.md).
+- Demo space and docs-space runtime behaviour: see [01](01-browser-app-and-pwa.md).
 - Deploying the Cloudflare OAuth proxy infrastructure, which lives in `nsheaps/iac`: see [09](09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac).
 - Editing org-synced files (`apply-repo-settings.yaml`, `dispatch-review.yaml`, `pr-status-dispatch.yaml`, and the shared parts of `.github/settings.yml`). They come from `nsheaps/.github` and are only referenced here. The exception is the per-repo enablement of ruleset templates in `.github/settings.yml`, such as `require-checks` (REQ-ENG-020).
 
 ## 2. Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-ENG-001](#req-eng-001--monorepo-orchestrated-by-nx) | Monorepo orchestrated by Nx with standard targets on every package | MUST | partial | documented-as-desired | stale |
-| [REQ-ENG-002](#req-eng-002--nx-project-tags-and-module-boundary-enforcement) | Nx tags + enforce-module-boundaries lint | SHOULD | not-started | documented-differently | stale |
-| [REQ-ENG-003](#req-eng-003--mise-pins-all-tools-exactly) | mise pins all tools exactly | MUST | divergent | documented-differently | stale |
-| [REQ-ENG-004](#req-eng-004--mise-tasks-are-the-single-entry-point-for-ci-and-local) | mise tasks are the single entry point for CI and local | MUST | not-started | undocumented | n/a |
-| [REQ-ENG-005](#req-eng-005--reusable-workflow-structure) | Reusable `_*.yml` workflow structure | SHOULD | implemented | documented-differently | stale |
-| [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci) | Automated formatting fixes committed by CI | MUST | not-started | documented-differently | stale |
-| [REQ-ENG-007](#req-eng-007--lint-covers-every-auto-checkable-file-type) | Lint covers every auto-checkable file type | SHOULD | partial | undocumented | n/a |
-| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects) | PR unit tests scoped to affected projects | MUST | not-started | documented-as-desired | stale |
-| [REQ-ENG-009](#req-eng-009--typecheck-and-build-per-project) | Typecheck and build per project with real artifacts | MUST | partial | documented-differently | stale |
-| [REQ-ENG-010](#req-eng-010--base-implementation-in-bun-and-typescript-strict) | Bun + TypeScript strict baseline | MUST | implemented | documented-as-desired | accurate |
-| [REQ-ENG-011](#req-eng-011--dependencies-declared-per-package) | Dependencies declared per package | SHOULD | divergent | undocumented | n/a |
-| [REQ-ENG-012](#req-eng-012--automated-versionrelease-flow-from-conventional-commits) | Automated version/release flow from conventional commits | MUST | partial | undocumented | n/a |
-| [REQ-ENG-013](#req-eng-013--dependency-updates-via-renovate) | Dependency updates via Renovate, validated by full CI | MUST | partial | documented-as-desired | accurate |
-| [REQ-ENG-014](#req-eng-014--pr-preview-deployments-of-the-app) | PR preview deployments of the app | MUST | implemented | documented-as-desired | stale |
-| [REQ-ENG-015](#req-eng-015--github-pages-production-deployment-of-the-app) | GitHub Pages deployment of the app (demo + read-only docs) | MUST | partial | documented-differently | stale |
-| [REQ-ENG-016](#req-eng-016--docs-site-built-and-deployed-as-a-static-site-by-ci) | Docs site built by Cept's static render and deployed by CI | MUST | not-started | documented-differently | stale |
-| [REQ-ENG-017](#req-eng-017--e2e-and-screenshot-automation-healthy-and-gating) | E2E and screenshot automation healthy and gating | MUST | partial | documented-as-desired | n/a |
-| [REQ-ENG-018](#req-eng-018--security-scanning-in-ci) | Security scanning in CI | SHOULD | not-started | undocumented | n/a |
-| [REQ-ENG-019](#req-eng-019--git-workflow-matches-repo-rulesets) | Git workflow docs match repo rulesets | MUST | divergent | documented-differently | stale |
-| [REQ-ENG-020](#req-eng-020--ci-checks-gate-merges-to-main) | CI checks gate merges to `main` (including Renovate automerge) | MUST | not-started | undocumented | n/a |
+| ID                                                                                   | Requirement                                                        | Priority | Impl status | Docs status            | Docs accurate |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-ENG-001](#req-eng-001--monorepo-orchestrated-by-nx)                             | Monorepo orchestrated by Nx with standard targets on every package | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-ENG-002](#req-eng-002--nx-project-tags-and-module-boundary-enforcement)         | Nx tags + enforce-module-boundaries lint                           | SHOULD   | not-started | documented-differently | stale         |
+| [REQ-ENG-003](#req-eng-003--mise-pins-all-tools-exactly)                             | mise pins all tools exactly                                        | MUST     | divergent   | documented-differently | stale         |
+| [REQ-ENG-004](#req-eng-004--mise-tasks-are-the-single-entry-point-for-ci-and-local)  | mise tasks are the single entry point for CI and local             | MUST     | not-started | undocumented           | n/a           |
+| [REQ-ENG-005](#req-eng-005--reusable-workflow-structure)                             | Reusable `_*.yml` workflow structure                               | SHOULD   | implemented | documented-differently | stale         |
+| [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci)                        | Automated formatting fixes committed by CI                         | MUST     | not-started | documented-differently | stale         |
+| [REQ-ENG-007](#req-eng-007--lint-covers-every-auto-checkable-file-type)              | Lint covers every auto-checkable file type                         | SHOULD   | partial     | undocumented           | n/a           |
+| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-ENG-009](#req-eng-009--typecheck-and-build-per-project)                         | Typecheck and build per project with real artifacts                | MUST     | partial     | documented-differently | stale         |
+| [REQ-ENG-010](#req-eng-010--base-implementation-in-bun-and-typescript-strict)        | Bun + TypeScript strict baseline                                   | MUST     | implemented | documented-as-desired  | accurate      |
+| [REQ-ENG-011](#req-eng-011--dependencies-declared-per-package)                       | Dependencies declared per package                                  | SHOULD   | divergent   | undocumented           | n/a           |
+| [REQ-ENG-012](#req-eng-012--automated-versionrelease-flow-from-conventional-commits) | Automated version/release flow from conventional commits           | MUST     | partial     | undocumented           | n/a           |
+| [REQ-ENG-013](#req-eng-013--dependency-updates-via-renovate)                         | Dependency updates via Renovate, validated by full CI              | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-ENG-014](#req-eng-014--pr-preview-deployments-of-the-app)                       | PR preview deployments of the app                                  | MUST     | implemented | documented-as-desired  | stale         |
+| [REQ-ENG-015](#req-eng-015--github-pages-production-deployment-of-the-app)           | GitHub Pages deployment of the app (demo + read-only docs)         | MUST     | partial     | documented-differently | stale         |
+| [REQ-ENG-016](#req-eng-016--docs-site-built-and-deployed-as-a-static-site-by-ci)     | Docs site built by Cept's static render and deployed by CI         | MUST     | not-started | documented-differently | stale         |
+| [REQ-ENG-017](#req-eng-017--e2e-and-screenshot-automation-healthy-and-gating)        | E2E and screenshot automation healthy and gating                   | MUST     | partial     | documented-as-desired  | n/a           |
+| [REQ-ENG-018](#req-eng-018--security-scanning-in-ci)                                 | Security scanning in CI                                            | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-ENG-019](#req-eng-019--git-workflow-matches-repo-rulesets)                      | Git workflow docs match repo rulesets                              | MUST     | divergent   | documented-differently | stale         |
+| [REQ-ENG-020](#req-eng-020--ci-checks-gate-merges-to-main)                           | CI checks gate merges to `main` (including Renovate automerge)     | MUST     | not-started | undocumented           | n/a           |
 
 Status vocabulary:
 
@@ -128,11 +128,11 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 **Acceptance criteria:**
 
-- `nx show projects` lists every workspace (core, ui, web, desktop, mobile, signaling-server, docs, e2e, plus future cli and vscode packages).
+- `nx show projects` lists every space (core, ui, web, desktop, mobile, signaling-server, docs, e2e, plus future cli and vscode packages).
 - Every project except pure test harnesses defines `build`, `lint`, `typecheck` and `test:unit` targets. None of them is an `echo` placeholder.
 - A package that intentionally has no build declares that explicitly (target omitted with a documented reason, or a tag such as `type:nobuild`).
 - Root `test`, `build`, `lint` and `typecheck` scripts go through Nx.
-- `nx graph` shows dependency edges that match workspace imports.
+- `nx graph` shows dependency edges that match space imports.
 
 **Current state:** partial.
 
@@ -195,7 +195,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - No workflow under `.github/workflows/` (except org-synced ones) runs `bun run …`, `npx …` or multi-line build logic directly. Every step calls `mise run …` or a script in `scripts/ci/`.
 - `mise run check` locally runs the same gates as CI.
 
-**Current state:** not-started. There is no `[tasks]` section and no `.mise/tasks/` directory. Workflows call bun scripts directly ([.github/workflows/_lint.yml](../../../.github/workflows/_lint.yml), [.github/workflows/_test-unit.yml](../../../.github/workflows/_test-unit.yml)). Inline logic remains in [pr-version-check.yml](../../../.github/workflows/pr-version-check.yml) (bump-type shell, around lines 28-73), [_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) (ImageMagick diff, around lines 63-92), [cd.yml](../../../.github/workflows/cd.yml) (gh-pages deploy, around lines 85-98) and [preview-deploy.yml](../../../.github/workflows/preview-deploy.yml) (around lines 33-66).
+**Current state:** not-started. There is no `[tasks]` section and no `.mise/tasks/` directory. Workflows call bun scripts directly ([.github/workflows/\_lint.yml](../../../.github/workflows/_lint.yml), [.github/workflows/\_test-unit.yml](../../../.github/workflows/_test-unit.yml)). Inline logic remains in [pr-version-check.yml](../../../.github/workflows/pr-version-check.yml) (bump-type shell, around lines 28-73), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) (ImageMagick diff, around lines 63-92), [cd.yml](../../../.github/workflows/cd.yml) (gh-pages deploy, around lines 85-98) and [preview-deploy.yml](../../../.github/workflows/preview-deploy.yml) (around lines 33-66).
 
 **Docs state:** undocumented. CLAUDE.md lists only `bun run` commands.
 
@@ -213,7 +213,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - `_typecheck`, `_security`, `_deploy-docs` and a PR-title workflow exist (see REQ-ENG-012, REQ-ENG-016 and REQ-ENG-018).
 - The workflow list in the specs matches `.github/workflows/`.
 
-**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [_build.yml](../../../.github/workflows/_build.yml), [_lint.yml](../../../.github/workflows/_lint.yml) (typecheck merged in), [_test-unit.yml](../../../.github/workflows/_test-unit.yml), [_test-integration.yml](../../../.github/workflows/_test-integration.yml), [_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [_tag-release.yml](../../../.github/workflows/_tag-release.yml). Missing compared with qontacts: `_typecheck`, `_security`, `_deploy-docs`, `pr-title`.
+**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [\_build.yml](../../../.github/workflows/_build.yml), [\_lint.yml](../../../.github/workflows/_lint.yml) (typecheck merged in), [\_test-unit.yml](../../../.github/workflows/_test-unit.yml), [\_test-integration.yml](../../../.github/workflows/_test-integration.yml), [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml). Missing compared with qontacts: `_typecheck`, `_security`, `_deploy-docs`, `pr-title`.
 
 **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §3 (lines 131-136) and §9.2-9.5 list `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. None of these exist. The [README.md](../../../README.md) badge (line 8) points at the nonexistent `release-web.yml`.
 
@@ -232,7 +232,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - Fork PRs, where the token cannot push, fail with a clear message instead of a silent pass.
 - Autofix never runs on `main` directly and never adds `[skip ci]`.
 
-**Current state:** not-started. Prettier is a devDependency in [package.json](../../../package.json) and is configured by [.prettierrc](../../../.prettierrc), but no script or workflow ever runs it (only `eslint-config-prettier` is loaded, which disables conflicting ESLint rules and formats nothing). Package lint scripts are `eslint src/`. No workflow commits fixes to PR branches. The only automated commit is the screenshot update in [_tag-release.yml](../../../.github/workflows/_tag-release.yml) (lines 46-59, `main` only, with a `[skip ci]` message). The org pattern exists in `/home/user/ai-mktpl/.github/workflows/ci.yaml` and `/home/user/agents/.github/workflows/test.yaml`.
+**Current state:** not-started. Prettier is a devDependency in [package.json](../../../package.json) and is configured by [.prettierrc](../../../.prettierrc), but no script or workflow ever runs it (only `eslint-config-prettier` is loaded, which disables conflicting ESLint rules and formats nothing). Package lint scripts are `eslint src/`. No workflow commits fixes to PR branches. The only automated commit is the screenshot update in [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) (lines 46-59, `main` only, with a `[skip ci]` message). The org pattern exists in `/home/user/ai-mktpl/.github/workflows/ci.yaml` and `/home/user/agents/.github/workflows/test.yaml`.
 
 **Docs state:** documented-differently, stale. [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36 and [CLAUDE.md](../../../CLAUDE.md) say `bun run lint  # ESLint + Prettier`. SPEC §9.1 says the same. Prettier is never run.
 
@@ -269,7 +269,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - Nx caching is enabled in CI (local or remote cache) so unchanged targets are skipped.
 - `main` runs `nx run-many -t test:unit` for every project.
 
-**Current state:** not-started. [_test-unit.yml](../../../.github/workflows/_test-unit.yml) runs root `bun run test:unit`, which is `vitest run --project unit` over globbed `packages/*/src/**` ([vitest.config.ts](../../../vitest.config.ts), around lines 22-26), so everything runs every time. Checkouts use the default `fetch-depth: 1`. No workflow uses `nx affected`. E2E also always runs the full suite ([_test-e2e.yml](../../../.github/workflows/_test-e2e.yml)).
+**Current state:** not-started. [\_test-unit.yml](../../../.github/workflows/_test-unit.yml) runs root `bun run test:unit`, which is `vitest run --project unit` over globbed `packages/*/src/**` ([vitest.config.ts](../../../vitest.config.ts), around lines 22-26), so everything runs every time. Checkouts use the default `fetch-depth: 1`. No workflow uses `nx affected`. E2E also always runs the full suite ([\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml)).
 
 **Docs state:** documented-as-desired, stale. [CLAUDE.md](../../../CLAUDE.md) lists `nx affected -t test` and `nx affected -t build` as working commands, and [SPECIFICATION.md](../../SPECIFICATION.md) (around line 1298) implies the same. With most packages lacking test targets, `nx affected -t test` skips most code.
 
@@ -286,7 +286,9 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - `nx run-many -t typecheck` and `nx run-many -t build` include every deliverable package.
 - No release job uses `if-no-files-found: warn` or `continue-on-error: true` for a required artifact. A job whose platform is not yet implemented is explicitly disabled and labelled as a placeholder.
 
-**Current state:** partial. [_lint.yml](../../../.github/workflows/_lint.yml) runs typecheck via `nx run-many`, and [_build.yml](../../../.github/workflows/_build.yml) runs `bun run build`, which covers only core, ui and web. The docs build is `echo`. [cd.yml](../../../.github/workflows/cd.yml) `build-macos/windows/linux/ios/android` upload `packages/desktop/dist/*` and `packages/mobile/{ios,android}` with `if-no-files-found: warn` and `continue-on-error` on `cap sync`, so they pass and produce nothing.
+> **Owner direction (D-24):** Native-platform CI jobs (Electrobun and Capacitor packaging, signing, upload) are scoped to their respective platform artifacts only. These jobs MUST fail (or emit `::warning::` and produce unsigned builds on PRs) when expected artifacts are missing. No `continue-on-error` and no `|| true` on any build, sync or upload step. See [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts).
+
+**Current state:** partial. [\_lint.yml](../../../.github/workflows/_lint.yml) runs typecheck via `nx run-many`, and [\_build.yml](../../../.github/workflows/_build.yml) runs `bun run build`, which covers only core, ui and web. The docs build is `echo`. [cd.yml](../../../.github/workflows/cd.yml) `build-macos/windows/linux/ios/android` upload `packages/desktop/dist/*` and `packages/mobile/{ios,android}` with `if-no-files-found: warn` and `continue-on-error` on `cap sync`, so they pass and produce nothing.
 
 **Docs state:** documented-differently, stale. [TASKS.md](../../../TASKS.md) T10.1 (release CI for desktop/web/mobile) and T10.2 (code signing) are checked while P6.1-P6.7 are not. [SPECIFICATION.md](../../SPECIFICATION.md) §9.2/§9.4 describe electron-builder, signing and gradle steps that do not exist.
 
@@ -344,7 +346,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Current state:** partial. The mechanism is wired, but it has not produced a release in over six weeks.
 
 - [.release-it.json](../../../.release-it.json) uses conventional-changelog and tag `v${version}`.
-- [_tag-release.yml](../../../.github/workflows/_tag-release.yml) runs `bunx release-it` with the automation App token.
+- [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) runs `bunx release-it` with the automation App token.
 - [cd.yml](../../../.github/workflows/cd.yml) creates the GitHub Release when the tag is created.
 - [pr-version-check.yml](../../../.github/workflows/pr-version-check.yml) posts the projected version. [release.yml](../../../.github/workflows/release.yml) is a manual dispatch.
 - Gaps: there is no PR-title workflow. There are two extra manual paths: the `workflow_dispatch` [release.yml](../../../.github/workflows/release.yml), and the legacy [scripts/bump-version.sh](../../../scripts/bump-version.sh), which rewrites every `package.json` version and then tells the user to commit, tag and `git push origin main --tags` by hand.
@@ -394,14 +396,14 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-015 — GitHub Pages production deployment of the app
 
-**Statement:** CI MUST deploy the web app to GitHub Pages (`/cept/app/`), configured for the demo workspace and the bundled read-only docs space. The site root MUST redirect to the app (or to a landing page linking the app and the docs site).
+**Statement:** CI MUST deploy the web app to GitHub Pages (`/cept/app/`), configured for the demo space and the bundled read-only docs space. The site root MUST redirect to the app (or to a landing page linking the app and the docs site).
 
-**Source:** handler ("a github pages deployment of just the app, set up for the demo workspace and a read-only docs site"). Runtime behaviour is covered in [REQ-WEB-015](01-browser-app-and-pwa.md#req-web-015--github-pages-deployment-of-just-the-app), [REQ-WEB-016](01-browser-app-and-pwa.md#req-web-016--pages-deployment-configured-for-demo-workspace) and [REQ-WEB-017](01-browser-app-and-pwa.md#req-web-017--read-only-docs-in-the-pages-deployment).
+**Source:** handler ("a github pages deployment of just the app, set up for the demo space and a read-only docs site"). Runtime behaviour is covered in [REQ-WEB-015](01-browser-app-and-pwa.md#req-web-015--github-pages-deployment-of-just-the-app), [REQ-WEB-016](01-browser-app-and-pwa.md#req-web-016--pages-deployment-configured-for-demo-space) and [REQ-WEB-017](01-browser-app-and-pwa.md#req-web-017--read-only-docs-in-the-pages-deployment).
 
 **Acceptance criteria:**
 
 - On every release (the owner decides whether this also runs on every push to `main`; see open questions), `/cept/app/` is updated and deep links resolve (404 fallback).
-- The deployed app opens with the demo workspace and the read-only docs space available.
+- The deployed app opens with the demo space and the read-only docs space available.
 - A post-deploy smoke check (HTTP 200 on app shell and a deep link) runs in CD.
 - Every script used for deploy content (for example `scripts/generate-live-docs.sh`) is either invoked by a workflow or deleted.
 
@@ -424,7 +426,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - A `_deploy-docs.yml` (or equivalent job) runs `mise run docs:build`, which calls the Cept CLI render command. No third-party SSG (VitePress or Starlight) is used.
 - PR runs build the docs site and run e2e assertions on the output (pages render, cross-links resolve, assets load under the subpath). A regression in static rendering fails the PR.
 - `main`/release runs deploy the output to a stable Pages path (for example `/cept/docs/`).
-- The `docs` workspace targets are real, not `echo`.
+- The `docs` space targets are real, not `echo`.
 
 **Current state:** not-started. There is no docs workflow, [docs/package.json](../../../docs/package.json) build is `echo`, and there is no CLI package or static render command. TASKS.md P8.4-P8.6 are unchecked. Docs exist only as the bundled in-app space.
 
@@ -444,7 +446,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - The Playwright container image tag, cache key and comments all equal the `@playwright/test` version in `package.json`, and Renovate bumps them together.
 - Screenshot commits occur only when the pixel diff exceeds the threshold.
 
-**Current state:** partial. [_test-e2e.yml](../../../.github/workflows/_test-e2e.yml) and [_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) exist. They copy browsers from Playwright image v1.61.1 (comments say 1.59.1), while `package.json` pins `@playwright/test` 1.63.0. Both jobs fail on https://github.com/nsheaps/cept/pull/283 and https://github.com/nsheaps/cept/pull/246. They have also failed on every `main` push since 2026-08-23. Because [ci.yml](../../../.github/workflows/ci.yml) makes tag-release `need` both, releases are blocked while they are red. The root cause of the current failure is verified from the log of `main` run 37399563318 (2026-10-06): `browserType.launch: Executable doesn't exist at ~/.cache/ms-playwright/chromium_headless_shell-1243/...`. Playwright 1.63.0 expects a newer browser build than the cached v1.61.1 image provides. Whatever caused the earlier failures, before the 1.63.0 bump in #347, was not checked.
+**Current state:** partial. [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml) and [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) exist. They copy browsers from Playwright image v1.61.1 (comments say 1.59.1), while `package.json` pins `@playwright/test` 1.63.0. Both jobs fail on https://github.com/nsheaps/cept/pull/283 and https://github.com/nsheaps/cept/pull/246. They have also failed on every `main` push since 2026-08-23. Because [ci.yml](../../../.github/workflows/ci.yml) makes tag-release `need` both, releases are blocked while they are red. The root cause of the current failure is verified from the log of `main` run 37399563318 (2026-10-06): `browserType.launch: Executable doesn't exist at ~/.cache/ms-playwright/chromium_headless_shell-1243/...`. Playwright 1.63.0 expects a newer browser build than the cached v1.61.1 image provides. Whatever caused the earlier failures, before the 1.63.0 bump in #347, was not checked.
 
 **Docs state:** documented-as-desired. Docs accuracy is n/a.
 
@@ -470,14 +472,16 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-019 — Git workflow matches repo rulesets
 
-**Statement:** Contributor and agent workflow docs MUST describe the workflow that the branch rulesets enforce: PRs required on `main` (currently with zero required approvals).
+**Statement:** Contributor and agent workflow docs MUST describe the workflow that the branch rulesets enforce: PRs required on `main` (currently with zero required approvals). Docs-only changes MAY be pushed directly to `main` by the automation App; functional changes (code, CI) MUST go through small, reviewable PRs.
 
-**Source:** derived (conflict found during the audit).
+> **Owner direction (D-21):** Docs-only changes are pushed directly to `main` without review; functional changes (code, CI) go through small, reviewable PRs. `require-1-review` remains disabled.
+
+**Source:** derived (conflict found during the audit); decided as D-21.
 
 **Acceptance criteria:**
 
-- [CLAUDE.md](../../../CLAUDE.md), [SPECIFICATION.md](../../SPECIFICATION.md), [CONTRIBUTING.md](../../../CONTRIBUTING.md) and [.claude/rules/pr-management.md](../../../.claude/rules/pr-management.md) all describe a branch plus draft-PR flow.
-- No doc or script instructs pushing directly to `main` (including `scripts/bump-version.sh`, whose closing instructions say `git push origin main --tags`).
+- [CLAUDE.md](../../../CLAUDE.md), [SPECIFICATION.md](../../SPECIFICATION.md), [CONTRIBUTING.md](../../../CONTRIBUTING.md) and [.claude/rules/pr-management.md](../../../.claude/rules/pr-management.md) all describe the D-21 workflow: docs-only → direct push to `main`; code/CI → PR.
+- No doc or script instructs pushing functional (code, CI) changes directly to `main` (including `scripts/bump-version.sh`, whose closing instructions say `git push origin main --tags`; that script must be updated or retired).
 
 **Current state:** divergent. In [.github/settings.yml](../../../.github/settings.yml), `require-pr` is `enforcement: 'active'` (line 188), while `require-1-review` (line 234) and `require-codeowner-review` (line 319) are `enforcement: disabled`. The live rulesets API agrees: `protect-default-branch` and `require-pr` are active, and the two review rulesets are disabled. Repo admins and the automation App can bypass `require-pr`, which is how `_tag-release` pushes release commits to `main`. Recent work arrives via PRs (https://github.com/nsheaps/cept/pull/67, https://github.com/nsheaps/cept/pull/283). [CLAUDE.md](../../../CLAUDE.md) says "Commit and push directly to main. Do NOT create feature branches … or PR workflows".
 
@@ -505,49 +509,49 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ## 5. Conflicts and open questions
 
-The owner needs to decide the following:
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
-1. **Git workflow.** CLAUDE.md and SPECIFICATION.md (line 1731) say to commit directly to `main`. `.claude/rules/pr-management.md` and the active `require-pr` ruleset in `.github/settings.yml` say otherwise. The review rulesets are disabled. Recommendation: PR-based flow (REQ-ENG-019). Should `require-1-review` be enabled as well?
+1. **Git workflow — Decided (D-21).** **Decided (D-21):** Docs-only changes are pushed directly to `main` without review; functional changes (code, CI) go through small, reviewable PRs. `require-1-review` remains disabled. See REQ-ENG-019.
 2. **Lint = ESLint + Prettier.** CLAUDE.md, CONTRIBUTING.md (line 36) and SPEC §9.1 make this claim, but nothing runs Prettier. Is Prettier the formatter of record (REQ-ENG-006), or should another formatter (for example Biome) be adopted?
 3. **Affected testing.** `nx affected -t test` is advertised, but only core and ui have test targets and CI never uses affected. Accept the per-project Vitest split that REQ-ENG-008 requires?
-4. **Desktop shell.** SPEC §2.2/§9.2, CLAUDE.md, README.md (line 61), CONTRIBUTING.md (line 49) and [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) specify Electrobun (macOS) plus Electron (Windows/Linux). The handler names no shell, and `packages/desktop` contains only a bridge stub. Pick one shell (see [07](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible)) before CI packaging is built.
+4. **Desktop shell — Decided (D-17).** **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed from scope; mobile shells use Capacitor (iOS, Android). See [REQ-APP-007](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
 5. **Docs site generator.** SPEC §9.5, CLAUDE.md and TASKS.md T9.1 claim VitePress/Starlight. The handler requires Cept's own render command (REQ-ENG-016). Confirm that VitePress/Starlight is dropped.
 6. **Node version.** `.mise.toml` has node 24, while SPEC §9.6 says 22.x and `engines` says `>=22`. Which exact version should be pinned? Exact pins also contradict the current floating `bun = "1"`.
 7. **Workflow set.** SPEC lists `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. The repo has `ci.yml` + `_*.yml`, `cd.yml`, `release.yml`, `preview-deploy.yml` and `pr-version-check.yml`. Adopt the actual set (qontacts-style) and update the SPEC?
 8. **Pages deploy trigger.** Deploy the app only on release tags (current), or on every push to `main` (SPEC §9.3)?
-9. **Terminology.** The handler says "workspaces"; code and docs say "spaces" (for example the "Docs (Live)" space in `scripts/generate-live-docs.sh`). This affects naming of tasks and deploy paths; see [03](03-workspaces-and-storage.md).
+9. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged (`WorkspaceConfig`, `workspace-state.json`, `cept-workspace`, `vscode.workspace`). See [03 REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 10. **Manual release paths.** `scripts/bump-version.sh` rewrites package versions and tells the user to tag and push to `main` by hand, which conflicts with release-it and the rulesets. `release.yml` is a second, manually dispatched release-it path. Delete the script? Keep `release.yml`?
 11. **Playwright versions.** The browser image is v1.61.1 (comments say 1.59.1) while `@playwright/test` is 1.63.0. The `main` e2e log confirms that this mismatch causes the current failure (missing `chromium_headless_shell-1243`). How should they be kept in lockstep: a Renovate regex manager, or deriving the version from `package.json`?
 12. **Required checks and automerge.** Which checks should the rulesets require (REQ-ENG-020)? Should Renovate automerge stay enabled once they are required?
 
 ## 6. Stale documentation to fix
 
-| Location | Stale claim | Correct state |
-| --- | --- | --- |
-| [README.md](../../../README.md) line 8 | Deploy badge references `release-web.yml` | Deploy is `deploy-web` in `cd.yml` |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §3 (lines 131-136), §9.2-9.5 | `release-desktop/web/mobile.yml`, `docs.yml`; electron-builder, signing, gradle, VitePress steps | Real set is `ci.yml` + `_*.yml`, `cd.yml`, `release.yml`, `preview-deploy.yml`; no signing or packaging exists |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.1.1 | Placeholder preview steps, `nx run web:build`, `CEPT_DEMO_MODE`, `checkout@v4` | `npx vite build`, `VITE_IS_PREVIEW`, gh-pages subdirectory |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.6 | `.mise.toml` bun 1.x / node 22.x | `bun = "1"`, `node = "24"` (and both should be exact) |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) around line 1731; [CLAUDE.md](../../../CLAUDE.md) Repository | Commit directly to `main`, no PRs | PR-required rulesets are active |
-| [CLAUDE.md](../../../CLAUDE.md) Key Commands; [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36 | `bun run lint  # ESLint + Prettier` | Prettier is not run |
-| [CLAUDE.md](../../../CLAUDE.md) Key Commands | `nx affected -t test` / `-t build` presented as working | Most packages have no test or build target |
-| [CLAUDE.md](../../../CLAUDE.md) package table | `@cept/docs` is a "Starlight/VitePress documentation site" | `docs/package.json` targets are `echo` placeholders |
-| [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 59 | Architecture rules "enforced in code review and CI" | No CI enforcement exists |
-| [TASKS.md](../../../TASKS.md) T0.1 | Monorepo with mise, bun and Nx done | Nx targets incomplete, no mise tasks |
-| [TASKS.md](../../../TASKS.md) T9.1, T10.1, T10.2, T10.3 | Docs site, release CI, code signing and auto-update done | Docs build is `echo`; native jobs produce nothing; no signing; P6.x unchecked |
-| [TASKS.md](../../../TASKS.md) P2.4f | Playwright CI screenshots done | The `screenshots` job has failed on every `main` push since 2026-08-23 (Playwright browser mismatch) |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) | "Monorepo setup (Bun, Nx, TypeScript): Done"; "GitHub Pages deployment: Done" | Nx coverage partial; Pages app deploy only on tags, no docs site |
+| Location                                                                                                     | Stale claim                                                                                      | Correct state                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| [README.md](../../../README.md) line 8                                                                       | Deploy badge references `release-web.yml`                                                        | Deploy is `deploy-web` in `cd.yml`                                                                             |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §3 (lines 131-136), §9.2-9.5                                 | `release-desktop/web/mobile.yml`, `docs.yml`; electron-builder, signing, gradle, VitePress steps | Real set is `ci.yml` + `_*.yml`, `cd.yml`, `release.yml`, `preview-deploy.yml`; no signing or packaging exists |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.1.1                                                       | Placeholder preview steps, `nx run web:build`, `CEPT_DEMO_MODE`, `checkout@v4`                   | `npx vite build`, `VITE_IS_PREVIEW`, gh-pages subdirectory                                                     |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.6                                                         | `.mise.toml` bun 1.x / node 22.x                                                                 | `bun = "1"`, `node = "24"` (and both should be exact)                                                          |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) around line 1731; [CLAUDE.md](../../../CLAUDE.md) Repository | Commit directly to `main`, no PRs                                                                | PR-required rulesets are active                                                                                |
+| [CLAUDE.md](../../../CLAUDE.md) Key Commands; [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36            | `bun run lint  # ESLint + Prettier`                                                              | Prettier is not run                                                                                            |
+| [CLAUDE.md](../../../CLAUDE.md) Key Commands                                                                 | `nx affected -t test` / `-t build` presented as working                                          | Most packages have no test or build target                                                                     |
+| [CLAUDE.md](../../../CLAUDE.md) package table                                                                | `@cept/docs` is a "Starlight/VitePress documentation site"                                       | `docs/package.json` targets are `echo` placeholders                                                            |
+| [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 59                                                          | Architecture rules "enforced in code review and CI"                                              | No CI enforcement exists                                                                                       |
+| [TASKS.md](../../../TASKS.md) T0.1                                                                           | Monorepo with mise, bun and Nx done                                                              | Nx targets incomplete, no mise tasks                                                                           |
+| [TASKS.md](../../../TASKS.md) T9.1, T10.1, T10.2, T10.3                                                      | Docs site, release CI, code signing and auto-update done                                         | Docs build is `echo`; native jobs produce nothing; no signing; P6.x unchecked                                  |
+| [TASKS.md](../../../TASKS.md) P2.4f                                                                          | Playwright CI screenshots done                                                                   | The `screenshots` job has failed on every `main` push since 2026-08-23 (Playwright browser mismatch)           |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md)                                      | "Monorepo setup (Bun, Nx, TypeScript): Done"; "GitHub Pages deployment: Done"                    | Nx coverage partial; Pages app deploy only on tags, no docs site                                               |
 
 ## 7. Cross-area dependencies
 
-| This area needs | From | Requirement(s) |
-| --- | --- | --- |
-| A `cept render` command and static component for the docs pipeline (REQ-ENG-016) | CLI, static rendering | [REQ-CLI-010](05-cli-and-daemon.md#req-cli-010--cept-render-static-site-command), [REQ-CLI-011](05-cli-and-daemon.md#req-cli-011--render-command-exercised-by-cept-docs-site-e2e), [REQ-SSG-013](02-static-rendering.md#req-ssg-013--cept-docs-site-is-generated-by-cepts-own-static-site-generation) to [REQ-SSG-015](02-static-rendering.md#req-ssg-015--docs-site-deployment-e2e-tests-static-site-generation) |
-| Real desktop and mobile projects to package (REQ-ENG-009) | Native apps | [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts), [REQ-APP-013](07-native-apps.md#req-app-013--code-signing-and-notarization), [REQ-APP-018](07-native-apps.md#req-app-018--nxmise-targets-for-native-builds), [REQ-APP-019](07-native-apps.md#req-app-019--pr-time-validation-of-packaging) |
-| Demo workspace and read-only docs space in the deployed app (REQ-ENG-015) | Browser app, storage | [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-workspace-uses-in-memory-file-storage), [REQ-WEB-015](01-browser-app-and-pwa.md#req-web-015--github-pages-deployment-of-just-the-app) to [REQ-WEB-018](01-browser-app-and-pwa.md#req-web-018--bundled-docs-generated-from-docscontent), [REQ-WEB-021](01-browser-app-and-pwa.md#req-web-021--spa-deep-link-fallback-on-pages); PR https://github.com/nsheaps/cept/pull/67 |
-| Nx test targets and tags in every new package (REQ-ENG-001/002/008) | CLI, VS Code, static renderer | [REQ-CLI-014](05-cli-and-daemon.md#req-cli-014--clidaemon-ci-coverage), [REQ-VSC-001](06-vscode-extension.md#req-vsc-001--vs-code-extension-package-in-the-monorepo) |
-| VS Code extension build/package/publish (vsce/ovsx) and web-extension tests | VS Code extension | [REQ-VSC-014](06-vscode-extension.md#req-vsc-014--automated-extension-tests-in-ci), [REQ-VSC-015](06-vscode-extension.md#req-vsc-015--extension-packaging-and-publishing) |
-| Signaling server build/test targets and possible container publishing (TASKS.md P5.11) | Collaboration | [REQ-COL-005](04-collaboration.md#req-col-005--signaling-server-runnable), [REQ-COL-012](04-collaboration.md#req-col-012--collaboration-e2e-test-coverage) |
-| OAuth proxy URLs and secrets wired into web builds (`VITE_*` in `cd.yml`/`preview-deploy.yml`); the proxy itself deploys from `nsheaps/iac` | Remotes and auth | [REQ-AUTH-008](09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac), [REQ-AUTH-009](09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy) |
-| Service worker / PWA tests on the built bundle in CI | Browser app | [REQ-WEB-022](01-browser-app-and-pwa.md#req-web-022--automated-tests-for-swpwa-on-the-built-bundle) |
-| Org-synced workflows and rulesets (`apply-repo-settings.yaml`, `dispatch-review.yaml`, `pr-status-dispatch.yaml`, `.github/settings.yml`) | `nsheaps/.github` | Change upstream only; do not edit in this repo |
+| This area needs                                                                                                                             | From                          | Requirement(s)                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A `cept render` command and static component for the docs pipeline (REQ-ENG-016)                                                            | CLI, static rendering         | [REQ-CLI-010](05-cli-and-daemon.md#req-cli-010--cept-render-static-site-command), [REQ-CLI-011](05-cli-and-daemon.md#req-cli-011--render-command-exercised-by-cept-docs-site-e2e), [REQ-SSG-013](02-static-rendering.md#req-ssg-013--cept-docs-site-is-generated-by-cepts-own-static-site-generation) to [REQ-SSG-015](02-static-rendering.md#req-ssg-015--docs-site-deployment-e2e-tests-static-site-generation)               |
+| Real desktop and mobile projects to package (REQ-ENG-009)                                                                                   | Native apps                   | [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts), [REQ-APP-013](07-native-apps.md#req-app-013--code-signing-and-notarization), [REQ-APP-018](07-native-apps.md#req-app-018--nxmise-targets-for-native-builds), [REQ-APP-019](07-native-apps.md#req-app-019--pr-time-validation-of-packaging)                                                                                        |
+| Demo space and read-only docs space in the deployed app (REQ-ENG-015)                                                                       | Browser app, storage          | [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-space-uses-in-memory-file-storage), [REQ-WEB-015](01-browser-app-and-pwa.md#req-web-015--github-pages-deployment-of-just-the-app) to [REQ-WEB-018](01-browser-app-and-pwa.md#req-web-018--bundled-docs-generated-from-docscontent), [REQ-WEB-021](01-browser-app-and-pwa.md#req-web-021--spa-deep-link-fallback-on-pages); PR https://github.com/nsheaps/cept/pull/67 |
+| Nx test targets and tags in every new package (REQ-ENG-001/002/008)                                                                         | CLI, VS Code, static renderer | [REQ-CLI-014](05-cli-and-daemon.md#req-cli-014--clidaemon-ci-coverage), [REQ-VSC-001](06-vscode-extension.md#req-vsc-001--vs-code-extension-package-in-the-monorepo)                                                                                                                                                                                                                                                            |
+| VS Code extension build/package/publish (vsce/ovsx) and web-extension tests                                                                 | VS Code extension             | [REQ-VSC-014](06-vscode-extension.md#req-vsc-014--automated-extension-tests-in-ci), [REQ-VSC-015](06-vscode-extension.md#req-vsc-015--extension-packaging-and-publishing)                                                                                                                                                                                                                                                       |
+| Signaling server build/test targets and possible container publishing (TASKS.md P5.11)                                                      | Collaboration                 | [REQ-COL-005](04-collaboration.md#req-col-005--signaling-server-runnable), [REQ-COL-012](04-collaboration.md#req-col-012--collaboration-e2e-test-coverage)                                                                                                                                                                                                                                                                      |
+| OAuth proxy URLs and secrets wired into web builds (`VITE_*` in `cd.yml`/`preview-deploy.yml`); the proxy itself deploys from `nsheaps/iac` | Remotes and auth              | [REQ-AUTH-008](09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac), [REQ-AUTH-009](09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)                                                                                                                                                                                        |
+| Service worker / PWA tests on the built bundle in CI                                                                                        | Browser app                   | [REQ-WEB-022](01-browser-app-and-pwa.md#req-web-022--automated-tests-for-swpwa-on-the-built-bundle)                                                                                                                                                                                                                                                                                                                             |
+| Org-synced workflows and rulesets (`apply-repo-settings.yaml`, `dispatch-review.yaml`, `pr-status-dispatch.yaml`, `.github/settings.yml`)   | `nsheaps/.github`             | Change upstream only; do not edit in this repo                                                                                                                                                                                                                                                                                                                                                                                  |

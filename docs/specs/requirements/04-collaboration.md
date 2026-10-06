@@ -9,7 +9,7 @@ This document sets out the requirements for **real-time co-editing** in Cept. Tw
 - [README.md](README.md): index, architecture overview, traceability matrix
 - [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md): the browser component and service worker that host the collaboration session (REQ-WEB)
 - [02-static-rendering.md](02-static-rendering.md): static output, which must never open collaboration sessions (REQ-SSG)
-- [03-workspaces-and-storage.md](03-workspaces-and-storage.md): workspace roots, nesting, backend capabilities (REQ-WS)
+- [03-spaces-and-storage.md](03-spaces-and-storage.md): space roots, nesting, backend capabilities (REQ-WS)
 - [05-cli-and-daemon.md](05-cli-and-daemon.md): the local daemon that may own sync (REQ-CLI)
 - [06-vscode-extension.md](06-vscode-extension.md): co-editing from VS Code web and desktop (REQ-VSC)
 - [08-editor.md](08-editor.md): the TipTap editor, databases and Markdown serialization (REQ-EDT)
@@ -41,28 +41,28 @@ This document sets out the requirements for **real-time co-editing** in Cept. Tw
 
 ### Non-goals
 
-- **Durable remote sync** (pushing to git, gdrive, sftp) is the job of the remotes, the service worker and the CLI daemon. See [03-workspaces-and-storage.md](03-workspaces-and-storage.md), [05-cli-and-daemon.md](05-cli-and-daemon.md) and [09-remotes-and-auth.md](09-remotes-and-auth.md). Collaboration converges live state; the remotes persist it.
+- **Durable remote sync** (pushing to git, gdrive, sftp) is the job of the remotes, the service worker and the CLI daemon. See [03-spaces-and-storage.md](03-spaces-and-storage.md), [05-cli-and-daemon.md](05-cli-and-daemon.md) and [09-remotes-and-auth.md](09-remotes-and-auth.md). Collaboration converges live state; the remotes persist it.
 - Comments, mentions, notifications and permission roles (viewer/editor). The handler's requirements do not mention them.
 - A central server that stores document content. The handler asks for P2P, so content storage on a server is out of scope.
 - Git branch-based "collaboration" (the PR/merge workflow). That belongs to the remotes area.
 
 ## 2. Requirements summary
 
-| ID | Requirement | Priority | Impl status | Docs status | Docs accurate |
-| --- | --- | --- | --- | --- | --- |
-| [REQ-COL-001](#req-col-001--co-editing-available-for-shared-workspaces) | Co-editing available for shared workspaces | MUST | stubbed | documented-differently | stale |
-| [REQ-COL-002](#req-col-002--crdt-based-reconciliation-of-text-edits-yjs) | CRDT-based reconciliation of text edits (Yjs) | MUST | not-started | documented-as-desired | stale |
-| [REQ-COL-003](#req-col-003--public-peer-to-peer-webrtc-transport) | Public peer-to-peer WebRTC transport | MUST | divergent | documented-differently | accurate |
-| [REQ-COL-004](#req-col-004--public-signaling-endpoint-available-by-default) | Public signaling endpoint available by default | MUST | not-started | documented-as-desired | accurate |
-| [REQ-COL-005](#req-col-005--signaling-server-runnable) | Signaling server runnable | MUST | partial | documented-as-desired | stale |
-| [REQ-COL-006](#req-col-006--signaling-room-auth) | Signaling room auth | SHOULD | not-started | documented-as-desired | accurate |
-| [REQ-COL-007](#req-col-007--sharing-edit-stats-between-peers) | Sharing edit stats between peers | MUST | not-started | undocumented | n/a |
-| [REQ-COL-008](#req-col-008--presence-and-awareness-avatars-remote-cursors) | Presence and awareness (avatars, remote cursors) | MUST | stubbed | documented-as-desired | stale |
-| [REQ-COL-009](#req-col-009--offline-editing-with-reconnect-sync) | Offline editing with reconnect sync | MUST | stubbed | documented-as-desired | stale |
-| [REQ-COL-010](#req-col-010--real-time-sync-of-database-tableboard-changes) | Real-time sync of database (table/board) changes | MUST | stubbed | documented-as-desired | stale |
-| [REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend) | Collaboration not tied to Git backend | SHOULD | divergent | documented-differently | accurate |
-| [REQ-COL-012](#req-col-012--collaboration-e2e-test-coverage) | Collaboration e2e test coverage | MUST | not-started | documented-as-desired | accurate |
-| [REQ-COL-013](#req-col-013--user-facing-collaboration-guide) | User-facing collaboration guide | MUST | not-started | undocumented | stale |
+| ID                                                                          | Requirement                                      | Priority | Impl status | Docs status            | Docs accurate |
+| --------------------------------------------------------------------------- | ------------------------------------------------ | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-COL-001](#req-col-001--co-editing-available-for-shared-spaces)         | Co-editing available for shared spaces           | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-COL-002](#req-col-002--crdt-based-reconciliation-of-text-edits-yjs)    | CRDT-based reconciliation of text edits (Yjs)    | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-COL-003](#req-col-003--public-peer-to-peer-webrtc-transport)           | Public peer-to-peer WebRTC transport             | MUST     | divergent   | documented-differently | accurate      |
+| [REQ-COL-004](#req-col-004--public-signaling-endpoint-available-by-default) | Public signaling endpoint available by default   | MUST     | not-started | documented-as-desired  | accurate      |
+| [REQ-COL-005](#req-col-005--signaling-server-runnable)                      | Signaling server runnable                        | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-COL-006](#req-col-006--signaling-room-auth)                            | Signaling room auth                              | SHOULD   | not-started | documented-as-desired  | accurate      |
+| [REQ-COL-007](#req-col-007--sharing-edit-stats-between-peers)               | Sharing edit stats between peers                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-COL-008](#req-col-008--presence-and-awareness-avatars-remote-cursors)  | Presence and awareness (avatars, remote cursors) | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-COL-009](#req-col-009--offline-editing-with-reconnect-sync)            | Offline editing with reconnect sync              | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-COL-010](#req-col-010--real-time-sync-of-database-tableboard-changes)  | Real-time sync of database (table/board) changes | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend)          | Collaboration not tied to Git backend            | SHOULD   | divergent   | documented-differently | accurate      |
+| [REQ-COL-012](#req-col-012--collaboration-e2e-test-coverage)                | Collaboration e2e test coverage                  | MUST     | not-started | documented-as-desired  | accurate      |
+| [REQ-COL-013](#req-col-013--user-facing-collaboration-guide)                | User-facing collaboration guide                  | MUST     | not-started | undocumented           | stale         |
 
 Tally: 0 implemented, 1 partial, 4 stubbed, 6 not-started, 2 divergent.
 
@@ -104,7 +104,7 @@ sequenceDiagram
   participant A as Client A
   participant S as Signaling service
   participant B as Client B
-  A->>S: join(room = workspace + page path, token)
+  A->>S: join(room = space + page path, token)
   S-->>A: peers in room
   B->>S: join(room, token)
   S-->>A: peer joined (B)
@@ -148,15 +148,15 @@ flowchart LR
 
 ## 4. Requirements
 
-### REQ-COL-001 — Co-editing available for shared workspaces
+### REQ-COL-001 — Co-editing available for shared spaces
 
-**Statement:** Cept MUST let two or more clients edit the same workspace page at the same time, with every client's edits reaching the others in near real time (seconds).
+**Statement:** Cept MUST let two or more clients edit the same space page at the same time, with every client's edits reaching the others in near real time (seconds).
 
 **Rationale / source:** handler ("Co-editing support").
 
 **Acceptance criteria:**
 
-- Two clients open the same page of the same shared workspace. A keystroke on one appears on the other within 2 seconds on a typical broadband connection.
+- Two clients open the same page of the same shared space. A keystroke on one appears on the other within 2 seconds on a typical broadband connection.
 - Both clients end with byte-identical serialized Markdown after concurrent edits stop.
 - The feature works from the browser app, the PWA, the VS Code extension and the native apps (all of them reuse the browser component).
 - A user can start sharing from the UI with no manual server configuration (see [REQ-COL-004](#req-col-004--public-signaling-endpoint-available-by-default)).
@@ -211,6 +211,8 @@ flowchart LR
 
 **Gap:** implement the WebRTC transport and the signaling message types. Decide whether the WebSocket relay remains as a fallback. Specify STUN/TURN configuration.
 
+> **Note (D-4+D-5):** Live collaboration (`RTCPeerConnection`) runs in the SharedWorker, not the service worker. Verify `RTCPeerConnection` availability in Bun before implementing.
+
 **Related PRs/issues:** none.
 
 ### REQ-COL-004 — Public signaling endpoint available by default
@@ -257,15 +259,15 @@ flowchart LR
 
 ### REQ-COL-006 — Signaling room auth
 
-**Statement:** The signaling server SHOULD support optional room-level authorization, so that only clients allowed into the workspace can join a document room.
+**Statement:** The signaling server SHOULD support optional room-level authorization, so that only clients allowed into the space can join a document room.
 
 **Rationale / source:** existing spec, SPECIFICATION.md §6.6 L959 ("optional room-level auth (token validation against the Git repo)").
 
 **Acceptance criteria:**
 
 - The `join` message carries an optional token. When auth is enabled, the server rejects a join with a missing or invalid token and returns a typed error.
-- Tokens are validated through the providers defined in [09-remotes-and-auth.md](09-remotes-and-auth.md) (GitHub app or PAT, Google) for the workspace's remote, or with a room secret shared out of band.
-- Room IDs are not guessable from page paths alone (for example, a hash of workspace ID, page path and secret).
+- Tokens are validated through the providers defined in [09-remotes-and-auth.md](09-remotes-and-auth.md) (GitHub app or PAT, Google) for the space's remote, or with a room secret shared out of band.
+- Room IDs are not guessable from page paths alone (for example, a hash of space ID, page path and secret).
 
 **Current state (not-started):** the `JoinMessage` in [protocol.ts](../../../packages/signaling-server/src/protocol.ts) has only `documentId` and `user`, with no token. [server.ts](../../../packages/signaling-server/src/server.ts) upgrades every `/ws` request without checks.
 
@@ -361,14 +363,14 @@ flowchart LR
 
 ### REQ-COL-011 — Collaboration not tied to Git backend
 
-**Statement:** Co-editing SHOULD work for any workspace shared between clients, whatever its remote type (git, gdrive, sftp), and not only for GitBackend. Real-time CRDT sync and durable remote sync are separate layers.
+**Statement:** Co-editing SHOULD work for any space shared between clients, whatever its remote type (git, gdrive, sftp), and not only for GitBackend. Real-time CRDT sync and durable remote sync are separate layers.
 
 **Rationale / source:** derived. The handler lists co-editing as a standalone component and lists the remotes separately.
 
 **Acceptance criteria:**
 
-- Whether collaboration is available depends on whether a workspace is shared (has a room/share identity), not on the storage backend type.
-- `BackendCapabilities.collaboration` is removed or redefined, and the change is reflected in [03-workspaces-and-storage.md](03-workspaces-and-storage.md).
+- Whether collaboration is available depends on whether a space is shared (has a room/share identity), not on the storage backend type.
+- `BackendCapabilities.collaboration` is removed or redefined, and the change is reflected in [03-spaces-and-storage.md](03-spaces-and-storage.md).
 - Static rendering ([02-static-rendering.md](02-static-rendering.md)) never opens a collaboration session.
 
 **Current state (divergent):** `BackendCapabilities.collaboration` ([packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) L51) is true only in [git-backend.ts](../../../packages/core/src/storage/git-backend.ts) (L37), and GitBackend is not wired into the app (TASKS.md P5.1-P5.6 unchecked). [crdt/index.ts](../../../packages/core/src/crdt/index.ts) L4 says "Only active when using GitBackend".
@@ -391,7 +393,7 @@ flowchart LR
 - A Playwright test drives two contexts and asserts convergence, avatars and cursors.
 - CI starts the signaling service (or a local test instance) in the e2e job and runs the test on PRs that touch collaboration code.
 
-**Current state (not-started):** there is no `features/collaboration/` directory. `e2e/tests` contains only feature-screenshots, responsive, slash-commands and smoke specs. [.github/workflows/_test-e2e.yml](../../../.github/workflows/_test-e2e.yml) does not start a signaling service.
+**Current state (not-started):** there is no `features/collaboration/` directory. `e2e/tests` contains only feature-screenshots, responsive, slash-commands and smoke specs. [.github/workflows/\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml) does not start a signaling service.
 
 **Docs state:** documented-as-desired, accurate (SPECIFICATION.md L1408-1411, L1588).
 
@@ -421,51 +423,51 @@ flowchart LR
 
 ## 5. Conflicts & open questions
 
-These need a decision from the owner:
+Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **P2P WebRTC or WebSocket relay?** The handler asks for public P2P WebRTC. SPECIFICATION.md L120 makes WebSocket the default and WebRTC "future", §6.6 (L948-959) describes a server that relays Yjs updates, and the implementation ([room-manager.ts](../../../packages/signaling-server/src/room-manager.ts) L62/L243) is a content relay. Proposal: WebRTC is primary, and the relay is kept only as an opt-in fallback for peers that cannot connect directly. Should the relay be kept at all?
-2. **Is collaboration tied to the backend?** The handler treats co-editing as its own component. The spec, CLAUDE.md, [crdt/index.ts](../../../packages/core/src/crdt/index.ts) L4 and [git-backend.ts](../../../packages/core/src/storage/git-backend.ts) L37 restrict it to GitBackend. Should any shared workspace be collaborative ([REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend))?
+2. **Is collaboration tied to the backend?** The handler treats co-editing as its own component. The spec, CLAUDE.md, [crdt/index.ts](../../../packages/core/src/crdt/index.ts) L4 and [git-backend.ts](../../../packages/core/src/storage/git-backend.ts) L37 restrict it to GitBackend. Should any shared space be collaborative ([REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend))?
 3. **What are "stats on edits"?** Presence and awareness, a state-vector summary, per-user change counts, or something else ([REQ-COL-007](#req-col-007--sharing-edit-stats-between-peers))?
 4. **Where is the public signaling hosted?** Options include a Cloudflare Worker or Durable Object via nsheaps/iac (next to the OAuth proxy; unverified), Fly.io/Railway as the spec says, or a public y-webrtc signaling server. Who pays for it and runs it?
 5. **Encryption and privacy.** Should data-channel payloads be end-to-end encrypted with a room secret? Is a TURN relay acceptable, given that it sees encrypted traffic?
 6. **Who owns the session lifecycle?** The handler puts syncing in the service worker or the shared CLI daemon. Does the page, the service worker or the daemon own the `Y.Doc`, its persistence and the transport? This decides whether the VS Code extension and the PWA can share one session.
-7. **Room scoping with nested workspaces.** With nesting up to 10 deep ([03-workspaces-and-storage.md](03-workspaces-and-storage.md)), is a room keyed by the innermost workspace root plus page path, or by the outermost root?
+7. **Room scoping with several spaces per repo.** With several spaces in one repo (D-2, [03-spaces-and-storage.md](03-spaces-and-storage.md)), a room should be keyed by space (backend location + space path) plus page id. Nesting is deferred (D-3).
 8. **The "no server" principle.** SPECIFICATION.md §1 says "Client-only ... no server process". A public signaling service and a CLI daemon contradict this, so the principle needs rewording.
 9. **TASKS.md is self-contradictory.** Phase 6 T6.1-T6.5 are checked "2026-03-04", but P5.7, P5.9 and P5.10 (unchecked) describe the same work, and the code has no Yjs dependency. P5.8 is unchecked although [server.ts](../../../packages/signaling-server/src/server.ts) exists (P2.1 checked). Should T6.x be unchecked, or annotated "scaffolding only"?
-10. **Terminology.** The handler says "workspaces", while the code and UI renamed workspace to "space" (continue.md, commit d572437; features.md "Spaces"). This document uses "workspace" to match the handler.
+10. **Terminology.** **Decided (D-1):** "space" is the canonical term throughout; requirement IDs stay REQ-WS-NNN. This document has been updated to use "space".
 11. **Package description.** CLAUDE.md and [signaling-server/src/index.ts](../../../packages/signaling-server/src/index.ts) call `@cept/signaling` a "Yjs WebSocket signaling server", but it does not use Yjs. It relays an opaque payload.
 
 ## 6. Stale documentation
 
-| Path | Claim | Problem / fix |
-| --- | --- | --- |
-| [CHANGELOG.md](../../../CHANGELOG.md) L556 | "Collaboration: Yjs CRDT with signaling server, presence awareness, offline queue" shipped | Yjs is not a dependency and nothing is wired. Reword to "scaffolding" or move to Unreleased/Planned. |
-| [README.md](../../../README.md) L17, L28, L71 | "Real-time collaboration via CRDTs (Git backend)", "Yes (CRDTs)" | Presents the feature as available. Mark it planned. |
-| [README.md](../../../README.md) L63 | "WebSocket signaling server" | Conflicts with the P2P WebRTC requirement once decided. |
-| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) L3 | "supports real-time collaboration" | Not true today. The bundled copy in [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) L127 needs the same fix. |
-| [TASKS.md](../../../TASKS.md) T6.1-T6.5 | Checked as complete | No Yjs binding; presence and offline queue are not wired. Uncheck or annotate. |
-| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) L94 | "Signaling server" is "Planned" | The server exists and runs ([server.ts](../../../packages/signaling-server/src/server.ts)). Mark it as available (relay only, not deployed). |
-| [TASKS.md](../../../TASKS.md) P5.8 | Unchecked | The signaling entry point exists ([server.ts](../../../packages/signaling-server/src/server.ts)). Check it. |
-| [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) L55, L143, L187 | "no WebSocket server entry point" | Outdated. Update. |
-| [docs/src/index.ts](../../src/index.ts) L39 | Registers the `collaboration` guide | `docs/content/guides/collaboration.md` does not exist. Write it or remove the entry. |
-| [docs/content/comparison/vs-notion.md](../../content/comparison/vs-notion.md) L17, L49-50 | Collaboration is "Git branches + CRDT" / "based on Git" | Differs from the P2P model. Revise after decision 2 in section 5. |
-| [docs/content/comparison/vs-obsidian.md](../../content/comparison/vs-obsidian.md) L18, L40 | Git-based collaboration | Same as above. |
-| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) L76 | "Push notifications for collaboration" planned | No collaboration feature backs it. Keep it as planned, but link it to this spec. |
-| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) L27-30 | Offline editing works | True for local storage only. Clarify for collaboration. |
-| [packages/core/src/crdt/offline-queue.ts](../../../packages/core/src/crdt/offline-queue.ts) header | Operations "optionally persisted" | No persistence code. Fix the comment or implement persistence. |
-| [docs/SPECIFICATION.md](../../SPECIFICATION.md) L120, §6.6 L948-959 | WebSocket default, server relays Yjs updates | Rewrite to match REQ-COL-003 once decided. |
-| [CLAUDE.md](../../../CLAUDE.md) package table | `@cept/signaling` is a "Yjs WebSocket signaling server" | It does not use Yjs. Correct the description. |
+| Path                                                                                               | Claim                                                                                      | Problem / fix                                                                                                                                |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [CHANGELOG.md](../../../CHANGELOG.md) L556                                                         | "Collaboration: Yjs CRDT with signaling server, presence awareness, offline queue" shipped | Yjs is not a dependency and nothing is wired. Reword to "scaffolding" or move to Unreleased/Planned.                                         |
+| [README.md](../../../README.md) L17, L28, L71                                                      | "Real-time collaboration via CRDTs (Git backend)", "Yes (CRDTs)"                           | Presents the feature as available. Mark it planned.                                                                                          |
+| [README.md](../../../README.md) L63                                                                | "WebSocket signaling server"                                                               | Conflicts with the P2P WebRTC requirement once decided.                                                                                      |
+| [docs/content/getting-started/introduction.md](../../content/getting-started/introduction.md) L3   | "supports real-time collaboration"                                                         | Not true today. The bundled copy in [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) L127 needs the same fix.     |
+| [TASKS.md](../../../TASKS.md) T6.1-T6.5                                                            | Checked as complete                                                                        | No Yjs binding; presence and offline queue are not wired. Uncheck or annotate.                                                               |
+| [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) L94                        | "Signaling server" is "Planned"                                                            | The server exists and runs ([server.ts](../../../packages/signaling-server/src/server.ts)). Mark it as available (relay only, not deployed). |
+| [TASKS.md](../../../TASKS.md) P5.8                                                                 | Unchecked                                                                                  | The signaling entry point exists ([server.ts](../../../packages/signaling-server/src/server.ts)). Check it.                                  |
+| [.claude/prompts/continue.md](../../../.claude/prompts/continue.md) L55, L143, L187                | "no WebSocket server entry point"                                                          | Outdated. Update.                                                                                                                            |
+| [docs/src/index.ts](../../src/index.ts) L39                                                        | Registers the `collaboration` guide                                                        | `docs/content/guides/collaboration.md` does not exist. Write it or remove the entry.                                                         |
+| [docs/content/comparison/vs-notion.md](../../content/comparison/vs-notion.md) L17, L49-50          | Collaboration is "Git branches + CRDT" / "based on Git"                                    | Differs from the P2P model. Revise after decision 2 in section 5.                                                                            |
+| [docs/content/comparison/vs-obsidian.md](../../content/comparison/vs-obsidian.md) L18, L40         | Git-based collaboration                                                                    | Same as above.                                                                                                                               |
+| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) L76            | "Push notifications for collaboration" planned                                             | No collaboration feature backs it. Keep it as planned, but link it to this spec.                                                             |
+| [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) L27-30         | Offline editing works                                                                      | True for local storage only. Clarify for collaboration.                                                                                      |
+| [packages/core/src/crdt/offline-queue.ts](../../../packages/core/src/crdt/offline-queue.ts) header | Operations "optionally persisted"                                                          | No persistence code. Fix the comment or implement persistence.                                                                               |
+| [docs/SPECIFICATION.md](../../SPECIFICATION.md) L120, §6.6 L948-959                                | WebSocket default, server relays Yjs updates                                               | Rewrite to match REQ-COL-003 once decided.                                                                                                   |
+| [CLAUDE.md](../../../CLAUDE.md) package table                                                      | `@cept/signaling` is a "Yjs WebSocket signaling server"                                    | It does not use Yjs. Correct the description.                                                                                                |
 
 ## 7. Cross-area dependencies
 
-| Depends on / affects | Area | Why |
-| --- | --- | --- |
-| Editor binding and Markdown serializer | [08-editor.md](08-editor.md) (REQ-EDT) | y-prosemirror must replace or coexist with the current Markdown save path. A `Y.Doc` to Markdown serializer must keep the HTML fallback and the GFM/footnote constructs. See also [docs/specs/markdown-parser.md](../../specs/markdown-parser.md). |
-| Database merge semantics | [08-editor.md](08-editor.md) (REQ-EDT), [docs/specs/database-engine.md](../../specs/database-engine.md) | The [REQ-COL-010](#req-col-010--real-time-sync-of-database-tableboard-changes) merge rule must match the database storage formats. |
-| Capability model and nesting | [03-workspaces-and-storage.md](03-workspaces-and-storage.md) (REQ-WS) | `BackendCapabilities.collaboration` ([REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend)), and room-ID scoping for nested workspaces and `workspace.ya?ml` roots. |
-| Room auth identities | [09-remotes-and-auth.md](09-remotes-and-auth.md) (REQ-AUTH) | GitHub app or PAT and Google tokens for [REQ-COL-006](#req-col-006--signaling-room-auth). The Cloudflare worker set up via nsheaps/iac is a possible signaling host (unverified). |
-| Session ownership | [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) (REQ-WEB), [05-cli-and-daemon.md](05-cli-and-daemon.md) (REQ-CLI) | The service worker, the page or the shared daemon owns the CRDT persistence and transport lifecycle. The PWA can share the local daemon. |
-| VS Code co-editing | [06-vscode-extension.md](06-vscode-extension.md) (REQ-VSC) | Reuses the same browser component and awareness. WebRTC availability in VS Code web and desktop webviews needs checking (unverified). |
-| Native apps | [07-native-apps.md](07-native-apps.md) (REQ-APP) | WebRTC in Capacitor and Electrobun/Electron webviews, and background suspension on mobile. |
-| Static output | [02-static-rendering.md](02-static-rendering.md) (REQ-SSG) | Static and read-only output must never open collaboration sessions. |
-| CI and e2e | [10-engineering-and-ci.md](10-engineering-and-ci.md) (REQ-ENG) | The signaling service must start in `_test-e2e.yml` for [REQ-COL-012](#req-col-012--collaboration-e2e-test-coverage). `server.ts` needs an integration test, and collaboration tests must be scoped to affected packages in PRs. Deploying public signaling needs a workflow. |
+| Depends on / affects                   | Area                                                                                                                     | Why                                                                                                                                                                                                                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Editor binding and Markdown serializer | [08-editor.md](08-editor.md) (REQ-EDT)                                                                                   | y-prosemirror must replace or coexist with the current Markdown save path. A `Y.Doc` to Markdown serializer must keep the HTML fallback and the GFM/footnote constructs. See also [docs/specs/markdown-parser.md](../../specs/markdown-parser.md).                            |
+| Database merge semantics               | [08-editor.md](08-editor.md) (REQ-EDT), [docs/specs/database-engine.md](../../specs/database-engine.md)                  | The [REQ-COL-010](#req-col-010--real-time-sync-of-database-tableboard-changes) merge rule must match the database storage formats.                                                                                                                                            |
+| Capability model and nesting           | [03-spaces-and-storage.md](03-spaces-and-storage.md) (REQ-WS)                                                            | `BackendCapabilities.collaboration` ([REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend)), and room-ID scoping for nested spaces and `space.cept.ya?ml` roots.                                                                                                 |
+| Room auth identities                   | [09-remotes-and-auth.md](09-remotes-and-auth.md) (REQ-AUTH)                                                              | GitHub app or PAT and Google tokens for [REQ-COL-006](#req-col-006--signaling-room-auth). The Cloudflare worker set up via nsheaps/iac is a possible signaling host (unverified).                                                                                             |
+| Session ownership                      | [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md) (REQ-WEB), [05-cli-and-daemon.md](05-cli-and-daemon.md) (REQ-CLI) | The service worker, the page or the shared daemon owns the CRDT persistence and transport lifecycle. The PWA can share the local daemon.                                                                                                                                      |
+| VS Code co-editing                     | [06-vscode-extension.md](06-vscode-extension.md) (REQ-VSC)                                                               | Reuses the same browser component and awareness. WebRTC availability in VS Code web and desktop webviews needs checking (unverified).                                                                                                                                         |
+| Native apps                            | [07-native-apps.md](07-native-apps.md) (REQ-APP)                                                                         | WebRTC in Capacitor and Electrobun/Electron webviews, and background suspension on mobile.                                                                                                                                                                                    |
+| Static output                          | [02-static-rendering.md](02-static-rendering.md) (REQ-SSG)                                                               | Static and read-only output must never open collaboration sessions.                                                                                                                                                                                                           |
+| CI and e2e                             | [10-engineering-and-ci.md](10-engineering-and-ci.md) (REQ-ENG)                                                           | The signaling service must start in `_test-e2e.yml` for [REQ-COL-012](#req-col-012--collaboration-e2e-test-coverage). `server.ts` needs an integration test, and collaboration tests must be scoped to affected packages in PRs. Deploying public signaling needs a workflow. |
