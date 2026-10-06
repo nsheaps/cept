@@ -22,12 +22,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Resolve Playwright version
+        id: pw
+        # Single source of truth: the installed @playwright/test, so the browser
+        # cache key and image can't drift from the runtime when Renovate bumps it.
+        run: echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-v1.61.1-noble
+          key: ${{ runner.os }}-playwright-v${{ steps.pw.outputs.version }}-noble
 
       - name: Provision Playwright browsers from official image
         if: steps.pw-cache.outputs.cache-hit != 'true'
@@ -35,10 +41,10 @@ jobs:
         # playwright.download.prss.microsoft.com) stalls intermittently from this CI,
         # hanging `playwright install` for the full job timeout. Instead, copy the
         # browsers out of Playwright's official image (version-matched to
-        # @playwright/test 1.59.1), which avoids the CDN entirely.
+        # the installed @playwright/test), which avoids the CDN entirely.
         run: |
           set -euo pipefail
-          img=mcr.microsoft.com/playwright:v1.61.1-noble
+          img=mcr.microsoft.com/playwright:v${{ steps.pw.outputs.version }}-noble
           docker pull "$img"
           cid=$(docker create "$img")
           mkdir -p ~/.cache/ms-playwright
