@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.36](https://github.com/nsheaps/cept/compare/v0.7.35...v0.7.36) (2026-10-07)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([2114335](https://github.com/nsheaps/cept/commit/21143355b7acb70d8f70834e346af5cb24fafc02))
+* **specs:** add Phase 1 PR plan ([a8f9bf9](https://github.com/nsheaps/cept/commit/a8f9bf979233a9f7c62eed3d7537264de97764b0))
+
 ## [0.7.35](https://github.com/nsheaps/cept/compare/v0.7.34...v0.7.35) (2026-10-07)
 
 ### Documentation
