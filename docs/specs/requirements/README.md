@@ -6,6 +6,8 @@ This directory holds Cept's formal requirements. They restate the owner's target
 
 > These requirements describe the **target**. Most of Cept does not meet them yet. Where an existing document (`docs/SPECIFICATION.md`, `TASKS.md`, the roadmap) disagrees with a requirement here, the requirement records the conflict. The owner decides it; see [§6](#6-conflicts-and-owner-decisions-needed).
 
+> **Current build-out scope:** see [../scope.md](../scope.md) for which requirements are in scope now, which are deferred, and the open scope questions.
+
 ## Contents
 
 1. [How to read these specs](#1-how-to-read-these-specs)
