@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.35](https://github.com/nsheaps/cept/compare/v0.7.34...v0.7.35) (2026-10-07)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1264444](https://github.com/nsheaps/cept/commit/126444495d8769a815e838cf823f2bf145126bd0))
+* **specs:** record D-41 (.cept.yaml config), D-42 (close PR [#67](https://github.com/nsheaps/cept/issues/67)), D-43 (mobile = PWA) ([25ab172](https://github.com/nsheaps/cept/commit/25ab1720b4b3a9e441fcb978685dcf046feeb501))
+
 ## [0.7.34](https://github.com/nsheaps/cept/compare/v0.7.33...v0.7.34) (2026-10-07)
 
 ### Documentation
