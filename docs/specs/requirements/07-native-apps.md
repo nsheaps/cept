@@ -574,7 +574,7 @@ sequenceDiagram
 
 ### REQ-APP-017 — Desktop OS integration (deep links, tray, menus)
 
-> **Scope: awaiting owner decision.** Tray and menus are not yet placed in a phase; deep links (`cept://`) are Phase 3 (D-26).
+> **Scope: Phase 1, menus only (D-40).** No tray icon. Native app menus are in scope as a second way to reach About, Help and Settings. Deep links (`cept://`) are Phase 3 (D-26).
 
 **Statement:** Desktop apps SHOULD register the `cept://` protocol and provide native menus and system tray integration, as planned in the roadmap.
 

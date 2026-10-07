@@ -310,7 +310,7 @@ flowchart LR
 
 ### REQ-AUTH-008 — Cloudflare OAuth and CORS proxy provisioned through nsheaps iac
 
-> **Scope: unclear (awaiting owner).** The Worker (when built, a Worker just for Cept), `auth.nsheaps.dev` and all Pulumi/iac work are Phase 2. How isomorphic-git reaches github.com from the browser in Phase 1 without this Worker is still an open owner question, so this requirement stays unclear until the owner decides the browser git transport.
+> **Scope: Phase 2 (D-26, D-27, D-39).** The Worker (a Worker just for Cept), `auth.nsheaps.dev` and all Pulumi/iac work are Phase 2. Until then the browser reaches github.com through the public `cors.isomorphic-git.org` proxy (D-39).
 
 **Statement:** A Cloudflare Worker that acts as the OAuth token-exchange relay and the Git CORS proxy MUST be provisioned and deployed through nsheaps/iac. It MUST be reachable on an nsheaps domain and MUST restrict requests to Cept origins.
 
@@ -341,7 +341,7 @@ flowchart LR
 
 ### REQ-AUTH-009 — Configurable first-party proxy instead of a public CORS proxy
 
-> **Scope: unclear (awaiting owner).** D-27 defers the first-party Worker to Phase 2, but the Phase 1 browser git transport (which proxy, if any, replaces `cors.isomorphic-git.org`, which sees auth tokens) has not been decided by the owner.
+> **Scope: Phase 1 config, Phase 2 Worker (D-39).** Phase 1 keeps the public `cors.isomorphic-git.org` proxy, but the URL MUST come from one build-time setting rather than being hardcoded, so Phase 2 can switch to the first-party Worker without code changes. The public proxy sees users' PATs; Phase 1 accepts that risk until the Worker exists.
 
 **Statement:** Cept MUST route browser Git HTTP and OAuth exchange traffic through a configurable proxy URL that defaults to the nsheaps Worker. It MUST NOT hardcode a public third-party proxy, because that proxy would see auth tokens.
 
@@ -363,7 +363,7 @@ flowchart LR
 
 ### REQ-AUTH-010 — Authenticated Git transport
 
-> **Scope: Phase 1 (D-27, D-29).** Authenticated clone, fetch, pull and push with a PAT. The browser transport used to reach github.com is awaiting the owner (see REQ-AUTH-008/009). Offline queued commits and push-on-reconnect are Phase 1 (D-37). A rejected push falls back to "push to a new branch" (D-30).
+> **Scope: Phase 1 (D-27, D-29).** Authenticated clone, fetch, pull and push with a PAT. The browser reaches github.com through the configurable public proxy until Phase 2 (D-39; see REQ-AUTH-008/009). Offline queued commits and push-on-reconnect are Phase 1 (D-37). A rejected push falls back to "push to a new branch" (D-30).
 
 **Statement:** When credentials exist for a remote, every Git operation (clone, fetch, pull and push) MUST use them through the isomorphic-git `onAuth` callback. Private repos MUST work.
 
@@ -385,7 +385,7 @@ flowchart LR
 
 ### REQ-AUTH-011 — Anonymous read-only access to public remotes
 
-> **Scope: Phase 1 (D-29).** Anonymous read-only clone of public HTTPS git URLs keeps working. The third acceptance criterion (first-party proxy) follows the browser transport decision awaiting the owner.
+> **Scope: Phase 1 (D-29).** Anonymous read-only clone of public HTTPS git URLs keeps working. The third acceptance criterion (first-party proxy) is Phase 2; Phase 1 uses the configurable public proxy (D-39).
 
 **Statement:** Users SHOULD be able to browse public Git remotes read-only without signing in.
 
@@ -569,7 +569,7 @@ The owner needs to decide each of these.
 
 1. **GitHub App or OAuth App.** The handler asks for a GitHub App login. [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1, line 118, `github.ts` and the iac TASKS.md all specify an OAuth App with the broad `repo` scope. Proposal: adopt a GitHub App and rewrite §7.1. **Answered (D-27):** Phase 1 uses PATs only; GitHub App login is Phase 2.
 2. **AuthProvider scope.** The SPECIFICATION says AuthProvider is only for Git remotes, and Appendix B lists GitHub as the only external auth service. The handler requires Google Drive and SFTP. Which Drive scope (`drive.file` or full `drive`)? **Answered (D-26, D-29):** Google Drive and SFTP are later; `AuthProvider` stays host-agnostic with GitHub as the only Phase 1 host. The Drive scope question is deferred with Drive.
-3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx and PR #67). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)? **Partly answered (D-27):** the Worker is Phase 2, a Worker just for Cept, with iac restructured first. The Phase 1 browser git transport is still awaiting the owner.
+3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx and PR #67). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)? **Partly answered (D-27):** the Worker is Phase 2, a Worker just for Cept, with iac restructured first. The Phase 1 keeps the public proxy behind a build-time setting (D-39).
 4. **Proxy reachability.** `auth.nsheaps.dev` is a CNAME to workers.dev with no route or custom domain, and the script defaults to a 503 placeholder. The setup exists on paper only (unverified that it fails). **Answered (D-26, D-27):** iac/Pulumi work, including `auth.nsheaps.dev`, is Phase 2.
 5. **TASKS.md accuracy.** T5.1, T5.2 and T7.6 are checked, but P5.1, P5.2 and P6.5/P6.6 and the code show they are not wired. Should the T-task checkboxes be reverted?
 6. **Token exchange design.** SPECIFICATION §7.1 implies a direct browser code exchange, which CORS makes impossible. Is a client secret ever acceptable (Worker-only)? PKCE with a GitHub App removes the need for one. **Answered (D-27):** no token exchange in Phase 1 (PAT only); revisit PKCE and relay in Phase 2.

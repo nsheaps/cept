@@ -1,8 +1,8 @@
 # Cept scope: phases and deferrals
 
-**Status:** Owner answers recorded 2026-10-07 (decisions D-26 to D-38) · **Owner:** nsheaps · **Source:** [requirements](requirements/README.md)
+**Status:** Owner answers recorded 2026-10-07 (decisions D-26 to D-40) · **Owner:** nsheaps · **Source:** [requirements](requirements/README.md)
 
-This page records which requirements the current build-out (Phase 1) covers, which wait for Phase 2 or 3, which are deferred without a phase, and which are out of scope. The decisions behind it are D-26 to D-38 in [requirements §6](requirements/README.md#6-conflicts-and-owner-decisions-needed); the area files carry a scope note under each affected requirement.
+This page records which requirements the current build-out (Phase 1) covers, which wait for Phase 2 or 3, which are deferred without a phase, and which are out of scope. The decisions behind it are D-26 to D-40 in [requirements §6](requirements/README.md#6-conflicts-and-owner-decisions-needed); the area files carry a scope note under each affected requirement.
 
 ## Owner's scope statement
 
@@ -33,12 +33,12 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 | Collaboration            | [04-collaboration.md](requirements/04-collaboration.md)                           |       0 |       0 |       0 |     13 |            0 |                        0 |      13 |
 | CLI & daemon             | [05-cli-and-daemon.md](requirements/05-cli-and-daemon.md)                         |       0 |       1 |       0 |     13 |            0 |                        0 |      14 |
 | VS Code extension        | [06-vscode-extension.md](requirements/06-vscode-extension.md)                     |       0 |       0 |       0 |     16 |            0 |                        0 |      16 |
-| Native apps              | [07-native-apps.md](requirements/07-native-apps.md)                               |      17 |       0 |       1 |      1 |            0 |                        2 |      21 |
+| Native apps              | [07-native-apps.md](requirements/07-native-apps.md)                               |      18 |       0 |       1 |      1 |            0 |                        1 |      21 |
 | Editor                   | [08-editor.md](requirements/08-editor.md)                                         |      20 |       4 |       0 |      0 |            1 |                        0 |      25 |
-| Remotes & auth           | [09-remotes-and-auth.md](requirements/09-remotes-and-auth.md)                     |       8 |       3 |       1 |      4 |            0 |                        2 |      18 |
+| Remotes & auth           | [09-remotes-and-auth.md](requirements/09-remotes-and-auth.md)                     |       9 |       4 |       1 |      4 |            0 |                        0 |      18 |
 | Engineering & CI         | [10-engineering-and-ci.md](requirements/10-engineering-and-ci.md)                 |      19 |       1 |       0 |      0 |            0 |                        0 |      20 |
 | Notion parity & comments | [11-notion-parity-and-comments.md](requirements/11-notion-parity-and-comments.md) |      12 |       1 |       0 |      3 |            1 |                        0 |      17 |
-| **Total**                |                                                                                   | **114** |  **30** |   **2** | **55** |        **2** |                    **4** | **207** |
+| **Total**                |                                                                                   | **116** |  **31** |   **2** | **55** |        **2** |                    **1** | **207** |
 
 ## 2. Phase decisions
 
@@ -55,6 +55,8 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 - D-36 Databases are Phase 2. In Phase 1, database entries are removed from the slash menu/UI so nothing half-working ships; library code is left untouched.
 - D-37 D-4/D-5 approved as stated: full offline editing with queued commits and push-on-reconnect in Phase 1.
 - D-38 Engineering prerequisites (fix CI, mise tasks, secret scanner) are Phase 1; other REQ-ENG items only as needed.
+- D-39 Phase 1 browser git transport: keep the public `cors.isomorphic-git.org` proxy behind one build-time setting (never hardcoded in components); the first-party Worker replaces it in Phase 2. Temporarily relaxes D-9; the public proxy sees users' PATs.
+- D-40 Desktop OS integration: no tray icon; native app menus are Phase 1 as another route to About, Help and Settings; deep links are Phase 3.
 
 ## 3. Phase 1 (this build-out)
 
@@ -124,6 +126,7 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 | [REQ-APP-013](requirements/07-native-apps.md#req-app-013--code-signing-and-notarization)                        | Code signing and notarization                           | not-started  | D-28     | Signing is optional with ::warning:: when secrets are missing; supersedes fail-on-missing criterion. |
 | [REQ-APP-014](requirements/07-native-apps.md#req-app-014--desktop-auto-update)                                  | Desktop auto-update                                     | stubbed      | D-28     | Electrobun updater fed from GitHub Releases is Phase 1.                                              |
 | [REQ-APP-015](requirements/07-native-apps.md#req-app-015--distribution-channels)                                | Distribution channels                                   | not-started  | D-28     | Channel is GitHub Releases only; store submissions are later.                                        |
+| [REQ-APP-017](requirements/07-native-apps.md#req-app-017--desktop-os-integration-deep-links-tray-menus)         | Desktop OS integration (deep links, tray, menus)        | stubbed      | D-40     | App menus only, as another route to About, Help and Settings; no tray; deep links are Phase 3.       |
 | [REQ-APP-018](requirements/07-native-apps.md#req-app-018--nxmise-targets-for-native-builds)                     | Nx/mise targets for native builds                       | partial      |          | Nx/mise targets are prerequisites for the Phase 1 native builds.                                     |
 | [REQ-APP-019](requirements/07-native-apps.md#req-app-019--pr-time-validation-of-packaging)                      | PR-time validation of packaging                         | not-started  |          | PR-time packaging validation protects the Phase 1 pipeline.                                          |
 | [REQ-APP-021](requirements/07-native-apps.md#req-app-021--native-app-versions-track-releases)                   | Native app versions track releases                      | not-started  |          | Native versions must track release-it versions for Phase 1 builds.                                   |
@@ -155,16 +158,17 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 
 ### Remotes & auth (Phase 1)
 
-| ID                                                                                                             | Requirement                                                      | Status today | Decision         | Notes                                                                                                                |
-| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------- |
-| [REQ-AUTH-001](requirements/09-remotes-and-auth.md#req-auth-001--provider-abstraction-for-all-remote-kinds)    | Provider abstraction covers all remote kinds (git, gdrive, sftp) | partial      | D-29             | Host-agnostic AuthProvider with GitHub PAT ships in Phase 1; google/sftp types come later.                           |
-| [REQ-AUTH-005](requirements/09-remotes-and-auth.md#req-auth-005--github-personal-access-token-entry)           | GitHub personal access token entry                               | stubbed      | D-27             | PAT is the Phase 1 auth path.                                                                                        |
-| [REQ-AUTH-010](requirements/09-remotes-and-auth.md#req-auth-010--authenticated-git-transport)                  | Authenticated Git clone, fetch, pull and push                    | partial      | D-27, D-29, D-37 | Authenticated git transport with a PAT is Phase 1; the browser transport mechanism is flagged as awaiting the owner. |
-| [REQ-AUTH-011](requirements/09-remotes-and-auth.md#req-auth-011--anonymous-read-only-access-to-public-remotes) | Anonymous read-only access to public remotes                     | partial      | D-29             | Anonymous read-only public clone keeps working in Phase 1.                                                           |
-| [REQ-AUTH-012](requirements/09-remotes-and-auth.md#req-auth-012--secure-persistent-token-storage-per-platform) | Secure, persistent token storage on each platform                | stubbed      | D-27, D-28       | PAT storage on web, desktop and Android is needed in Phase 1.                                                        |
-| [REQ-AUTH-013](requirements/09-remotes-and-auth.md#req-auth-013--account-and-sign-in-ui)                       | Sign-in, account display and sign-out UI                         | stubbed      | D-27             | PAT sign-in/account UI is Phase 1.                                                                                   |
-| [REQ-AUTH-014](requirements/09-remotes-and-auth.md#req-auth-014--repo-listing-and-creation-after-sign-in)      | Repo listing and creation after sign-in                          | stubbed      | D-30             | Repo listing via the PAT (GET /user/repos) underpins autodiscovery.                                                  |
-| [REQ-AUTH-018](requirements/09-remotes-and-auth.md#req-auth-018--no-secrets-in-client-bundles-or-the-repo)     | No secrets in client bundles or the repo                         | partial      | D-38             | Secret scanner and no-secrets guard are Phase 1 prerequisites.                                                       |
+| ID                                                                                                                              | Requirement                                                      | Status today | Decision         | Notes                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| [REQ-AUTH-001](requirements/09-remotes-and-auth.md#req-auth-001--provider-abstraction-for-all-remote-kinds)                     | Provider abstraction covers all remote kinds (git, gdrive, sftp) | partial      | D-29             | Host-agnostic AuthProvider with GitHub PAT ships in Phase 1; google/sftp types come later.                                         |
+| [REQ-AUTH-005](requirements/09-remotes-and-auth.md#req-auth-005--github-personal-access-token-entry)                            | GitHub personal access token entry                               | stubbed      | D-27             | PAT is the Phase 1 auth path.                                                                                                      |
+| [REQ-AUTH-009](requirements/09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy) | Configurable first-party proxy, no third-party proxy             | divergent    | D-39             | Phase 1 makes the proxy URL one build-time setting, still pointing at the public proxy; the first-party Worker arrives in Phase 2. |
+| [REQ-AUTH-010](requirements/09-remotes-and-auth.md#req-auth-010--authenticated-git-transport)                                   | Authenticated Git clone, fetch, pull and push                    | partial      | D-27, D-29, D-37 | Authenticated git transport with a PAT is Phase 1; the browser transport mechanism is flagged as awaiting the owner.               |
+| [REQ-AUTH-011](requirements/09-remotes-and-auth.md#req-auth-011--anonymous-read-only-access-to-public-remotes)                  | Anonymous read-only access to public remotes                     | partial      | D-29             | Anonymous read-only public clone keeps working in Phase 1.                                                                         |
+| [REQ-AUTH-012](requirements/09-remotes-and-auth.md#req-auth-012--secure-persistent-token-storage-per-platform)                  | Secure, persistent token storage on each platform                | stubbed      | D-27, D-28       | PAT storage on web, desktop and Android is needed in Phase 1.                                                                      |
+| [REQ-AUTH-013](requirements/09-remotes-and-auth.md#req-auth-013--account-and-sign-in-ui)                                        | Sign-in, account display and sign-out UI                         | stubbed      | D-27             | PAT sign-in/account UI is Phase 1.                                                                                                 |
+| [REQ-AUTH-014](requirements/09-remotes-and-auth.md#req-auth-014--repo-listing-and-creation-after-sign-in)                       | Repo listing and creation after sign-in                          | stubbed      | D-30             | Repo listing via the PAT (GET /user/repos) underpins autodiscovery.                                                                |
+| [REQ-AUTH-018](requirements/09-remotes-and-auth.md#req-auth-018--no-secrets-in-client-bundles-or-the-repo)                      | No secrets in client bundles or the repo                         | partial      | D-38             | Secret scanner and no-secrets guard are Phase 1 prerequisites.                                                                     |
 
 ### Engineering & CI (Phase 1)
 
@@ -256,11 +260,12 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 
 ### Remotes & auth (Phase 2)
 
-| ID                                                                                                               | Requirement                                                   | Decision   | Why                                                                 |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------- | ------------------------------------------------------------------- |
-| [REQ-AUTH-002](requirements/09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app)                | GitHub sign-in via a GitHub App (user-to-server)              | D-26, D-27 | GitHub App login and registration are Phase 2; Phase 1 is PAT only. |
-| [REQ-AUTH-003](requirements/09-remotes-and-auth.md#req-auth-003--browser-token-exchange-without-a-client-secret) | Browser code exchange with PKCE and a relay, no client secret | D-26, D-27 | PKCE exchange via relay Worker belongs to GitHub App login.         |
-| [REQ-AUTH-015](requirements/09-remotes-and-auth.md#req-auth-015--automatic-token-refresh)                        | Automatic refresh of expiring tokens                          | D-26, D-27 | Token refresh only applies to GitHub App tokens, which are Phase 2. |
+| ID                                                                                                                                | Requirement                                                   | Decision   | Why                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+| [REQ-AUTH-002](requirements/09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app)                                 | GitHub sign-in via a GitHub App (user-to-server)              | D-26, D-27 | GitHub App login and registration are Phase 2; Phase 1 is PAT only.                                    |
+| [REQ-AUTH-003](requirements/09-remotes-and-auth.md#req-auth-003--browser-token-exchange-without-a-client-secret)                  | Browser code exchange with PKCE and a relay, no client secret | D-26, D-27 | PKCE exchange via relay Worker belongs to GitHub App login.                                            |
+| [REQ-AUTH-008](requirements/09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac        | D-26, D-39 | The first-party Worker and iac are Phase 2; Phase 1 uses the public proxy behind a build-time setting. |
+| [REQ-AUTH-015](requirements/09-remotes-and-auth.md#req-auth-015--automatic-token-refresh)                                         | Automatic refresh of expiring tokens                          | D-26, D-27 | Token refresh only applies to GitHub App tokens, which are Phase 2.                                    |
 
 ### Engineering & CI (Phase 2)
 
@@ -403,17 +408,9 @@ The owner's answers then narrowed this: Phase 1 signs in with **PATs only**; the
 
 ### Native apps (awaiting an owner answer)
 
-| ID                                                                                                      | Requirement                                      | Decision | Why                                                              |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | -------- | ---------------------------------------------------------------- |
-| [REQ-APP-017](requirements/07-native-apps.md#req-app-017--desktop-os-integration-deep-links-tray-menus) | Desktop OS integration (deep links, tray, menus) |          | Owner has not decided tray/menus; deep links are Phase 3 (D-26). |
-| [REQ-APP-020](requirements/07-native-apps.md#req-app-020--mobile-specific-ui-polish)                    | Mobile-specific UI polish                        |          | Owner has not decided mobile UI polish.                          |
-
-### Remotes & auth (awaiting an owner answer)
-
-| ID                                                                                                                                | Requirement                                            | Decision   | Why                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------- |
-| [REQ-AUTH-008](requirements/09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac | D-26, D-27 | Worker/iac is Phase 2, but the Phase 1 browser git transport is still awaiting the owner. |
-| [REQ-AUTH-009](requirements/09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy   | D-27       | First-party proxy is Phase 2; the Phase 1 browser git transport is awaiting the owner.    |
+| ID                                                                                   | Requirement               | Decision | Why                                     |
+| ------------------------------------------------------------------------------------ | ------------------------- | -------- | --------------------------------------- |
+| [REQ-APP-020](requirements/07-native-apps.md#req-app-020--mobile-specific-ui-polish) | Mobile-specific UI polish |          | Owner has not decided mobile UI polish. |
 
 ## 9. Requirements to add or amend
 

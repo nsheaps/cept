@@ -196,7 +196,7 @@ sequenceDiagram
 
 ### REQ-WEB-003 — UI talks to storage only through the injected backend
 
-> **Scope: Phase 1 (D-27, D-29).** Auth is PATs only and the host is GitHub only in Phase 1; `AuthProvider` stays host-agnostic (D-29). The proxy URL stays configuration, not a literal. The relay Worker and the nsheaps/iac proxy are Phase 2 (D-26, D-27). How the browser reaches github.com for git in Phase 1 is still awaiting the owner (REQ-AUTH-008/009).
+> **Scope: Phase 1 (D-27, D-29).** Auth is PATs only and the host is GitHub only in Phase 1; `AuthProvider` stays host-agnostic (D-29). The proxy URL stays configuration, not a literal. The relay Worker and the nsheaps/iac proxy are Phase 2 (D-26, D-27). In Phase 1 the browser reaches github.com through the public proxy behind that setting (D-39).
 
 **Statement:** The browser UI MUST perform all persistence through the injected `StorageBackend` and MUST NOT construct concrete backends itself.
 
@@ -626,7 +626,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 3. **Demo storage.** The owner requires an in-memory demo. SPECIFICATION 5.10.7 and TASKS T0.12 say IndexedDB with `CEPT_DEMO_MODE`, and the code writes into the user's default space. Do we confirm `MemoryBackend` and drop demo writes to the default space?
 4. **Daemon and "client-only".** **Decided (D-4):** Client-only framing retired; daemon is optional and additive. Browser app works alone. See Conflict 2 above for SW vs SharedWorker responsibilities.
 5. **Read-only docs form.** **Timing decided (D-26):** the read-only docs site and bundled-docs generation are Phase 2; the in-app vs static form is still open, and PR #67 disposition is still awaiting the owner. Should the docs be an in-app space (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
-6. **CORS proxy.** **Partly answered (D-26, D-27):** the relay Worker (a Worker just for Cept) and all nsheaps/iac work are Phase 2; Phase 1 browser git transport is still awaiting the owner. Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
+6. **CORS proxy.** **Partly answered (D-26, D-27):** the relay Worker (a Worker just for Cept) and all nsheaps/iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39). Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
 7. **Deploy cadence.** Production deploys only on `v*` tags. Should `main` deploy continuously to `/cept/app/`?
 8. **Stale task checkboxes.** TASKS T7.3, T0.12, T6.5, T5.8 and P2.7 are checked even though the work is broken, missing or not wired. Uncheck them, or move them to continuation tasks?
 9. **Desktop runtime.** **Answered (D-28):** desktop is Electrobun (macOS dmg arm64+x64, Windows NSIS x64, Linux AppImage + deb x64) with the Electrobun updater fed from GitHub Releases. CLAUDE.md names Electrobun (macOS) and Electron (Windows/Linux), and the owner says only "packaged app". This matters here only because the shells must mount `@cept/ui` (REQ-WEB-001).

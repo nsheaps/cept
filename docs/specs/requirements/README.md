@@ -574,6 +574,8 @@ These are deduplicated across the area files. The requirement IDs record what is
 | D-36 | **Databases deferred** | Databases | Database requirements were Phase 1. | **Decided:** Databases are Phase 2. In Phase 1, database entries are removed from the slash menu and UI so nothing half-working ships; library code is left untouched. | REQ-EDT-006..009; D-16 |
 | D-37 | **Offline editing** | Offline | D-4 and D-5 were proposed. | **Decided:** D-4 and D-5 approved as stated: full offline editing with queued commits and push-on-reconnect in Phase 1. | D-4; D-5 |
 | D-38 | **Engineering prerequisites** | Engineering | CI, mise tasks and secret scanning were broken or missing. | **Decided:** Engineering prerequisites (fix CI, mise tasks, secret scanner) are Phase 1; other REQ-ENG items only as needed. | REQ-ENG (all) |
+| D-39 | **Phase 1 browser git transport** | First-party proxy (D-9) | github.com git endpoints send no CORS headers, so browser isomorphic-git needs a proxy; the first-party Worker is Phase 2. | **Decided:** Phase 1 keeps the public `cors.isomorphic-git.org` proxy behind one build-time setting (never hardcoded in components); the first-party Worker replaces it in Phase 2. Temporarily relaxes D-9. | REQ-AUTH-008, 009, 010, 011; REQ-WEB-003 |
+| D-40 | **Desktop OS integration** | Tray, menus, deep links | Not placed in a phase. | **Decided:** No tray icon. Native app menus are Phase 1, as another way to reach About, Help and Settings. Deep links are Phase 3. | REQ-APP-017 |
 
 ## 7. Stale documentation
 

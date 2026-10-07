@@ -475,7 +475,7 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-013 — Git-backed space: clone/read from remote
 
-> **Scope: Phase 1 (D-29, D-30).** Host is GitHub only (PAT); anonymous read-only clone of public HTTPS git URLs keeps working. Autodiscovery: every repo reachable via `GET /user/repos`, default branch scanned via the Git Trees API, forks and archived repos skipped; found spaces are listed as "Discovered" and cloned only when opened or pinned. The owned-proxy criterion depends on the browser git transport, still awaiting the owner (REQ-AUTH-008/009); the OAuth relay Worker is Phase 2 (D-27). Nested-space discovery stays deferred (D-3).
+> **Scope: Phase 1 (D-29, D-30).** Host is GitHub only (PAT); anonymous read-only clone of public HTTPS git URLs keeps working. Autodiscovery: every repo reachable via `GET /user/repos`, default branch scanned via the Git Trees API, forks and archived repos skipped; found spaces are listed as "Discovered" and cloned only when opened or pinned. The owned-proxy criterion is Phase 2; Phase 1 uses the configurable public proxy (D-39); the OAuth relay Worker is Phase 2 (D-27). Nested-space discovery stays deferred (D-3).
 
 **Statement.** A space MUST be able to be backed by a Git repository (any URL, optional branch and subpath), cloned and readable in both browser and app.
 
@@ -743,7 +743,7 @@ branch: docs # optional (D-30)
 8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_ _(Answered D-37: in Phase 1 the app owns sync, with queued offline commits and push-on-reconnect; daemon is later.)_
 9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
 10. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `space.cept.yaml` use for future fields?
-11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; the Phase 1 browser git transport is still awaiting the owner.)_
+11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39).)_
 12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
 13. **Per-folder `.cept.yaml` (PR #67).** PR #67 adds a per-folder `.cept.yaml` for hide lists and similar folder-scoped options. This is out of scope while nesting is deferred (D-3). Revisit when REQ-WS-005 is undeferred.
 
