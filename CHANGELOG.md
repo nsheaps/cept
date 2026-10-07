@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.34](https://github.com/nsheaps/cept/compare/v0.7.33...v0.7.34) (2026-10-07)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([187e476](https://github.com/nsheaps/cept/commit/187e47664cbc0175447c668e6610b9acfc3d2048))
+* **specs:** record D-39 (public git proxy for Phase 1) and D-40 (app menus, no tray) ([e315b80](https://github.com/nsheaps/cept/commit/e315b809e9a09072630aae5f23149fa3dbb374b9))
+
 ## [0.7.33](https://github.com/nsheaps/cept/compare/v0.7.32...v0.7.33) (2026-10-07)
 
 ### Documentation
