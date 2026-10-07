@@ -244,7 +244,7 @@ flowchart LR
 
 **Gap.** Add the transport abstraction, gdrive and sftp transports (Node-side, in the daemon), and keychain credential storage.
 
-**Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) touches git-space remote handling (UI clone only).
+**Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) (closed, D-42) touched git-space remote handling (UI clone only); its remote-space ideas are rebuilt in Phase 1.
 
 ### REQ-CLI-006 — Local client protocol for daemon sharing
 
@@ -380,7 +380,7 @@ flowchart LR
 
 **Gap.** Make the docs a Cept space and render it in CI and deploy. Coordinate with [02-static-rendering.md](02-static-rendering.md) and [10-engineering-and-ci.md](10-engineering-and-ci.md).
 
-**Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) (docs as a real remote space) is a precursor.
+**Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) (docs as a real remote space) was a precursor; it is closed (D-42) and its runtime docs clone is not carried over.
 
 ### REQ-CLI-012 — CLI one-shot sync/status commands
 

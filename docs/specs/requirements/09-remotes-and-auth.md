@@ -192,7 +192,7 @@ flowchart LR
 
 **Gap:** Move to a GitHub App with PKCE, expiring tokens and refresh. Wire it into the UI (P5.1). Update the spec. The sibling repo github2 (`docs/specs/auth.md`, `relay/relay.worker.js`) has a working pattern to reuse.
 
-**Related PRs/issues:** none. [PR #67](https://github.com/nsheaps/cept/pull/67) touches remote spaces but adds no auth.
+**Related PRs/issues:** none. PR #67 (closed per D-42) touched remote spaces but added no auth.
 
 ### REQ-AUTH-003 — Browser token exchange without a client secret
 
@@ -353,13 +353,13 @@ flowchart LR
 - Authenticated requests never go to `cors.isomorphic-git.org`.
 - The CD and preview workflows inject the URL.
 
-**Current state:** divergent. [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) hardcodes `https://cors.isomorphic-git.org` at lines 363, 467, 987 and 1064. Open [PR #67](https://github.com/nsheaps/cept/pull/67) adds another literal in a new `docs-loader.ts`. The only Vite env vars are `VITE_BASE_PATH`, `VITE_APP_VERSION` and `VITE_IS_PREVIEW`.
+**Current state:** divergent. [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) hardcodes `https://cors.isomorphic-git.org` at lines 363, 467, 987 and 1064. PR #67 (closed per D-42) added another literal in a new `docs-loader.ts`; it is not carried over. The only Vite env vars are `VITE_BASE_PATH`, `VITE_APP_VERSION` and `VITE_IS_PREVIEW`.
 
 **Docs state:** undocumented.
 
-**Gap:** Centralize the proxy URL and point it at the iac Worker. Ask for PR #67 to use the shared config.
+**Gap:** Centralize the proxy URL and point it at the iac Worker. The space work rebuilt from PR #67 (D-42) must use the shared config.
 
-**Related PRs/issues:** [PR #67](https://github.com/nsheaps/cept/pull/67).
+**Related PRs/issues:** PR #67 (closed per D-42; ideas rebuilt in Phase 1).
 
 ### REQ-AUTH-010 — Authenticated Git transport
 
@@ -385,7 +385,7 @@ flowchart LR
 
 ### REQ-AUTH-011 — Anonymous read-only access to public remotes
 
-> **Scope: Phase 1 (D-29).** Anonymous read-only clone of public HTTPS git URLs keeps working. The third acceptance criterion (first-party proxy) is Phase 2; Phase 1 uses the configurable public proxy (D-39).
+> **Scope: Phase 1 (D-29).** Anonymous read-only clone of public HTTPS git URLs keeps working. The third acceptance criterion (first-party proxy) is Phase 2; Phase 1 uses the configurable public proxy (D-39). **Decided (D-42):** the read-only editor applies to anonymous public clones only; spaces backed by a PAT are editable (rebuilt from closed PR #67).
 
 **Statement:** Users SHOULD be able to browse public Git remotes read-only without signing in.
 
@@ -394,20 +394,21 @@ flowchart LR
 **Acceptance criteria**
 
 - A user can add a public Git URL with no credentials, and it opens read-only.
+- The same repository added with a PAT opens editable, not read-only (D-42).
 - Background refresh works anonymously.
 - This path uses the first-party proxy ([REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)).
 
-**Current state:** partial. Anonymous read-only browsing works, but it goes through the third-party proxy (the third acceptance criterion fails), and no unit, integration or e2e test covers `cloneRemoteRepo` or adding a remote space (no matches in `e2e/` or in `packages/ui` tests). [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) offers "Add a read-only space from a Git repository". [App.tsx](../../../packages/ui/src/components/App.tsx) implements auto-clone by remote space ID (around lines 341-415), a 5-minute background refresh (around lines 426-470) and `handleAddRemoteRepo` (around lines 946-1036). [PR #67](https://github.com/nsheaps/cept/pull/67) makes the docs a real remote space.
+**Current state:** partial. Anonymous read-only browsing works, but it goes through the third-party proxy (the third acceptance criterion fails), and no unit, integration or e2e test covers `cloneRemoteRepo` or adding a remote space (no matches in `e2e/` or in `packages/ui` tests). [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) offers "Add a read-only space from a Git repository". [App.tsx](../../../packages/ui/src/components/App.tsx) implements auto-clone by remote space ID (around lines 341-415), a 5-minute background refresh (around lines 426-470) and `handleAddRemoteRepo` (around lines 946-1036). PR #67 (closed per D-42) made the docs a real remote space through a runtime clone, which is not carried over (D-12); its remote-space UI ideas are rebuilt in Phase 1.
 
 **Docs state:** documented-as-desired, stale. The in-app demo content in [App.tsx](../../../packages/ui/src/components/App.tsx) line 1724 says "Public repositories can be browsed anonymously; private repositories require authentication." It sits under a "Git Repository (Coming Soon)" heading, though. [quick-start.md](../../content/getting-started/quick-start.md) line 22 and [features.md](../../content/guides/features.md) line 114 also say Git is "coming soon", even though read-only remote spaces ship today. Only [docs/content/index.md](../../content/index.md) line 33 mentions a read-only Git-backed space, and only for the docs.
 
 **Gap:** Move it off the third-party proxy, add tests for the anonymous clone path, and document adding a read-only remote space.
 
-**Related PRs/issues:** [PR #67](https://github.com/nsheaps/cept/pull/67).
+**Related PRs/issues:** PR #67 (closed per D-42; ideas rebuilt in Phase 1).
 
 ### REQ-AUTH-012 — Secure persistent token storage per platform
 
-> **Scope: Phase 1 (D-27, D-28).** Web (encrypted IndexedDB) and desktop (OS keychain) stores hold the PAT. The mobile store ships with the Phase 1 Android build. The CLI daemon credential file is later (D-26).
+> **Scope: Phase 1 (D-27, D-28).** Web (encrypted IndexedDB) and desktop (OS keychain) stores hold the PAT. The mobile (Capacitor) secure store is later (D-43); on phones the PWA uses the web store. The CLI daemon credential file is later (D-26).
 
 **Statement:** Tokens MUST persist across sessions in platform-appropriate secure storage: encrypted IndexedDB on web, the OS keychain on desktop, secure storage on mobile, and a protected credential store for the CLI daemon.
 
@@ -498,7 +499,7 @@ flowchart LR
 
 ### REQ-AUTH-016 — Native OAuth for packaged apps
 
-> **Scope: Phase 3 (D-26).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 native apps sign in with a PAT.
+> **Scope: Phase 3 (D-26).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 native apps (desktop only; native iOS and Android are later per D-43) sign in with a PAT.
 
 **Statement:** Packaged apps (iOS, Android, Windows, macOS and Linux) MUST complete OAuth through the system browser with a deep-link (`cept://`) or loopback redirect, and MUST check state against CSRF.
 
@@ -569,7 +570,7 @@ The owner needs to decide each of these.
 
 1. **GitHub App or OAuth App.** The handler asks for a GitHub App login. [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1, line 118, `github.ts` and the iac TASKS.md all specify an OAuth App with the broad `repo` scope. Proposal: adopt a GitHub App and rewrite §7.1. **Answered (D-27):** Phase 1 uses PATs only; GitHub App login is Phase 2.
 2. **AuthProvider scope.** The SPECIFICATION says AuthProvider is only for Git remotes, and Appendix B lists GitHub as the only external auth service. The handler requires Google Drive and SFTP. Which Drive scope (`drive.file` or full `drive`)? **Answered (D-26, D-29):** Google Drive and SFTP are later; `AuthProvider` stays host-agnostic with GitHub as the only Phase 1 host. The Drive scope question is deferred with Drive.
-3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx and PR #67). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)? **Partly answered (D-27):** the Worker is Phase 2, a Worker just for Cept, with iac restructured first. The Phase 1 keeps the public proxy behind a build-time setting (D-39).
+3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx; PR #67, closed per D-42, added another). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)? **Partly answered (D-27):** the Worker is Phase 2, a Worker just for Cept, with iac restructured first. The Phase 1 keeps the public proxy behind a build-time setting (D-39).
 4. **Proxy reachability.** `auth.nsheaps.dev` is a CNAME to workers.dev with no route or custom domain, and the script defaults to a 503 placeholder. The setup exists on paper only (unverified that it fails). **Answered (D-26, D-27):** iac/Pulumi work, including `auth.nsheaps.dev`, is Phase 2.
 5. **TASKS.md accuracy.** T5.1, T5.2 and T7.6 are checked, but P5.1, P5.2 and P6.5/P6.6 and the code show they are not wired. Should the T-task checkboxes be reverted?
 6. **Token exchange design.** SPECIFICATION §7.1 implies a direct browser code exchange, which CORS makes impossible. Is a client secret ever acceptable (Worker-only)? PKCE with a GitHub App removes the need for one. **Answered (D-27):** no token exchange in Phase 1 (PAT only); revisit PKCE and relay in Phase 2.
@@ -600,7 +601,7 @@ The owner needs to decide each of these.
 - **Storage backends.** The Git backend uses provider credentials through `onAuth` ([REQ-WS-013](03-spaces-and-storage.md#req-ws-013--git-backed-space-cloneread-from-remote), [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync)). The Drive backend ([REQ-WS-015](03-spaces-and-storage.md#req-ws-015--google-drive-backend)) needs REQ-AUTH-006, and the SFTP backend ([REQ-WS-016](03-spaces-and-storage.md#req-ws-016--sftp-backend)) needs REQ-AUTH-007.
 - **CLI and daemon.** These need device-flow auth (REQ-AUTH-004), secure credential storage (REQ-AUTH-012) and support for all remote kinds ([REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon), [REQ-CLI-005](05-cli-and-daemon.md#req-cli-005--daemon-supports-all-remote-kinds)). The daemon is the proposed shared credential holder ([REQ-CLI-006](05-cli-and-daemon.md#req-cli-006--local-client-protocol-for-daemon-sharing), [REQ-CLI-008](05-cli-and-daemon.md#req-cli-008--daemon-security-for-localhost-api)).
 - **VS Code extension and PWA.** They share credentials through the daemon ([REQ-VSC-008](06-vscode-extension.md#req-vsc-008--share-the-local-cept-daemon-when-available), REQ-AUTH-017). The service worker sync ([REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing)) needs tokens it can read.
-- **Packaged apps.** They need native redirects and secure storage ([REQ-APP-016](07-native-apps.md#req-app-016--native-oauth-via-deep-link-for-packaged-apps), REQ-AUTH-012), which depend on the Capacitor project and desktop deep linking (P6.5/P6.6).
+- **Packaged apps.** They need native redirects and secure storage ([REQ-APP-016](07-native-apps.md#req-app-016--native-oauth-via-deep-link-for-packaged-apps), REQ-AUTH-012), which depend on desktop deep linking (P6.5/P6.6) and, once native mobile returns (D-43), a Capacitor project.
 - **Git history and conflicts.** TASKS P5.5 (HistoryViewer) and P5.6 (ConflictResolver) are outside auth, but they depend on authenticated pull and push (REQ-AUTH-010). See [03](03-spaces-and-storage.md).
 - **Collaboration.** Presence identity could reuse the GitHub user from `getUser()`. The signaling server has no auth today (unverified). See [04 Collaboration](04-collaboration.md).
 - **Engineering and CI.** The build injects client IDs and the proxy URL as `VITE_*` variables in the CD and preview workflows. A secret scanner is also needed. See [10 Engineering and CI](10-engineering-and-ci.md).

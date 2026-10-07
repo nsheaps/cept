@@ -74,7 +74,7 @@ Status counts: 1 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 
 flowchart TB
     subgraph Clients
         WEB["Web app / PWA"]
-        APP["Packaged app (desktop/mobile)"]
+        APP["Packaged app (desktop; mobile later, D-43)"]
         VSC["VS Code extension"]
         CLI["CLI / sync daemon"]
     end
@@ -152,7 +152,7 @@ flowchart TB
 
 ### REQ-WS-001 — Space is a folder in a filesystem
 
-> **Scope: Phase 1 (D-26).** Includes legacy flat-space migration (D-30).
+> **Scope: Phase 1 (D-26).** Includes legacy flat-space migration (D-30). **Decided (D-42):** PR #67 is closed and its ideas are rebuilt here in Phase 1: path-based page ids, README/index files as folder pages, a NotFound page for unresolved page paths, and per-folder `.cept.yaml` (D-41, see REQ-WS-002). Files and folders matched by `ignore:` in a `.cept.yaml` (and dotfiles, `.git/` and `.cept/` by default) are not part of the page tree.
 
 **Statement.** A space MUST be a directory tree in some backing filesystem. Its pages MUST be stored as files whose folder hierarchy matches the space page tree, so other tools can read and edit the folder.
 
@@ -164,13 +164,16 @@ flowchart TB
 - Page identity is derived from the path, not from a timestamp ID. Renaming or moving a page renames or moves the file.
 - Deleting `.cept/workspace-state.json`, or any tree cache, and reloading rebuilds the same tree from the directory structure.
 - A folder written by hand in an external editor, using nested `.md` files, opens with the same tree.
+- A folder containing `README.md` or `index.md` shows that file as the folder page (D-42); a folder without one shows a generated listing of its children. If both exist, the tie-break between them is documented.
+- Navigating to a page path that does not resolve renders a NotFound page (D-42), not a blank editor or a silently created page.
+- Page ids are the file path relative to the space root, for every backend (local, browser and remote), not only remote spaces (D-42).
 
 **Current state: divergent.**
 
 - Pages are written flat as `pages/<pageId>.md` with ids like `page-${Date.now()}` ([packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) around lines 614 and 782, and `writePageContent` in [packages/ui/src/components/storage/StorageContext.tsx](../../../packages/ui/src/components/storage/StorageContext.tsx)).
 - The hierarchy lives as JSON in `.cept/workspace-state.json` (`PersistedState` in StorageContext.tsx).
 - Non-default spaces live under `.cept/spaces/<id>/pages` (`spacePagesDir` in [packages/ui/src/components/storage/SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)).
-- Only remote git spaces map folders to the tree (`walkMarkdownFiles` in [packages/ui/src/components/storage/git-space.ts](../../../packages/ui/src/components/storage/git-space.ts)), and then only as a read-only snapshot copied into IndexedDB. Open PR #67 switches remote-space page ids to real file paths and adds README/index-as-folder-page handling, for remote spaces only.
+- Only remote git spaces map folders to the tree (`walkMarkdownFiles` in [packages/ui/src/components/storage/git-space.ts](../../../packages/ui/src/components/storage/git-space.ts)), and then only as a read-only snapshot copied into IndexedDB. PR #67 (closed, D-42; not merged to `main`) switched remote-space page ids to real file paths and added README/index-as-folder-page handling and a NotFound page, for remote spaces only; those ideas are rebuilt for all backends in Phase 1, not carried over as code.
 - TASKS P2.4b ("Folder pages — directory listing of child pages") is checked, but local pages are still written flat; the checkbox overstates what shipped.
 
 **Docs state: documented-differently, stale.**
@@ -180,11 +183,11 @@ flowchart TB
 
 **Gap.** Persist the page tree as a real directory hierarchy, demote the JSON tree to a cache, and key pages by path.
 
-**Related:** [#62](https://github.com/nsheaps/cept/issues/62) (folder structure should reflect the sidenav), [#64](https://github.com/nsheaps/cept/issues/64) (page URL collisions), [#67](https://github.com/nsheaps/cept/pull/67), TASKS P2.4b.
+**Related:** [#62](https://github.com/nsheaps/cept/issues/62) (folder structure should reflect the sidenav), [#64](https://github.com/nsheaps/cept/issues/64) (page URL collisions), [#67](https://github.com/nsheaps/cept/pull/67) (closed, D-42), TASKS P2.4b.
 
 ### REQ-WS-002 — space.cept.yaml / space.cept.yml marks the space root
 
-> **Scope: Phase 1 (D-26).** **Decided (D-30):** discovery covers every repo the PAT reaches; the marker file MUST exist on the repo's default branch, and it MAY declare a different `branch` for the space (see REQ-WS-004).
+> **Scope: Phase 1 (D-26).** **Decided (D-30):** discovery covers every repo the PAT reaches; the marker file MUST exist on the repo's default branch, and it MAY declare a different `branch` for the space (see REQ-WS-004). **Decided (D-41, D-42):** `space.cept.yaml` is the only space marker and defines the space; a per-folder `.cept.yaml` is Cept configuration, never a marker (see the criteria below). PR #67 is closed and its per-folder config idea is rebuilt in Phase 1.
 
 **Statement.** A directory MUST be treated as a space root if and only if it contains `space.cept.yaml` or `space.cept.yml`. Cept MUST find space roots by locating this file.
 
@@ -199,12 +202,16 @@ flowchart TB
 - Any legacy config location (`.cept/config.yaml`) is migrated or read as a fallback, and this is documented.
 - A single Git repository (or any folder tree) may contain multiple spaces in different subfolders, each marked by its own `space.cept.yaml`. Opening the repo or parent folder discovers and lists all spaces found; none is treated as the unique root.
 - A space is addressed by (backend location, path-within-backend). Two spaces at different subfolder paths within the same backend are independent.
-- Discovery does not descend into a subfolder that is itself a space root (nested spaces are reported as a warning; see REQ-WS-005). **Open question:** whether per-folder `.cept.yaml` (PR #67) should be in scope; D-3 defers nesting, so the per-folder override is out of scope for now — record as open question 13 below.
+- Discovery does not descend into a subfolder that is itself a space root (nested spaces are reported as a warning; see REQ-WS-005).
+- **Per-folder `.cept.yaml` (D-41, supersedes open question 13).** A `.cept.yaml` in any folder holds Cept configuration for that folder and everything below it, so a large org can keep config next to the content its team owns instead of in one central file. It never defines a space and is never treated as a space marker; only `space.cept.yaml` / `space.cept.yml` does that. This works inside a single space and does not require nested spaces (REQ-WS-005 stays deferred).
+- Settings merge from the space root down, and the nearest `.cept.yaml` wins per key.
+- The first key is `ignore:`, a list of gitignore-style patterns relative to the folder holding the `.cept.yaml`. Matching files and folders are hidden from the page tree, search, backlinks and the graph. Dotfiles, `.git/` and `.cept/` are hidden by default without any configuration. PR #67's `hide:` key is read as an alias of `ignore:`.
+- Cept writes a `.cept.yaml` only when the user changes a setting in that folder; opening or browsing never creates one (REQ-WS-019). Unit tests cover merge order, nearest-wins, the `hide:` alias and the default-hidden paths. The marker-versus-config distinction is documented in the reference page for REQ-WS-004.
 
 **Current state: not-started.** A grep of `packages/`, `docs/`, `features/`, `e2e/` and `README.md` finds no `space.cept.yaml` or `space.cept.yml`. The nearest artifacts are:
 
 - `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
-- A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, open, non-draft PR #67; not on `main`).
+- A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, from PR #67, now closed per D-42; not on `main`). It is rebuilt as the D-41 `.cept.yaml` with `ignore:` (and `hide:` as an alias).
 - `.cept/spaces.json`, the app-level space registry (SpaceManager.ts ~line 34).
 
 **Docs state: documented-differently, n/a.**
@@ -213,9 +220,9 @@ flowchart TB
 - §5.10.4 Flow 2 loads a folder "containing `.cept/` config".
 - Issue #58 proposes `.cept/space-config.json`, and issue #62 proposes `.cept.yaml`.
 
-**Gap.** Specify the marker and the discovery algorithm, implement a core reader and writer, and reconcile or retire the four competing config locations.
+**Gap.** Specify the marker and the discovery algorithm, implement a core reader and writer, implement the per-folder `.cept.yaml` loader (D-41), and retire `.cept/config.yaml` and `.cept/space-config.json` with migration. `space.cept.yaml` (the space) and `.cept.yaml` (Cept config) are the two surviving config files.
 
-**Related:** [#62](https://github.com/nsheaps/cept/issues/62), [#58](https://github.com/nsheaps/cept/issues/58), [#67](https://github.com/nsheaps/cept/pull/67).
+**Related:** [#62](https://github.com/nsheaps/cept/issues/62), [#58](https://github.com/nsheaps/cept/issues/58), [#67](https://github.com/nsheaps/cept/pull/67) (closed, D-42).
 
 ### REQ-WS-003 — Both .yaml and .yml extensions accepted
 
@@ -240,7 +247,7 @@ flowchart TB
 
 ### REQ-WS-004 — space.cept.yaml schema
 
-> **Decided (D-30).** The minimal schema gains one optional field, `branch: <name>`. The marker MUST exist on the default branch; Cept then uses the declared branch for that space. Scope: Phase 1 (D-26).
+> **Decided (D-30).** The minimal schema gains one optional field, `branch: <name>`. The marker MUST exist on the default branch; Cept then uses the declared branch for that space. Scope: Phase 1 (D-26). **Decided (D-41):** this schema describes `space.cept.yaml` only. Cept configuration such as `ignore:` lives in the separate per-folder `.cept.yaml` (REQ-WS-002) and is not part of this schema; the reference page documents both files and how they differ.
 
 **Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements, except one optional field, `branch` (D-30): the name of the branch Cept uses for this space. The marker file MUST exist on the default branch (that is where discovery finds it).
 
@@ -272,7 +279,7 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-005 — Nested spaces inside a parent space (deferred)
 
-> **Status: deferred (D-3); Scope: later (D-26).** This requirement is deferred until the core space-on-disk model (REQ-WS-001/002/004) is stable. Discovery does not descend into a found space; a nested marker is reported as a warning. See open question 13 for per-folder `.cept.yaml`.
+> **Status: deferred (D-3); Scope: later (D-26).** This requirement is deferred until the core space-on-disk model (REQ-WS-001/002/004) is stable. Discovery does not descend into a found space; a nested marker is reported as a warning. Per-folder `.cept.yaml` is not nesting and is not deferred (D-41, REQ-WS-002).
 
 **Statement.** A space MAY contain child spaces, meaning any subdirectory with its own `space.cept.yaml`. The parent MUST show each child as a navigable subtree, and the child keeps its own configuration.
 
@@ -281,11 +288,11 @@ branch: docs # optional (D-30)
 **Acceptance criteria**
 
 - Discovery returns a tree of space roots, and the sidebar shows each child space as a distinct, labelled subtree.
-- A child's `space.cept.yaml` settings (name, icon, default page, hide list) apply inside the child and do not leak into the parent.
+- A child's `space.cept.yaml` settings (name, icon, default page) and its `.cept.yaml` ignore list apply inside the child and do not leak into the parent.
 - The spec defines how links, search, graph and databases resolve across space boundaries, and tests cover a parent-to-child link.
 - Opening a child space on its own, without its parent, works.
 
-**Current state: not-started.** Spaces are a flat sibling list in `.cept/spaces.json` (`SpacesManifest` in SpaceManager.ts), and `SpaceMeta` has no parent or child relation. The closest concept is `subPath` on remote git spaces (SpaceManager.ts ~lines 20-21, plus the longest-prefix `resolveRouteToSpace` in PR #67). That scopes one space to a repo subfolder; it is not nesting.
+**Current state: not-started.** Spaces are a flat sibling list in `.cept/spaces.json` (`SpacesManifest` in SpaceManager.ts), and `SpaceMeta` has no parent or child relation. The closest concept is `subPath` on remote git spaces (SpaceManager.ts ~lines 20-21, plus the longest-prefix `resolveRouteToSpace` in closed PR #67). That scopes one space to a repo subfolder; it is not nesting.
 
 **Docs state: undocumented, n/a.** "Nested infinitely" in SPECIFICATION.md §5.2 refers to pages, not spaces.
 
@@ -305,7 +312,7 @@ branch: docs # optional (D-30)
 
 - A unit test with 10 nested levels loads all 10.
 - A unit test with 11 levels loads 10 and emits a user-visible warning naming the skipped path.
-- Discovery does not walk the whole tree unboundedly (it is bounded by depth and honours the hide list).
+- Discovery does not walk the whole tree unboundedly (it is bounded by depth and honours the `.cept.yaml` ignore list, D-41).
 
 **Current state: not-started.**
 
@@ -371,9 +378,9 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-009 — Local (app-only) native filesystem backend
 
-> **Scope: Phase 1 (D-29).** Desktop local folder is a Phase 1 backend. The "or the daemon" hosting option is later (CLI/daemon, D-26).
+> **Scope: Phase 1 (D-29), desktop only.** Desktop local folder is a Phase 1 backend. The "or the daemon" hosting option is later (CLI/daemon, D-26). **Decided (D-43):** the native mobile part (Capacitor filesystem backend, amending D-19) is later; phones use the PWA, which gets IndexedDB and, where the browser supports it, File System Access folders (REQ-WS-011/012). The desktop shell is a thin wrapper around the web view (D-43).
 
-**Statement.** Packaged desktop and mobile apps MUST be able to open a folder on the native filesystem as a space and read and write plain files in place.
+**Statement.** Packaged desktop apps MUST be able to open a folder on the native filesystem as a space and read and write plain files in place. Native mobile apps are later (D-43).
 
 **Source.** Owner: "stored locally (app only)".
 
@@ -382,7 +389,7 @@ branch: docs # optional (D-30)
 - The desktop app has an "Open Folder" action that uses a native dialog and opens the folder through `LocalFsBackend` (or the daemon).
 - Edits are written to the real files and are visible in an external editor.
 - An E2E or integration test runs against a temp directory.
-- The mobile app has an equivalent path through the Capacitor filesystem, or a documented exclusion.
+- Mobile: no native filesystem backend in Phase 1. The documented exclusion is that native mobile apps are later (D-43); the capability probe (REQ-WS-017) hides "Local folder" on phone PWAs where File System Access is unavailable.
 
 **Current state: stubbed.**
 
@@ -475,7 +482,7 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-013 — Git-backed space: clone/read from remote
 
-> **Scope: Phase 1 (D-29, D-30).** Host is GitHub only (PAT); anonymous read-only clone of public HTTPS git URLs keeps working. Autodiscovery: every repo reachable via `GET /user/repos`, default branch scanned via the Git Trees API, forks and archived repos skipped; found spaces are listed as "Discovered" and cloned only when opened or pinned. The owned-proxy criterion is Phase 2; Phase 1 uses the configurable public proxy (D-39); the OAuth relay Worker is Phase 2 (D-27). Nested-space discovery stays deferred (D-3).
+> **Scope: Phase 1 (D-29, D-30).** Host is GitHub only (PAT); anonymous read-only clone of public HTTPS git URLs keeps working. Autodiscovery: every repo reachable via `GET /user/repos`, default branch scanned via the Git Trees API, forks and archived repos skipped; found spaces are listed as "Discovered" and cloned only when opened or pinned. The owned-proxy criterion is Phase 2; Phase 1 uses the configurable public proxy (D-39); the OAuth relay Worker is Phase 2 (D-27). Nested-space discovery stays deferred (D-3). **Decided (D-42):** PR #67 is closed; its remote-space ideas are rebuilt here in Phase 1 (criteria below). Its hardcoded proxy is not carried over (D-39).
 
 **Statement.** A space MUST be able to be backed by a Git repository (any URL, optional branch and subpath), cloned and readable in both browser and app.
 
@@ -488,6 +495,10 @@ branch: docs # optional (D-30)
 - CORS goes through the project-owned proxy (see [09-remotes-and-auth.md](09-remotes-and-auth.md)), not `cors.isomorphic-git.org`.
 - The repo's `space.cept.yaml` is honoured, and nested spaces in the repo are discovered.
 - The user docs describe remote spaces and the URL format.
+- Remote-space UI (D-42): a link to the repository on GitHub, a page menu, and space settings showing the remote URL, branch and last-synced time, with a refresh action.
+- Route resolution (D-42): a directory URL that falls inside an existing space whose sub-path is more specific opens that space instead of creating a duplicate space.
+- Inactive spaces show their page count and storage use (D-42).
+- Anonymous public clones open in a read-only editor; spaces backed by a PAT are editable (D-42, see [REQ-AUTH-011](09-remotes-and-auth.md#req-auth-011--anonymous-read-only-access-to-public-remotes)).
 
 **Current state: partial.**
 
@@ -505,7 +516,7 @@ branch: docs # optional (D-30)
 
 **Gap.** Back the space with a real `GitBackend`, sync incrementally, use the owned proxy, and document it.
 
-**Related:** [#67](https://github.com/nsheaps/cept/pull/67), [#66](https://github.com/nsheaps/cept/issues/66), [#68](https://github.com/nsheaps/cept/issues/68), [#65](https://github.com/nsheaps/cept/issues/65), [#64](https://github.com/nsheaps/cept/issues/64), [#62](https://github.com/nsheaps/cept/issues/62), [#60](https://github.com/nsheaps/cept/issues/60), [#57](https://github.com/nsheaps/cept/issues/57), [#41](https://github.com/nsheaps/cept/issues/41), [#48](https://github.com/nsheaps/cept/issues/48).
+**Related:** [#67](https://github.com/nsheaps/cept/pull/67) (closed, D-42), [#66](https://github.com/nsheaps/cept/issues/66), [#68](https://github.com/nsheaps/cept/issues/68), [#65](https://github.com/nsheaps/cept/issues/65), [#64](https://github.com/nsheaps/cept/issues/64), [#62](https://github.com/nsheaps/cept/issues/62), [#60](https://github.com/nsheaps/cept/issues/60), [#57](https://github.com/nsheaps/cept/issues/57), [#41](https://github.com/nsheaps/cept/issues/41), [#48](https://github.com/nsheaps/cept/issues/48).
 
 ### REQ-WS-014 — Git-backed space: write, commit, push/pull sync
 
@@ -580,7 +591,7 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-017 — Backend availability matrix per platform
 
-> **Scope: Phase 1 (D-26, D-29).** Only the Phase 1 backends (IndexedDB, File System Access, native fs, GitHub) are offered; Google Drive, SFTP, VS Code and CLI/daemon columns are later.
+> **Scope: Phase 1 (D-26, D-29).** Only the Phase 1 backends (IndexedDB, File System Access, native fs, GitHub) are offered; Google Drive, SFTP, VS Code and CLI/daemon columns are later. **Decided (D-43):** the "Mobile app" column (Capacitor) is later; on phones the PWA column applies. Native fs is Phase 1 on the desktop app only.
 
 **Statement.** The docs MUST include a matrix of which backends are available on each platform. The UI SHOULD offer only the backends available on the current platform.
 
@@ -588,20 +599,20 @@ branch: docs # optional (D-30)
 
 **Required matrix (target; "D" means only via the local daemon):**
 
-| Backend                   | Web             | PWA             | Desktop app | Mobile app        | VS Code (desktop) | VS Code (web)   | CLI / daemon |
-| ------------------------- | --------------- | --------------- | ----------- | ----------------- | ----------------- | --------------- | ------------ |
-| IndexedDB (browser only)  | yes             | yes             | n/a         | n/a               | n/a               | open question   | n/a          |
-| File System Access folder | where supported | where supported | n/a         | n/a               | n/a               | n/a             | n/a          |
-| Native fs (app only)      | D               | D               | yes         | yes (app sandbox) | yes               | n/a             | yes          |
-| Git                       | yes (via proxy) | yes (via proxy) | yes         | yes               | yes               | yes (via proxy) | yes          |
-| Google Drive              | yes             | yes             | yes         | yes               | yes               | yes             | yes          |
-| SFTP                      | D               | D               | yes         | open question     | yes               | no              | yes          |
-| In-memory (demo)          | yes             | yes             | n/a         | n/a               | n/a               | n/a             | n/a          |
+| Backend                   | Web             | PWA             | Desktop app | Mobile app   | VS Code (desktop) | VS Code (web)   | CLI / daemon |
+| ------------------------- | --------------- | --------------- | ----------- | ------------ | ----------------- | --------------- | ------------ |
+| IndexedDB (browser only)  | yes             | yes             | n/a         | n/a          | n/a               | open question   | n/a          |
+| File System Access folder | where supported | where supported | n/a         | n/a          | n/a               | n/a             | n/a          |
+| Native fs (app only)      | D               | D               | yes         | later (D-43) | yes               | n/a             | yes          |
+| Git                       | yes (via proxy) | yes (via proxy) | yes         | later (D-43) | yes               | yes (via proxy) | yes          |
+| Google Drive              | yes             | yes             | yes         | later (D-43) | yes               | yes             | yes          |
+| SFTP                      | D               | D               | yes         | later (D-43) | yes               | no              | yes          |
+| In-memory (demo)          | yes             | yes             | n/a         | n/a          | n/a               | n/a             | n/a          |
 
 **Acceptance criteria**
 
 - [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) contains this matrix, kept in sync with the code.
-- The Add Space wizard derives its options from a platform capability probe, with a test per platform mock.
+- The Add Space wizard derives its options from a platform capability probe, with a test per platform mock, including a phone-PWA mock (no File System Access).
 
 **Current state: partial.** The Add Space wizard ([packages/ui/src/components/settings/AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx), ~lines 102-147) offers Local (meaning a new IndexedDB space), Git, and a disabled "S3 – Coming soon" card. It does no platform detection.
 
@@ -613,9 +624,9 @@ branch: docs # optional (D-30)
 
 ### REQ-WS-018 — .cept/ metadata directory conventions
 
-> **Scope: Phase 1 (D-26).** The `databases/` subfolder is Phase 2 (D-36). Comments are stored inline in pages (D-34), so no `comments/` directory is needed.
+> **Scope: Phase 1 (D-26).** The `databases/` subfolder is Phase 2 (D-36). Comments are stored inline in pages (D-34), so no `comments/` directory is needed. **Decided (D-41):** the optional per-folder `.cept.yaml` is part of the documented layout; it lives outside `.cept/`, is shared space content (it syncs and is committed), and is written only when a user changes a setting in that folder. `.cept/` itself is hidden from the page tree by default.
 
-**Statement.** Cept-managed metadata MUST live under a documented layout (`.cept/` with `databases/`, `assets/`, `templates/` and any state files, plus the `space.cept.yaml` marker). Every file Cept writes MUST be listed in the spec, with a note saying whether it is shared space content or per-device state that must not sync.
+**Statement.** Cept-managed metadata MUST live under a documented layout (`.cept/` with `databases/`, `assets/`, `templates/` and any state files, plus the `space.cept.yaml` marker and optional per-folder `.cept.yaml` files). Every file Cept writes MUST be listed in the spec, with a note saying whether it is shared space content or per-device state that must not sync.
 
 **Source.** Existing spec (SPECIFICATION.md §4.6; CLAUDE.md rule 10).
 
@@ -628,17 +639,17 @@ branch: docs # optional (D-30)
 
 - `initialize()` creates `.cept/databases`, `assets` and `templates` and writes `config.yaml` (browser-fs.ts ~143-150, local-fs.ts ~155-162, web-fs.ts ~206-213).
 - The app also writes files no spec lists: `.cept/spaces.json`, `.cept/workspace-state.json`, `.cept/settings.json`, `.cept/spaces/<id>/...` and `.cept/git-clones/<ts>/` (SpaceManager.ts ~line 34, StorageContext.tsx ~lines 27-29, git-space.ts ~line 53).
-- PR #67 adds a per-folder `.cept.yaml` outside `.cept/`.
+- Closed PR #67 (D-42) added a per-folder `.cept.yaml` outside `.cept/`; that placement is kept by D-41.
 
 **Docs state: documented-differently, stale.** SPECIFICATION.md §4.6 lists `comments/`, `styles/` and `plugins/`, none of which are implemented, and omits the files above.
 
 **Gap.** Document the real layout and decide what is shared and what is per-device.
 
-**Related:** [#67](https://github.com/nsheaps/cept/pull/67), [#58](https://github.com/nsheaps/cept/issues/58).
+**Related:** [#67](https://github.com/nsheaps/cept/pull/67) (closed, D-42), [#58](https://github.com/nsheaps/cept/issues/58).
 
 ### REQ-WS-019 — Opening an existing folder is non-destructive
 
-> **Scope: Phase 1 (D-26).**
+> **Scope: Phase 1 (D-26).** **Decided (D-41):** an existing `.cept.yaml` is read but never rewritten on open, and Cept creates one only when the user changes a setting in that folder.
 
 **Statement.** Opening an existing folder or repo as a space MUST NOT create, modify or overwrite user files. Cept may add only its marker file and metadata directory, and only with consent, and it MUST NOT overwrite an existing config.
 
@@ -647,7 +658,7 @@ branch: docs # optional (D-30)
 **Acceptance criteria**
 
 - A regression test opens a populated temp folder and asserts that every pre-existing file is byte-identical afterwards and that no `pages/` directory or `pages/index.md` was created.
-- An existing `space.cept.yaml` or legacy `.cept/config.yaml` is never overwritten on open.
+- An existing `space.cept.yaml`, `.cept.yaml` or legacy `.cept/config.yaml` is never overwritten on open, and no `.cept.yaml` is created on open.
 - "Initialize new space" and "open existing" are separate code paths.
 
 **Current state: divergent.** `LocalFsBackend.initialize` (local-fs.ts ~lines 153-185) always creates `pages/` outside `.cept/`, writes `pages/index.md` when it is missing, and always overwrites `.cept/config.yaml`. web-fs.ts (~204-231) and browser-fs.ts (~140-170) do the same. The web app runs this `initialize()` on every load (main.tsx line 18), and every remote clone re-runs it on the shared IndexedDB root with `name: 'git-clone'` (git-backend.ts ~line 261), overwriting the space config. No open-existing flow exists.
@@ -725,15 +736,18 @@ branch: docs # optional (D-30)
 
 ## Conflicts and open questions
 
-**Decided (D-1, D-2, D-3):**
+**Decided (D-1, D-2, D-3, D-41, D-42, D-43):**
 
 - **D-1 — Terminology:** "space" is the canonical term. Code identifiers `WorkspaceConfig`, `cept-workspace`, `workspace-state.json` are legacy and need not be renamed immediately. _(Was open question 8.)_
 - **D-2 — Space root location:** `space.cept.yaml` lives at the space root; a space root is NOT necessarily the filesystem/repo root — one repo may contain multiple spaces in subfolders. Each space is addressed by (backend location + subfolder path). _(See REQ-WS-002 updated acceptance criteria.)_
-- **D-3 — Nesting deferred:** REQ-WS-005 (nested spaces) and REQ-WS-006 (nesting depth) are deferred. Discovery does not descend into a found space; a nested marker is reported as a warning. Schema starts minimal (name, slug, version only). _(Was part of open questions 3–4.)_
+- **D-3 — Nesting deferred:** REQ-WS-005 (nested spaces) and REQ-WS-006 (nesting depth) are deferred. Discovery does not descend into a found space; a nested marker is reported as a warning. Schema starts minimal (name, slug, version only; D-30 adds optional `branch`). _(Was part of open questions 3–4.)_
+- **D-41 — Config files:** `space.cept.yaml` defines a space; a per-folder `.cept.yaml` holds Cept configuration for that folder and below (merged from the space root down, nearest wins per key; first key `ignore:`, with PR #67's `hide:` as an alias; dotfiles, `.git/` and `.cept/` hidden by default). It is never a space marker, and Cept writes it only when the user changes a setting in that folder. Supersedes the per-folder part of D-2's open question. _(Was open question 13.)_
+- **D-42 — PR #67 closed:** its ideas (NotFound page, path-based page ids, README/index folder pages, per-folder `.cept.yaml`) are rebuilt in Phase 1 space work. Not carried over: the runtime docs clone (contradicts D-12) and the hardcoded proxy (D-39).
+- **D-43 — Mobile:** native iOS/Android (Capacitor) are later, including the Capacitor filesystem backend (amends D-19). Phone support is the Phase 1 PWA; native apps, when they return, are thin web-view wrappers.
 
 **Open questions (owner to decide):**
 
-1. **Config location.** `space.cept.yaml` as the space-level config competes with three others: `.cept/config.yaml` (code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `space.cept.yaml` is the only space-level config; the others are retired with migration.
+1. **Config location.** `space.cept.yaml` as the space-level config competes with three others: `.cept/config.yaml` (code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `space.cept.yaml` is the only space-level config; the others are retired with migration. _(Partly answered D-41: `space.cept.yaml` defines the space and the per-folder `.cept.yaml` is kept as Cept config, not retired; `.cept/config.yaml` and `.cept/space-config.json` are still retired with migration.)_
 2. **`.yaml` vs `.yml` precedence.** If both `space.cept.yaml` and `space.cept.yml` exist in the same folder, is that an error, or does `.yaml` win with a warning?
 3. **Nesting depth counting (deferred, later per D-26).** When nesting is undeferred: is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
 4. **Nested space semantics (deferred, later per D-26).** When undeferred: can a child space use a different backend or remote from its parent? Do links, search, graph and databases cross the boundary?
@@ -745,7 +759,7 @@ branch: docs # optional (D-30)
 10. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `space.cept.yaml` use for future fields?
 11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39).)_
 12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
-13. **Per-folder `.cept.yaml` (PR #67).** PR #67 adds a per-folder `.cept.yaml` for hide lists and similar folder-scoped options. This is out of scope while nesting is deferred (D-3). Revisit when REQ-WS-005 is undeferred.
+13. **Per-folder `.cept.yaml` (PR #67).** _(Answered D-41, D-42: in scope for Phase 1, independent of nested spaces. Per-folder `.cept.yaml` holds Cept config with `ignore:` (alias `hide:`), merges from the space root down with nearest-wins, and is never a space marker; PR #67 is closed and its ideas are rebuilt. See REQ-WS-002.)_
 
 ## Stale documentation
 
@@ -786,7 +800,7 @@ branch: docs # optional (D-30)
 - **Remotes and auth:** see [09-remotes-and-auth.md](09-remotes-and-auth.md). The Git, Drive and SFTP backends need the AuthProvider abstraction (GitHub app, Google login, PAT), and the CORS proxy must move to the nsheaps/iac Cloudflare worker.
 - **Static rendering:** see [02-static-rendering.md](02-static-rendering.md) and [REQ-SSG-001](02-static-rendering.md#req-ssg-001--static-rendered-browser-component-exists). The renderer needs the folder plus `space.cept.yaml` model (REQ-WS-001/002) to enumerate pages and nested spaces without parsing `workspace-state.json`.
 - **VS Code extension:** see [06-vscode-extension.md](06-vscode-extension.md). Discovery via `space.cept.yaml` has to work on `vscode.workspace.fs` in both desktop and web, which implies a VS Code-fs-backed `StorageBackend`.
-- **Native apps:** see [07-native-apps.md](07-native-apps.md). REQ-WS-009 is blocked on the shell decision (Electron, Electrobun or Tauri; TASKS P6.1/P6.4, issue [#27](https://github.com/nsheaps/cept/issues/27)) and on Capacitor filesystem support (P6.6).
+- **Native apps:** see [07-native-apps.md](07-native-apps.md). REQ-WS-009 (desktop only in Phase 1) is blocked on the desktop shell work (Electrobun per D-28; TASKS P6.1/P6.4, issue [#27](https://github.com/nsheaps/cept/issues/27)). Capacitor filesystem support (P6.6) and native mobile apps are later (D-43); phones use the PWA.
 - **Collaboration:** see [REQ-COL-011](04-collaboration.md#req-col-011--collaboration-not-tied-to-git-backend). `GitBackend` currently advertises `collaboration: true`. Collaboration should be scoped per space, which depends on REQ-WS-007.
-- **Editor, databases, search and graph:** see [08-editor.md](08-editor.md). DatabaseContext and SearchContext read `.cept/databases` and pages through a single backend, so nested spaces change their scoping. The "fallback to HTML" requirement interacts with the legacy `pages/<id>.html` reads in StorageContext.tsx and with the `.html`, `.mdx` and `.txt` handling in PR #67.
+- **Editor, databases, search and graph:** see [08-editor.md](08-editor.md). DatabaseContext and SearchContext read `.cept/databases` and pages through a single backend, so nested spaces change their scoping. The "fallback to HTML" requirement interacts with the legacy `pages/<id>.html` reads in StorageContext.tsx and with the `.html`, `.mdx` and `.txt` handling in closed PR #67 (D-42).
 - **Engineering and CI:** see [10-engineering-and-ci.md](10-engineering-and-ci.md). A shared backend contract test suite should run in scope for every backend package.

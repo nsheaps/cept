@@ -2,7 +2,7 @@
 
 **Status:** Draft, 2026-10-06 · **Area IDs:** `REQ-WEB-NNN`
 
-> **Scope (owner decisions 2026-10-07, D-26..D-38).** Phase 1: all requirements here except REQ-WEB-017 and REQ-WEB-018 (Phase 2, docs site) and REQ-WEB-010 (later, daemon).
+> **Scope (owner decisions 2026-10-07, D-26..D-43).** Phase 1: all requirements here except REQ-WEB-017 and REQ-WEB-018 (Phase 2, docs site) and REQ-WEB-010 (later, daemon). Mobile (D-43): native iOS and Android apps are later; the PWA installed on phones is the Phase 1 mobile story, so PWA installability on phones and mobile usability (safe areas, on-screen keyboard, 44px touch targets, phone layouts, validated by e2e at mobile viewports) are Phase 1 requirements of this area (REQ-WEB-009, REQ-WEB-022; usability itself is REQ-APP-020 in [07-native-apps.md](07-native-apps.md)).
 
 This spec states the requirements for Cept's browser-facing runtime. That covers the shared UI component (`@cept/ui`), the Vite single-page app that hosts it (`@cept/web`), the service worker, the installable progressive web app (PWA), the demo space, and the GitHub Pages deployment of the app with its read-only docs. Each requirement is checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
 
@@ -29,7 +29,7 @@ This spec states the requirements for Cept's browser-facing runtime. That covers
 - `@cept/ui` as the one reusable browser UI component, and its contract with the hosts that mount it.
 - `@cept/web`: Vite SPA bootstrap, per-deployment storage namespacing, SPA deep-link fallback.
 - The service worker: offline app-shell caching, the update flow, and (as required by the owner) background syncing when no local daemon is present.
-- The PWA: manifest, installability, offline editing, and discovery of a local daemon.
+- The PWA: manifest, installability on desktop and phones (Add to Home Screen, the Phase 1 mobile app, D-43), offline editing, mobile usability, and discovery of a local daemon.
 - The demo space (in-memory) and how users get into it.
 - The GitHub Pages deployment of the app alone (`/cept/app/`), PR previews (`/cept/pr-N/`), and the read-only docs shown inside the app.
 - Automated tests of the service worker and PWA against the built bundle.
@@ -157,7 +157,7 @@ sequenceDiagram
 
 ### REQ-WEB-001 — Shared browser UI component
 
-> **Scope: Phase 1 (D-26).** Web, desktop and mobile hosts mount `@cept/ui` in Phase 1. The VS Code host is later (D-26, REQ-VSC); the static-renderer host is Phase 2 (D-26, REQ-SSG).
+> **Scope: Phase 1 (D-26, D-43).** Web (including the PWA on phones) and desktop hosts mount `@cept/ui` in Phase 1. The native mobile (Capacitor) host is later (D-43). The VS Code host is later (D-26, REQ-VSC); the static-renderer host is Phase 2 (D-26, REQ-SSG). Native hosts are thin wrappers around the web view (D-43).
 
 **Statement:** The UI MUST be a single reusable browser component package (`@cept/ui`) that is the only UI implementation, mounted by every host (web/PWA, desktop, mobile, VS Code webview, static renderer).
 
@@ -166,7 +166,7 @@ sequenceDiagram
 **Acceptance criteria:**
 
 - `@cept/ui` exports a documented host contract: a backend or backend factory, a capabilities object, and `readOnly` and `static` modes.
-- `@cept/web`, `@cept/desktop`, `@cept/mobile`, the VS Code extension and the static renderer each mount `@cept/ui` and contain no duplicate UI components.
+- `@cept/web`, `@cept/desktop`, `@cept/mobile` (when native mobile returns, later per D-43), the VS Code extension and the static renderer each mount `@cept/ui` and contain no duplicate UI components.
 - An Nx dependency-graph check confirms that every host package depends on `@cept/ui`.
 
 **Current state:** partial. [packages/ui/src/index.ts](../../../packages/ui/src/index.ts) exports `App` and `StorageProvider`, and [packages/web/src/main.tsx](../../../packages/web/src/main.tsx) mounts them. A grep for `@cept/ui` in `packages/desktop` and `packages/mobile` finds no matches. No VS Code host or static renderer exists.
@@ -322,9 +322,9 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-009 — Installable PWA manifest
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 (D-27, D-43).** The installed PWA is the Phase 1 way to run Cept on a phone, on iOS (Safari, Add to Home Screen) and Android (Chrome, Install app), in place of native mobile apps (later, D-43).
 
-**Statement:** The PWA MUST ship a valid web app manifest whose `start_url`, `scope`, icons and shortcuts resolve under the deployment base path, so that it is installable in desktop and mobile browsers.
+**Statement:** The PWA MUST ship a valid web app manifest whose `start_url`, `scope`, icons and shortcuts resolve under the deployment base path, so that it is installable in desktop and mobile browsers and from the home screen of a phone.
 
 **Rationale / source:** Owner requirement ("A progressive web app").
 
@@ -333,6 +333,7 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - `start_url` and `scope` are relative (`./`). The 192 px, 512 px and maskable icons exist in `dist/icons/`.
 - Every manifest shortcut is handled by the router, or is removed.
 - A Lighthouse or equivalent installability audit passes in CI on the preview build.
+- The manifest sets `display: standalone` and a `theme_color`, includes the maskable icon, and the page sets `viewport-fit=cover` and Apple touch-icon and web-app-capable metadata, so the app installs and launches full-screen on iOS and Android phones. The installed app is usable at phone sizes (REQ-APP-020 in [07-native-apps.md](07-native-apps.md#req-app-020--mobile-specific-ui-polish)).
 
 **Current state:** partial. [packages/web/public/manifest.json](../../../packages/web/public/manifest.json) has `start_url: "/"`, no `scope`, and icons at `/icons/icon-192.png` and `/icons/icon-512.png`. `packages/web/public` has no `icons/` folder, and the live icon URL returns 404. The shortcuts `/?action=new-page` and `/?action=search` have no handler (the only `URLSearchParams` use in `packages/ui/src` is the `?route=` restore in [router.ts](../../../packages/ui/src/router.ts) line 299), and their root-absolute URLs point outside `/cept/app/`. The manifest link in [index.html](../../../packages/web/index.html) is correctly rewritten to `/cept/app/manifest.json`.
 
@@ -477,7 +478,7 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-017 — Read-only docs in the Pages deployment
 
-> **Scope: Phase 2 (D-26).** The read-only docs site belongs with static rendering / the docs site. Whether PR #67 lands, is reworked or closed is still awaiting the owner.
+> **Scope: Phase 2 (D-26).** The read-only docs site belongs with static rendering / the docs site. PR #67 is closed (D-42); its runtime clone of the docs from GitHub is not carried over (it contradicts D-12), and the in-app docs stay as they are, bundled into the app, until Phase 2.
 
 **Statement:** The GitHub Pages app deployment MUST expose Cept's documentation as a read-only space that can be browsed inside the app.
 
@@ -489,11 +490,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - Its content matches `docs/content` at the deployed commit (REQ-WEB-018).
 - If the docs are also published as a static site, the in-app docs link to it consistently (see [02-static-rendering.md](02-static-rendering.md)).
 
-**Current state:** partial. [router.ts](../../../packages/ui/src/router.ts) (around lines 10-11 and 192-196) routes `/docs` to a read-only `Sidebar` with no-op mutations ([App.tsx](../../../packages/ui/src/components/App.tsx), around lines 1262-1283). The content comes from [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts). The bundled content is compiled into the app, so the in-app docs are always read-only. There is no standalone docs site: the `build` script in [docs/package.json](../../package.json) is an `echo`, and `nsheaps.github.io/cept/docs/` returns HTTP 404. In a browser, the site-level [.github/pages/404.html](../../../.github/pages/404.html) then redirects that URL to `/cept/app/?route=/docs/`, which lands on the in-app docs. Open [PR #67](https://github.com/nsheaps/cept/pull/67) turns the docs into a real remote space cloned from GitHub, with the bundled copy as fallback.
+**Current state:** partial. [router.ts](../../../packages/ui/src/router.ts) (around lines 10-11 and 192-196) routes `/docs` to a read-only `Sidebar` with no-op mutations ([App.tsx](../../../packages/ui/src/components/App.tsx), around lines 1262-1283). The content comes from [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts). The bundled content is compiled into the app, so the in-app docs are always read-only. There is no standalone docs site: the `build` script in [docs/package.json](../../package.json) is an `echo`, and `nsheaps.github.io/cept/docs/` returns HTTP 404. In a browser, the site-level [.github/pages/404.html](../../../.github/pages/404.html) then redirects that URL to `/cept/app/?route=/docs/`, which lands on the in-app docs. [PR #67](https://github.com/nsheaps/cept/pull/67) (closed, D-42) would have turned the docs into a real remote space cloned from GitHub at runtime, with the bundled copy as fallback; that part is not carried over.
 
 **Docs state:** documented-as-desired, stale. The roadmap (line 31) says "Built-in documentation space | Done", and CLAUDE.md lists a Starlight/VitePress `@cept/docs` site that does not exist.
 
-**Gap:** Decide between in-app docs, a static-rendered site, or both. Land or rework PR #67. Make `@cept/docs` build something real, or remove its claim from CLAUDE.md.
+**Gap:** Decide between in-app docs, a static-rendered site, or both (Phase 2). PR #67 is closed (D-42): keep the bundled in-app docs until then. Make `@cept/docs` build something real, or remove its claim from CLAUDE.md.
 
 ### REQ-WEB-018 — Bundled docs generated from `docs/content`
 
@@ -578,9 +579,9 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 
 ### REQ-WEB-022 — Automated tests for SW/PWA on the built bundle
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 (D-43 adds mobile viewports).** CI also runs e2e tests of the PWA at mobile viewports (Playwright device emulation) with screenshots; Capacitor build CI is later.
 
-**Statement:** CI MUST test service-worker install, offline load, the update flow and manifest installability against the production build served under a non-root base path.
+**Statement:** CI MUST test service-worker install, offline load, the update flow and manifest installability against the production build served under a non-root base path, and MUST exercise the core flows at phone viewports (D-43).
 
 **Rationale / source:** Derived. Validation-first practice from the sibling qontacts repo.
 
@@ -589,6 +590,7 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 - A Playwright project serves `vite preview` with `VITE_BASE_PATH=/cept/app/`.
 - It asserts service-worker activation, an offline reload, the update toast, deep links and manifest validity.
 - `service-worker.test.ts` asserts that precache URLs are relative to the scope.
+- The same Playwright project, or a sibling one, runs the core flows under mobile device emulation (a phone-sized iPhone and a Pixel profile) and asserts the mobile usability criteria of [REQ-APP-020](07-native-apps.md#req-app-020--mobile-specific-ui-polish) (no horizontal scroll, safe-area padding, 44px touch targets, caret above the on-screen keyboard), capturing screenshots through the screenshot pipeline.
 
 **Current state:** partial. [service-worker.test.ts](../../../packages/web/src/service-worker.test.ts) checks constants only, and it asserts the buggy root-absolute `PRECACHE_URLS`. [e2e/playwright.config.ts](../../../e2e/playwright.config.ts) starts the Vite dev server at `/`.
 
@@ -625,11 +627,11 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 2. **Who syncs.** **Decided (D-4+D-5):** Service worker = offline caching + queued-write flushing only (~30 s lifetime; no `RTCPeerConnection`). Live sync leadership runs in a SharedWorker (one per origin), falling back to a leader tab via Web Locks + BroadcastChannel. `SyncEngine` lives in `@cept/core`. Proposed refinement on SharedWorker fallback detail pending owner ack.
 3. **Demo storage.** The owner requires an in-memory demo. SPECIFICATION 5.10.7 and TASKS T0.12 say IndexedDB with `CEPT_DEMO_MODE`, and the code writes into the user's default space. Do we confirm `MemoryBackend` and drop demo writes to the default space?
 4. **Daemon and "client-only".** **Decided (D-4):** Client-only framing retired; daemon is optional and additive. Browser app works alone. See Conflict 2 above for SW vs SharedWorker responsibilities.
-5. **Read-only docs form.** **Timing decided (D-26):** the read-only docs site and bundled-docs generation are Phase 2; the in-app vs static form is still open, and PR #67 disposition is still awaiting the owner. Should the docs be an in-app space (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
+5. **Read-only docs form.** **Timing decided (D-26):** the read-only docs site and bundled-docs generation are Phase 2; the in-app vs static form is still open. **PR #67 answered (D-42):** closed; the runtime clone of the docs from GitHub is not carried over (it contradicts D-12), and the bundled in-app docs stay as they are until Phase 2 (bundled at build time per REQ-WEB-018). Should the docs be an in-app space (current code), a static-rendered site, or both?
 6. **CORS proxy.** **Partly answered (D-26, D-27):** the relay Worker (a Worker just for Cept) and all nsheaps/iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39). Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
 7. **Deploy cadence.** Production deploys only on `v*` tags. Should `main` deploy continuously to `/cept/app/`?
 8. **Stale task checkboxes.** TASKS T7.3, T0.12, T6.5, T5.8 and P2.7 are checked even though the work is broken, missing or not wired. Uncheck them, or move them to continuation tasks?
-9. **Desktop runtime.** **Answered (D-28):** desktop is Electrobun (macOS dmg arm64+x64, Windows NSIS x64, Linux AppImage + deb x64) with the Electrobun updater fed from GitHub Releases. CLAUDE.md names Electrobun (macOS) and Electron (Windows/Linux), and the owner says only "packaged app". This matters here only because the shells must mount `@cept/ui` (REQ-WEB-001).
+9. **Desktop runtime.** **Answered (D-28):** desktop is Electrobun (macOS dmg arm64+x64, Windows NSIS x64, Linux AppImage + deb x64) with the Electrobun updater fed from GitHub Releases. CLAUDE.md names Electrobun (macOS) and Electron (Windows/Linux), and the owner says only "packaged app". This matters here only because the shells must mount `@cept/ui` (REQ-WEB-001). **Mobile (D-43):** native iOS and Android apps are later; phones use the installed PWA in Phase 1, and any later native shells are thin wrappers around the web view.
 
 ---
 
@@ -673,5 +675,5 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 
 **Open PRs touching this area:**
 
-- [PR #67](https://github.com/nsheaps/cept/pull/67): remote spaces, content browsing, docs as a real remote space (`docs-loader.ts`), and a NotFound page. It touches `App.tsx`, `router.ts`, `SpaceManager.ts` and `git-space.ts`, and overlaps REQ-WEB-003, REQ-WEB-017 and REQ-WEB-018.
+- [PR #67](https://github.com/nsheaps/cept/pull/67) (closed, D-42; its NotFound page, path-based page ids, README/index folder pages and per-folder `.cept.yaml` are rebuilt in Phase 1 space work, but the runtime docs clone is not carried over): remote spaces, content browsing, docs as a real remote space (`docs-loader.ts`), and a NotFound page. It touched `App.tsx`, `router.ts`, `SpaceManager.ts` and `git-space.ts`, and overlapped REQ-WEB-003, REQ-WEB-017 and REQ-WEB-018.
 - [PR #69](https://github.com/nsheaps/cept/pull/69) (licenses, privacy and terms in the About tab), [PR #37](https://github.com/nsheaps/cept/pull/37) (style guide and color swatches) and [PR #24](https://github.com/nsheaps/cept/pull/24) (ZIP import/export) touch the UI but none of this area's core requirements. Their diffs were not inspected in detail.

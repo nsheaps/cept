@@ -29,7 +29,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 **Non-goals (covered elsewhere)**
 
 - What the static renderer and CLI `render` command produce. This area covers only the CI that runs them: see [02](02-static-rendering.md) and [05](05-cli-and-daemon.md).
-- Native shell implementation (Electron/Electrobun/Capacitor projects): see [07](07-native-apps.md). This area requires only that CI builds whatever those projects define.
+- Native shell implementation (Electrobun desktop projects in Phase 1; Capacitor mobile projects are later, D-43): see [07](07-native-apps.md). This area requires only that CI builds whatever those projects define. Mobile in Phase 1 is the PWA, validated by mobile-viewport e2e (REQ-ENG-017).
 - Demo space and docs-space runtime behaviour: see [01](01-browser-app-and-pwa.md).
 - Deploying the Cloudflare OAuth proxy infrastructure, which lives in `nsheaps/iac`: see [09](09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac).
 - Editing org-synced files (`apply-repo-settings.yaml`, `dispatch-review.yaml`, `pr-status-dispatch.yaml`, and the shared parts of `.github/settings.yml`). They come from `nsheaps/.github` and are only referenced here. The exception is the per-repo enablement of ruleset templates in `.github/settings.yml`, such as `require-checks` (REQ-ENG-020).
@@ -293,18 +293,18 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-009 — Typecheck and build per project
 
-> **Scope: Phase 1 (D-28, D-38).** Artifacts for later or Phase 2 packages (CLI, VS Code extension, signaling server, docs site) are built when those packages are scheduled. **Decided (D-28).** Native CI builds: desktop macOS dmg (arm64 + x64), Windows NSIS x64, Linux AppImage + deb x64 (Electrobun updater fed from GitHub Releases); Android APK; iOS built in CI for the simulator only (distribution waits for an Apple Developer account). Distribution channel is GitHub Releases only; signing is optional and emits `::warning::` when secrets are missing. The Android item is not done until release signing/publishing secrets exist. Store submissions are later.
+> **Scope: Phase 1 (D-28, D-38).** Artifacts for later or Phase 2 packages (CLI, VS Code extension, signaling server, docs site) are built when those packages are scheduled. **Decided (D-28, amended by D-43).** Native CI builds in Phase 1: desktop macOS dmg (arm64 + x64), Windows NSIS x64, Linux AppImage + deb x64 (Electrobun updater fed from GitHub Releases). **Later (D-43):** the Android APK and iOS simulator builds, i.e. every Capacitor CI job (`build-android`, `build-ios`, `cap sync`, gradle/xcodebuild), move out of Phase 1 and must be disabled and labelled as placeholders until the native mobile apps return. Mobile in Phase 1 is the PWA, covered by the mobile-viewport e2e in REQ-ENG-017 (Phase 1). Distribution channel is GitHub Releases only; signing is optional and emits `::warning::` when secrets are missing. Store submissions are later.
 
-**Statement:** Typecheck and build MUST run for every project via Nx and fail on any error. Build MUST produce real artifacts for each deliverable package (web bundle, desktop installers, mobile apps, signaling server, CLI, VS Code extension, docs site). CD jobs MUST fail, not warn, when an expected artifact is missing.
+**Statement:** Typecheck and build MUST run for every project via Nx and fail on any error. Build MUST produce real artifacts for each deliverable package (web bundle, desktop installers, signaling server, CLI, VS Code extension, docs site; mobile apps when they return, later per D-43). CD jobs MUST fail, not warn, when an expected artifact is missing.
 
 **Source:** derived (from the handler's monorepo and packaged-app requirements).
 
 **Acceptance criteria:**
 
 - `nx run-many -t typecheck` and `nx run-many -t build` include every deliverable package.
-- No release job uses `if-no-files-found: warn` or `continue-on-error: true` for a required artifact. A job whose platform is not yet implemented is explicitly disabled and labelled as a placeholder.
+- No release job uses `if-no-files-found: warn` or `continue-on-error: true` for a required artifact. A job whose platform is not yet implemented is explicitly disabled and labelled as a placeholder. This covers the Capacitor jobs for Android and iOS (later, D-43).
 
-> **Owner direction (D-24):** Native-platform CI jobs (Electrobun and Capacitor packaging, signing, upload) are scoped to their respective platform artifacts only. These jobs MUST fail (or emit `::warning::` and produce unsigned builds on PRs) when expected artifacts are missing. No `continue-on-error` and no `|| true` on any build, sync or upload step. See [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts).
+> **Owner direction (D-24, D-43):** Native-platform CI jobs (Electrobun packaging, signing, upload in Phase 1; Capacitor jobs later) are scoped to their respective platform artifacts only. These jobs MUST fail (or emit `::warning::` and produce unsigned builds on PRs) when expected artifacts are missing. No `continue-on-error` and no `|| true` on any build, sync or upload step. See [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts).
 
 **Current state:** partial. [\_lint.yml](../../../.github/workflows/_lint.yml) runs typecheck via `nx run-many`, and [\_build.yml](../../../.github/workflows/_build.yml) runs `bun run build`, which covers only core, ui and web. The docs build is `echo`. [cd.yml](../../../.github/workflows/cd.yml) `build-macos/windows/linux/ios/android` upload `packages/desktop/dist/*` and `packages/mobile/{ios,android}` with `if-no-files-found: warn` and `continue-on-error` on `cap sync`, so they pass and produce nothing.
 
@@ -468,9 +468,9 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-017 — E2E and screenshot automation healthy and gating
 
-> **Scope: Phase 1 (D-38).** Fixing the red e2e/screenshots CI is an engineering prerequisite.
+> **Scope: Phase 1 (D-38, D-43).** Fixing the red e2e/screenshots CI is an engineering prerequisite. Mobile-viewport e2e for the PWA is Phase 1 (D-43): the owner treats mobile usability as a fix, and CI validates it with Playwright device emulation and screenshots. Capacitor/native mobile CI is later.
 
-**Statement:** Playwright E2E MUST pass in CI and gate releases. Screenshot capture MUST update `docs/screenshots/` automatically on `main` only when pixels change. The Playwright browser image MUST match the pinned `@playwright/test` version.
+**Statement:** Playwright E2E MUST pass in CI and gate releases, including a mobile-viewport project that runs the core flows under device emulation (D-43). Screenshot capture MUST update `docs/screenshots/` automatically on `main` only when pixels change. The Playwright browser image MUST match the pinned `@playwright/test` version.
 
 **Source:** existing spec ([CLAUDE.md](../../../CLAUDE.md) Testing Requirements; [.claude/rules/ui-screenshot-evidence.md](../../../.claude/rules/ui-screenshot-evidence.md); TASKS.md P2.4f).
 
@@ -479,6 +479,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - `test-e2e` and `screenshots` are green on `main` and on dependency-only PRs.
 - The Playwright container image tag, cache key and comments all equal the `@playwright/test` version in `package.json`, and Renovate bumps them together.
 - Screenshot commits occur only when the pixel diff exceeds the threshold.
+- Playwright runs a mobile project (phone device profiles, for example an iPhone and a Pixel) alongside desktop, against the built PWA, asserting the mobile usability criteria of [REQ-APP-020](07-native-apps.md#req-app-020--mobile-specific-ui-polish) (safe areas, caret above the on-screen keyboard, 44px touch targets, no horizontal scroll) and capturing screenshots through the same pipeline. It is green and required (REQ-ENG-020) like the desktop project (D-43).
 
 **Current state:** partial. [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml) and [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) exist. They copy browsers from Playwright image v1.61.1 (comments say 1.59.1), while `package.json` pins `@playwright/test` 1.63.0. Both jobs fail on https://github.com/nsheaps/cept/pull/283 and https://github.com/nsheaps/cept/pull/246. They have also failed on every `main` push since 2026-08-23. Because [ci.yml](../../../.github/workflows/ci.yml) makes tag-release `need` both, releases are blocked while they are red. The root cause of the current failure is verified from the log of `main` run 37399563318 (2026-10-06): `browserType.launch: Executable doesn't exist at ~/.cache/ms-playwright/chromium_headless_shell-1243/...`. Playwright 1.63.0 expects a newer browser build than the cached v1.61.1 image provides. Whatever caused the earlier failures, before the 1.63.0 bump in #347, was not checked.
 
@@ -554,7 +555,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 1. **Git workflow — Decided (D-21).** **Decided (D-21):** Docs-only changes are pushed directly to `main` without review; functional changes (code, CI) go through small, reviewable PRs. `require-1-review` remains disabled. See REQ-ENG-019.
 2. **Lint = ESLint + Prettier.** CLAUDE.md, CONTRIBUTING.md (line 36) and SPEC §9.1 make this claim, but nothing runs Prettier. Is Prettier the formatter of record (REQ-ENG-006), or should another formatter (for example Biome) be adopted?
 3. **Affected testing.** `nx affected -t test` is advertised, but only core and ui have test targets and CI never uses affected. Accept the per-project Vitest split that REQ-ENG-008 requires?
-4. **Desktop shell — Decided (D-17).** **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed from scope; mobile shells use Capacitor (iOS, Android). See [REQ-APP-007](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
+4. **Desktop shell — Decided (D-17).** **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed from scope; mobile shells use Capacitor (iOS, Android), later (D-43), and every shell is a thin wrapper around the web view. See [REQ-APP-007](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
 5. **Docs site generator. Deferred to Phase 2 (D-26).** SPEC §9.5, CLAUDE.md and TASKS.md T9.1 claim VitePress/Starlight. The handler requires Cept's own render command (REQ-ENG-016). Confirm that VitePress/Starlight is dropped.
 6. **Node version.** `.mise.toml` has node 24, while SPEC §9.6 says 22.x and `engines` says `>=22`. Which exact version should be pinned? Exact pins also contradict the current floating `bun = "1"`.
 7. **Workflow set.** SPEC lists `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. The repo has `ci.yml` + `_*.yml`, `cd.yml`, `release.yml`, `preview-deploy.yml` and `pr-version-check.yml`. Adopt the actual set (qontacts-style) and update the SPEC?

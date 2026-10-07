@@ -265,7 +265,7 @@ What is in the repo today:
 
 **Gap:** Replace the `instanceof` checks with capability checks. Add a host-agnostic router mode. Extend the platform union.
 
-**Related PRs/issues:** [#67](https://github.com/nsheaps/cept/pull/67) (remote spaces, open) moves this requirement further away. Its diff of `packages/ui/src/components/App.tsx` keeps the existing `instanceof BrowserFsBackend` checks and adds new ones (for example `if (backend instanceof BrowserFsBackend) {` and `if (!(backend instanceof BrowserFsBackend)) return;` in the new docs-space loading), and adds new `window.location.pathname` reads. It also changes `packages/ui/src/router.ts`. If #67 merges as is, the capability refactor in this requirement grows.
+**Related PRs/issues:** [#67](https://github.com/nsheaps/cept/pull/67) (remote spaces; closed, D-42) moved this requirement further away. Its diff of `packages/ui/src/components/App.tsx` kept the existing `instanceof BrowserFsBackend` checks and added new ones (for example `if (backend instanceof BrowserFsBackend) {` and `if (!(backend instanceof BrowserFsBackend)) return;` in the new docs-space loading), and adds new `window.location.pathname` reads. It also changes `packages/ui/src/router.ts`. #67 is closed (D-42); the Phase 1 rebuild of its remote-space ideas must use capability checks instead of these `instanceof` checks.
 
 ### REQ-VSC-005 — Two-way live sync between webview and `TextDocument`
 

@@ -336,7 +336,7 @@ flowchart TD
 
 **Gap:** Add a parse hook that maps `pre > code.language-<x>` to registered annotation nodes, integrate `mermaid.render()` and KaTeX, and add load-from-Markdown E2E tests.
 
-**Related:** TASKS T2.11 (claimed done), P7.7b, P7.7c. [PR #67](https://github.com/nsheaps/cept/pull/67) adds `docs-loader.ts`, which clones `docs/content/` into a real docs space, so Markdown docs with ` ```mermaid ` fences (for example `markdown-extensions.md` line 51) will load through this path and show as plain code blocks until this requirement is met.
+**Related:** TASKS T2.11 (claimed done), P7.7b, P7.7c. Markdown docs with ` ```mermaid ` fences (for example `markdown-extensions.md` line 51) load as plain code blocks until this requirement is met. (PR #67, which cloned the docs at runtime, is closed per D-42; the in-app docs stay as they are until Phase 2.)
 
 ### REQ-EDT-011 — Fenced annotation blocks serialize back to fenced code
 
@@ -493,7 +493,7 @@ flowchart TD
 
 ### REQ-EDT-018 — Graph builder extracts crosslinks from space files
 
-> **Scope: Phase 1 (D-32).** **Decided (D-32):** edges are extracted from standard GFM links (not `[[wiki-links]]`), page mentions, and the other kinds that remain applicable. Database relations are Phase 2 (D-26).
+> **Scope: Phase 1 (D-32).** **Decided (D-32):** edges are extracted from standard GFM links (not `[[wiki-links]]`), page mentions, and the other kinds that remain applicable. Database relations are Phase 2 (D-26). **Decided (D-41):** files and folders matched by `ignore:` patterns in a `.cept.yaml` (and dotfiles, `.git/`, `.cept/`) are excluded from the graph, search and backlinks.
 
 **Statement:** A graph builder MUST scan all space pages and extract edges from standard Markdown links, mentions, database relations (Phase 2) and shared tags (wiki-links are out of scope, D-32). It MUST include unresolved targets and produce `GraphData`.
 
@@ -559,7 +559,7 @@ flowchart TD
 
 ### REQ-EDT-021 — Backlinks panel
 
-> **Scope: Phase 1 (D-32).** Backlinks are derived from standard GFM links.
+> **Scope: Phase 1 (D-32).** Backlinks are derived from standard GFM links. **Decided (D-41):** pages in files or folders matched by `.cept.yaml` `ignore:` patterns (and dotfiles, `.git/`, `.cept/`) do not appear as backlinks.
 
 **Statement:** Each page SHOULD show its backlinks (the pages that link to it), derived from the same crosslink index as the graph.
 
@@ -635,7 +635,7 @@ flowchart TD
 
 **Current state:** divergent, and lossy in the running app. [toggle.ts](../../../packages/ui/src/components/editor/extensions/toggle.ts) lines 121-148 serialize as `> summary` followed by 2-space-indented content, which standard GFM renders as a blockquote. On load the editor only recognises `details[data-type="toggle"]` (line 67); the Markdown `parse` hook is empty (lines 150-152) and defers to the `CeptMarkdownParser` toggle preprocessor ([parser.ts](../../../packages/core/src/markdown/parser.ts) line 110), which the app never calls. So a toggle created in the editor and saved most likely reloads as a blockquote (inferred from the code; not verified at runtime). The demo content works only because it is authored as `<details data-type="toggle">` HTML ([App.tsx](../../../packages/ui/src/components/App.tsx) lines 1645-1649). The E2E toggle check in [feature-screenshots.spec.ts](../../../e2e/tests/feature-screenshots.spec.ts) lines 86-101 is guarded by `if (toggleCount > 0)` and would pass with no toggles.
 
-**Docs:** documented-differently and stale. [toggle-syntax.md](../../content/guides/toggle-syntax.md) documents the `>` syntax and says "These are all covered by automated tests", but those tests exercise only the unused core parser, not the editor. [features.md](../../content/guides/features.md) lines 53-68 author real toggles in this syntax, which will load as blockquotes once [PR #67](https://github.com/nsheaps/cept/pull/67) loads `docs/content/` as a space. SPEC §4.2 specifies a `cept:block` comment instead.
+**Docs:** documented-differently and stale. [toggle-syntax.md](../../content/guides/toggle-syntax.md) documents the `>` syntax and says "These are all covered by automated tests", but those tests exercise only the unused core parser, not the editor. [features.md](../../content/guides/features.md) lines 53-68 author real toggles in this syntax, which will load as blockquotes once `docs/content/` is loaded as a space (PR #67, which did this at runtime, is closed per D-42). SPEC §4.2 specifies a `cept:block` comment instead.
 
 **Gap:** Decide the canonical encoding (the `<details>` HTML the parser already accepts is the GFM-compatible option), make load and save agree, add an editor round-trip test, then update SPEC, docs and the serializer.
 

@@ -2,7 +2,7 @@
 
 **Status:** Draft, 2026-10-06 · **Area IDs:** `REQ-APP-NNN`
 
-This spec covers the installable Cept applications for Windows, macOS, Linux, Android and iOS. Each one wraps the same browser component (`@cept/ui` built by `@cept/web`) in a native shell, reaches native features through a bridge, and is built, signed, versioned, published and updated by CI. Every requirement below was checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
+This spec covers the installable Cept applications for Windows, macOS, Linux, Android and iOS. **Scope (D-43):** the desktop apps (Electrobun) are Phase 1; native Android and iOS apps (Capacitor) are later, and the Phase 1 mobile story is the PWA installed on phones (see [01](01-browser-app-and-pwa.md)), with mobile usability fixed and validated in CI for the PWA (REQ-APP-020). Every native shell, desktop now and mobile when it returns, is a thin wrapper around the web view with as little native code as possible. Each one wraps the same browser component (`@cept/ui` built by `@cept/web`) in a native shell, reaches native features through a bridge, and is built, signed, versioned, published and updated by CI. Every requirement below was checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
 
 **Bottom line:** Cept has no packaged native app on any platform today. `packages/desktop` and `packages/mobile` hold only renderer-side bridge interfaces, web fallbacks, an update checker and a deep-link OAuth helper. Nothing creates a window, a Capacitor project or an installer. The `cd.yml` platform jobs pass but produce no artifacts, and every one of the 75 GitHub Releases (through v0.7.31) has zero assets (`gh api repos/nsheaps/cept/releases`, checked 2026-10-06).
 
@@ -24,13 +24,14 @@ This spec covers the installable Cept applications for Windows, macOS, Linux, An
 
 ### In scope
 
-- Desktop installers for Windows, macOS and Linux, and mobile apps for Android and iOS.
-- Choosing the native shell runtime (Electrobun, Electron or Capacitor).
+- Desktop installers for Windows, macOS and Linux (Phase 1). Mobile apps for Android and iOS are later (D-43); the installed PWA covers phones in Phase 1.
+- Choosing the native shell runtime (Electrobun; Capacitor is for the later mobile apps, D-43).
+- The thin-wrapper principle (D-43): a native shell loads the web build in a web view and adds only what the web cannot do, with as little native code as possible. This applies to the Phase 1 Electrobun desktop apps and to the later mobile apps.
 - The bridge abstraction between the shared UI and native capabilities: dialogs, menus, tray, notifications, secure storage, deep links and updates.
 - App-only local space storage when it runs inside a packaged app.
 - How packaged desktop apps relate to the local sync daemon.
 - Build, sign, version, publish and auto-update pipelines for native artifacts, plus PR-time validation of packaging.
-- Native-shell UI concerns on mobile (safe areas, keyboard, touch).
+- Mobile usability of the browser component (safe areas, keyboard, touch, phone layouts), delivered and validated for the PWA in Phase 1 (D-43, REQ-APP-020). Native-shell concerns (native gestures, haptics) are later.
 
 ### Non-goals (covered elsewhere)
 
@@ -93,7 +94,7 @@ flowchart TB
     DMAIN --> DFS
   end
 
-  subgraph Mobile["Mobile shells (Android, iOS)"]
+  subgraph Mobile["Mobile shells (Android, iOS) - later (D-43)"]
     CAP["Capacitor project"]
     MPLUG["Capacitor plugins: Filesystem, App, Browser, Keyboard, Haptics, SecureStorage"]
     CAP --> MPLUG
@@ -120,6 +121,8 @@ flowchart TB
   CAP -.-> BUILD
   PUB -.->|"update metadata"| DMAIN
 ```
+
+Thin-wrapper rule (D-43): every shell in the diagram above, desktop (Phase 1) and mobile (later), only hosts the `@cept/web` build in a web view and exposes the bridge. Anything the web platform can do stays in `@cept/ui`/`@cept/core`; native code is limited to what the web cannot do (native dialogs, menus, secure storage, updater, packaging).
 
 ### 3.2 Current state (2026-10-06)
 
@@ -259,7 +262,7 @@ sequenceDiagram
 
 ### REQ-APP-004 — Android packaged app
 
-> **Scope: Phase 1 (D-28), not done until release signing/publishing secrets exist.** The APK build is in Phase 1, but this requirement is not complete until the Android signing and publishing secrets are configured. Play Store `.aab` upload is later (store submissions, D-28).
+> **Scope: later (D-43).** Native Android and iOS apps (Capacitor) are out of scope for now. This amends D-28 (the Android APK moves from Phase 1 to later, along with its signing/publishing-secrets condition). The Phase 1 Android story is the PWA installed from Chrome (REQ-WEB-009). When the app returns it is a thin wrapper around the web view with as little native code as possible. Play Store `.aab` upload is later as well (store submissions, D-28).
 
 **Statement:** Cept MUST be distributed as an Android application that wraps the Cept browser component via Capacitor: an `.apk` for sideloading and GitHub Releases, and an `.aab` for the Play Store.
 
@@ -286,7 +289,7 @@ sequenceDiagram
 
 ### REQ-APP-005 — iOS packaged app
 
-> **Scope: Phase 1 build only (D-28).** iOS builds in CI (simulator build and smoke test) in Phase 1. Signed `.ipa`, TestFlight and App Store distribution wait for an Apple Developer account and are later.
+> **Scope: later (D-43).** Native Android and iOS apps (Capacitor) are out of scope for now. This amends D-28 (the iOS simulator CI build moves from Phase 1 to later). The Phase 1 iOS story is the PWA installed via Safari's Add to Home Screen (REQ-WEB-009). Signed `.ipa`, TestFlight and App Store distribution also wait for an Apple Developer account. When the app returns it is a thin wrapper around the web view (D-43).
 
 **Statement:** Cept MUST be distributed as an iOS application (`.ipa` via TestFlight/App Store) that wraps the Cept browser component via Capacitor.
 
@@ -308,9 +311,9 @@ sequenceDiagram
 
 ### REQ-APP-006 — Native shells reuse the single browser component
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 (D-43, thin wrapper).** Applies to the Phase 1 desktop shells; the mobile shells are later (D-43) and follow the same rule when they return.
 
-**Statement:** Every packaged app, desktop and mobile, MUST render the same `@cept/ui` browser component built by `@cept/web`, with no forked UI code. Platform-specific behavior MUST be reached only through a bridge abstraction.
+**Statement:** Every packaged app, desktop and mobile, MUST render the same `@cept/ui` browser component built by `@cept/web`, with no forked UI code. Every shell MUST be a thin wrapper around the web view with as little native code as possible (D-43). Platform-specific behavior MUST be reached only through a bridge abstraction.
 
 **Source:** Derived from the handler's "browser component - the UI interface" combined with the packaged-app requirement; also SPECIFICATION §8.2 ("Shared NativeShell interface").
 
@@ -320,6 +323,7 @@ sequenceDiagram
 - `@cept/ui` exposes one bridge injection point (provider or context) and detects capabilities through it.
 - Capability-gated UI (for example "Open Folder") appears only when the injected bridge reports the capability, never on a platform-name check (CLAUDE.md architecture rule 4 applied to bridges).
 - `@cept/ui` still imports no platform modules (architecture rule 1).
+- Shell code is limited to hosting the web view and implementing the bridge (window, dialogs, menus, secure storage, updater, packaging). A capability the web platform already provides is not reimplemented natively (D-43).
 
 **Current state:** stubbed. The bridge interfaces exist ([packages/desktop/src/platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) lines 72-126; [packages/mobile/src/mobile-bridge.ts](../../../packages/mobile/src/mobile-bridge.ts) lines 56-96), but nothing in `packages/ui` or `packages/web` imports `@cept/desktop` or `@cept/mobile`. No shell loads `packages/web/dist`, and the UI has no bridge injection point.
 
@@ -331,11 +335,11 @@ sequenceDiagram
 
 ### REQ-APP-007 — Desktop shell runtime selection (Bun/TS where possible)
 
-> **Scope: Phase 1 (D-28).** Electrobun is also the runtime for the updater (REQ-APP-014).
+> **Scope: Phase 1 (D-28).** Electrobun is also the runtime for the updater (REQ-APP-014). The desktop shell is a thin wrapper around the web view (D-43). The Capacitor mobile runtime is later (D-43).
 
 **Statement:** The desktop shell runtime MUST be chosen and documented.
 
-> **Owner direction (D-17):** Electrobun is the desktop shell runtime on all desktop OSes (macOS, Windows, Linux); Electron is removed from scope. Mobile shells use Capacitor (iOS, Android).
+> **Owner direction (D-17):** Electrobun is the desktop shell runtime on all desktop OSes (macOS, Windows, Linux); Electron is removed from scope. Mobile shells use Capacitor (iOS, Android), later (D-43).
 
 **Source:** Derived from the handler ("base code implementation using bun/ts where possible"), SPECIFICATION §2 and §8.1-8.2, and TASKS P6.4.
 
@@ -355,7 +359,7 @@ sequenceDiagram
 
 ### REQ-APP-008 — Unified native bridge abstraction
 
-> **Scope: Phase 1.** The VS Code webview host part is later with the VS Code extension (REQ-VSC, D-26).
+> **Scope: Phase 1.** The VS Code webview host part is later with the VS Code extension (REQ-VSC, D-26). Phase 1 implements the desktop and web-fallback sides only; the mobile (Capacitor) implementation is later (D-43). The bridge stays small, matching the thin-wrapper rule (D-43).
 
 **Statement:** A single typed native-shell abstraction (SPECIFICATION §8.5 `NativeShell`) SHOULD cover desktop and mobile capabilities, with a web fallback, so the UI is runtime-agnostic. The capabilities are dialogs, menus, notifications, clipboard, `openExternal`, OAuth popup, secure storage, and update check/install.
 
@@ -381,7 +385,7 @@ sequenceDiagram
 
 ### REQ-APP-009 — App-only local space storage
 
-> **Scope: Phase 1 for desktop (D-29).** The desktop local-folder backend is a Phase 1 backend. Mobile app-sandbox storage is not named in D-29; the owner has not placed a mobile filesystem backend in Phase 1 beyond what the Android/iOS builds need.
+> **Scope: Phase 1 for desktop (D-29); the mobile part is later (D-43).** The desktop local-folder backend is a Phase 1 backend. The Capacitor filesystem backend for Android and iOS is later (D-43, amending D-19). On phones in Phase 1, the PWA uses the browser IndexedDB backend (REQ-WS-011), and File System Access folders where the mobile browser supports them (REQ-WS-012).
 
 **Statement:** Packaged apps MUST be able to open or create a space in a native local folder ("stored locally (app only)") through a native folder dialog. All persistence still goes through `StorageBackend`.
 
@@ -390,7 +394,7 @@ sequenceDiagram
 **Acceptance criteria:**
 
 - On desktop, "Open Folder" shows the native dialog, and the chosen folder becomes a space whose reads and writes go through a `StorageBackend`. A folder containing `space.cept.yaml` or `space.cept.yml` is recognized as a space root.
-- On Android and iOS, the app can create and open spaces in app-sandbox storage (and, where the OS allows, user-picked folders) through a Capacitor filesystem backend.
+- Later (D-43): on Android and iOS, the app can create and open spaces in app-sandbox storage (and, where the OS allows, user-picked folders) through a Capacitor filesystem backend. Not a Phase 1 criterion.
 - Opening an existing folder modifies no files until the user edits (architecture rule 11).
 - The platform matrix in platform-support.md reflects actual support.
 
@@ -431,9 +435,9 @@ sequenceDiagram
 
 ### REQ-APP-011 — Release pipeline builds per-platform artifacts
 
-> **Scope: Phase 1 (D-28).** Artifacts: macOS dmg (arm64+x64), Windows NSIS x64, Linux AppImage + deb x64, Android APK, iOS simulator build (no distributable iOS artifact until an Apple Developer account exists).
+> **Scope: Phase 1 (D-28, amended by D-43).** Artifacts: macOS dmg (arm64+x64), Windows NSIS x64, Linux AppImage + deb x64. The Android APK and the iOS simulator build move to later (D-43); the existing `build-ios` and `build-android` jobs in `cd.yml` are later work and must not be treated as Phase 1 gates.
 
-**Statement:** On every version tag, CI MUST build installable artifacts for Windows, macOS, Linux, Android and iOS. A job MUST fail if an expected artifact is missing.
+**Statement:** On every version tag, CI MUST build installable artifacts for Windows, macOS and Linux (Phase 1), and for Android and iOS once the native mobile apps return (later, D-43). A job MUST fail if an expected artifact is missing.
 
 **Source:** Derived from the handler ("distributed for windows/macos/linux/android/ios").
 
@@ -461,15 +465,15 @@ sequenceDiagram
 
 ### REQ-APP-012 — Artifacts attached to GitHub Releases
 
-> **Scope: Phase 1 (D-28).** GitHub Releases is the only distribution channel in Phase 1. The iOS item in the acceptance criteria is limited to the CI simulator build until an Apple Developer account exists.
+> **Scope: Phase 1 (D-28).** GitHub Releases is the only distribution channel in Phase 1. The Android and iOS items in the acceptance criteria are later (D-43); in Phase 1 the release carries the three desktop platforms.
 
-**Statement:** Release artifacts for all five platforms MUST be attached to the corresponding GitHub Release.
+**Statement:** Release artifacts for the three desktop platforms MUST be attached to the corresponding GitHub Release in Phase 1; Android and iOS artifacts join them when the native mobile apps return (later, D-43).
 
 **Source:** Derived.
 
 **Acceptance criteria:**
 
-- After a tag, the release lists Windows, macOS and Linux installers, the Android `.apk`, and any iOS artifact or a TestFlight link in the notes.
+- After a tag, the release lists Windows, macOS and Linux installers. Later (D-43): the Android `.apk`, and any iOS artifact or a TestFlight link in the notes.
 - The upload step fails on error and is not silenced.
 - Update metadata files needed by [REQ-APP-014](#req-app-014--desktop-auto-update) are attached.
 
@@ -483,7 +487,7 @@ sequenceDiagram
 
 ### REQ-APP-013 — Code signing and notarization
 
-> **Decided (D-28).** Signing is optional in Phase 1: when secrets are missing, jobs emit `::warning::` and produce unsigned builds. This supersedes the criterion below that a missing secret fails the release job. Scope: Phase 1; Android release signing secrets are still needed before REQ-APP-004 is done, and iOS signing waits for an Apple Developer account.
+> **Decided (D-28).** Signing is optional in Phase 1: when secrets are missing, jobs emit `::warning::` and produce unsigned builds. This supersedes the criterion below that a missing secret fails the release job. Scope: Phase 1 for desktop (macOS, Windows). Android keystore and iOS signing are later with the native mobile apps (D-43); the former condition that Android release signing secrets gate REQ-APP-004 is dropped with it.
 
 **Statement:** Distributed builds MUST be code-signed: macOS Developer ID plus notarization, Windows Authenticode, an Android keystore, and an iOS distribution certificate. Signing secrets are optional at PR time and enforced on release.
 
@@ -529,7 +533,7 @@ sequenceDiagram
 
 ### REQ-APP-015 — Distribution channels
 
-> **Decided (D-28).** The distribution channel is GitHub Releases only. Store submissions (App Store/TestFlight, Play Store, Homebrew, winget) are later. This answers open question 10 and overrides the store statements below for Phase 1. Scope: Phase 1 (GitHub Releases).
+> **Decided (D-28).** The distribution channel is GitHub Releases only. Store submissions (App Store/TestFlight, Play Store, Homebrew, winget) are later. This answers open question 10 and overrides the store statements below for Phase 1. Scope: Phase 1 (GitHub Releases, desktop builds). The Android APK and iOS channels are later (D-43); phones use the PWA in Phase 1.
 
 **Statement:** Packaged apps MUST be published to defined channels: GitHub Releases for all desktop builds and the Android APK, the Apple App Store/TestFlight for iOS, and the Google Play Store for Android (AAB). The choice of channels, including optional stores such as a Homebrew cask, winget or the Mac App Store, SHOULD be documented.
 
@@ -551,7 +555,7 @@ sequenceDiagram
 
 ### REQ-APP-016 — Native OAuth via deep link for packaged apps
 
-> **Scope: Phase 3 (D-26, D-27).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 auth is PATs only, so no native OAuth flow ships before then.
+> **Scope: Phase 3 (D-26, D-27).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 auth is PATs only, so no native OAuth flow ships before then. The mobile (Capacitor) half is also later (D-43) and lands whenever the native mobile apps return.
 
 **Statement:** Packaged apps MUST complete GitHub/Google OAuth through the system browser or an in-app auth session, with a registered app redirect (for example `cept://oauth/callback`) that works with the Cloudflare OAuth proxy.
 
@@ -596,9 +600,9 @@ sequenceDiagram
 
 ### REQ-APP-018 — Nx/mise targets for native builds
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 for `@cept/desktop`; the `@cept/mobile` targets, Java/Android SDK and Xcode pins are later (D-43).** Desktop targets keep the shell a thin wrapper (D-43).
 
-**Statement:** `@cept/desktop` and `@cept/mobile` MUST expose nx targets (`dev`, `build`, `package`) that run the same way locally and in CI, with the required toolchains pinned in mise, following the qontacts reference layout.
+**Statement:** `@cept/desktop` and (later, D-43) `@cept/mobile` MUST expose nx targets (`dev`, `build`, `package`) that run the same way locally and in CI, with the required toolchains pinned in mise, following the qontacts reference layout.
 
 **Source:** Derived from the handler ("mono repo setup matching other nsheaps repos using nx and mise").
 
@@ -624,7 +628,7 @@ sequenceDiagram
 
 ### REQ-APP-019 — PR-time validation of packaging
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 for desktop packaging (D-43).** The Android part is later with the native mobile apps. Mobile-viewport e2e for the PWA is Phase 1 and lives in REQ-APP-020 and [10 Engineering & CI](10-engineering-and-ci.md).
 
 **Statement:** Native packaging SHOULD be validated in PR CI, so release-time breakage is caught early. At minimum, an unsigned build of each affected platform runs when desktop, mobile, ui or web change, scoped with `nx affected`.
 
@@ -632,7 +636,7 @@ sequenceDiagram
 
 **Acceptance criteria:**
 
-- A PR touching `packages/desktop`, `packages/mobile`, `packages/ui` or `packages/web` runs an unsigned packaging smoke test for at least one desktop OS and Android.
+- A PR touching `packages/desktop`, `packages/mobile`, `packages/ui` or `packages/web` runs an unsigned packaging smoke test for at least one desktop OS (Android is later, D-43).
 - PRs that do not affect those packages skip the job.
 - A broken packaging config fails the PR.
 
@@ -646,30 +650,32 @@ sequenceDiagram
 
 ### REQ-APP-020 — Mobile-specific UI polish
 
-> **Scope: awaiting owner decision.** Mobile-specific UI polish is not yet placed in a phase.
+> **Scope: Phase 1, PWA mobile usability (D-43).** This is a fix, not polish: the web UI must work well on phones, in mobile browsers and as an installed PWA. Native iOS and Android shells are later (D-43), so the native-shell parts (insets read from a Capacitor bridge, native gestures, haptics) are later. Validated in CI by e2e tests at mobile viewports (Playwright device emulation) with screenshots.
 
-**Statement:** The browser component MUST be usable inside native mobile shells: adequate touch targets, safe-area insets, keyboard avoidance and native gestures.
+**Statement:** The browser component MUST be usable on phones, both in a mobile browser and as an installed PWA: adequate touch targets, safe-area insets, on-screen-keyboard avoidance and layouts that work at phone sizes. When native mobile shells return (later, D-43) they inherit this behavior and only add native gestures and haptics.
 
-**Source:** Existing task (TASKS P6.8, T7.5). SPECIFICATION §8.4 lists mobile native plugins (secure storage, file system, share extension, push) but does not cover safe areas, keyboard or touch targets.
+**Source:** Existing task (TASKS P6.8, T7.5). SPECIFICATION §8.4 lists mobile native plugins (secure storage, file system, share extension, push) but does not cover safe areas, keyboard or touch targets. Owner decision D-43 (2026-10-07): "mobile needs to work well, so this isn't polish, it's fixing."
 
 **Acceptance criteria:**
 
-- The UI reads safe-area insets from the mobile bridge, or from `env(safe-area-inset-*)`, and content is never hidden under the notch or home indicator.
-- The editor scrolls the caret into view when the soft keyboard opens.
-- Touch targets meet platform guidelines (44pt iOS, 48dp Android).
-- E2E screenshots are taken at mobile viewports inside the native shell.
+- Content is never hidden under the notch, home indicator or system bars: the UI uses `env(safe-area-inset-*)` with `viewport-fit=cover`, in a mobile browser and in the installed (standalone) PWA.
+- The editor keeps the caret visible when the on-screen keyboard opens (visual viewport API), so typing never happens behind the keyboard.
+- Interactive controls have touch targets of at least 44px.
+- Every core flow (open or create a space, page tree and navigation, editing, slash menu, settings, sign-in with a PAT) is usable at phone sizes: no horizontal page scroll, no clipped dialogs, no hover-only actions.
+- CI runs e2e tests at mobile viewports using Playwright device emulation (for example an iPhone and a Pixel profile), in a mobile browser context and against the installed-PWA manifest settings where emulation allows, and captures screenshots through the screenshot pipeline (no manual screenshots).
+- Native gestures and haptics are not Phase 1 criteria (later, D-43).
 
-**Current state:** partial. A responsive web UI exists ([CHANGELOG.md](../../../CHANGELOG.md) line 279: full-page settings on mobile, #54; line 311: sidebar closed on mobile, #31; TASKS T7.5). The `MobileBridge` API includes `getSafeAreaInsets`, `onKeyboardShow` and haptics ([mobile-bridge.ts](../../../packages/mobile/src/mobile-bridge.ts) lines 73-86), but only the web no-op exists and it is not wired. P6.8 is unchecked. [PR #24](https://github.com/nsheaps/cept/pull/24) only adds mobile-viewport screenshots.
+**Current state:** partial. A responsive web UI exists ([CHANGELOG.md](../../../CHANGELOG.md) line 279: full-page settings on mobile, #54; line 311: sidebar closed on mobile, #31; TASKS T7.5). The `MobileBridge` API includes `getSafeAreaInsets`, `onKeyboardShow` and haptics ([mobile-bridge.ts](../../../packages/mobile/src/mobile-bridge.ts) lines 73-86), but only the web no-op exists and it is not wired; Phase 1 does not need it, because the PWA reads insets through CSS and the keyboard through the visual viewport API. P6.8 is unchecked. [PR #24](https://github.com/nsheaps/cept/pull/24) only adds mobile-viewport screenshots.
 
-**Docs state:** undocumented on `main`. Neither roadmap.md Phase 6 (lines 97-110) nor [platform-support.md](../../content/guides/platform-support.md) "Mobile-Specific Features" (lines 72-77: share extension, widgets, push notifications, biometrics) mentions safe areas, keyboard avoidance or touch targets. Only TASKS tracks it: T7.5 "Mobile-specific UI adaptations (responsive, touch)" is marked done (line 120), which is only true for the responsive web layout, and P6.8 is unchecked (line 226). Draft [PR #37](https://github.com/nsheaps/cept/pull/37) adds `docs/content/reference/design-style-guide.md`, which specifies 44x44px minimum touch targets and keeping the caret visible above the on-screen keyboard for the web UI. Once merged, that would document part of this requirement (web, not native shells).
+**Docs state:** undocumented on `main`. Neither roadmap.md Phase 6 (lines 97-110) nor [platform-support.md](../../content/guides/platform-support.md) "Mobile-Specific Features" (lines 72-77: share extension, widgets, push notifications, biometrics) mentions safe areas, keyboard avoidance or touch targets. Only TASKS tracks it: T7.5 "Mobile-specific UI adaptations (responsive, touch)" is marked done (line 120), which is only true for the responsive web layout, and P6.8 is unchecked (line 226). Draft [PR #37](https://github.com/nsheaps/cept/pull/37) adds `docs/content/reference/design-style-guide.md`, which specifies 44x44px minimum touch targets and keeping the caret visible above the on-screen keyboard for the web UI. Once merged, that documents part of this requirement, which now applies to the PWA in Phase 1.
 
-**Gap:** Needs a native bridge implementation, and the UI must use the insets and keyboard events.
+**Gap:** Audit the UI at phone sizes and fix safe areas, keyboard handling, touch targets and layouts in `@cept/ui`/`@cept/web`; add the Playwright mobile-viewport e2e suite and screenshots to CI (see [10 REQ-ENG-017](10-engineering-and-ci.md#req-eng-017--e2e-and-screenshot-automation-healthy-and-gating) and [01 REQ-WEB-022](01-browser-app-and-pwa.md#req-web-022--automated-tests-for-swpwa-on-the-built-bundle)). Native bridge implementation for insets and keyboard is later (D-43).
 
-**Related:** TASKS P6.8, T7.5; [PR #24](https://github.com/nsheaps/cept/pull/24) (screenshots only); [PR #37](https://github.com/nsheaps/cept/pull/37) (design style guide: touch targets, on-screen keyboard).
+**Related:** TASKS P6.8, T7.5; [PR #24](https://github.com/nsheaps/cept/pull/24) (screenshots only); [PR #37](https://github.com/nsheaps/cept/pull/37) (design style guide: touch targets, on-screen keyboard). Phone install: [01 REQ-WEB-009](01-browser-app-and-pwa.md#req-web-009--installable-pwa-manifest).
 
 ### REQ-APP-021 — Native app versions track releases
 
-> **Scope: Phase 1.**
+> **Scope: Phase 1 for the desktop package version (D-43).** Info.plist/Android `versionCode`/`versionName` bumping is later with the native mobile apps.
 
 **Statement:** Packaged app versions (Info.plist, Android `versionCode`/`versionName`, the desktop package version) MUST be bumped from the single release-it version on each release.
 
@@ -694,11 +700,11 @@ sequenceDiagram
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **TASKS.md contradicts itself and the code.** T7.1, T7.2, T7.4, T7.6, T10.1, T10.2 and T10.3 are marked done ([TASKS.md](../../../TASKS.md) lines 116-121 and 142-145), while P6.1-P6.8 for the same work are unchecked (lines 219-226). The code matches the continuation view. _Decision:_ uncheck the T-tasks, or annotate them as superseded by P6.
-2. **Desktop runtime — Decided (D-17).** The handler asked for "bun/ts where possible" and named no runtime. CLAUDE.md, README.md line 61, SPECIFICATION.md lines 82-83 and platform-support.md lines 10-12 previously fixed Electrobun for macOS and Electron for Windows/Linux on an unverified premise. **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed; mobile = Capacitor (iOS, Android). See [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
+2. **Desktop runtime — Decided (D-17).** The handler asked for "bun/ts where possible" and named no runtime. CLAUDE.md, README.md line 61, SPECIFICATION.md lines 82-83 and platform-support.md lines 10-12 previously fixed Electrobun for macOS and Electron for Windows/Linux on an unverified premise. **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed; mobile = Capacitor (iOS, Android), later (D-43). See [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
 3. **One bridge or two.** SPECIFICATION §8.5 defines one `NativeShell` covering `capacitor-ios`/`capacitor-android`. The code has separate `PlatformBridge` and `MobileBridge` with different methods. _Decision:_ unify, or document the split. Should the VS Code webview host share the same interface?
 4. **Release workflow layout.** SPECIFICATION §9.2/§9.4 and continue.md lines 750-752 specify `release-desktop.yml` and `release-mobile.yml`, but the jobs live in `cd.yml`. _Decision:_ split the workflows to match the spec, or update the spec.
 5. **Weakened gates — Decided (D-24, D-28).** `cd.yml` reports success while producing nothing (`if-no-files-found: warn`, `continue-on-error: true`, `|| true`). This is the kind of gate weakening that qontacts' validation-first rule forbids. _Decision:_ adopt the qontacts rule for cept.
-6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. _Decision:_ is a mobile native filesystem backend required for v1? **Still open:** D-29 lists only desktop local folder and web File System Access as Phase 1 local backends.
+6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. _Decision:_ is a mobile native filesystem backend required for v1? **Answered (D-43):** no. Native mobile apps and the Capacitor filesystem backend are later; phones use the PWA with the IndexedDB backend in Phase 1.
 7. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; docs and UI use "space"; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged (`WorkspaceConfig`, `workspace-state.json`, `cept-workspace`, `vscode.workspace`). See [03 REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 8. **`node:fs` in core.** CLAUDE.md architecture rule 1 forbids `node:fs` in `@cept/core`, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8-10 import it, and that is the backend the desktop app would use. _Decision:_ move it to a platform package, or inject an fs abstraction.
 9. **IPC-returned backend.** `ElectronBridge.createLocalBackend` cannot work over structured-clone IPC. _Decision:_ adopt a renderer-side proxy backend design.
@@ -710,7 +716,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 
 No open PR touches `packages/desktop`, `packages/mobile` or the release workflows:
 
-- [PR #67](https://github.com/nsheaps/cept/pull/67) (remote spaces) does not touch this area. It affects terminology and storage only.
+- [PR #67](https://github.com/nsheaps/cept/pull/67) (remote spaces; closed, D-42) does not touch this area. It affects terminology and storage only.
 - [PR #69](https://github.com/nsheaps/cept/pull/69) is unrelated to this area.
 - [PR #37](https://github.com/nsheaps/cept/pull/37) (draft) adds a design style guide with mobile touch-target (44x44px) and on-screen-keyboard rules. It is relevant to [REQ-APP-020](#req-app-020--mobile-specific-ui-polish) docs, and it also edits the in-app docs file `docs-content.ts`.
 - [PR #24](https://github.com/nsheaps/cept/pull/24) only adds desktop and mobile viewport screenshots (plus a CLAUDE.md UI-discoverability rule that every action must work on desktop, tablet and mobile).
