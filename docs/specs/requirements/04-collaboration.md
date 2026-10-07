@@ -2,6 +2,8 @@
 
 **Status:** Draft, 2026-10-06 · **Area ID prefix:** `REQ-COL` · **Owner:** nsheaps
 
+> **Scope (D-26): all REQ-COL requirements are deferred ("later", no phase assigned).** Co-editing is not part of Phase 1, 2 or 3. Phase 1 handles concurrent changes through git sync (D-5, D-37) and does not need Yjs.
+
 This document sets out the requirements for **real-time co-editing** in Cept. Two or more clients edit the same page at the same time. They reconcile their edits with a CRDT and share edit statistics and presence over **public peer-to-peer WebRTC**, and a server is used only for signaling. Each requirement below has been checked against the current code, open PRs and issues, and current docs, and the evidence is recorded. In short, the repo has tested building blocks (provider, offline queue, database sync adapter, a WebSocket relay and presentational UI components) and no working co-editing feature. Yjs is not a dependency anywhere, no transport exists, and nothing in the app shell wires these pieces together.
 
 **Related:**
@@ -150,6 +152,8 @@ flowchart LR
 
 ### REQ-COL-001 — Co-editing available for shared spaces
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
+
 **Statement:** Cept MUST let two or more clients edit the same space page at the same time, with every client's edits reaching the others in near real time (seconds).
 
 **Rationale / source:** handler ("Co-editing support").
@@ -170,6 +174,8 @@ flowchart LR
 **Related PRs/issues:** none found. A semantic issue search returned 0 results, and no open PR (https://github.com/nsheaps/cept/pull/67, https://github.com/nsheaps/cept/pull/69, https://github.com/nsheaps/cept/pull/37, https://github.com/nsheaps/cept/pull/24, https://github.com/nsheaps/cept/pull/283, https://github.com/nsheaps/cept/pull/246) touches crdt or signaling code.
 
 ### REQ-COL-002 — CRDT-based reconciliation of text edits (Yjs)
+
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
 
 **Statement:** Concurrent edits to a page's rich-text content MUST be reconciled with a CRDT (Yjs bound to TipTap via y-prosemirror or equivalent), so all clients converge to the same document state without a manual merge.
 
@@ -192,6 +198,8 @@ flowchart LR
 **Related PRs/issues:** TASKS.md P5.7; T6.1 is checked but the work is not done.
 
 ### REQ-COL-003 — Public peer-to-peer WebRTC transport
+
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
 
 **Statement:** Clients MUST exchange document updates directly peer to peer over WebRTC data channels. A server MAY be used only for signaling (SDP/ICE exchange) and MUST NOT be needed to relay document content.
 
@@ -217,6 +225,8 @@ flowchart LR
 
 ### REQ-COL-004 — Public signaling endpoint available by default
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet. The nsheaps/iac signaling hosting is also deferred (iac work is Phase 2 and iac is being restructured first).
+
 **Statement:** Cept MUST ship pointed at a public, best-effort signaling endpoint so co-editing works with zero setup, and users MUST be able to set a self-hosted signaling URL instead.
 
 **Rationale / source:** handler ("public p2p") and the existing spec (SPECIFICATION.md §6.6 L950).
@@ -237,6 +247,8 @@ flowchart LR
 **Related PRs/issues:** TASKS.md P5.11.
 
 ### REQ-COL-005 — Signaling server runnable
+
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
 
 **Statement:** `packages/signaling-server` MUST provide a runnable Bun server that manages per-document rooms (join, leave, disconnect) and exposes a health endpoint.
 
@@ -259,6 +271,8 @@ flowchart LR
 
 ### REQ-COL-006 — Signaling room auth
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
+
 **Statement:** The signaling server SHOULD support optional room-level authorization, so that only clients allowed into the space can join a document room.
 
 **Rationale / source:** existing spec, SPECIFICATION.md §6.6 L959 ("optional room-level auth (token validation against the Git repo)").
@@ -278,6 +292,8 @@ flowchart LR
 **Related PRs/issues:** none.
 
 ### REQ-COL-007 — Sharing edit stats between peers
+
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
 
 **Statement:** Peers MUST share edit statistics or metadata (for example who is editing, last-edit timestamps and per-user change counts) alongside content updates, so clients can show activity and make reconciliation decisions.
 
@@ -300,6 +316,8 @@ flowchart LR
 
 ### REQ-COL-008 — Presence and awareness (avatars, remote cursors)
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
+
 **Statement:** Each client MUST broadcast its identity and cursor/selection through an awareness channel. The editor MUST show an avatar stack of active collaborators, and remote cursors and selections with name labels.
 
 **Rationale / source:** handler (co-editing) and the existing spec (SPECIFICATION.md §5.6 L528, L739).
@@ -320,6 +338,8 @@ flowchart LR
 **Related PRs/issues:** TASKS.md P5.9, T6.3.
 
 ### REQ-COL-009 — Offline editing with reconnect sync
+
+> **Status: deferred (D-26).** Peer CRDT reconnect convergence is deferred with co-editing. Single-user offline editing with queued commits and push-on-reconnect is Phase 1 (D-37) and is owned by REQ-WEB/REQ-WS, not this requirement.
 
 **Statement:** A client that goes offline MUST keep editing locally and persist pending updates across reloads. On reconnect it MUST sync automatically and converge with its peers without data loss.
 
@@ -342,6 +362,8 @@ flowchart LR
 
 ### REQ-COL-010 — Real-time sync of database (table/board) changes
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet. Databases are also Phase 2 (D-26, D-36).
+
 **Statement:** Database row and schema changes MUST sync between co-editing clients and MUST converge deterministically under concurrent edits to the same row or property.
 
 **Rationale / source:** handler ("Database support" plus co-editing) and the existing spec (TASKS.md T6.4).
@@ -363,6 +385,8 @@ flowchart LR
 
 ### REQ-COL-011 — Collaboration not tied to Git backend
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet. Per D-29 Phase 1 hosts are GitHub only; revisit `BackendCapabilities.collaboration` when co-editing is scheduled.
+
 **Statement:** Co-editing SHOULD work for any space shared between clients, whatever its remote type (git, gdrive, sftp), and not only for GitBackend. Real-time CRDT sync and durable remote sync are separate layers.
 
 **Rationale / source:** derived. The handler lists co-editing as a standalone component and lists the remotes separately.
@@ -383,6 +407,8 @@ flowchart LR
 
 ### REQ-COL-012 — Collaboration e2e test coverage
 
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
+
 **Statement:** An e2e test MUST open two browser contexts on the same page and verify that edits converge and that remote cursors and avatars appear.
 
 **Rationale / source:** existing spec (SPECIFICATION.md L1588, and L1408-1411 for `features/collaboration/*.feature`).
@@ -402,6 +428,8 @@ flowchart LR
 **Related PRs/issues:** none.
 
 ### REQ-COL-013 — User-facing collaboration guide
+
+> **Status: deferred (D-26).** Co-editing is deferred, with no phase assigned yet.
 
 **Statement:** The docs site MUST have a "Real-time Collaboration" guide that covers how to share and co-edit, the signaling/P2P model, privacy, and self-hosting.
 
@@ -425,13 +453,13 @@ flowchart LR
 
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
-1. **P2P WebRTC or WebSocket relay?** The handler asks for public P2P WebRTC. SPECIFICATION.md L120 makes WebSocket the default and WebRTC "future", §6.6 (L948-959) describes a server that relays Yjs updates, and the implementation ([room-manager.ts](../../../packages/signaling-server/src/room-manager.ts) L62/L243) is a content relay. Proposal: WebRTC is primary, and the relay is kept only as an opt-in fallback for peers that cannot connect directly. Should the relay be kept at all?
+1. **P2P WebRTC or WebSocket relay?** _Deferred with co-editing (D-26)._ The handler asks for public P2P WebRTC. SPECIFICATION.md L120 makes WebSocket the default and WebRTC "future", §6.6 (L948-959) describes a server that relays Yjs updates, and the implementation ([room-manager.ts](../../../packages/signaling-server/src/room-manager.ts) L62/L243) is a content relay. Proposal: WebRTC is primary, and the relay is kept only as an opt-in fallback for peers that cannot connect directly. Should the relay be kept at all?
 2. **Is collaboration tied to the backend?** The handler treats co-editing as its own component. The spec, CLAUDE.md, [crdt/index.ts](../../../packages/core/src/crdt/index.ts) L4 and [git-backend.ts](../../../packages/core/src/storage/git-backend.ts) L37 restrict it to GitBackend. Should any shared space be collaborative ([REQ-COL-011](#req-col-011--collaboration-not-tied-to-git-backend))?
 3. **What are "stats on edits"?** Presence and awareness, a state-vector summary, per-user change counts, or something else ([REQ-COL-007](#req-col-007--sharing-edit-stats-between-peers))?
-4. **Where is the public signaling hosted?** Options include a Cloudflare Worker or Durable Object via nsheaps/iac (next to the OAuth proxy; unverified), Fly.io/Railway as the spec says, or a public y-webrtc signaling server. Who pays for it and runs it?
+4. **Where is the public signaling hosted?** _Deferred with co-editing (D-26); iac work is Phase 2 and iac will be restructured first (D-26, D-27)._ Options include a Cloudflare Worker or Durable Object via nsheaps/iac (next to the OAuth proxy; unverified), Fly.io/Railway as the spec says, or a public y-webrtc signaling server. Who pays for it and runs it?
 5. **Encryption and privacy.** Should data-channel payloads be end-to-end encrypted with a room secret? Is a TURN relay acceptable, given that it sees encrypted traffic?
 6. **Who owns the session lifecycle?** The handler puts syncing in the service worker or the shared CLI daemon. Does the page, the service worker or the daemon own the `Y.Doc`, its persistence and the transport? This decides whether the VS Code extension and the PWA can share one session.
-7. **Room scoping with several spaces per repo.** With several spaces in one repo (D-2, [03-spaces-and-storage.md](03-spaces-and-storage.md)), a room should be keyed by space (backend location + space path) plus page id. Nesting is deferred (D-3).
+7. **Room scoping with several spaces per repo.** _Deferred with co-editing (D-26)._ With several spaces in one repo (D-2, [03-spaces-and-storage.md](03-spaces-and-storage.md)), a room should be keyed by space (backend location + space path) plus page id. Nesting is deferred (D-3).
 8. **The "no server" principle.** SPECIFICATION.md §1 says "Client-only ... no server process". A public signaling service and a CLI daemon contradict this, so the principle needs rewording.
 9. **TASKS.md is self-contradictory.** Phase 6 T6.1-T6.5 are checked "2026-03-04", but P5.7, P5.9 and P5.10 (unchecked) describe the same work, and the code has no Yjs dependency. P5.8 is unchecked although [server.ts](../../../packages/signaling-server/src/server.ts) exists (P2.1 checked). Should T6.x be unchecked, or annotated "scaffolding only"?
 10. **Terminology.** **Decided (D-1):** "space" is the canonical term throughout; requirement IDs stay REQ-WS-NNN. This document has been updated to use "space".

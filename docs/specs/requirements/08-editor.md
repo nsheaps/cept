@@ -21,8 +21,8 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 
 - The TipTap/ProseMirror WYSIWYG editor, its custom blocks, slash menu and inline mentions.
 - The Markdown storage format: GFM, footnotes, fenced-code annotation plugins (mermaid, math), the HTML fallback, and preserving content the editor does not understand.
-- The database engine (schema, rows, filter, sort, group, formulas, relations, rollups), database storage formats, database views, and inline and linked databases.
-- Crosslinks (`[[wiki-links]]`, markdown links, mentions), the graph builder, the graph view and backlinks.
+- The database engine (schema, rows, filter, sort, group, formulas, relations, rollups), database storage formats, database views, and inline and linked databases (Phase 2, D-26, D-36; not shipped in Phase 1).
+- Crosslinks (standard GFM markdown links and mentions; `[[wiki-links]]` are out of scope, D-32), the graph builder, the graph view and backlinks.
 - Acceptance tests (Gherkin and E2E) for the above.
 
 **Non-goals (covered elsewhere)**
@@ -117,6 +117,8 @@ flowchart TD
 
 ### REQ-EDT-001 — Fully WYSIWYG block editor in the app
 
+> **Scope: Phase 1 (D-26).**
+
 **Statement:** The app MUST provide a WYSIWYG block editor (TipTap/ProseMirror) as the primary way to edit page content. Formatted output is edited in place, and no separate source view is required.
 
 **Source:** handler ("fully wysiwyg").
@@ -136,6 +138,8 @@ flowchart TD
 **Related:** [PR #37](https://github.com/nsheaps/cept/pull/37) (draft) adds a code-color-swatch extension to `CeptEditor.tsx`.
 
 ### REQ-EDT-002 — Rich custom blocks are editable in WYSIWYG mode
+
+> **Scope: Phase 1 (D-26), except the inline database block, which is Phase 2 (D-26, D-36).** Mermaid, math, embed and bookmark editing are Phase 1; the inline-database part follows [REQ-EDT-009](#req-edt-009--inline-and-linked-database-blocks-in-pages).
 
 **Statement:** Every custom block (mermaid, math, callout, embed, bookmark, columns, inline database) MUST be both rendered and editable in place, for example through NodeViews. Being insertable with default content is not enough.
 
@@ -157,6 +161,8 @@ flowchart TD
 
 ### REQ-EDT-003 — Slash menu exposes all supported blocks
 
+> **Scope: Phase 1 (D-26).** **Decided (D-36):** database entries are removed from the slash menu and UI in Phase 1 so nothing half-working ships (library code is left untouched); the `/database` entry returns with [REQ-EDT-009](#req-edt-009--inline-and-linked-database-blocks-in-pages) in Phase 2.
+
 **Statement:** The `/` command menu MUST list every supported block type, including the inline database, with search and keyboard navigation.
 
 **Source:** existing spec.
@@ -177,7 +183,9 @@ flowchart TD
 
 ### REQ-EDT-004 — Inline mentions (@page/@person/@date)
 
-**Statement:** The editor SHOULD support inline mentions of pages, people and dates. Page mentions SHOULD count as crosslinks for the graph.
+> **Scope: Phase 1 for @page and @date mentions; @person mentions later (D-35, D-26).** Page mentions count as crosslinks for backlinks and the graph (D-32).
+
+**Statement:** The editor SHOULD support inline mentions of pages and dates (Phase 1, D-35); @person mentions are later (D-26). Page mentions SHOULD count as crosslinks for the graph.
 
 **Source:** existing spec ([SPECIFICATION.md](../../SPECIFICATION.md) §4.2, §5.1).
 
@@ -196,6 +204,8 @@ flowchart TD
 **Related:** TASKS T2.9 (claimed done).
 
 ### REQ-EDT-005 — Pages persist as Markdown with lossless WYSIWYG round-trip
+
+> **Scope: Phase 1 (D-33).** **Decided (D-14, D-15, D-33):** GFM, lossless round-trip and one Markdown pipeline are Phase 1.
 
 **Statement:** Page content MUST be stored as Markdown with YAML front matter. Loading a file into the editor and saving it without edits MUST NOT lose or rewrite content beyond documented normalization.
 
@@ -217,6 +227,8 @@ flowchart TD
 
 ### REQ-EDT-006 — Database engine (CRUD, filter, sort, group, formula, relations, rollups)
 
+> **Scope: Phase 2 (D-26, D-36).** Databases are deferred; library code is left untouched and no database UI ships in Phase 1.
+
 **Statement:** Cept MUST provide a database engine for databases stored in the space. It supports schema CRUD, row CRUD, filter, sort, group-by, formulas, relations and rollups.
 
 **Source:** handler ("Database support").
@@ -236,6 +248,8 @@ flowchart TD
 **Related:** TASKS T1.5, T1.6, P2.5 (done); P3.2 (open).
 
 ### REQ-EDT-007 — Database storage in multiple formats
+
+> **Scope: Phase 2 (D-26, D-36).** Databases are deferred; library code is left untouched and no database UI ships in Phase 1.
 
 **Statement:** Database data MUST be storable in more than one on-disk format: at minimum the YAML schema-plus-rows format, plus at least one tabular interchange format (CSV, JSON, a Markdown table, or a folder of pages with per-row front matter). Each database MUST declare its format, and every format MUST round-trip through the engine.
 
@@ -258,6 +272,8 @@ flowchart TD
 
 ### REQ-EDT-008 — Database views rendered from real data
 
+> **Scope: Phase 2 (D-26, D-36).** Databases are deferred; library code is left untouched and no database UI ships in Phase 1.
+
 **Statement:** Users MUST be able to open a database in the app and use Table, Board, Calendar, Gallery, List and Map views backed by engine data, with edits persisted.
 
 **Source:** handler ("Database support"); [SPECIFICATION.md](../../SPECIFICATION.md) §4.5.
@@ -279,6 +295,8 @@ flowchart TD
 
 ### REQ-EDT-009 — Inline and linked database blocks in pages
 
+> **Scope: Phase 2 (D-26, D-36).** Databases are deferred; library code is left untouched and no database UI ships in Phase 1.
+
 **Statement:** A page SHOULD be able to embed a database inline, or a linked view of an existing database with its own filter and sort. The embed SHOULD be persisted in the page file and SHOULD render live data.
 
 **Source:** [SPECIFICATION.md](../../SPECIFICATION.md) §5.1; derived from "Database support".
@@ -298,6 +316,8 @@ flowchart TD
 **Related:** TASKS P3.11, P3.12.
 
 ### REQ-EDT-010 — Markdown plugins via fenced-code annotations
+
+> **Scope: Phase 1 (D-33).** **Decided (D-33):** mermaid must render as it does on GitHub and is the first fenced-block plugin; a ` ```graph ` block may be the second ([REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app)).
 
 **Statement:** A fenced code block whose info string names a registered renderer (for example ` ```mermaid ` or ` ```math `) MUST be parsed into the matching rich block on load and rendered live. Unknown info strings MUST remain ordinary syntax-highlighted code blocks.
 
@@ -320,6 +340,8 @@ flowchart TD
 
 ### REQ-EDT-011 — Fenced annotation blocks serialize back to fenced code
 
+> **Scope: Phase 1 (D-33).**
+
 **Statement:** On save, annotation blocks (mermaid, math and others) MUST serialize back to a fenced code block with the same info string, so the files still render on GitHub.
 
 **Source:** derived. It is the round-trip half of [REQ-EDT-010](#req-edt-010--markdown-plugins-via-fenced-code-annotations).
@@ -338,6 +360,8 @@ flowchart TD
 **Related:** none.
 
 ### REQ-EDT-012 — Math rendering (block and inline)
+
+> **Scope: Phase 1 (D-33).** Math is part of the Phase 1 GFM-plus-math pipeline.
 
 **Statement:** Math SHOULD render via KaTeX in the editor, and Markdown SHOULD accept `$$...$$`, `$...$` and/or ` ```math ` in both directions (load and save).
 
@@ -359,7 +383,9 @@ flowchart TD
 
 ### REQ-EDT-013 — Extensible annotation/plugin registry
 
-**Statement:** Annotation renderers SHOULD be registered through a plugin registry, so new ` ```<lang> ` renderers can be added without modifying core editor code.
+> **Scope: Phase 1 for the internal plugin interface (D-33); a third-party plugin registry is later (D-33, D-26).** **Decided (D-33):** the interface is internal to Cept; mermaid is the first plugin and ` ```graph ` may be the second.
+
+**Statement:** Annotation renderers SHOULD be registered through an internal plugin interface (Phase 1, D-33; a third-party plugin registry is later), so new ` ```<lang> ` renderers can be added without modifying core editor code.
 
 **Source:** derived from the handler's "markdown plugins".
 
@@ -379,6 +405,8 @@ flowchart TD
 
 ### REQ-EDT-014 — GitHub Flavored Markdown core syntax
 
+> **Scope: Phase 1 (D-33).**
+
 **Statement:** The editor and storage MUST support GFM: tables, task lists, strikethrough, autolinks, and fenced code with a language.
 
 **Source:** handler ("github flavored markdown").
@@ -397,6 +425,8 @@ flowchart TD
 **Related:** none.
 
 ### REQ-EDT-015 — GFM footnotes
+
+> **Scope: Phase 1 (D-33).**
 
 **Statement:** The editor MUST support GFM footnotes: `[^id]` references and `[^id]:` definitions. They render WYSIWYG and round-trip in Markdown.
 
@@ -418,6 +448,8 @@ flowchart TD
 
 ### REQ-EDT-016 — Footnotes for repeated information
 
+> **Scope: Phase 1 (D-33).** Per D-26, synced blocks are later, so repeated information in Phase 1 is covered by footnotes only.
+
 **Statement:** A single footnote definition MUST be referenceable multiple times in a page, so repeated information is stated once. Editing the definition MUST update every reference.
 
 **Source:** handler ("use footnotes for repeated info").
@@ -438,7 +470,9 @@ flowchart TD
 
 ### REQ-EDT-017 — `[[wiki-link]]` crosslinks between files
 
-**Statement:** The editor MUST support `[[Page]]` and `[[path|alias]]` crosslinks. Typing `[[` offers autocomplete; links render as navigable links, persist in Markdown, and resolve to space files.
+> **Status: out of scope (D-32).** `[[wiki-links]]` are not supported. Crosslinks use standard GFM links (`[link text](https://example.com)` syntax, with a relative path to the target page) only. Backlinks, search and the graph are derived from standard links.
+
+**Statement:** ~~The editor MUST support `[[Page]]` and `[[path|alias]]` crosslinks.~~ Out of scope (D-32): crosslinks use standard GFM links (`[link text](https://example.com)` syntax, with a relative path to the target page) only, and the editor offers page-link autocomplete that inserts such links. Links render as navigable links, persist in Markdown, and resolve to space files.
 
 **Source:** derived. It is a prerequisite for "graph with crosslinks of files ... like obsidian".
 
@@ -459,7 +493,9 @@ flowchart TD
 
 ### REQ-EDT-018 — Graph builder extracts crosslinks from space files
 
-**Statement:** A graph builder MUST scan all space pages and extract edges from Markdown links, wiki-links, mentions, database relations and shared tags. It MUST include unresolved targets and produce `GraphData`.
+> **Scope: Phase 1 (D-32).** **Decided (D-32):** edges are extracted from standard GFM links (not `[[wiki-links]]`), page mentions, and the other kinds that remain applicable. Database relations are Phase 2 (D-26).
+
+**Statement:** A graph builder MUST scan all space pages and extract edges from standard Markdown links, mentions, database relations (Phase 2) and shared tags (wiki-links are out of scope, D-32). It MUST include unresolved targets and produce `GraphData`.
 
 **Source:** handler ("graph with crosslinks of files").
 
@@ -478,6 +514,8 @@ flowchart TD
 **Related:** TASKS P4.1.
 
 ### REQ-EDT-019 — Browsable Obsidian-style graph view in the app
+
+> **Scope: Phase 1 (D-32).** **Decided (D-32, D-33):** the graph view may be delivered as a fenced ` ```graph ` block plugin built on the internal plugin interface ([REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)).
 
 **Statement:** The app MUST expose a graph view, reachable from navigation, in two modes: global, and local with a depth of 1-5. It MUST support pan/zoom, click-to-navigate, hover preview, filters (search, tags, orphans, attachments, exclusions), color groups and time-lapse.
 
@@ -500,6 +538,8 @@ flowchart TD
 
 ### REQ-EDT-020 — Single consistent graph data model
 
+> **Scope: Phase 1 (D-32).**
+
 **Statement:** Core and UI SHOULD share one graph data model (node and edge types), so the builder's output feeds the view directly.
 
 **Source:** derived.
@@ -518,6 +558,8 @@ flowchart TD
 **Related:** none.
 
 ### REQ-EDT-021 — Backlinks panel
+
+> **Scope: Phase 1 (D-32).** Backlinks are derived from standard GFM links.
 
 **Statement:** Each page SHOULD show its backlinks (the pages that link to it), derived from the same crosslink index as the graph.
 
@@ -538,6 +580,8 @@ flowchart TD
 
 ### REQ-EDT-022 — HTML fallback for blocks with no Markdown representation
 
+> **Scope: Phase 1 (D-33).**
+
 **Statement:** When a block has no Markdown/GFM representation, it MUST be persisted as HTML (semantic elements with `data-type` attributes) and parsed back into the same block on load.
 
 **Source:** handler ("Fallback to HTML where support doesn't exist for storage").
@@ -556,6 +600,8 @@ flowchart TD
 **Related:** none.
 
 ### REQ-EDT-023 — Unknown raw HTML and unsupported syntax preserved without data loss
+
+> **Scope: Phase 1 (D-33).**
 
 **Statement:** Opening and saving a file MUST preserve Markdown or HTML that the editor does not understand (raw HTML, footnotes until supported, unknown `cept` comments), for example by keeping it as an opaque raw block.
 
@@ -576,6 +622,8 @@ flowchart TD
 
 ### REQ-EDT-024 — Toggle block encoding is GFM-compatible
 
+> **Scope: Phase 1 (D-33).**
+
 **Statement:** Toggle blocks SHOULD have a storage encoding that renders sensibly on GitHub and in other Markdown renderers (for example a `<details>`/`<summary>` HTML fallback), and SHOULD NOT be confused with blockquotes.
 
 **Source:** derived (GFM plus the HTML fallback).
@@ -594,6 +642,8 @@ flowchart TD
 **Related:** none.
 
 ### REQ-EDT-025 — Editor-area acceptance tests bound and running
+
+> **Scope: Phase 1 (D-26).** Binding and running steps for database features is Phase 2 (D-26, D-36); wiki-link load and round-trip tests are dropped (D-32).
 
 **Statement:** The Gherkin features for the editor, databases and the graph MUST have bound step definitions that run in CI, and E2E tests MUST cover load-from-Markdown rendering for annotation blocks.
 
@@ -617,15 +667,15 @@ flowchart TD
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **Canonical block encoding.** [SPECIFICATION.md](../../SPECIFICATION.md) §4.2 and [CLAUDE.md](../../../CLAUDE.md) rule 9 require `<!-- cept:block {...} -->` comments. [markdown-extensions.md](../../content/guides/markdown-extensions.md) and [content-formatting.md](../../../.claude/rules/content-formatting.md) specify `data-type` HTML elements. The running editor emits `data-type` HTML, and the unused core parser emits comments. The handler's "Fallback to HTML" matches the docs and the running editor. **Proposal:** adopt GFM, then fenced annotations, then `data-type` HTML, and retire `cept:block` comments (keeping a reader for migration).
-2. **Mermaid and math encoding.** SPEC §5.9 says to wrap the fence in a `cept:block` comment. The docs say a plain fence. The code likely emits a `data-type` div and cannot parse a fence. The handler wants fence-style annotations.
+2. **Answered (D-33).** **Mermaid and math encoding.** SPEC §5.9 says to wrap the fence in a `cept:block` comment. The docs say a plain fence. The code likely emits a `data-type` div and cannot parse a fence. The handler wants fence-style annotations.
 3. **Toggle encoding.** SPEC §4.2 uses a comment. The editor and [toggle-syntax.md](../../content/guides/toggle-syntax.md) use `> summary` with indented content, which GFM renders as a blockquote. Should toggles use `<details>`?
-4. **One Markdown implementation.** Keep tiptap-markdown, or wire `CeptMarkdownParser` in? Today [markdown-parser.md](../markdown-parser.md) and TASKS P2.2 describe a parser the app does not use.
+4. **Answered in part (D-33):** one pipeline is Phase 1 (D-14, D-15). **One Markdown implementation.** Keep tiptap-markdown, or wire `CeptMarkdownParser` in? Today [markdown-parser.md](../markdown-parser.md) and TASKS P2.2 describe a parser the app does not use.
 5. **Two graph data models.** Core (`edges`, link/mention/tag/relation) and UI (`links`, parent/mention/backlink) differ. Should the UI unify on core?
-6. **Database storage formats.** The handler requires multiple formats, but SPEC §4.3, [database-engine.md](../database-engine.md) and CLAUDE.md rule 10 mandate YAML only. Which formats are required (CSV, JSON, Markdown table, folder of pages)?
+6. **Deferred (D-26, D-36):** databases are Phase 2. **Database storage formats.** The handler requires multiple formats, but SPEC §4.3, [database-engine.md](../database-engine.md) and CLAUDE.md rule 10 mandate YAML only. Which formats are required (CSV, JSON, Markdown table, folder of pages)?
 7. **Property type count.** The docs say 18, and [models/index.ts](../../../packages/core/src/models/index.ts) defines 20 (adding files and location).
 8. **TASKS.md contradiction.** T2.9, T2.11, T3.9-T3.12 and T4.1-T4.12 are checked, while P3.1-P3.12 and P4.1-P4.6 show the same features are not wired. Should the earlier items be unchecked or annotated "component only"?
 9. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; the graph, database scope and wiki-link resolution are all per space; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged. See [REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
-10. **Footnote reuse vs synced blocks.** Should "repeated info" be covered only by footnotes, or also by synced/transcluded blocks?
+10. **Answered (D-26, D-33):** synced blocks are later, so Phase 1 covers repeated info with footnotes only. **Footnote reuse vs synced blocks.** Should "repeated info" be covered only by footnotes, or also by synced/transcluded blocks?
 11. **Autolinks.** `autolink: false` is set in the editor. Is that intended, given GFM autolinks?
 12. **Docs rendering.** SPEC §11 describes `@cept/docs` as a Starlight/VitePress site, but [docs/package.json](../../package.json) only echoes. In-app docs render through `CeptEditor` (App.tsx line 1324), so the editor's limitations (`$$` math, mermaid fences) apply to the docs themselves.
 

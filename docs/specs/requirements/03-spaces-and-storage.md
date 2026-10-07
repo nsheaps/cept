@@ -152,6 +152,8 @@ flowchart TB
 
 ### REQ-WS-001 — Space is a folder in a filesystem
 
+> **Scope: Phase 1 (D-26).** Includes legacy flat-space migration (D-30).
+
 **Statement.** A space MUST be a directory tree in some backing filesystem. Its pages MUST be stored as files whose folder hierarchy matches the space page tree, so other tools can read and edit the folder.
 
 **Source.** Owner: "Spaces being a folder in some file system".
@@ -182,12 +184,15 @@ flowchart TB
 
 ### REQ-WS-002 — space.cept.yaml / space.cept.yml marks the space root
 
+> **Scope: Phase 1 (D-26).** **Decided (D-30):** discovery covers every repo the PAT reaches; the marker file MUST exist on the repo's default branch, and it MAY declare a different `branch` for the space (see REQ-WS-004).
+
 **Statement.** A directory MUST be treated as a space root if and only if it contains `space.cept.yaml` or `space.cept.yml`. Cept MUST find space roots by locating this file.
 
 **Source.** Owner: "space.cept.ya?ml defines space root".
 
 **Acceptance criteria**
 
+- If `space.cept.yaml` declares `branch: <name>` (D-30), Cept uses that branch for the space; the marker itself must be present on the default branch.
 - Opening a folder that contains `space.cept.yaml` loads it as a space. Opening a folder without the marker offers to initialize one; it never silently creates it.
 - Discovery is a core (`@cept/core`) function that works against any `StorageBackend`, with unit tests on the in-memory backend.
 - Creating a new space writes the marker file.
@@ -214,6 +219,8 @@ flowchart TB
 
 ### REQ-WS-003 — Both .yaml and .yml extensions accepted
 
+> **Scope: Phase 1 (D-26).**
+
 **Statement.** Space root detection MUST accept both `space.cept.yaml` and `space.cept.yml`. If both exist in the same directory, Cept MUST apply a documented precedence or report an error.
 
 **Source.** Owner (`ya?ml`).
@@ -233,7 +240,9 @@ flowchart TB
 
 ### REQ-WS-004 — space.cept.yaml schema
 
-**Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements.
+> **Decided (D-30).** The minimal schema gains one optional field, `branch: <name>`. The marker MUST exist on the default branch; Cept then uses the declared branch for that space. Scope: Phase 1 (D-26).
+
+**Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements, except one optional field, `branch` (D-30): the name of the branch Cept uses for this space. The marker file MUST exist on the default branch (that is where discovery finds it).
 
 **Source.** Derived from REQ-WS-002 and D-3 (owner direction: schema starts minimal).
 
@@ -243,6 +252,7 @@ flowchart TB
 version: '1'
 name: My Engineering Notes
 slug: engineering-notes
+branch: docs # optional (D-30)
 ```
 
 **Acceptance criteria**
@@ -262,7 +272,7 @@ slug: engineering-notes
 
 ### REQ-WS-005 — Nested spaces inside a parent space (deferred)
 
-> **Status: deferred (D-3).** This requirement is deferred until the core space-on-disk model (REQ-WS-001/002/004) is stable. Discovery does not descend into a found space; a nested marker is reported as a warning. See open question 13 for per-folder `.cept.yaml`.
+> **Status: deferred (D-3); Scope: later (D-26).** This requirement is deferred until the core space-on-disk model (REQ-WS-001/002/004) is stable. Discovery does not descend into a found space; a nested marker is reported as a warning. See open question 13 for per-folder `.cept.yaml`.
 
 **Statement.** A space MAY contain child spaces, meaning any subdirectory with its own `space.cept.yaml`. The parent MUST show each child as a navigable subtree, and the child keeps its own configuration.
 
@@ -285,7 +295,7 @@ slug: engineering-notes
 
 ### REQ-WS-006 — Nesting depth limit (deferred)
 
-> **Status: deferred (D-3).** Depends on REQ-WS-005 which is deferred.
+> **Status: deferred (D-3); Scope: later (D-26).** Depends on REQ-WS-005 which is deferred.
 
 **Statement.** Space nesting MUST be supported to a depth of 10, with the root counted as level 1 (to be confirmed). Discovery MUST stop at the limit and MUST tell the user about deeper markers rather than load or skip them silently.
 
@@ -306,6 +316,8 @@ slug: engineering-notes
 **Related:** none.
 
 ### REQ-WS-007 — Per-space backend selection
+
+> **Scope: Phase 1 (D-26).** Phase 1 backends: browser IndexedDB, desktop local folder, File System Access folders, GitHub (D-29).
 
 **Statement.** Each space, nested ones included, MUST be bound to its own storage backend instance. Several spaces on different backends MUST be able to be open at the same time.
 
@@ -330,6 +342,8 @@ slug: engineering-notes
 **Related:** [#40](https://github.com/nsheaps/cept/issues/40), [#45](https://github.com/nsheaps/cept/issues/45).
 
 ### REQ-WS-008 — Common, extensible StorageBackend interface
+
+> **Scope: Phase 1 (D-26).** Capabilities also carry history (D-31).
 
 **Statement.** Every storage location MUST implement one `StorageBackend` interface. Features MUST be gated on `capabilities`, never on backend type or class. The interface MUST accept new backend types such as gdrive and sftp without breaking changes.
 
@@ -356,6 +370,8 @@ slug: engineering-notes
 **Related:** TASKS T1.1, P2.3.
 
 ### REQ-WS-009 — Local (app-only) native filesystem backend
+
+> **Scope: Phase 1 (D-29).** Desktop local folder is a Phase 1 backend. The "or the daemon" hosting option is later (CLI/daemon, D-26).
 
 **Statement.** Packaged desktop and mobile apps MUST be able to open a folder on the native filesystem as a space and read and write plain files in place.
 
@@ -388,6 +404,8 @@ slug: engineering-notes
 
 ### REQ-WS-010 — Native-fs backend detects external edits
 
+> **Scope: Phase 1 (D-26).**
+
 **Statement.** The native-filesystem backend MUST detect files changed outside Cept and update the UI.
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.6; storage-backends.md NFR-2).
@@ -407,6 +425,8 @@ slug: engineering-notes
 **Related:** none.
 
 ### REQ-WS-011 — Local (browser-only) IndexedDB storage
+
+> **Scope: Phase 1 (D-29).**
 
 **Statement.** In the browser, a space MUST be able to live entirely in browser storage (IndexedDB) with zero setup and persist across reloads.
 
@@ -431,6 +451,8 @@ slug: engineering-notes
 
 ### REQ-WS-012 — Local (browser-only) real-folder access via File System Access API
 
+> **Decided (D-29).** File System Access API folders on the web are a Phase 1 backend. Scope: Phase 1.
+
 **Statement.** Where the browser supports it, the user SHOULD be able to open a real folder from the web app or PWA as a space through the File System Access API. Permission for the handle MUST persist between visits, subject to the browser's re-prompt rules.
 
 **Source.** Owner ("locally (browser only)", interpreted as also covering real folders from the browser). See open questions.
@@ -452,6 +474,8 @@ slug: engineering-notes
 **Related:** TASKS P2.7.
 
 ### REQ-WS-013 — Git-backed space: clone/read from remote
+
+> **Scope: Phase 1 (D-29, D-30).** Host is GitHub only (PAT); anonymous read-only clone of public HTTPS git URLs keeps working. Autodiscovery: every repo reachable via `GET /user/repos`, default branch scanned via the Git Trees API, forks and archived repos skipped; found spaces are listed as "Discovered" and cloned only when opened or pinned. The owned-proxy criterion depends on the browser git transport, still awaiting the owner (REQ-AUTH-008/009); the OAuth relay Worker is Phase 2 (D-27). Nested-space discovery stays deferred (D-3).
 
 **Statement.** A space MUST be able to be backed by a Git repository (any URL, optional branch and subpath), cloned and readable in both browser and app.
 
@@ -485,6 +509,8 @@ slug: engineering-notes
 
 ### REQ-WS-014 — Git-backed space: write, commit, push/pull sync
 
+> **Scope: Phase 1 (D-26, D-37).** Full offline editing with queued commits and push-on-reconnect (D-4/D-5 approved). A rejected push falls back to "push to a new branch" (D-30); opening PRs from the app is later. Delegating sync to a daemon is later (CLI/daemon, D-26).
+
 **Statement.** Edits in a Git-backed space MUST be committed and synced (push/pull) to the remote, by the app, the service worker or the sync daemon.
 
 **Source.** Owner: "git", together with "a daemon that runs to sync changes to the remotes".
@@ -510,6 +536,8 @@ slug: engineering-notes
 
 ### REQ-WS-015 — Google Drive backend
 
+> **Scope: later (D-26).** Google Drive backend and its login are deferred with no phase yet.
+
 **Statement.** A space MUST be able to be stored in a Google Drive folder, using Google sign-in, under the same `StorageBackend` contract.
 
 **Source.** Owner: "gdrive".
@@ -530,6 +558,8 @@ slug: engineering-notes
 
 ### REQ-WS-016 — SFTP backend
 
+> **Scope: later (D-26).** SFTP backend is deferred with no phase yet.
+
 **Statement.** A space MUST be able to be stored on an SFTP server. Browsers cannot open SSH sockets, so SFTP MUST be served by the packaged app or the local daemon, and browser and PWA clients MUST reach it through the daemon.
 
 **Source.** Owner ("sftp"), plus the platform constraint above.
@@ -549,6 +579,8 @@ slug: engineering-notes
 **Related:** none.
 
 ### REQ-WS-017 — Backend availability matrix per platform
+
+> **Scope: Phase 1 (D-26, D-29).** Only the Phase 1 backends (IndexedDB, File System Access, native fs, GitHub) are offered; Google Drive, SFTP, VS Code and CLI/daemon columns are later.
 
 **Statement.** The docs MUST include a matrix of which backends are available on each platform. The UI SHOULD offer only the backends available on the current platform.
 
@@ -581,6 +613,8 @@ slug: engineering-notes
 
 ### REQ-WS-018 — .cept/ metadata directory conventions
 
+> **Scope: Phase 1 (D-26).** The `databases/` subfolder is Phase 2 (D-36). Comments are stored inline in pages (D-34), so no `comments/` directory is needed.
+
 **Statement.** Cept-managed metadata MUST live under a documented layout (`.cept/` with `databases/`, `assets/`, `templates/` and any state files, plus the `space.cept.yaml` marker). Every file Cept writes MUST be listed in the spec, with a note saying whether it is shared space content or per-device state that must not sync.
 
 **Source.** Existing spec (SPECIFICATION.md §4.6; CLAUDE.md rule 10).
@@ -604,6 +638,8 @@ slug: engineering-notes
 
 ### REQ-WS-019 — Opening an existing folder is non-destructive
 
+> **Scope: Phase 1 (D-26).**
+
 **Statement.** Opening an existing folder or repo as a space MUST NOT create, modify or overwrite user files. Cept may add only its marker file and metadata directory, and only with consent, and it MUST NOT overwrite an existing config.
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.6; CLAUDE.md rule 11).
@@ -624,6 +660,8 @@ slug: engineering-notes
 
 ### REQ-WS-020 — Backend upgrade/switch path
 
+> **Decided (D-29).** Backend switching is limited to "publish a local/browser space to a new GitHub repo". Scope: Phase 1.
+
 **Statement.** A space SHOULD be movable between backends (browser to folder, browser to Git, folder to Git, and so on).
 
 **Source.** Existing spec (SPECIFICATION.md §5.10.5).
@@ -642,6 +680,8 @@ slug: engineering-notes
 **Related:** [#24](https://github.com/nsheaps/cept/pull/24).
 
 ### REQ-WS-021 — Detect .git in an opened folder
+
+> **Scope: Phase 1 (D-30).** `.git` detection is in scope; history and sync capabilities follow D-31.
 
 **Statement.** When an opened space folder contains `.git/`, Cept SHOULD add git capabilities (history and sync) on top of the folder backend.
 
@@ -662,6 +702,8 @@ slug: engineering-notes
 **Related:** none.
 
 ### REQ-WS-022 — Consistent terminology: "space" adopted (D-1)
+
+> **Scope: Phase 1 (D-26).**
 
 > **Status: decided (D-1).** The canonical term is **"space"** (matching the UI's `SpaceManager`, `AddSpaceWizardModal`, and commit d572437 "rename workspace to space", cited in `.claude/prompts/continue.md`). Code identifiers `WorkspaceConfig` and `cept-workspace` DB name remain unchanged for stability; they are considered legacy code names, not user-visible terms.
 
@@ -693,15 +735,15 @@ slug: engineering-notes
 
 1. **Config location.** `space.cept.yaml` as the space-level config competes with three others: `.cept/config.yaml` (code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `space.cept.yaml` is the only space-level config; the others are retired with migration.
 2. **`.yaml` vs `.yml` precedence.** If both `space.cept.yaml` and `space.cept.yml` exist in the same folder, is that an error, or does `.yaml` win with a warning?
-3. **Nesting depth counting (deferred).** When nesting is undeferred: is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
-4. **Nested space semantics (deferred).** When undeferred: can a child space use a different backend or remote from its parent? Do links, search, graph and databases cross the boundary?
-5. **Folder-as-tree migration.** Existing users have flat `pages/page-<ts>.md` plus `workspace-state.json`. What migration is required?
-6. **Meaning of "locally (browser only)".** IndexedDB only, or does it also cover real folders through the File System Access API (REQ-WS-012)?
-7. **Backend list.** The owner listed local-app, local-browser, git, gdrive and sftp. The UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
-8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_
+3. **Nesting depth counting (deferred, later per D-26).** When nesting is undeferred: is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
+4. **Nested space semantics (deferred, later per D-26).** When undeferred: can a child space use a different backend or remote from its parent? Do links, search, graph and databases cross the boundary?
+5. **Folder-as-tree migration.** Existing users have flat `pages/page-<ts>.md` plus `workspace-state.json`. What migration is required? _(Answered D-30: legacy flat-space migration is in scope for Phase 1.)_
+6. **Meaning of "locally (browser only)".** IndexedDB only, or does it also cover real folders through the File System Access API (REQ-WS-012)? _(Answered D-29: both are Phase 1 backends.)_
+7. **Backend list.** _(Partly answered D-26/D-29: Phase 1 = IndexedDB, desktop folder, File System Access, GitHub; Google Drive and SFTP are later; S3 and URL not addressed.)_ The owner listed local-app, local-browser, git, gdrive and sftp. The UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
+8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_ _(Answered D-37: in Phase 1 the app owns sync, with queued offline commits and push-on-reconnect; daemon is later.)_
 9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
 10. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `space.cept.yaml` use for future fields?
-11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md).
+11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; the Phase 1 browser git transport is still awaiting the owner.)_
 12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
 13. **Per-folder `.cept.yaml` (PR #67).** PR #67 adds a per-folder `.cept.yaml` for hide lists and similar folder-scoped options. This is out of scope while nesting is deferred (D-3). Revisit when REQ-WS-005 is undeferred.
 

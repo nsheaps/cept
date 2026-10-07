@@ -2,6 +2,8 @@
 
 **Status:** Draft, 2026-10-06 · **Area IDs:** `REQ-CLI-NNN`
 
+> **Scope (D-26): all REQ-CLI requirements are deferred ("later") except REQ-CLI-011, which is Phase 2** (static rendering and docs site).
+
 This document sets the requirements for the Cept command-line tool (`cept`), the long-running local sync daemon it hosts, the local client protocol that lets the VS Code extension, PWA and desktop app share one daemon, and the `cept render` static-site command. Each requirement is checked against the code, open PRs and documentation as of the date above. Today the repo has **no CLI, no daemon, no local daemon API and no render command**. Some of the building blocks exist as unwired library code in `@cept/core`.
 
 **Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Spaces & storage](03-spaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [06 VS Code extension](06-vscode-extension.md) · [07 Native apps](07-native-apps.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · Original spec: [docs/SPECIFICATION.md](../../SPECIFICATION.md) · Task list: [TASKS.md](../../../TASKS.md)
@@ -131,6 +133,8 @@ flowchart LR
 
 ### REQ-CLI-001 — Cept CLI executable
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
+
 **Statement.** The project MUST ship a `cept` command-line executable, written in Bun/TS and packaged as its own Nx project (e.g. `packages/cli`). At minimum it needs subcommands for daemon control and static-site rendering. It SHOULD be distributable as a compiled single binary (`bun build --compile`).
 
 **Rationale / source.** Handler: "A cli". The daemon and render command both live in it.
@@ -151,6 +155,8 @@ flowchart LR
 **Related PRs/issues.** None. An issue search returned 0 results and no open PR touches this.
 
 ### REQ-CLI-002 — Long-running sync daemon
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
 
 **Statement.** `cept daemon` (`start` / `stop` / `status`) MUST run a long-lived background process. It watches one or more registered spaces on the local filesystem and syncs changes to each space's configured remote(s) without the UI being open.
 
@@ -174,6 +180,8 @@ flowchart LR
 
 ### REQ-CLI-003 — Watch-to-commit pipeline
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
+
 **Statement.** The daemon MUST turn filesystem change events from a space into batched commits (debounced, honouring exclude patterns) for git-backed spaces. For non-git remotes it MUST produce the equivalent upload unit.
 
 **Rationale / source.** Derived. This makes REQ-CLI-002 concrete.
@@ -194,6 +202,8 @@ flowchart LR
 **Related PRs/issues.** [#48](https://github.com/nsheaps/cept/issues/48).
 
 ### REQ-CLI-004 — Pull/push sync loop with conflict handling
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet. The in-app `SyncEngine` pull/push/conflict logic is Phase 1 under REQ-WEB/REQ-WS (D-5, D-37).
 
 **Statement.** For each space remote, the daemon MUST run a pull-then-push cycle both periodically and on change. The cycle needs retry/backoff, offline detection and queued replay on reconnect. Conflicts MUST be surfaced to clients, never silently lost.
 
@@ -216,6 +226,8 @@ flowchart LR
 
 ### REQ-CLI-005 — Daemon supports all remote kinds
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet. Google Drive and SFTP remotes are also deferred (D-26), and Phase 1 hosts are GitHub only (D-29).
+
 **Statement.** Daemon sync MUST be remote-agnostic. It goes through a remote/transport interface covering git, Google Drive and SFTP remotes, and uses credentials obtained via the shared auth flows (GitHub app / Google / PAT; see [09-remotes-and-auth.md](09-remotes-and-auth.md)).
 
 **Rationale / source.** Derived from the handler's storage list ("git, gdrive, sftp") combined with "daemon syncs changes to the remotes".
@@ -235,6 +247,8 @@ flowchart LR
 **Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) touches git-space remote handling (UI clone only).
 
 ### REQ-CLI-006 — Local client protocol for daemon sharing
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
 
 **Statement.** The daemon MUST expose a versioned, documented local API, e.g. HTTP + WebSocket bound to `127.0.0.1` and/or a Unix socket or named pipe. The API covers listing and registering spaces, reading and writing files, subscribing to change events, sync status and conflict events, and triggering a sync. Multiple clients (VS Code extension, PWA, desktop app) MUST be able to share one daemon concurrently.
 
@@ -257,6 +271,8 @@ flowchart LR
 
 ### REQ-CLI-007 — Daemon discovery and fallback from PWA/browser
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
+
 **Statement.** The PWA and browser UI MUST detect a reachable local daemon (well-known localhost port plus handshake) and use it for persistence and sync when present. Otherwise they MUST fall back to in-browser storage with service-worker-driven sync.
 
 **Rationale / source.** Handler: PWA "can share local daemon, otherwise uses service worker".
@@ -277,6 +293,8 @@ flowchart LR
 **Related PRs/issues.** None.
 
 ### REQ-CLI-008 — Daemon security for localhost API
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
 
 **Statement.** The local daemon API MUST authenticate clients (per-install token or a pairing flow), restrict CORS/`Origin` to known Cept origins and VS Code webview origins, bind only to loopback, and never expose remote credentials to clients.
 
@@ -299,6 +317,8 @@ flowchart LR
 
 ### REQ-CLI-009 — Space discovery in the daemon
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet. In-app autodiscovery of spaces is Phase 1 under REQ-WS (D-30).
+
 **Statement.** The daemon MUST discover space roots through `space.cept.yaml` / `space.cept.yml`, including several sibling spaces in subfolders of one repo or folder (D-2). It MUST sync each space without double-syncing shared content. Nested spaces are deferred (D-3): discovery does not descend into a found space.
 
 **Rationale / source.** Derived from the owner's space model (D-1, D-2, D-3) applied to the daemon.
@@ -318,6 +338,8 @@ flowchart LR
 **Related PRs/issues.** None.
 
 ### REQ-CLI-010 — `cept render` static site command
+
+> **Status: deferred (D-26).** The CLI is deferred, with no phase assigned yet. The static renderer itself is Phase 2 (REQ-SSG, D-26); this command would wrap it.
 
 **Statement.** The CLI MUST provide a command, e.g. `cept render <space> --out <dir>`, that produces the static, read-only site assets for a space. The output conforms to the static output contract in [02-static-rendering.md](02-static-rendering.md) and is suitable for upload to any static host.
 
@@ -340,6 +362,8 @@ flowchart LR
 
 ### REQ-CLI-011 — Render command exercised by Cept docs site e2e
 
+> **Scope: Phase 2 (D-26).** Static rendering and the docs site are Phase 2. Until then the in-app docs stay as bundled today. If the CLI is not yet built in Phase 2, the docs pipeline may invoke the shared renderer directly instead of `cept render`; settle this when Phase 2 starts.
+
 **Statement.** Cept's own docs site deployment MUST be produced by the same `cept render` pipeline, so the docs deploy acts as the e2e test of static site generation.
 
 **Rationale / source.** Handler: "Cept's own docs site is a static site deployment, which e2e tests the static site generation workflow".
@@ -359,6 +383,8 @@ flowchart LR
 **Related PRs/issues.** PR [#67](https://github.com/nsheaps/cept/pull/67) (docs as a real remote space) is a precursor.
 
 ### REQ-CLI-012 — CLI one-shot sync/status commands
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
 
 **Statement.** The CLI SHOULD provide one-shot commands (`cept sync`, `cept status`) that run a single sync cycle or report status. They run either directly or via the running daemon, for scripting and CI use.
 
@@ -380,6 +406,8 @@ flowchart LR
 
 ### REQ-CLI-013 — MCP server surface (existing plan)
 
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
+
 **Statement.** If the planned MCP server (P8.1-P8.3) is built, it SHOULD be hosted by the CLI/daemon (e.g. `cept mcp`) and reuse the daemon's space access rather than being a separate runtime.
 
 **Rationale / source.** Existing plan ([TASKS.md](../../../TASKS.md) lines 247-249; [roadmap.md](../../content/reference/roadmap.md) lines 133-151). The placement is derived.
@@ -398,6 +426,8 @@ flowchart LR
 **Related PRs/issues.** None.
 
 ### REQ-CLI-014 — CLI/daemon CI coverage
+
+> **Status: deferred (D-26).** The CLI and daemon are deferred, with no phase assigned yet.
 
 **Statement.** The CLI and daemon MUST have unit tests and integration tests (temp space plus a local bare git remote) that run in CI scoped to affected projects. They MUST also have a compiled-binary smoke test, mirroring the qontacts `server:smoke` pattern.
 
@@ -422,14 +452,14 @@ flowchart LR
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **"Client-only, no daemon" principle versus the daemon requirement.** **Decided (D-4):** Client-only framing retired. The app MUST work fully without a daemon; the daemon is optional and adds background sync and shared access. [docs/SPECIFICATION.md](../../SPECIFICATION.md) line 43 and [README.md](../../../README.md) line 3 need updating.
-2. **Runtime drop-in renderer versus build-time `cept render`.** The roadmap ([roadmap.md](../../content/reference/roadmap.md) lines 155-160) and [continue.md](../../../.claude/prompts/continue.md) (around lines 455-459) specify a `<script>` renderer with "zero build step". The handler wants a CLI that generates static assets. _Decide:_ support both (the same renderer bundle used at build time and at runtime), or drop the runtime model.
+2. **Runtime drop-in renderer versus build-time `cept render`.** _Phase 2 with static rendering (D-26); not decided yet._ The roadmap ([roadmap.md](../../content/reference/roadmap.md) lines 155-160) and [continue.md](../../../.claude/prompts/continue.md) (around lines 455-459) specify a `<script>` renderer with "zero build step". The handler wants a CLI that generates static assets. _Decide:_ support both (the same renderer bundle used at build time and at runtime), or drop the runtime model.
 3. **Terminology.** **Decided (D-1):** "space" is the canonical term; `space.cept.ya?ml` marks the space root; daemon registry uses "space" throughout.
 4. **Where sync lives.** **Decided (D-4+D-5):** `SyncEngine` in `@cept/core`; service worker = offline caching + queued-write flushing only (~30 s lifetime); SharedWorker owns the live sync loop when no daemon is present; daemon is optional and additive. The in-app path runs `SyncEngine` in the SharedWorker, not the page thread.
 5. **`node:fs` in `@cept/core`.** [CLAUDE.md](../../../CLAUDE.md) architecture rule 1 forbids it, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) imports `node:fs`, and [packages/web/vite.config.ts](../../../packages/web/vite.config.ts) (around lines 10-30) stubs `node:*` to cope. _Proposed:_ move `LocalFsBackend` and the Node-side transports into a platform package (e.g. `packages/cli` or `packages/daemon`).
 6. **isomorphic-git ownership.** CLAUDE.md rule 5 (only `GitBackend` may import isomorphic-git) is violated by [App.tsx](../../../packages/ui/src/components/App.tsx), which dynamically imports `isomorphic-git/http/web` (lines 354, 456 and 965) to build the HTTP client it passes in. [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) itself complies: it goes through `GitBackend` from `@cept/core`. _Decide:_ should the daemon-side git be the single owner of git transport whenever a daemon is present?
 7. **Transport abstraction.** The engines are typed to `GitStorageBackend` only, but gdrive and sftp are required. What is the unit of sync for non-git remotes (file-level last-writer-wins, manifest diff, or CRDT snapshots)?
-8. **VS Code for Web.** The browser-hosted VS Code cannot reach a localhost daemon. Is in-extension sync acceptable there (see [06-vscode-extension.md](06-vscode-extension.md))?
-9. **Daemon and Yjs.** Should the daemon also relay Yjs updates between local clients, or is that always the signaling server's job (see [04-collaboration.md](04-collaboration.md))?
+8. **VS Code for Web.** _Moot while the VS Code extension is deferred (D-26)._ The browser-hosted VS Code cannot reach a localhost daemon. Is in-extension sync acceptable there (see [06-vscode-extension.md](06-vscode-extension.md))?
+9. **Daemon and Yjs.** _Moot while co-editing and the daemon are deferred (D-26)._ Should the daemon also relay Yjs updates between local clients, or is that always the signaling server's job (see [04-collaboration.md](04-collaboration.md))?
 10. **Credential storage.** OS keychain (via which library under Bun?) or an encrypted file, and how it is shared with the desktop app.
 
 ## Stale documentation

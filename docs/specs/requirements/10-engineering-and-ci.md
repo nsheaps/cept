@@ -122,6 +122,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-001 — Monorepo orchestrated by Nx
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** The repository MUST be an Nx-orchestrated monorepo in which every workspace package is an Nx project with the standard targets defined (`build`, `test:unit`/`test`, `lint`, `typecheck`, and `test:integration` where relevant), so that `nx run-many` and `nx affected` cover every package.
 
 **Source:** handler ("mono repo setup matching other nsheaps repos using nx and mise").
@@ -149,6 +151,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-002 — Nx project tags and module-boundary enforcement
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Each package SHOULD declare Nx tags (`scope:*`, `platform:*`), and lint MUST enforce `@nx/enforce-module-boundaries`. CI then checks the architecture rules in [CLAUDE.md](../../../CLAUDE.md) (for example, "`@cept/ui` and `@cept/core` must never import platform-specific modules"), as qontacts does.
 
 **Source:** derived (matching other nsheaps repos; makes CLAUDE.md architecture rule 1 enforceable).
@@ -166,6 +170,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Add tags, the boundary lint rule and a gate test. Until then, correct the CONTRIBUTING claim.
 
 ### REQ-ENG-003 — mise pins all tools exactly
+
+> **Scope: Phase 1 (D-38).** Engineering prerequisite: mise pins and tasks are needed for reproducible CI.
 
 **Statement:** `.mise.toml` MUST pin every tool CI uses (bun, node, and linters/scanners such as actionlint, shellcheck, gitleaks and osv-scanner) to an exact version. Renovate bumps the pins.
 
@@ -185,6 +191,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-004 — mise tasks are the single entry point for CI and local
 
+> **Scope: Phase 1 (D-38).** Engineering prerequisite: the mise task layer is part of fixing CI.
+
 **Statement:** Install, lint, format, typecheck, test, build, e2e, screenshot, release-preview and deploy steps MUST be defined as mise tasks. Workflow YAML MUST stay thin, calling `mise run <task>` and putting non-trivial logic in `scripts/ci/`, so CI can be reproduced locally with `mise run check`.
 
 **Source:** handler ("mono repo setup matching other nsheaps repos using nx and mise").
@@ -203,6 +211,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-005 — Reusable workflow structure
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** CI SHOULD be composed of reusable `_*.yml` (`workflow_call`) workflows orchestrated by `ci.yml` and `cd.yml` (plus a manual `release.yml`), and SHOULD include the org-standard set: `_lint`, `_typecheck`, `_test-*`, `_build`, `_security`, `_deploy-docs`, `pr-title`.
 
 **Source:** derived (matching other nsheaps repos).
@@ -220,6 +230,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Update SPEC §3/§9 and the README badge to the real workflow set, and add the missing workflows.
 
 ### REQ-ENG-006 — Automated formatting fixes in CI
+
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
 
 **Statement:** CI MUST run the formatters (Prettier, and `eslint --fix` where safe) on pull requests, commit any fixes back to the PR branch with the automation App token, and leave the final commit clean (`prettier --check` and lint pass).
 
@@ -240,6 +252,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-007 — Lint covers every auto-checkable file type
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Lint SHOULD cover all TS/TSX in the repo (packages, `e2e/`, `features/`, `scripts/`, root configs, docs sources), plus Markdown (markdownlint), workflow YAML (actionlint) and shell scripts (shellcheck).
 
 **Source:** derived (REQ-ENG-006 / qontacts parity).
@@ -256,6 +270,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Expand ESLint scope and add the three linters via mise.
 
 ### REQ-ENG-008 — PR unit tests scoped to affected projects
+
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
 
 **Statement:** On pull requests, unit and integration tests MUST run only for Nx projects affected by the change (`nx affected -t test:unit --base=<PR base sha>`). Pushes to `main` MUST run the full suite (`nx run-many`).
 
@@ -277,6 +293,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-009 — Typecheck and build per project
 
+> **Scope: Phase 1 (D-28, D-38).** Artifacts for later or Phase 2 packages (CLI, VS Code extension, signaling server, docs site) are built when those packages are scheduled. **Decided (D-28).** Native CI builds: desktop macOS dmg (arm64 + x64), Windows NSIS x64, Linux AppImage + deb x64 (Electrobun updater fed from GitHub Releases); Android APK; iOS built in CI for the simulator only (distribution waits for an Apple Developer account). Distribution channel is GitHub Releases only; signing is optional and emits `::warning::` when secrets are missing. The Android item is not done until release signing/publishing secrets exist. Store submissions are later.
+
 **Statement:** Typecheck and build MUST run for every project via Nx and fail on any error. Build MUST produce real artifacts for each deliverable package (web bundle, desktop installers, mobile apps, signaling server, CLI, VS Code extension, docs site). CD jobs MUST fail, not warn, when an expected artifact is missing.
 
 **Source:** derived (from the handler's monorepo and packaged-app requirements).
@@ -296,6 +314,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-010 — Base implementation in Bun and TypeScript strict
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** All code MUST be TypeScript in strict mode (no `any`, no `@ts-ignore`) and MUST use Bun as runtime and package manager wherever possible (`bunx` rather than `npx`; frozen lockfile in CI).
 
 **Source:** handler ("base code implementation using bun/ts where possible").
@@ -314,6 +334,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-011 — Dependencies declared per package
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Each package SHOULD declare its own runtime dependencies, exactly pinned, in its own `package.json`, so the Nx project graph and lockfile-based affected detection are accurate.
 
 **Source:** derived (needed for REQ-ENG-008 to be correct).
@@ -331,6 +353,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Move dependencies into the packages that own them, with exact pins.
 
 ### REQ-ENG-012 — Automated version/release flow from conventional commits
+
+> **Scope: Phase 1 (D-28).** **Decided (D-28).** GitHub Releases is the only distribution channel; store submissions are later.
 
 **Statement:** Merges to `main` MUST compute the next semver from conventional commits, update `CHANGELOG.md`, tag `vX.Y.Z` and create a GitHub Release. PRs MUST show the projected version and MUST have their title validated as a conventional commit.
 
@@ -360,6 +384,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-013 — Dependency updates via Renovate
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Renovate MUST keep dependencies current using the shared org preset, and every Renovate PR MUST run full CI plus a preview deploy.
 
 **Source:** existing spec ([SPECIFICATION.md](../../SPECIFICATION.md) §9.0).
@@ -378,6 +404,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-014 — PR preview deployments of the app
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Every PR MUST deploy the built web app to GitHub Pages at `/cept/pr-<N>/`, post the URL as a sticky comment, and remove the deployment when the PR closes. The preview build MUST use the same Nx/mise build as production.
 
 **Source:** existing spec ([SPECIFICATION.md](../../SPECIFICATION.md) §9.1.1). See also [REQ-WEB-019](01-browser-app-and-pwa.md#req-web-019--pr-preview-deployments).
@@ -395,6 +423,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Refresh the SPEC snippet, build through Nx/mise, and handle fork PRs.
 
 ### REQ-ENG-015 — GitHub Pages production deployment of the app
+
+> **Scope: Phase 1 (D-27).** **Decided (D-27, D-26).** Production app = GitHub Pages (`nsheaps.github.io/cept/app`) + PWA; no custom domain. Generating the bundled read-only docs space (REQ-WEB-018) is Phase 2, so `scripts/generate-live-docs.sh` is wired or deleted then.
 
 **Statement:** CI MUST deploy the web app to GitHub Pages (`/cept/app/`), configured for the demo space and the bundled read-only docs space. The site root MUST redirect to the app (or to a landing page linking the app and the docs site).
 
@@ -417,6 +447,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-016 — Docs site built and deployed as a static site by CI
 
+> **Scope: Phase 2 (D-26).** Static rendering, SSG and the docs site are Phase 2 (depends on REQ-CLI-011, which is also Phase 2).
+
 **Statement:** CI MUST build Cept's own documentation (`docs/content/`) as a static site using Cept's own static render command (`cept render`, see [REQ-CLI-010](05-cli-and-daemon.md#req-cli-010--cept-render-static-site-command)) and deploy it to GitHub Pages. The pipeline MUST verify the generated output (link check plus Playwright smoke on the built site), so it works as the end-to-end test of static site generation.
 
 **Source:** handler ("Cept's own docs site is a static site deployment, which e2e tests the static site generation workflow"). See also [REQ-SSG-013](02-static-rendering.md#req-ssg-013--cept-docs-site-is-generated-by-cepts-own-static-site-generation), [REQ-SSG-014](02-static-rendering.md#req-ssg-014--docs-site-deployed-as-a-static-site) and [REQ-SSG-015](02-static-rendering.md#req-ssg-015--docs-site-deployment-e2e-tests-static-site-generation).
@@ -436,6 +468,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-017 — E2E and screenshot automation healthy and gating
 
+> **Scope: Phase 1 (D-38).** Fixing the red e2e/screenshots CI is an engineering prerequisite.
+
 **Statement:** Playwright E2E MUST pass in CI and gate releases. Screenshot capture MUST update `docs/screenshots/` automatically on `main` only when pixels change. The Playwright browser image MUST match the pinned `@playwright/test` version.
 
 **Source:** existing spec ([CLAUDE.md](../../../CLAUDE.md) Testing Requirements; [.claude/rules/ui-screenshot-evidence.md](../../../.claude/rules/ui-screenshot-evidence.md); TASKS.md P2.4f).
@@ -453,6 +487,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Align the Playwright image tag, cache key and comments with 1.63.0 (or derive them from `package.json`), get e2e green, and make it a required check (REQ-ENG-020).
 
 ### REQ-ENG-018 — Security scanning in CI
+
+> **Scope: Phase 1 (D-38).** The secret scanner is an engineering prerequisite; the remaining scanners only as needed.
 
 **Statement:** CI SHOULD run secret scanning (gitleaks), dependency vulnerability scanning (osv-scanner on `bun.lock`) and licence policy checks, as other nsheaps repos do.
 
@@ -472,6 +508,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 
 ### REQ-ENG-019 — Git workflow matches repo rulesets
 
+> **Scope: Phase 1 (D-38).** Kept as needed for the Phase 1 build and CI.
+
 **Statement:** Contributor and agent workflow docs MUST describe the workflow that the branch rulesets enforce: PRs required on `main` (currently with zero required approvals). Docs-only changes MAY be pushed directly to `main` by the automation App; functional changes (code, CI) MUST go through small, reviewable PRs.
 
 > **Owner direction (D-21):** Docs-only changes are pushed directly to `main` without review; functional changes (code, CI) go through small, reviewable PRs. `require-1-review` remains disabled.
@@ -490,6 +528,8 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 **Gap:** Rewrite the CLAUDE.md Repository/Session Resume sections and the SPEC to a PR-based flow.
 
 ### REQ-ENG-020 — CI checks gate merges to `main`
+
+> **Scope: Phase 1 (D-38).** Making CI green and gating is part of fixing CI.
 
 **Statement:** The default-branch rulesets MUST require the CI checks (lint, typecheck, unit, integration, e2e, build, and, once they exist, security and PR title) to pass before a PR merges, so that `main` stays green and `tag-release` can run. Renovate automerge MUST only merge PRs whose required checks are green.
 
@@ -515,7 +555,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 2. **Lint = ESLint + Prettier.** CLAUDE.md, CONTRIBUTING.md (line 36) and SPEC §9.1 make this claim, but nothing runs Prettier. Is Prettier the formatter of record (REQ-ENG-006), or should another formatter (for example Biome) be adopted?
 3. **Affected testing.** `nx affected -t test` is advertised, but only core and ui have test targets and CI never uses affected. Accept the per-project Vitest split that REQ-ENG-008 requires?
 4. **Desktop shell — Decided (D-17).** **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed from scope; mobile shells use Capacitor (iOS, Android). See [REQ-APP-007](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
-5. **Docs site generator.** SPEC §9.5, CLAUDE.md and TASKS.md T9.1 claim VitePress/Starlight. The handler requires Cept's own render command (REQ-ENG-016). Confirm that VitePress/Starlight is dropped.
+5. **Docs site generator. Deferred to Phase 2 (D-26).** SPEC §9.5, CLAUDE.md and TASKS.md T9.1 claim VitePress/Starlight. The handler requires Cept's own render command (REQ-ENG-016). Confirm that VitePress/Starlight is dropped.
 6. **Node version.** `.mise.toml` has node 24, while SPEC §9.6 says 22.x and `engines` says `>=22`. Which exact version should be pinned? Exact pins also contradict the current floating `bun = "1"`.
 7. **Workflow set.** SPEC lists `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. The repo has `ci.yml` + `_*.yml`, `cd.yml`, `release.yml`, `preview-deploy.yml` and `pr-version-check.yml`. Adopt the actual set (qontacts-style) and update the SPEC?
 8. **Pages deploy trigger.** Deploy the app only on release tags (current), or on every push to `main` (SPEC §9.3)?

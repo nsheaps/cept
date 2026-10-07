@@ -174,6 +174,8 @@ sequenceDiagram
 
 ### REQ-APP-001 — Windows packaged app
 
+> **Scope: Phase 1 (D-28).** Windows NSIS installer, x64, built with Electrobun and attached to GitHub Releases.
+
 **Statement:** Cept MUST be distributed as an installable Windows desktop application, in at least one installer format such as NSIS `.exe` or `.msi`, that runs the Cept browser component in a native window.
 
 **Source:** Handler ("A packaged app distributed for windows/macos/linux/android/ios").
@@ -205,6 +207,8 @@ sequenceDiagram
 
 ### REQ-APP-002 — macOS packaged app
 
+> **Scope: Phase 1 (D-28).** macOS `.dmg` for both arm64 and x64 (per-arch or universal), built with Electrobun.
+
 **Statement:** Cept MUST be distributed as an installable macOS application (`.dmg`, universal or per-arch) that runs the Cept browser component natively.
 
 **Source:** Handler.
@@ -233,6 +237,8 @@ sequenceDiagram
 
 ### REQ-APP-003 — Linux packaged app
 
+> **Scope: Phase 1 (D-28).** Linux AppImage plus `.deb`, x64. `.rpm` and `.snap` are not required in Phase 1.
+
 **Statement:** Cept MUST be distributed as an installable Linux desktop application: at least an AppImage, with `.deb`/`.rpm` as derived formats per SPECIFICATION §8.2.
 
 **Source:** Handler.
@@ -252,6 +258,8 @@ sequenceDiagram
 **Related:** TASKS P6.3.
 
 ### REQ-APP-004 — Android packaged app
+
+> **Scope: Phase 1 (D-28), not done until release signing/publishing secrets exist.** The APK build is in Phase 1, but this requirement is not complete until the Android signing and publishing secrets are configured. Play Store `.aab` upload is later (store submissions, D-28).
 
 **Statement:** Cept MUST be distributed as an Android application that wraps the Cept browser component via Capacitor: an `.apk` for sideloading and GitHub Releases, and an `.aab` for the Play Store.
 
@@ -278,6 +286,8 @@ sequenceDiagram
 
 ### REQ-APP-005 — iOS packaged app
 
+> **Scope: Phase 1 build only (D-28).** iOS builds in CI (simulator build and smoke test) in Phase 1. Signed `.ipa`, TestFlight and App Store distribution wait for an Apple Developer account and are later.
+
 **Statement:** Cept MUST be distributed as an iOS application (`.ipa` via TestFlight/App Store) that wraps the Cept browser component via Capacitor.
 
 **Source:** Handler.
@@ -297,6 +307,8 @@ sequenceDiagram
 **Related:** TASKS P6.6, P6.7.
 
 ### REQ-APP-006 — Native shells reuse the single browser component
+
+> **Scope: Phase 1.**
 
 **Statement:** Every packaged app, desktop and mobile, MUST render the same `@cept/ui` browser component built by `@cept/web`, with no forked UI code. Platform-specific behavior MUST be reached only through a bridge abstraction.
 
@@ -319,6 +331,8 @@ sequenceDiagram
 
 ### REQ-APP-007 — Desktop shell runtime selection (Bun/TS where possible)
 
+> **Scope: Phase 1 (D-28).** Electrobun is also the runtime for the updater (REQ-APP-014).
+
 **Statement:** The desktop shell runtime MUST be chosen and documented.
 
 > **Owner direction (D-17):** Electrobun is the desktop shell runtime on all desktop OSes (macOS, Windows, Linux); Electron is removed from scope. Mobile shells use Capacitor (iOS, Android).
@@ -340,6 +354,8 @@ sequenceDiagram
 **Related:** TASKS P6.4.
 
 ### REQ-APP-008 — Unified native bridge abstraction
+
+> **Scope: Phase 1.** The VS Code webview host part is later with the VS Code extension (REQ-VSC, D-26).
 
 **Statement:** A single typed native-shell abstraction (SPECIFICATION §8.5 `NativeShell`) SHOULD cover desktop and mobile capabilities, with a web fallback, so the UI is runtime-agnostic. The capabilities are dialogs, menus, notifications, clipboard, `openExternal`, OAuth popup, secure storage, and update check/install.
 
@@ -364,6 +380,8 @@ sequenceDiagram
 **Related:** TASKS P6.1, P6.2.
 
 ### REQ-APP-009 — App-only local space storage
+
+> **Scope: Phase 1 for desktop (D-29).** The desktop local-folder backend is a Phase 1 backend. Mobile app-sandbox storage is not named in D-29; the owner has not placed a mobile filesystem backend in Phase 1 beyond what the Android/iOS builds need.
 
 **Statement:** Packaged apps MUST be able to open or create a space in a native local folder ("stored locally (app only)") through a native folder dialog. All persistence still goes through `StorageBackend`.
 
@@ -391,6 +409,8 @@ sequenceDiagram
 
 ### REQ-APP-010 — Packaged app integrates with the local sync daemon
 
+> **Scope: later (D-26).** The CLI/daemon is later, so packaged apps use in-process sync. This answers open question 12.
+
 **Statement:** Desktop packaged apps SHOULD bundle or connect to the same local CLI sync daemon used by the PWA and the VS Code extension, rather than running a separate sync stack. Mobile apps fall back to in-app sync.
 
 **Source:** Derived from the handler ("a daemon that runs to sync changes to the remotes"; the PWA and VS Code plugin "share local daemon").
@@ -410,6 +430,8 @@ sequenceDiagram
 **Related:** none. See [05 REQ-CLI-002](05-cli-and-daemon.md#req-cli-002--long-running-sync-daemon) and [01 REQ-WEB-010](01-browser-app-and-pwa.md#req-web-010--pwa-shares-local-daemon-when-present).
 
 ### REQ-APP-011 — Release pipeline builds per-platform artifacts
+
+> **Scope: Phase 1 (D-28).** Artifacts: macOS dmg (arm64+x64), Windows NSIS x64, Linux AppImage + deb x64, Android APK, iOS simulator build (no distributable iOS artifact until an Apple Developer account exists).
 
 **Statement:** On every version tag, CI MUST build installable artifacts for Windows, macOS, Linux, Android and iOS. A job MUST fail if an expected artifact is missing.
 
@@ -439,6 +461,8 @@ sequenceDiagram
 
 ### REQ-APP-012 — Artifacts attached to GitHub Releases
 
+> **Scope: Phase 1 (D-28).** GitHub Releases is the only distribution channel in Phase 1. The iOS item in the acceptance criteria is limited to the CI simulator build until an Apple Developer account exists.
+
 **Statement:** Release artifacts for all five platforms MUST be attached to the corresponding GitHub Release.
 
 **Source:** Derived.
@@ -458,6 +482,8 @@ sequenceDiagram
 **Related:** none.
 
 ### REQ-APP-013 — Code signing and notarization
+
+> **Decided (D-28).** Signing is optional in Phase 1: when secrets are missing, jobs emit `::warning::` and produce unsigned builds. This supersedes the criterion below that a missing secret fails the release job. Scope: Phase 1; Android release signing secrets are still needed before REQ-APP-004 is done, and iOS signing waits for an Apple Developer account.
 
 **Statement:** Distributed builds MUST be code-signed: macOS Developer ID plus notarization, Windows Authenticode, an Android keystore, and an iOS distribution certificate. Signing secrets are optional at PR time and enforced on release.
 
@@ -480,6 +506,8 @@ sequenceDiagram
 
 ### REQ-APP-014 — Desktop auto-update
 
+> **Scope: Phase 1 (D-28).** Uses the Electrobun updater fed from GitHub Releases.
+
 **Statement:** Desktop packaged apps MUST check for, download and install new versions published to GitHub Releases, choosing the asset that matches the current OS and architecture.
 
 **Source:** Derived from SPECIFICATION §8.5 (`checkForUpdates`/`installUpdate`), TASKS P6.5, and the need for maintained distribution.
@@ -501,6 +529,8 @@ sequenceDiagram
 
 ### REQ-APP-015 — Distribution channels
 
+> **Decided (D-28).** The distribution channel is GitHub Releases only. Store submissions (App Store/TestFlight, Play Store, Homebrew, winget) are later. This answers open question 10 and overrides the store statements below for Phase 1. Scope: Phase 1 (GitHub Releases).
+
 **Statement:** Packaged apps MUST be published to defined channels: GitHub Releases for all desktop builds and the Android APK, the Apple App Store/TestFlight for iOS, and the Google Play Store for Android (AAB). The choice of channels, including optional stores such as a Homebrew cask, winget or the Mac App Store, SHOULD be documented.
 
 **Source:** Derived.
@@ -520,6 +550,8 @@ sequenceDiagram
 **Related:** none.
 
 ### REQ-APP-016 — Native OAuth via deep link for packaged apps
+
+> **Scope: Phase 3 (D-26, D-27).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 auth is PATs only, so no native OAuth flow ships before then.
 
 **Statement:** Packaged apps MUST complete GitHub/Google OAuth through the system browser or an in-app auth session, with a registered app redirect (for example `cept://oauth/callback`) that works with the Cloudflare OAuth proxy.
 
@@ -542,6 +574,8 @@ sequenceDiagram
 
 ### REQ-APP-017 — Desktop OS integration (deep links, tray, menus)
 
+> **Scope: awaiting owner decision.** Tray and menus are not yet placed in a phase; deep links (`cept://`) are Phase 3 (D-26).
+
 **Statement:** Desktop apps SHOULD register the `cept://` protocol and provide native menus and system tray integration, as planned in the roadmap.
 
 **Source:** Existing spec ([roadmap.md](../../content/reference/roadmap.md) lines 109-110).
@@ -561,6 +595,8 @@ sequenceDiagram
 **Related:** TASKS P6.5.
 
 ### REQ-APP-018 — Nx/mise targets for native builds
+
+> **Scope: Phase 1.**
 
 **Statement:** `@cept/desktop` and `@cept/mobile` MUST expose nx targets (`dev`, `build`, `package`) that run the same way locally and in CI, with the required toolchains pinned in mise, following the qontacts reference layout.
 
@@ -588,6 +624,8 @@ sequenceDiagram
 
 ### REQ-APP-019 — PR-time validation of packaging
 
+> **Scope: Phase 1.**
+
 **Statement:** Native packaging SHOULD be validated in PR CI, so release-time breakage is caught early. At minimum, an unsigned build of each affected platform runs when desktop, mobile, ui or web change, scoped with `nx affected`.
 
 **Source:** Derived from the handler ("full CI workflows … which can run in scope in PR") and the qontacts validation-first practice.
@@ -607,6 +645,8 @@ sequenceDiagram
 **Related:** none.
 
 ### REQ-APP-020 — Mobile-specific UI polish
+
+> **Scope: awaiting owner decision.** Mobile-specific UI polish is not yet placed in a phase.
 
 **Statement:** The browser component MUST be usable inside native mobile shells: adequate touch targets, safe-area insets, keyboard avoidance and native gestures.
 
@@ -628,6 +668,8 @@ sequenceDiagram
 **Related:** TASKS P6.8, T7.5; [PR #24](https://github.com/nsheaps/cept/pull/24) (screenshots only); [PR #37](https://github.com/nsheaps/cept/pull/37) (design style guide: touch targets, on-screen keyboard).
 
 ### REQ-APP-021 — Native app versions track releases
+
+> **Scope: Phase 1.**
 
 **Statement:** Packaged app versions (Info.plist, Android `versionCode`/`versionName`, the desktop package version) MUST be bumped from the single release-it version on each release.
 
@@ -655,14 +697,14 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 2. **Desktop runtime — Decided (D-17).** The handler asked for "bun/ts where possible" and named no runtime. CLAUDE.md, README.md line 61, SPECIFICATION.md lines 82-83 and platform-support.md lines 10-12 previously fixed Electrobun for macOS and Electron for Windows/Linux on an unverified premise. **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed; mobile = Capacitor (iOS, Android). See [REQ-APP-007](#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
 3. **One bridge or two.** SPECIFICATION §8.5 defines one `NativeShell` covering `capacitor-ios`/`capacitor-android`. The code has separate `PlatformBridge` and `MobileBridge` with different methods. _Decision:_ unify, or document the split. Should the VS Code webview host share the same interface?
 4. **Release workflow layout.** SPECIFICATION §9.2/§9.4 and continue.md lines 750-752 specify `release-desktop.yml` and `release-mobile.yml`, but the jobs live in `cd.yml`. _Decision:_ split the workflows to match the spec, or update the spec.
-5. **Weakened gates.** `cd.yml` reports success while producing nothing (`if-no-files-found: warn`, `continue-on-error: true`, `|| true`). This is the kind of gate weakening that qontacts' validation-first rule forbids. _Decision:_ adopt the qontacts rule for cept.
-6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. _Decision:_ is a mobile native filesystem backend required for v1?
+5. **Weakened gates — Decided (D-24, D-28).** `cd.yml` reports success while producing nothing (`if-no-files-found: warn`, `continue-on-error: true`, `|| true`). This is the kind of gate weakening that qontacts' validation-first rule forbids. _Decision:_ adopt the qontacts rule for cept.
+6. **Mobile local storage.** The handler's "stored locally (app only)" covers packaged mobile apps, but platform-support.md lines 50-56 say Local Folder is unavailable on mobile and SPECIFICATION.md line 117 defers `CapacitorFsBackend`. _Decision:_ is a mobile native filesystem backend required for v1? **Still open:** D-29 lists only desktop local folder and web File System Access as Phase 1 local backends.
 7. **Terminology — Decided (D-1).** **Decided (D-1):** "space" is the canonical user-facing term throughout; docs and UI use "space"; requirement IDs (REQ-WS-NNN) stay stable; protected code identifiers unchanged (`WorkspaceConfig`, `workspace-state.json`, `cept-workspace`, `vscode.workspace`). See [03 REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 8. **`node:fs` in core.** CLAUDE.md architecture rule 1 forbids `node:fs` in `@cept/core`, yet [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8-10 import it, and that is the backend the desktop app would use. _Decision:_ move it to a platform package, or inject an fs abstraction.
 9. **IPC-returned backend.** `ElectronBridge.createLocalBackend` cannot work over structured-clone IPC. _Decision:_ adopt a renderer-side proxy backend design.
-10. **Store distribution.** SPECIFICATION §9.4 treats Play and TestFlight publishing as optional, while platform-support.md lines 13-14 promise the App Store and Play Store. _Decision:_ required or optional for v1? Is an Apple Developer and Play Console account available?
+10. **Store distribution.** SPECIFICATION §9.4 treats Play and TestFlight publishing as optional, while platform-support.md lines 13-14 promise the App Store and Play Store. _Decision:_ required or optional for v1? Is an Apple Developer and Play Console account available? **Answered (D-28):** GitHub Releases only; store submissions are later; iOS distribution waits for an Apple Developer account.
 11. **Node version.** SPECIFICATION.md line 1305 says node 22.x is required for Electron, while `.mise.toml` pins node 24. _Decision:_ re-check this against the chosen runtime.
-12. **Daemon in apps.** Should desktop apps bundle the CLI daemon, launch a system-installed one, or sync in-process when none is found? See [REQ-APP-010](#req-app-010--packaged-app-integrates-with-the-local-sync-daemon).
+12. **Daemon in apps.** Should desktop apps bundle the CLI daemon, launch a system-installed one, or sync in-process when none is found? See [REQ-APP-010](#req-app-010--packaged-app-integrates-with-the-local-sync-daemon). **Answered (D-26):** the daemon is later; apps sync in-process.
 
 ## 6. Open PRs and issues
 

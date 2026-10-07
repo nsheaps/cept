@@ -149,6 +149,8 @@ flowchart LR
 
 ### REQ-AUTH-001 — Provider abstraction for all remote kinds
 
+> **Scope: Phase 1 (D-29).** Phase 1 ships the host-agnostic `AuthProvider` abstraction with GitHub (PAT) as the only host. The `google` and `sftp` provider types are later (D-26, see REQ-AUTH-006/007); the interface must still not preclude them.
+
 **Statement:** All remote authentication MUST go through a provider abstraction (`AuthProvider`) whose type set covers every supported remote: Git (GitHub), Google Drive and SFTP. Adding a provider MUST NOT require changes outside its own implementation and registration.
 
 **Rationale / source:** Handler: "Support for remotes"; spaces "stored ... git, gdrive, sftp".
@@ -169,6 +171,8 @@ flowchart LR
 **Related PRs/issues:** none identified.
 
 ### REQ-AUTH-002 — GitHub sign-in via a GitHub App
+
+> **Scope: Phase 2 (D-26, D-27).** Phase 1 auth is PATs only. GitHub App login, the GitHub App registration and the related Pulumi/iac work wait for the iac restructure.
 
 **Statement:** The app MUST let a user sign in with GitHub through a **GitHub App** (user-to-server token, "login app"). It MUST use that token for repository listing and Git transport.
 
@@ -192,6 +196,8 @@ flowchart LR
 
 ### REQ-AUTH-003 — Browser token exchange without a client secret
 
+> **Scope: Phase 2 (D-26, D-27).** The PKCE code exchange and the relay Worker belong to GitHub App login. PAT sign-in in Phase 1 needs no token exchange.
+
 **Statement:** Browser and PWA builds MUST complete the GitHub (and Google) code-for-token exchange without embedding a client secret. They MUST use PKCE and route the exchange through the Cloudflare proxy, because the github.com token endpoints do not send CORS headers.
 
 **Rationale / source:** Derived. This is required for [REQ-AUTH-002](#req-auth-002--github-sign-in-via-a-github-app) and [REQ-AUTH-010](#req-auth-010--authenticated-git-transport) in a client-only app.
@@ -213,6 +219,8 @@ flowchart LR
 
 ### REQ-AUTH-004 — GitHub device flow for headless clients
 
+> **Scope: later (D-26).** Its only consumer is the CLI/daemon, which is deferred with no phase yet.
+
 **Statement:** Headless clients (the CLI and sync daemon) MUST be able to authenticate with GitHub through the device authorization flow.
 
 **Rationale / source:** Derived from the handler: "a daemon that runs to sync changes to the remotes".
@@ -232,6 +240,8 @@ flowchart LR
 **Related PRs/issues:** none identified.
 
 ### REQ-AUTH-005 — GitHub personal access token entry
+
+> **Scope: Phase 1 (D-27).** PAT is the Phase 1 auth path. Fine-grained PATs are recommended and classic PATs are accepted.
 
 **Statement:** Users MUST be able to authenticate a GitHub remote by pasting a personal access token (PAT). The token is stored securely and used for Git HTTP auth and API calls.
 
@@ -254,6 +264,8 @@ flowchart LR
 
 ### REQ-AUTH-006 — Google sign-in for Google Drive remotes
 
+> **Scope: later (D-26).** Google Drive backend and its login are deferred with no phase yet.
+
 **Statement:** The app MUST support Google sign-in through an OAuth client ("login app") that grants Drive scopes, so spaces can be stored on Google Drive.
 
 **Rationale / source:** Handler: "google login app"; spaces "stored ... gdrive".
@@ -275,6 +287,8 @@ flowchart LR
 
 ### REQ-AUTH-007 — SFTP remote credentials
 
+> **Scope: later (D-26).** The SFTP backend and its credentials are deferred with no phase yet.
+
 **Statement:** The app MUST support SFTP remotes with password or SSH-key credentials, at least in contexts that have raw sockets (the daemon, desktop and possibly mobile).
 
 **Rationale / source:** Derived from the handler: spaces "stored ... sftp".
@@ -295,6 +309,8 @@ flowchart LR
 **Related PRs/issues:** none identified.
 
 ### REQ-AUTH-008 — Cloudflare OAuth and CORS proxy provisioned through nsheaps iac
+
+> **Scope: unclear (awaiting owner).** The Worker (when built, a Worker just for Cept), `auth.nsheaps.dev` and all Pulumi/iac work are Phase 2. How isomorphic-git reaches github.com from the browser in Phase 1 without this Worker is still an open owner question, so this requirement stays unclear until the owner decides the browser git transport.
 
 **Statement:** A Cloudflare Worker that acts as the OAuth token-exchange relay and the Git CORS proxy MUST be provisioned and deployed through nsheaps/iac. It MUST be reachable on an nsheaps domain and MUST restrict requests to Cept origins.
 
@@ -325,6 +341,8 @@ flowchart LR
 
 ### REQ-AUTH-009 — Configurable first-party proxy instead of a public CORS proxy
 
+> **Scope: unclear (awaiting owner).** D-27 defers the first-party Worker to Phase 2, but the Phase 1 browser git transport (which proxy, if any, replaces `cors.isomorphic-git.org`, which sees auth tokens) has not been decided by the owner.
+
 **Statement:** Cept MUST route browser Git HTTP and OAuth exchange traffic through a configurable proxy URL that defaults to the nsheaps Worker. It MUST NOT hardcode a public third-party proxy, because that proxy would see auth tokens.
 
 **Rationale / source:** Derived from [REQ-AUTH-008](#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) and the token security needed by [REQ-AUTH-005](#req-auth-005--github-personal-access-token-entry).
@@ -344,6 +362,8 @@ flowchart LR
 **Related PRs/issues:** [PR #67](https://github.com/nsheaps/cept/pull/67).
 
 ### REQ-AUTH-010 — Authenticated Git transport
+
+> **Scope: Phase 1 (D-27, D-29).** Authenticated clone, fetch, pull and push with a PAT. The browser transport used to reach github.com is awaiting the owner (see REQ-AUTH-008/009). Offline queued commits and push-on-reconnect are Phase 1 (D-37). A rejected push falls back to "push to a new branch" (D-30).
 
 **Statement:** When credentials exist for a remote, every Git operation (clone, fetch, pull and push) MUST use them through the isomorphic-git `onAuth` callback. Private repos MUST work.
 
@@ -365,6 +385,8 @@ flowchart LR
 
 ### REQ-AUTH-011 — Anonymous read-only access to public remotes
 
+> **Scope: Phase 1 (D-29).** Anonymous read-only clone of public HTTPS git URLs keeps working. The third acceptance criterion (first-party proxy) follows the browser transport decision awaiting the owner.
+
 **Statement:** Users SHOULD be able to browse public Git remotes read-only without signing in.
 
 **Rationale / source:** Derived. The docs site is a remote space, and the demo and read-only docs deployment need it.
@@ -384,6 +406,8 @@ flowchart LR
 **Related PRs/issues:** [PR #67](https://github.com/nsheaps/cept/pull/67).
 
 ### REQ-AUTH-012 — Secure persistent token storage per platform
+
+> **Scope: Phase 1 (D-27, D-28).** Web (encrypted IndexedDB) and desktop (OS keychain) stores hold the PAT. The mobile store ships with the Phase 1 Android build. The CLI daemon credential file is later (D-26).
 
 **Statement:** Tokens MUST persist across sessions in platform-appropriate secure storage: encrypted IndexedDB on web, the OS keychain on desktop, secure storage on mobile, and a protected credential store for the CLI daemon.
 
@@ -406,6 +430,8 @@ flowchart LR
 
 ### REQ-AUTH-013 — Account and sign-in UI
 
+> **Scope: Phase 1 (D-27).** Phase 1 UI covers PAT entry, account display and sign-out/removal. GitHub App, Google and SFTP entry points follow their phases (D-26).
+
 **Statement:** The app MUST provide a sign-in entry point for each provider (GitHub App, PAT, Google, SFTP), show the signed-in account, and allow sign-out and credential removal.
 
 **Rationale / source:** Derived. Without it, the providers cannot be used.
@@ -427,6 +453,8 @@ flowchart LR
 
 ### REQ-AUTH-014 — Repo listing and creation after sign-in
 
+> **Scope: Phase 1 (D-30).** With a PAT, list the repos it reaches via `GET /user/repos` (forks and archived repos skipped for discovery) and create a repo. Installation-endpoint listing arrives with the GitHub App in Phase 2.
+
 **Statement:** After GitHub sign-in, users SHOULD be able to pick an existing repo or create a new one to back a space.
 
 **Rationale / source:** Existing spec: [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.2.
@@ -446,6 +474,8 @@ flowchart LR
 **Related PRs/issues:** none identified.
 
 ### REQ-AUTH-015 — Automatic token refresh
+
+> **Scope: Phase 2 (D-26, D-27).** PATs do not expire via refresh. Refresh applies to GitHub App user tokens (Phase 2) and Google tokens (later).
 
 **Statement:** Expiring tokens (GitHub App user tokens and Google tokens) MUST be refreshed automatically with the refresh token, through the proxy on web, without forcing the user to sign in again.
 
@@ -468,6 +498,8 @@ flowchart LR
 
 ### REQ-AUTH-016 — Native OAuth for packaged apps
 
+> **Scope: Phase 3 (D-26).** Native-app login callbacks and deep links for OAuth are Phase 3. Phase 1 native apps sign in with a PAT.
+
 **Statement:** Packaged apps (iOS, Android, Windows, macOS and Linux) MUST complete OAuth through the system browser with a deep-link (`cept://`) or loopback redirect, and MUST check state against CSRF.
 
 **Rationale / source:** Derived from the handler: a packaged app distributed for windows/macos/linux/android/ios, plus remote auth.
@@ -489,6 +521,8 @@ flowchart LR
 
 ### REQ-AUTH-017 — Shared credentials through the local daemon
 
+> **Scope: later (D-26).** Exists only to share the daemon's credentials; the CLI/daemon and VS Code are deferred.
+
 **Statement:** When the local daemon is running, PWA and VS Code clients SHOULD use the daemon's authenticated remote connections instead of authenticating separately.
 
 **Rationale / source:** Derived from the handler: "vscode plugin ... shares local daemon"; "PWA can share local daemon".
@@ -508,6 +542,8 @@ flowchart LR
 **Related PRs/issues:** none identified.
 
 ### REQ-AUTH-018 — No secrets in client bundles or the repo
+
+> **Scope: Phase 1 (D-38).** The secret scanner and the no-secrets-in-bundle guard are Phase 1 engineering prerequisites. Client ID injection for the GitHub App is Phase 2 (D-27).
 
 **Statement:** No OAuth client secret or user token may be committed to the repo or embedded in a shipped client bundle. Client IDs MUST be injected through build config.
 
@@ -531,14 +567,14 @@ flowchart LR
 
 The owner needs to decide each of these.
 
-1. **GitHub App or OAuth App.** The handler asks for a GitHub App login. [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1, line 118, `github.ts` and the iac TASKS.md all specify an OAuth App with the broad `repo` scope. Proposal: adopt a GitHub App and rewrite §7.1.
-2. **AuthProvider scope.** The SPECIFICATION says AuthProvider is only for Git remotes, and Appendix B lists GitHub as the only external auth service. The handler requires Google Drive and SFTP. Which Drive scope (`drive.file` or full `drive`)?
-3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx and PR #67). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)?
-4. **Proxy reachability.** `auth.nsheaps.dev` is a CNAME to workers.dev with no route or custom domain, and the script defaults to a 503 placeholder. The setup exists on paper only (unverified that it fails).
+1. **GitHub App or OAuth App.** The handler asks for a GitHub App login. [docs/SPECIFICATION.md](../../SPECIFICATION.md) §7.1, line 118, `github.ts` and the iac TASKS.md all specify an OAuth App with the broad `repo` scope. Proposal: adopt a GitHub App and rewrite §7.1. **Answered (D-27):** Phase 1 uses PATs only; GitHub App login is Phase 2.
+2. **AuthProvider scope.** The SPECIFICATION says AuthProvider is only for Git remotes, and Appendix B lists GitHub as the only external auth service. The handler requires Google Drive and SFTP. Which Drive scope (`drive.file` or full `drive`)? **Answered (D-26, D-29):** Google Drive and SFTP are later; `AuthProvider` stays host-agnostic with GitHub as the only Phase 1 host. The Drive scope question is deferred with Drive.
+3. **Proxy.** The code hardcodes `cors.isomorphic-git.org` (App.tsx and PR #67). The handler wants the iac Cloudflare Worker. Should one Worker handle both OAuth relay and Git CORS, or should they be split? Where does the Worker code live (nsheaps/cors-proxy, iac, or this monorepo)? **Partly answered (D-27):** the Worker is Phase 2, a Worker just for Cept, with iac restructured first. The Phase 1 browser git transport is still awaiting the owner.
+4. **Proxy reachability.** `auth.nsheaps.dev` is a CNAME to workers.dev with no route or custom domain, and the script defaults to a 503 placeholder. The setup exists on paper only (unverified that it fails). **Answered (D-26, D-27):** iac/Pulumi work, including `auth.nsheaps.dev`, is Phase 2.
 5. **TASKS.md accuracy.** T5.1, T5.2 and T7.6 are checked, but P5.1, P5.2 and P6.5/P6.6 and the code show they are not wired. Should the T-task checkboxes be reverted?
-6. **Token exchange design.** SPECIFICATION §7.1 implies a direct browser code exchange, which CORS makes impossible. Is a client secret ever acceptable (Worker-only)? PKCE with a GitHub App removes the need for one.
-7. **SFTP in the browser.** It is impossible without the daemon. Should SFTP be desktop and daemon only, with browser access only through the daemon?
-8. **Credential ownership.** Is the daemon the single credential holder for PWA and VS Code, or does each client keep its own tokens?
+6. **Token exchange design.** SPECIFICATION §7.1 implies a direct browser code exchange, which CORS makes impossible. Is a client secret ever acceptable (Worker-only)? PKCE with a GitHub App removes the need for one. **Answered (D-27):** no token exchange in Phase 1 (PAT only); revisit PKCE and relay in Phase 2.
+7. **SFTP in the browser.** It is impossible without the daemon. Should SFTP be desktop and daemon only, with browser access only through the daemon? **Answered (D-26):** SFTP is later.
+8. **Credential ownership.** Is the daemon the single credential holder for PWA and VS Code, or does each client keep its own tokens? **Answered (D-26):** daemon is later; Phase 1 clients keep their own PATs.
 9. **Terminology.** The handler originally said "workspace", while the UI and code say "space". See [REQ-WS-022](03-spaces-and-storage.md#req-ws-022--consistent-terminology-space-adopted-d-1).
 10. **Preview origins.** PR previews (`nsheaps.github.io/cept/pr-N`) share the `https://nsheaps.github.io` origin, which `ALLOWED_ORIGINS` already allows, so the origin check cannot tell previews, production Pages and other nsheaps Pages apps apart. Is that acceptable? Should the GitHub App and Google client also register the preview callback URLs?
 

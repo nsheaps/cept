@@ -2,6 +2,8 @@
 
 **Status:** Draft, 2026-10-06 · **Area ID prefix:** `REQ-VSC` · **Owner:** nsheaps
 
+> **Scope (D-26): all REQ-VSC requirements are deferred ("later").** The Phase 1 obligations that overlap REQ-VSC-004 (capability-only gating and an injected backend) are carried by [REQ-WEB-003](01-browser-app-and-pwa.md#req-web-003--ui-talks-to-storage-only-through-the-injected-backend) and CLAUDE.md architecture rule 4.
+
 This document lists the requirements for a Cept extension for Visual Studio Code. The extension lets users open the Markdown pages of a Cept space inside VS Code and live-edit or live-render them with the same browser component the web app and PWA use. It shares the local Cept daemon when one is running, and it works in both VS Code desktop and VS Code for the Web (vscode.dev, github.dev). For each requirement, the document records the current implementation and documentation state, citing evidence. **Summary of the current state: no VS Code extension exists in Cept today, in code, docs, TASKS.md, issues or open PRs.** A few existing pieces of `@cept/ui` and `@cept/core` could serve as building blocks, and several architectural choices block an extension. Both are covered below.
 
 **Related:** [Requirements index & traceability](README.md) · [01 Browser app & PWA](01-browser-app-and-pwa.md) · [02 Static rendering](02-static-rendering.md) · [03 Spaces & storage](03-spaces-and-storage.md) · [04 Collaboration](04-collaboration.md) · [05 CLI & daemon](05-cli-and-daemon.md) · [07 Native apps](07-native-apps.md) · [08 Editor](08-editor.md) · [09 Remotes & auth](09-remotes-and-auth.md) · [10 Engineering & CI](10-engineering-and-ci.md) · [Original specification](../../SPECIFICATION.md) · [Storage backends spec](../storage-backends.md)
@@ -165,6 +167,8 @@ What is in the repo today:
 
 ### REQ-VSC-001 — VS Code extension package in the monorepo
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** The repo MUST contain a VS Code extension package (for example `packages/vscode`). It MUST be an Nx project in the Bun workspace, written in TypeScript and built with Bun or esbuild. Its extension manifest MUST be valid: `package.json` with `publisher`, `engines.vscode`, `activationEvents` and `contributes`.
 
 **Rationale / source:** Owner requirement ("A vscode plugin"), plus "mono repo setup … using nx and mise" and "base code implementation using bun/ts where possible".
@@ -186,6 +190,8 @@ What is in the repo today:
 
 ### REQ-VSC-002 — Cept custom editor for space Markdown files
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** The extension MUST register a custom editor (`CustomTextEditorProvider`) so that Markdown pages inside a Cept space open in a fully WYSIWYG Cept editor in a webview. "Reopen With…" MUST switch between this editor and the plain text editor.
 
 **Rationale / source:** Owner requirement ("live edit … that uses the same browser component").
@@ -206,6 +212,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-003 — Reuse the same browser component (`@cept/ui`) in the webview
+
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
 
 **Statement:** The webview MUST render the same `@cept/ui` React component that the web app and PWA use. There MUST NOT be a forked editor implementation. Host-specific code MUST live in the extension package and in host adapters.
 
@@ -233,6 +241,8 @@ What is in the repo today:
 
 ### REQ-VSC-004 — Embeddable `@cept/ui` with injected host backend
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet. Capability-only gating and the injected backend are already Phase 1 requirements through [REQ-WEB-003](01-browser-app-and-pwa.md#req-web-003--ui-talks-to-storage-only-through-the-injected-backend); this requirement adds only the VS Code host specifics.
+
 **Statement:** `@cept/ui` MUST be embeddable by a non-web host. It MUST accept an injected `StorageBackend` and a host bridge. It MUST gate features only through `backend.capabilities`, never through backend class or `type` checks. Routing MUST NOT depend on an http(s) `location.pathname` or a base path.
 
 **Rationale / source:** Derived. REQ-VSC-003 cannot be met without it. This also restates [CLAUDE.md](../../../CLAUDE.md) architecture rule 4 and [REQ-WEB-003](01-browser-app-and-pwa.md#req-web-003--ui-talks-to-storage-only-through-the-injected-backend).
@@ -259,6 +269,8 @@ What is in the repo today:
 
 ### REQ-VSC-005 — Two-way live sync between webview and `TextDocument`
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** Edits made in the Cept webview MUST be applied to the underlying `vscode.TextDocument` through `WorkspaceEdit`, so that dirty state, save, undo/redo, Git SCM and other editors keep working. External changes to the document (from the text editor, a git checkout or another extension) MUST appear live in the webview, keeping the cursor or selection position where possible.
 
 **Rationale / source:** Owner requirement ("live edit").
@@ -280,6 +292,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-006 — Live render (read-only preview) mode
+
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
 
 **Statement:** The extension MUST provide a live rendered preview of a Cept page next to the text editor, using the same component in read-only mode. It MUST render Cept extensions (mermaid, callouts, toggles, databases, wiki-links) identically to the app.
 
@@ -303,6 +317,8 @@ What is in the repo today:
 
 ### REQ-VSC-007 — Webview `StorageBackend` adapter over `vscode.workspace.fs`
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** The extension MUST provide a `StorageBackend` implementation that forwards file operations from the webview over postMessage to the extension host's `vscode.workspace.fs` API, including `watch()` through `FileSystemWatcher`. This lets space-wide features (sidebar, graph, databases, backlinks, search) work on both local and virtual file systems (`file://`, `vscode-vfs://`, github.dev).
 
 **Rationale / source:** Derived. REQ-VSC-003 and REQ-VSC-010 need it, because the full component needs access to the whole space, not just one document.
@@ -323,6 +339,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-008 — Share the local Cept daemon when available
+
+> **Status: deferred (D-26).** The VS Code extension and the CLI/daemon are both deferred, with no phase assigned yet.
 
 **Statement:** On desktop, the extension MUST discover a running local Cept sync daemon (the same one the CLI and PWA use), connect to it, and delegate remote sync to it rather than running its own sync engine. It MUST NOT start a second, conflicting sync process for the same space.
 
@@ -345,6 +363,8 @@ What is in the repo today:
 
 ### REQ-VSC-009 — Daemon-less fallback
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** When no daemon is reachable (which is always the case in VS Code for the Web), the extension MUST still fully support editing and rendering of space files. It MUST show the sync status, for example "Daemon unavailable — changes saved to space files; sync via VS Code SCM / remote file system".
 
 **Rationale / source:** Derived from REQ-VSC-008 and REQ-VSC-010.
@@ -364,6 +384,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-010 — Full support for VS Code for the Web
+
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
 
 **Statement:** The extension MUST ship a web-extension entry (the `browser` field) bundled for the webworker extension host. That bundle MUST NOT use any Node.js API (no `node:*`, `child_process` or `net`). The extension MUST work on vscode.dev and github.dev with the same editing and rendering features as on desktop.
 
@@ -386,6 +408,8 @@ What is in the repo today:
 
 ### REQ-VSC-011 — Full support for VS Code desktop
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** The extension MUST ship a Node `main` entry for VS Code desktop and compatible forks (VSCodium, Cursor). It MUST have feature parity with the web entry, plus daemon sharing (REQ-VSC-008).
 
 **Rationale / source:** Owner requirement ("… as well as desktop").
@@ -405,6 +429,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-012 — Space root detection
+
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
 
 **Statement:** The extension MUST identify Cept spaces in the opened VS Code folder or folders by the presence of `space.cept.yaml` or `space.cept.yml`. An opened folder MAY contain several spaces in subfolders (D-2). It MUST activate when such a file exists (`workspaceContains` activation event), and it MUST scope the custom editor and sidebar to the space that contains the file.
 
@@ -427,6 +453,8 @@ What is in the repo today:
 
 ### REQ-VSC-013 — Webview platform constraints
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** The webview bundle MUST load its assets through `asWebviewUri` under a strict Content Security Policy with a nonce. It MUST NOT depend on a service worker, because VS Code webviews do not support them. It SHOULD map VS Code theme CSS variables onto Cept's light and dark themes.
 
 **Rationale / source:** Derived from REQ-VSC-003.
@@ -448,6 +476,8 @@ What is in the repo today:
 
 ### REQ-VSC-014 — Automated extension tests in CI
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** CI MUST run the extension's unit tests and its integration tests in both the desktop host (`@vscode/test-electron`) and the web host (`@vscode/test-web`). These jobs MUST be scoped with Nx affected, so they run only when the extension or one of its dependencies changes.
 
 **Rationale / source:** Derived from REQ-VSC-010 and REQ-VSC-011, combined with the owner's requirement for "CI workflows for unit tests which can run in scope in PR". See [10 Engineering & CI](10-engineering-and-ci.md).
@@ -468,6 +498,8 @@ What is in the repo today:
 
 ### REQ-VSC-015 — Extension packaging and publishing
 
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
+
 **Statement:** Releases SHOULD package a `.vsix` with `vsce` and publish it to the VS Code Marketplace and to Open VSX, versioned through the repo's release flow. If publishing secrets are missing, the release MUST warn and skip publishing, never fail `main`.
 
 **Rationale / source:** Derived. The extension has to reach users. The secrets-optional behaviour follows the pattern used in other nsheaps repos (for example qontacts `_tag-release`).
@@ -487,6 +519,8 @@ What is in the repo today:
 **Related PRs/issues:** none.
 
 ### REQ-VSC-016 — Extension user and developer documentation
+
+> **Status: deferred (D-26).** The VS Code extension is deferred, with no phase assigned yet.
 
 **Statement:** The docs site MUST include a VS Code extension guide covering installation, desktop versus web, daemon sharing and limitations. The platform-support page, the roadmap, SPECIFICATION.md and the CLAUDE.md package table MUST list the extension. A feature spec MUST exist under `docs/specs/`.
 
@@ -511,23 +545,23 @@ What is in the repo today:
 
 The owner needs to decide on each of these.
 
-| #   | Conflict / question                                                                                                                                            | Evidence                                                                                                                                                                                                                                                                                       | Options                                                                                                                   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| C1  | **Daemon versus client-only architecture.** The owner requires a shared local daemon, but SPECIFICATION.md says "No server process, no database daemon".       | [SPECIFICATION.md](../../SPECIFICATION.md) line 43                                                                                                                                                                                                                                             | (a) Revise the spec to "client-first, optional local daemon" (recommended). (b) Keep the extension daemon-free.           |
-| C2  | **`space.cept.ya?ml` versus `.cept/config.yaml`; "workspaces" versus "spaces".**                                                                               | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150; [roadmap.md](../../content/reference/roadmap.md) "Multi-space support" | Settled in [03 Spaces & storage](03-spaces-and-storage.md). The extension follows that decision.                          |
-| C3  | **Architecture rule 4 is broken in code.** UI features are gated by `instanceof BrowserFsBackend`, which would disable remote and sync features under VS Code. | [App.tsx](../../../packages/ui/src/components/App.tsx) lines 342, 430, 956, 1041                                                                                                                                                                                                               | Refactor to capability checks (REQ-VSC-004). This needs no decision, only prioritisation.                                 |
-| C4  | **Architecture rule 1 is broken in code.** `@cept/core` imports `node:fs`, which the web build hides with a stub plugin.                                       | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8–10; [core index.ts](../../../packages/core/src/index.ts) line 37; [vite.config.ts](../../../packages/web/vite.config.ts)                                                                                                 | (a) Move `LocalFsBackend` to a Node-only subpath or package (recommended). (b) Replicate the stub in the extension build. |
-| C5  | The platform union lacks `vscode`.                                                                                                                             | [platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) line 75; SPECIFICATION.md §8.5                                                                                                                                                                                          | Add `'vscode'`, or move host abstraction into `@cept/ui`.                                                                 |
-| C6  | Electron is listed for Windows and Linux desktop, but the owner's list never mentions Electron. This is outside this area.                                     | [CLAUDE.md](../../../CLAUDE.md) package table; SPECIFICATION.md §8.2                                                                                                                                                                                                                           | See [07 Native apps](07-native-apps.md).                                                                                  |
+| #   | Conflict / question                                                                                                                                                              | Evidence                                                                                                                                                                                                                                                                                       | Options                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| C1  | **Daemon versus client-only architecture (daemon deferred, D-26).** The owner requires a shared local daemon, but SPECIFICATION.md says "No server process, no database daemon". | [SPECIFICATION.md](../../SPECIFICATION.md) line 43                                                                                                                                                                                                                                             | (a) Revise the spec to "client-first, optional local daemon" (recommended). (b) Keep the extension daemon-free.           |
+| C2  | **`space.cept.ya?ml` versus `.cept/config.yaml`; "workspaces" versus "spaces".**                                                                                                 | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) line 162, [web-fs.ts](../../../packages/core/src/storage/web-fs.ts) line 213, [browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) line 150; [roadmap.md](../../content/reference/roadmap.md) "Multi-space support" | Settled in [03 Spaces & storage](03-spaces-and-storage.md). The extension follows that decision.                          |
+| C3  | **Architecture rule 4 is broken in code.** UI features are gated by `instanceof BrowserFsBackend`, which would disable remote and sync features under VS Code.                   | [App.tsx](../../../packages/ui/src/components/App.tsx) lines 342, 430, 956, 1041                                                                                                                                                                                                               | Refactor to capability checks (REQ-VSC-004). This needs no decision, only prioritisation.                                 |
+| C4  | **Architecture rule 1 is broken in code.** `@cept/core` imports `node:fs`, which the web build hides with a stub plugin.                                                         | [local-fs.ts](../../../packages/core/src/storage/local-fs.ts) lines 8–10; [core index.ts](../../../packages/core/src/index.ts) line 37; [vite.config.ts](../../../packages/web/vite.config.ts)                                                                                                 | (a) Move `LocalFsBackend` to a Node-only subpath or package (recommended). (b) Replicate the stub in the extension build. |
+| C5  | The platform union lacks `vscode`.                                                                                                                                               | [platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) line 75; SPECIFICATION.md §8.5                                                                                                                                                                                          | Add `'vscode'`, or move host abstraction into `@cept/ui`.                                                                 |
+| C6  | Electron is listed for Windows and Linux desktop, but the owner's list never mentions Electron. This is outside this area.                                                       | [CLAUDE.md](../../../CLAUDE.md) package table; SPECIFICATION.md §8.2                                                                                                                                                                                                                           | See [07 Native apps](07-native-apps.md).                                                                                  |
 
 Open questions:
 
 - **Q1 — Edit model:** Should the custom editor be a `CustomTextEditorProvider` (text document is the source of truth, best SCM and undo integration; this document's assumption) or a `CustomEditorProvider` with Cept-managed documents?
 - **Q2 — Non-page files:** How should database YAML files (`.cept/databases/*.yaml`) open in VS Code: in a Cept database view, or as plain YAML only?
 - **Q3 — Remote auth in the extension:** When no daemon is present, should the extension use VS Code's built-in GitHub and Microsoft authentication providers for remotes, or leave remotes entirely to VS Code SCM and the daemon? See [09 Remotes & auth](09-remotes-and-auth.md).
-- **Q4 — Co-editing in the webview:** Should WebRTC peer-to-peer co-editing ([REQ-COL-003](04-collaboration.md#req-col-003--public-peer-to-peer-webrtc-transport)) work inside the webview? If so, how does it combine with VS Code Live Share and with `TextDocument` as the source of truth?
+- **Q4 — Co-editing in the webview (moot while co-editing and the extension are deferred, D-26):** Should WebRTC peer-to-peer co-editing ([REQ-COL-003](04-collaboration.md#req-col-003--public-peer-to-peer-webrtc-transport)) work inside the webview? If so, how does it combine with VS Code Live Share and with `TextDocument` as the source of truth?
 - **Q5 — Default editor:** Should the Cept editor be the default for `*.md` inside a space (priority `default`), or opt-in (priority `option`)?
-- **Q6 — Marketplace identity:** Which publisher ID, and is Open VSX publishing required (needed for VSCodium and Cursor)?
+- **Q6 — Marketplace identity (deferred with the extension, D-26; store submissions are later):** Which publisher ID, and is Open VSX publishing required (needed for VSCodium and Cursor)?
 
 ## 6. Stale documentation to fix
 

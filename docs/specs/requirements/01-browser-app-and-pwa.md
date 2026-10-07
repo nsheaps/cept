@@ -2,6 +2,8 @@
 
 **Status:** Draft, 2026-10-06 · **Area IDs:** `REQ-WEB-NNN`
 
+> **Scope (owner decisions 2026-10-07, D-26..D-38).** Phase 1: all requirements here except REQ-WEB-017 and REQ-WEB-018 (Phase 2, docs site) and REQ-WEB-010 (later, daemon).
+
 This spec states the requirements for Cept's browser-facing runtime. That covers the shared UI component (`@cept/ui`), the Vite single-page app that hosts it (`@cept/web`), the service worker, the installable progressive web app (PWA), the demo space, and the GitHub Pages deployment of the app with its read-only docs. Each requirement is checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
 
 **Related:**
@@ -155,6 +157,8 @@ sequenceDiagram
 
 ### REQ-WEB-001 — Shared browser UI component
 
+> **Scope: Phase 1 (D-26).** Web, desktop and mobile hosts mount `@cept/ui` in Phase 1. The VS Code host is later (D-26, REQ-VSC); the static-renderer host is Phase 2 (D-26, REQ-SSG).
+
 **Statement:** The UI MUST be a single reusable browser component package (`@cept/ui`) that is the only UI implementation, mounted by every host (web/PWA, desktop, mobile, VS Code webview, static renderer).
 
 **Rationale / source:** Owner requirement ("browser component - the UI interface"; the VS Code plugin "uses the same browser component").
@@ -173,6 +177,8 @@ sequenceDiagram
 
 ### REQ-WEB-002 — UI free of platform imports
 
+> **Scope: Phase 1.**
+
 **Statement:** `@cept/ui` MUST NOT import platform-specific modules (`electron`, `@capacitor/*`, `node:*`), so it runs unchanged in a browser, a PWA, a webview and native shells.
 
 **Rationale / source:** Existing spec, [CLAUDE.md](../../../CLAUDE.md) Architecture Rule 1.
@@ -189,6 +195,8 @@ sequenceDiagram
 **Gap:** Split platform backends out of the `@cept/core` browser entry point (or add a `browser` export condition), and add the boundary rule. Enforcement belongs to [10-engineering-and-ci.md](10-engineering-and-ci.md).
 
 ### REQ-WEB-003 — UI talks to storage only through the injected backend
+
+> **Scope: Phase 1 (D-27, D-29).** Auth is PATs only and the host is GitHub only in Phase 1; `AuthProvider` stays host-agnostic (D-29). The proxy URL stays configuration, not a literal. The relay Worker and the nsheaps/iac proxy are Phase 2 (D-26, D-27). How the browser reaches github.com for git in Phase 1 is still awaiting the owner (REQ-AUTH-008/009).
 
 **Statement:** The browser UI MUST perform all persistence through the injected `StorageBackend` and MUST NOT construct concrete backends itself.
 
@@ -208,6 +216,8 @@ sequenceDiagram
 
 ### REQ-WEB-004 — Web SPA boots fully functional on browser-only storage
 
+> **Scope: Phase 1.**
+
 **Statement:** The web app MUST boot to a fully functional state using only browser-local storage (IndexedDB), with no Git, network or filesystem access.
 
 **Rationale / source:** Existing spec ([CLAUDE.md](../../../CLAUDE.md) rule 6; SPECIFICATION 5.10.7). Owner requirement: "locally (browser only)".
@@ -224,6 +234,8 @@ sequenceDiagram
 **Gap:** Fix that wording in `docs/content` and the bundled roadmap in `docs-content.ts`, and add a reload-persistence e2e test with the network blocked.
 
 ### REQ-WEB-005 — Service worker registered with correct scope
+
+> **Scope: Phase 1.**
 
 **Statement:** The web build MUST emit a service worker at the deployment base path and register it with a scope equal to that base path, in production, in previews and in local development.
 
@@ -242,6 +254,8 @@ sequenceDiagram
 **Gap:** Log or surface registration failures, and say explicitly that dev mode has no service worker. Dev and e2e runs do not exercise the service worker; see REQ-WEB-022.
 
 ### REQ-WEB-006 — Service worker caches app shell for offline use
+
+> **Scope: Phase 1.**
 
 **Statement:** The service worker MUST install successfully and precache the app shell (index, hashed assets, manifest, icons) relative to its base path, so that the app loads offline after the first visit.
 
@@ -262,6 +276,10 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Generate the precache list from the build manifest, resolve it against the scope, version the caches, and add a built-bundle install test (REQ-WEB-022).
 
 ### REQ-WEB-007 — Service worker handles syncing
+
+> **Decided (D-37).** Full offline editing with queued commits and push-on-reconnect is Phase 1. The criterion "if a local daemon is detected, the service worker does not sync" and live co-editing coordination (SharedWorker leadership for Yjs/WebRTC) are later (D-26: REQ-CLI, REQ-COL).
+
+> **Scope: Phase 1 (D-26, D-37)** for queued-write flushing and `SyncEngine` push on reconnect.
 
 **Statement:** The service worker MUST handle offline caching (precache shell, runtime cache) and queued-write flushing only. Live sync and co-editing run in a SharedWorker (`SyncEngine` in `@cept/core`). The service worker MUST NOT attempt `RTCPeerConnection` or long-lived git operations (SW terminates in ~30 s). Where no SharedWorker is available, a leader tab elected via Web Locks + BroadcastChannel owns the sync loop.
 
@@ -285,6 +303,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-008 — Service worker update flow
 
+> **Scope: Phase 1.**
+
 **Statement:** When a new build is deployed, the app SHOULD detect the waiting service worker, activate it, reload once, and tell the user that a new version is running.
 
 **Rationale / source:** Derived.
@@ -301,6 +321,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Add tests for `SKIP_WAITING` and the `controllerchange` reload, describe the flow in the docs, and fix REQ-WEB-006 so that it takes effect.
 
 ### REQ-WEB-009 — Installable PWA manifest
+
+> **Scope: Phase 1.**
 
 **Statement:** The PWA MUST ship a valid web app manifest whose `start_url`, `scope`, icons and shortcuts resolve under the deployment base path, so that it is installable in desktop and mobile browsers.
 
@@ -319,6 +341,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Add the icons, make the paths relative, handle or remove the shortcuts, and add an installability audit.
 
 ### REQ-WEB-010 — PWA shares local daemon when present
+
+> **Scope: later (D-26).** Depends entirely on the local daemon; CLI/daemon is later (REQ-CLI). The Phase 1 browser app works alone.
 
 **Statement:** The PWA MUST detect a running local Cept daemon (for example, a localhost endpoint) and delegate storage and sync to it. Otherwise it MUST fall back to sync in the service worker and to browser storage.
 
@@ -339,6 +363,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-011 — Offline editing of browser space
 
+> **Scope: Phase 1 (D-37).** Full offline editing is Phase 1.
+
 **Statement:** Once the app shell is cached, users MUST be able to open and edit browser-stored spaces fully offline, with the edits persisted locally.
 
 **Rationale / source:** Owner requirement (PWA with a service worker).
@@ -354,6 +380,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Fix REQ-WEB-006 first, then add the offline e2e test.
 
 ### REQ-WEB-012 — Demo space uses in-memory file storage
+
+> **Scope: Phase 1.**
 
 **Statement:** The demo space MUST run on an in-memory file storage backend that is isolated from the user's persisted spaces and never writes to them. It is discarded or reset on reload.
 
@@ -373,6 +401,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-013 — Demo entry points
 
+> **Scope: Phase 1.**
+
 **Statement:** Users SHOULD be able to enter the demo through a landing-page action and through a shareable URL (for example `?demo` or `/demo`). Builds MAY make the demo the default through a build-time flag.
 
 **Rationale / source:** Derived from the owner's demo and Pages requirements.
@@ -390,6 +420,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-014 — Demo reset
 
+> **Scope: Phase 1.**
+
 **Statement:** The UI SHOULD be able to reset the demo space to its pristine sample content.
 
 **Rationale / source:** Derived.
@@ -405,6 +437,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Re-base reset on `MemoryBackend` so it cannot touch user data.
 
 ### REQ-WEB-015 — GitHub Pages deployment of just the app
+
+> **Scope: Phase 1 (D-27).** Production app = GitHub Pages (`nsheaps.github.io/cept/app`) + PWA; no custom domain.
 
 **Statement:** A CI workflow MUST build only the web app and deploy it to GitHub Pages at a stable path (`nsheaps.github.io/cept/app/`), with the site root redirecting to it.
 
@@ -424,6 +458,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-016 — Pages deployment configured for demo space
 
+> **Scope: Phase 1.**
+
 **Statement:** The GitHub Pages app deployment MUST be configured at build time to open the demo space by default.
 
 **Rationale / source:** Owner requirement ("set up for the demo space").
@@ -440,6 +476,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Add the build flag to both workflows. This depends on REQ-WEB-012.
 
 ### REQ-WEB-017 — Read-only docs in the Pages deployment
+
+> **Scope: Phase 2 (D-26).** The read-only docs site belongs with static rendering / the docs site. Whether PR #67 lands, is reworked or closed is still awaiting the owner.
 
 **Statement:** The GitHub Pages app deployment MUST expose Cept's documentation as a read-only space that can be browsed inside the app.
 
@@ -459,6 +497,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 ### REQ-WEB-018 — Bundled docs generated from `docs/content`
 
+> **Scope: Phase 2 (D-26).** Bundled-docs generation is Phase 2 with the docs site (see REQ-SSG-016).
+
 **Statement:** Documentation shipped inside the app SHOULD be generated at build time from `docs/content`, the single source of truth, and never copied by hand.
 
 **Rationale / source:** Derived (owner: docs must be kept up to date).
@@ -475,6 +515,8 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 **Gap:** Add the codegen step and the drift check.
 
 ### REQ-WEB-019 — PR preview deployments
+
+> **Scope: Phase 1.**
 
 **Statement:** Every PR SHOULD get an isolated preview deployment of the app (`/cept/pr-N/`) that is removed when the PR closes, optionally with a space for comparing against the live docs.
 
@@ -494,6 +536,8 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 **Gap:** Wire up `generate-live-docs.sh` or remove the stub, and update SPECIFICATION 9.1.1.
 
 ### REQ-WEB-020 — Per-deployment storage isolation
+
+> **Scope: Phase 1.**
 
 **Statement:** Deployments that share an origin (production and previews) MUST use isolated IndexedDB, Web Storage and Cache Storage namespaces.
 
@@ -516,6 +560,8 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 
 ### REQ-WEB-021 — SPA deep-link fallback on Pages
 
+> **Scope: Phase 1.**
+
 **Statement:** Deep links such as `/cept/app/s/<space>/<page>` and `/cept/app/docs/<page>` MUST resolve on GitHub Pages through a 404 fallback that restores the route.
 
 **Rationale / source:** Derived.
@@ -531,6 +577,8 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 **Gap:** Document it and add the e2e test.
 
 ### REQ-WEB-022 — Automated tests for SW/PWA on the built bundle
+
+> **Scope: Phase 1.**
 
 **Statement:** CI MUST test service-worker install, offline load, the update flow and manifest installability against the production build served under a non-root base path.
 
@@ -549,6 +597,8 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 **Gap:** Add the built-bundle e2e project (see [10-engineering-and-ci.md](10-engineering-and-ci.md)).
 
 ### REQ-WEB-023 — Browser-only local folder spaces
+
+> **Scope: Phase 1 (D-29).** File System Access API folders on the web (REQ-WS-012) are a Phase 1 backend.
 
 **Statement:** Where the browser supports the File System Access API, the browser app SHOULD let users open a local folder as a space.
 
@@ -575,11 +625,11 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 2. **Who syncs.** **Decided (D-4+D-5):** Service worker = offline caching + queued-write flushing only (~30 s lifetime; no `RTCPeerConnection`). Live sync leadership runs in a SharedWorker (one per origin), falling back to a leader tab via Web Locks + BroadcastChannel. `SyncEngine` lives in `@cept/core`. Proposed refinement on SharedWorker fallback detail pending owner ack.
 3. **Demo storage.** The owner requires an in-memory demo. SPECIFICATION 5.10.7 and TASKS T0.12 say IndexedDB with `CEPT_DEMO_MODE`, and the code writes into the user's default space. Do we confirm `MemoryBackend` and drop demo writes to the default space?
 4. **Daemon and "client-only".** **Decided (D-4):** Client-only framing retired; daemon is optional and additive. Browser app works alone. See Conflict 2 above for SW vs SharedWorker responsibilities.
-5. **Read-only docs form.** Should the docs be an in-app space (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
-6. **CORS proxy.** Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
+5. **Read-only docs form.** **Timing decided (D-26):** the read-only docs site and bundled-docs generation are Phase 2; the in-app vs static form is still open, and PR #67 disposition is still awaiting the owner. Should the docs be an in-app space (current code, and [PR #67](https://github.com/nsheaps/cept/pull/67)), a static-rendered site, or both? Should the in-app docs clone from GitHub at runtime (PR #67) or be bundled at build time (REQ-WEB-018)?
+6. **CORS proxy.** **Partly answered (D-26, D-27):** the relay Worker (a Worker just for Cept) and all nsheaps/iac work are Phase 2; Phase 1 browser git transport is still awaiting the owner. Replace the public `cors.isomorphic-git.org` with the Cloudflare worker proxy in nsheaps/iac? (See [09-remotes-and-auth.md](09-remotes-and-auth.md).)
 7. **Deploy cadence.** Production deploys only on `v*` tags. Should `main` deploy continuously to `/cept/app/`?
 8. **Stale task checkboxes.** TASKS T7.3, T0.12, T6.5, T5.8 and P2.7 are checked even though the work is broken, missing or not wired. Uncheck them, or move them to continuation tasks?
-9. **Desktop runtime.** CLAUDE.md names Electrobun (macOS) and Electron (Windows/Linux), and the owner says only "packaged app". This matters here only because the shells must mount `@cept/ui` (REQ-WEB-001).
+9. **Desktop runtime.** **Answered (D-28):** desktop is Electrobun (macOS dmg arm64+x64, Windows NSIS x64, Linux AppImage + deb x64) with the Electrobun updater fed from GitHub Releases. CLAUDE.md names Electrobun (macOS) and Electron (Windows/Linux), and the owner says only "packaged app". This matters here only because the shells must mount `@cept/ui` (REQ-WEB-001).
 
 ---
 

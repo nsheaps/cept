@@ -2,6 +2,8 @@
 
 **Status:** Draft, 2026-10-06 · **Area ID prefix:** `REQ-SSG` · **Owner:** nsheaps
 
+> **Scope: Phase 2 (D-26).** All REQ-SSG requirements are Phase 2 (static rendering / SSG / docs site). Nothing in this area ships in Phase 1.
+
 This document sets out the requirements for Cept's **static rendered browser component** and the **static site generation** built on it. The component is "the UI interface sans interface", meaning Cept's page rendering with none of the editing chrome, used for things like a public Notion-style site. Static site generation turns a space into uploadable static assets through a CLI `render` command. Cept's own documentation site has to be built and deployed with that same pipeline so the pipeline gets tested end to end. Every requirement below is checked against the current code, open PRs and current docs, and records the evidence.
 
 **Related:**
@@ -154,6 +156,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-001 — Static rendered browser component exists
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
+
 - **Statement:** Cept MUST provide a static/read-only rendering component that shows space pages with the same visual rendering as the editor (same block renderers) and no editing chrome: no toolbars, slash menu or drag handles, no page add/rename/delete, and no settings or space management.
 - **Priority:** MUST
 - **Source:** handler ("static rendered browser component — the UI interface sans interface for things like a public notion site, but with cept").
@@ -170,6 +174,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-002 — Static renderer shipped as its own build artifact
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
+
 - **Statement:** The build MUST produce a static-renderer (viewer) bundle separate from the editing SPA. It must leave out editor-only code paths (TipTap editing UI, git write paths, settings UI) so published sites are small and read-only by construction.
 - **Priority:** MUST
 - **Source:** derived. A deployable form of the handler's "static rendered browser component" needs this.
@@ -184,6 +190,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** TASKS P8.4.
 
 ### REQ-SSG-003 — Full block fidelity in static output
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. Inline database views are Phase 2 as well (D-26, D-36); mermaid renders as on GitHub (D-33).
 
 - **Statement:** Static output MUST render every block type the editor supports, looking the same as in the editor. That includes GFM tables and footnotes, callouts, toggles, mermaid and other fenced-code plugin blocks, math, embeds, and inline database views (read-only).
 - **Priority:** MUST
@@ -201,6 +209,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-004 — Static rendering shares the editor's rendering pipeline
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. The single markdown parser and one pipeline in the editor are Phase 1 (D-14, D-15, D-33).
+
 - **Statement:** Static HTML generation MUST use the same parser and rendering code as the browser component. It must not use a separate lightweight converter, so published output cannot drift from in-app rendering.
 - **Priority:** MUST
 - **Source:** derived from the "static rendered browser component" being the same UI component.
@@ -215,6 +225,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** none.
 
 ### REQ-SSG-005 — Navigation, cross-links and deep links in static site
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. Crosslinks are standard GFM links (`[link text](https://example.com)` syntax, with a relative path to the target page); wiki-links are out (D-32), so "wiki-link" in the criteria below does not apply.
 
 - **Statement:** Static output MUST include page-tree navigation and resolve wiki/cross-links between pages to static URLs. Every page MUST have a URL that loads directly on static hosting, including GitHub Pages subpaths.
 - **Priority:** MUST
@@ -231,6 +243,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-006 — SEO-friendly pre-rendered HTML
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
+
 - **Statement:** Each static page MUST be emitted as pre-rendered HTML with title, description and OpenGraph meta tags. Its content must be readable with JavaScript disabled, and it may be hydrated progressively.
 - **Priority:** MUST
 - **Source:** derived (public Notion-site-like publishing; TASKS P8.6).
@@ -245,6 +259,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** TASKS P8.6.
 
 ### REQ-SSG-007 — CLI "render static site" command
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. Static rendering ships in Phase 2 even though the CLI itself is later (D-26); the `render` command or an equivalent build script is delivered with SSG.
 
 - **Statement:** The Cept CLI MUST provide a command (e.g. `cept render <space> --out <dir>`) that turns a space into a directory of static assets ready to upload.
 - **Priority:** MUST
@@ -261,6 +277,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** none.
 
 ### REQ-SSG-008 — Static render output contract
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** The render command's output MUST follow a documented contract. It contains an `index.html` entry, one HTML file per page at a stable slug path, hashed `assets/` (JS, CSS, fonts), copied space attachments, a JSON nav manifest and search index, a `404.html`, and an optional `CNAME`. The base path is configurable. Identical input MUST produce byte-identical output.
 - **Priority:** MUST
@@ -292,6 +310,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-009 — Render input is a space root
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. Nested spaces are later (D-26, D-30). Multiple sibling spaces per repo are in scope (D-30), and `space.cept.yaml` may declare an optional `branch` (D-30).
+
 - **Statement:** The render command MUST accept any space root (marked by `space.cept.yaml` or `space.cept.yml`) on any supported backend. A repo or folder that holds several sibling spaces is rendered one space at a time (or each space to its own output directory). Nested spaces are deferred (D-3).
 - **Priority:** MUST
 - **Source:** derived (joins the handler's space and CLI requirements; see [03-spaces-and-storage.md](03-spaces-and-storage.md)).
@@ -305,6 +325,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** none.
 
 ### REQ-SSG-010 — Embeddable script tag / runtime renderer
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** Cept SHOULD provide an embeddable `<script>` that renders a public Git-backed space read-only inside any page with no build step. This complements CLI pre-rendering and does not replace it.
 - **Priority:** SHOULD
@@ -320,6 +342,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-011 — Custom domain for published sites
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. Applies to published sites only; the app itself stays on GitHub Pages with no custom domain, and nsheaps.dev is out of scope (D-27, D-26).
+
 - **Statement:** Published static sites SHOULD support custom domains, through `CNAME` output and absolute-URL configuration.
 - **Priority:** SHOULD
 - **Source:** existing spec (TASKS P8.7).
@@ -332,6 +356,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** TASKS P8.7.
 
 ### REQ-SSG-012 — Read-only public viewing of Git-backed spaces
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** A public Git-backed space MUST be viewable read-only through the static renderer (CLI output or embed), with the same page tree and content the editor shows.
 - **Priority:** MUST
@@ -346,6 +372,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** [PR #67](https://github.com/nsheaps/cept/pull/67) (remote spaces, content browsing; open, not merged).
 
 ### REQ-SSG-013 — Cept docs site is generated by Cept's own static site generation
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** Cept's documentation site MUST be built from `docs/` (as a Cept space) by the same render pipeline that users run. It must not use a separate docs framework or hand-bundled constants.
 - **Priority:** MUST
@@ -362,6 +390,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-014 — Docs site deployed as a static site
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
+
 - **Statement:** CI MUST deploy the generated docs site to static hosting (GitHub Pages) on every main release, at a stable path (e.g. `/cept/docs/`), separately from the app deployment.
 - **Priority:** MUST
 - **Source:** handler.
@@ -375,6 +405,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** none.
 
 ### REQ-SSG-015 — Docs site deployment e2e-tests static site generation
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** CI MUST run end-to-end tests against the generated docs site. It builds the site with `cept render`, serves the output statically, and uses Playwright to check page load, navigation, cross-links, block rendering (including mermaid), search, deep links and no-JS/SEO meta. This MUST run on PRs that touch the renderer or the docs.
 - **Priority:** MUST
@@ -395,6 +427,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-016 — Single source of truth for docs content
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2. The in-app bundled-docs side is REQ-WEB-018, also Phase 2.
+
 - **Statement:** `docs/content/**/*.md` MUST be the only authored copy of the docs. Any bundled or in-app copy MUST be generated at build time and never maintained by hand.
 - **Priority:** MUST
 - **Source:** derived (prerequisite for REQ-SSG-013 and for accurate docs).
@@ -409,6 +443,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 ### REQ-SSG-017 — PR previews of static output
 
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
+
 - **Statement:** Each PR SHOULD publish a preview of the generated docs/static site next to the app preview, so reviewers can check changes to static rendering.
 - **Priority:** SHOULD
 - **Source:** derived.
@@ -422,6 +458,8 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 - **Related:** none.
 
 ### REQ-SSG-018 — Static output works on subpath static hosting
+
+> **Scope: Phase 2 (D-26).** Static rendering / SSG / docs site is Phase 2.
 
 - **Statement:** Render output MUST work both at the root and under a subpath (e.g. `https://nsheaps.github.io/cept/docs/`), with a configurable base URL and a 404 fallback.
 - **Priority:** MUST
@@ -439,16 +477,16 @@ Today there are three unconnected ways to turn markdown into HTML: the editor, t
 
 The owner needs to decide these:
 
-1. **How the docs site is built.** The handler wants Cept's own SSG to generate the docs, as a dogfooding e2e test. SPECIFICATION.md (~208, §11.1 ~1639) and CLAUDE.md say Starlight or VitePress. The code bundles hand-copied markdown into the SPA, and [PR #67](https://github.com/nsheaps/cept/pull/67) moves to a runtime git clone. That makes three approaches. **Proposed:** Cept SSG only, and drop Starlight/VitePress from the spec.
-2. **What kind of renderer.** The handler wants a CLI `render` that produces uploadable static assets. roadmap.md (~154–161) and continue.md (~453–456) specify a zero-build runtime `<script>` renderer. TASKS P8.6 adds "SEO-friendly server-rendered output" as a third model. **Proposed:** CLI pre-render with optional hydration as the primary model (MUST), and the embed as a secondary model (SHOULD, REQ-SSG-010).
+1. **How the docs site is built.** **Timing decided (D-26):** Phase 2; the approach is not yet decided. The handler wants Cept's own SSG to generate the docs, as a dogfooding e2e test. SPECIFICATION.md (~208, §11.1 ~1639) and CLAUDE.md say Starlight or VitePress. The code bundles hand-copied markdown into the SPA, and [PR #67](https://github.com/nsheaps/cept/pull/67) moves to a runtime git clone. That makes three approaches. **Proposed:** Cept SSG only, and drop Starlight/VitePress from the spec.
+2. **What kind of renderer.** **Timing decided (D-26):** Phase 2. The handler wants a CLI `render` that produces uploadable static assets. roadmap.md (~154–161) and continue.md (~453–456) specify a zero-build runtime `<script>` renderer. TASKS P8.6 adds "SEO-friendly server-rendered output" as a third model. **Proposed:** CLI pre-render with optional hydration as the primary model (MUST), and the embed as a secondary model (SHOULD, REQ-SSG-010).
 3. **How much chrome the static component keeps.** The handler says "sans interface". roadmap.md (~158) says "full Cept UI in read-only mode (sidebar, search…)". **Proposed:** no editing or app chrome. Navigation sidebar, search and breadcrumbs are each opt-in through config, and on by default for the docs site.
-4. **Where the docs deploy.** SPECIFICATION.md §9.5 says `/cept/docs/` through `docs.yml`. Today docs live only inside the app at `/cept/app/docs`, and `/cept/` redirects to `/cept/app/`. Should the in-app "Cept Docs" space remain once the static docs site exists, and if so, should it read the static output or `docs/content`?
-5. **Workflow names.** SPECIFICATION.md (~134) names `release-web.yml`, but the real deploy is the `deploy-web` job in `cd.yml` (triggered by `v*` tags). Should docs deploy on release tags only, or on every push to main? The handler's wording ("on every main release") is ambiguous.
+4. **Where the docs deploy.** **Timing decided (D-26):** Phase 2. SPECIFICATION.md §9.5 says `/cept/docs/` through `docs.yml`. Today docs live only inside the app at `/cept/app/docs`, and `/cept/` redirects to `/cept/app/`. Should the in-app "Cept Docs" space remain once the static docs site exists, and if so, should it read the static output or `docs/content`?
+5. **Workflow names.** **Timing decided (D-26):** Phase 2. SPECIFICATION.md (~134) names `release-web.yml`, but the real deploy is the `deploy-web` job in `cd.yml` (triggered by `v*` tags). Should docs deploy on release tags only, or on every push to main? The handler's wording ("on every main release") is ambiguous.
 6. **Terminology.** The handler says "spaces" with a `space.cept.ya?ml` root. Code and docs say "spaces" (`SpaceManager.ts`, `DOCS_SPACE_INFO`, "Add a read-only space"). Is this a rename, and how do existing spaces migrate (see [03-spaces-and-storage.md](03-spaces-and-storage.md))?
-7. **Nested spaces in output.** Deferred with nesting (D-3). When nesting returns: render a child inline under its parent's URL, or as a separate site the parent links to?
+7. **Nested spaces in output.** **Decided (D-26, D-30):** nested spaces are later. Deferred with nesting (D-3). When nesting returns: render a child inline under its parent's URL, or as a separate site the parent links to?
 8. **TASKS T9.1** is checked as done although no docs site framework exists. Should it be unchecked, or rewritten to match the new direction?
-9. **Two HTML pipelines.** The core regex exporter conflicts with the requirement for a single rendering path (REQ-SSG-004). Should single-page HTML export move onto the static renderer, or be removed?
-10. **Mermaid in static output:** render to SVG at build time (needs a headless browser or a mermaid SSR approach under Bun), or render on the client at hydration (fails the no-JS requirement for diagrams)?
+9. **Two HTML pipelines.** **Partly answered (D-14, D-15, D-33):** one markdown pipeline is Phase 1; the static path is Phase 2. The core regex exporter conflicts with the requirement for a single rendering path (REQ-SSG-004). Should single-page HTML export move onto the static renderer, or be removed?
+10. **Mermaid in static output:** **Timing decided (D-26):** Phase 2; mermaid must render as on GitHub and is the first fenced-block plugin (D-33). Render to SVG at build time (needs a headless browser or a mermaid SSR approach under Bun), or render on the client at hydration (fails the no-JS requirement for diagrams)?
 
 ## 6. Stale documentation
 

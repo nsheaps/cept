@@ -97,6 +97,8 @@ Status is checked against the code on 2026-10-06. "Wired" means the feature is r
 
 ## 4. Comment architecture
 
+> **Decided (D-34).** The diagrams below show the superseded sidecar layout. Comments are stored inline in the page as `<!-- cept:comment {...} -->` markers; the anchor-resolution and state ideas still apply, with threading and resolving later.
+
 ```mermaid
 flowchart LR
   subgraph Space["Space folder (any backend)"]
@@ -140,6 +142,8 @@ stateDiagram-v2
 
 ### REQ-NTN-001 — Notion parity is tracked feature by feature
 
+> **Scope: Phase 1 (D-35).** Parity table upkeep. Database rows are Phase 2 (D-26, D-36); templates and synced blocks are later; Notion import is out.
+
 - **Statement:** Cept MUST support Notion's features as far as its file-based design allows. Every Notion feature MUST appear in the parity table (§3), mapped to a requirement or recorded as a gap with a reason.
 - **Priority:** MUST
 - **Source:** owner, 2026-10-06: "We need to support notion features to the best we can, that's where the 'database' requirement comes from."
@@ -152,12 +156,14 @@ stateDiagram-v2
 
 ### REQ-NTN-002 — Comment threads anchored to text in a page
 
+> **Scope: Phase 1 (D-34).** Anchor data lives inside the inline comment marker in the page, not in a sidecar.
+
 - **Statement:** A user MUST be able to select text in a page and start a comment thread on it. The thread MUST stay attached to that text as the page is edited, by the page's own author, by co-editors, or outside Cept (for example in a text editor or a git merge).
 - **Priority:** MUST (next)
 - **Source:** owner, 2026-10-06 ("we need to support comment threads as well … close to one of the next things we implement").
 - **Acceptance criteria:**
   - Selecting text and choosing "Comment" (toolbar button or `Mod-Alt-M`) opens a new thread on that selection.
-  - The anchor stores the quoted text plus a little context before and after it, and the heading path it sits under. It does not store editor positions or IDs inside the Markdown.
+  - The anchor stores the quoted text plus a little context before and after it, and the heading path it sits under. It does not store editor positions.
   - After edits elsewhere in the page, the thread highlights the same text.
   - If the quoted text itself changes, the resolver accepts a close match; if none is found, the thread becomes **detached** and is listed at page level with its last quote. A detached thread can be re-attached to a new selection.
   - Overlapping threads on the same text are allowed.
@@ -166,6 +172,8 @@ stateDiagram-v2
 - **Gap:** Comment model and anchor resolver in core; selection command in the editor.
 
 ### REQ-NTN-003 — Page-level comment threads
+
+> **Scope: Phase 1 (D-34).**
 
 - **Statement:** A user MUST be able to start a thread on the page as a whole, not tied to any text.
 - **Priority:** MUST (next)
@@ -178,6 +186,8 @@ stateDiagram-v2
 - **Gap:** Same model as REQ-NTN-002 with an empty anchor.
 
 ### REQ-NTN-004 — Replies, edits, resolve and reopen
+
+> **Scope: later (D-26, D-34).** Threading (replies) and resolving are later; the Phase 1 comment structure leaves room for them.
 
 - **Statement:** A thread MUST hold an ordered list of comments. Users MUST be able to reply, edit or delete their own comments, and resolve or reopen a thread.
 - **Priority:** MUST (next)
@@ -193,11 +203,13 @@ stateDiagram-v2
 
 ### REQ-NTN-005 — Comments stored as plain YAML files in the space
 
-- **Statement:** Comments MUST be stored as plain YAML files inside the space, through the `StorageBackend`, so they travel with the space on every backend (browser, local folder, git, and later gdrive and sftp). Adding or changing a comment MUST NOT change the page's Markdown file.
+> **Decided (D-34).** Comments are stored inline in the page as structured HTML comments, e.g. `<!-- cept:comment {"id":...,"author":...,"created":...,"anchor":...,"body":"markdown"} -->` (exact format to be specified), not in a sidecar file. A later version may reference a separate file. Scope: Phase 1.
+
+- **Statement:** Comments MUST be stored inline in the page's Markdown file as structured HTML comments (`<!-- cept:comment {...} -->` with a JSON payload holding `id`, `author`, `created`, `anchor` and `body`; exact format to be specified), through the `StorageBackend`, so they travel with the page on every backend (browser, local folder, git). There is no sidecar file (D-34).
 - **Priority:** MUST (next)
 - **Source:** owner use case (comments readable from a git checkout); [REQ-WS-008](03-spaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface).
-- **Proposed layout:** a sidecar next to each page: `guides/setup.md` → `guides/setup.comments.cept.yaml`. The `.cept.yaml` suffix matches `space.cept.yaml` (D-1). Moving or renaming a page in Cept moves its sidecar too. An alternative is `.cept/comments/<page-id>.yaml` as in SPECIFICATION §4.6; see §6 question 1.
-- **Proposed format:**
+- **Proposed layout (superseded by D-34, kept for reference):** a sidecar next to each page: `guides/setup.md` → `guides/setup.comments.cept.yaml`. The `.cept.yaml` suffix matches `space.cept.yaml` (D-1). Moving or renaming a page in Cept moves its sidecar too. An alternative is `.cept/comments/<page-id>.yaml` as in SPECIFICATION §4.6; see §6 question 1.
+- **Proposed format (superseded by D-34; the inline marker carries the same fields):**
 
   ```yaml
   version: 1
@@ -224,23 +236,25 @@ stateDiagram-v2
 
 - **Acceptance criteria:**
   - Comments round-trip on every backend that is wired (browser, local folder, git): create, reload, all fields intact.
-  - A page with no threads has no sidecar file.
-  - Moving, renaming or deleting a page in Cept moves, renames or deletes its sidecar in the same operation. Deleting asks first if open threads exist.
-  - Sidecars are hidden from the sidebar page tree.
+  - A page with no comments contains no `cept:comment` markers.
+  - Comments travel with the page because they live in it. Deleting a page that has comments asks first.
+  - Comment markers are HTML comments, so they stay invisible in other Markdown viewers such as GitHub.
   - The schema is documented and versioned (`version: 1`).
 - **Current state:** **not-started.**
 - **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §4.6 puts threads in `.cept/comments/<page-id>.yaml`, but pages have no stable ID in their file today (pages are `pages/page-<timestamp>.md`; see [README §2](README.md#2-cept-today)).
-- **Gap:** Owner choice of layout (§6 question 1), then a `CommentStore` in core.
+- **Gap:** Layout decided (D-34); specify the exact marker format, then a comment parser/serializer in core.
 
 ### REQ-NTN-006 — Agent-readable comment format and workflow
 
-- **Statement:** An agent (or a person) with only a checkout of the space MUST be able to find open threads, read the text they refer to, and reply, by editing the YAML files. Cept MUST pick up those replies the next time it syncs.
+> **Scope: Phase 1 (D-34).** Agents read and reply by editing the inline `cept:comment` markers in the Markdown.
+
+- **Statement:** An agent (or a person) with only a checkout of the space MUST be able to find open threads, read the text they refer to, and reply, by editing the Markdown files. Cept MUST pick up those replies the next time it syncs.
 - **Priority:** MUST (next)
 - **Source:** owner, 2026-10-06: "so I can leave comments and ask you to check them for feedback rather than back and forth here."
 - **Acceptance criteria:**
-  - A short guide in `docs/content/guides/` explains the format, how to find open threads (for example `grep -l "status: open" -r --include='*.comments.cept.yaml'`), and how to append a reply.
+  - A short guide in `docs/content/guides/` explains the format, how to find open threads (for example `grep -rl 'cept:comment' --include='*.md'`), and how to append a reply.
   - Hand-written replies that follow the guide (new comment appended, unique `id`, ISO timestamp) load without errors. Small mistakes (missing `id`, missing timestamp) are repaired on load with a warning, not rejected.
-  - A YAML file that cannot be parsed never deletes threads: Cept shows an error for that page and leaves the file alone.
+  - A `cept:comment` marker that cannot be parsed is preserved verbatim and never deleted: Cept shows a warning for that page.
   - Agent authors use `id: "agent:<name>"` so the UI can mark them.
   - Later (not required now): `cept comments list|reply` in the CLI ([05](05-cli-and-daemon.md)).
 - **Current state:** **not-started.**
@@ -249,11 +263,13 @@ stateDiagram-v2
 
 ### REQ-NTN-007 — Comment author identity
 
+> **Decided (D-34).** Author = the signed-in GitHub identity (from the PAT's user). Scope: Phase 1.
+
 - **Statement:** Every comment MUST record an author with a display name and a stable ID. When the user is signed in to a remote, the ID comes from that account; otherwise from a local display name set once in settings.
 - **Priority:** MUST (next)
 - **Source:** Notion parity; [09 Remotes and auth](09-remotes-and-auth.md).
 - **Acceptance criteria:**
-  - Signed in with GitHub: `id: "github:<login>"`. Google: `id: "google:<email-hash>"` (no raw email in the file).
+  - Signed in with GitHub: `id: "github:<login>"`. Google identities arrive with REQ-AUTH-006 (later).
   - Not signed in: the app asks for a display name the first time the user comments, and uses `id: "local:<random>"`, stored in settings.
   - Users can edit or delete only comments whose author ID matches theirs. This is a UI rule, not security; anyone with write access to the files can change them.
 - **Current state:** **not-started.** The GitHub auth code exists but sign-in is not working end to end (see [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app)).
@@ -261,6 +277,8 @@ stateDiagram-v2
 - **Gap:** Identity helper shared with collaboration presence.
 
 ### REQ-NTN-008 — Comments UI in the editor
+
+> **Scope: Phase 1 (D-34).** Notifications are an in-app "new since last visit" badge only. Resolve/reopen controls wait for the later threading work.
 
 - **Statement:** The editor MUST show where comments are and let users read and write them without leaving the page.
 - **Priority:** MUST (next)
@@ -277,11 +295,13 @@ stateDiagram-v2
 
 ### REQ-NTN-009 — Comments in static and read-only views
 
+> **Scope: Phase 2 (D-26).** Comments in static views come with static rendering. Hiding comment actions on read-only backends ships with the Phase 1 comments UI (REQ-NTN-008).
+
 - **Statement:** Static output MUST leave comments out unless a render option includes them. Read-only views (the read-only docs site, a public repo without write access) MUST NOT offer to add comments.
 - **Priority:** SHOULD
 - **Source:** derived from [02 Static rendering](02-static-rendering.md) and [REQ-WS-008](03-spaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface) capabilities.
 - **Acceptance criteria:**
-  - `cept render` does not copy `*.comments.cept.yaml` to the output by default.
+  - Static output strips `cept:comment` markers by default (Phase 2).
   - The comment actions are hidden when the backend reports no write capability.
 - **Current state:** **not-started.**
 - **Docs state:** undocumented.
@@ -289,18 +309,22 @@ stateDiagram-v2
 
 ### REQ-NTN-010 — Comments sync and merge cleanly
 
+> **Scope: Phase 1 (D-34).** File sync and merge only; live updates depend on co-editing, which is later (REQ-COL).
+
 - **Statement:** Comments MUST sync with the space like any other file, and concurrent comments from different people MUST NOT be lost. When co-editing is active, new comments MUST appear for other participants without a reload.
 - **Priority:** MUST (next) for file sync; SHOULD for live updates (depends on [04](04-collaboration.md)).
 - **Source:** derived from the owner's use case (comments added in the app and by an agent in git at the same time).
 - **Acceptance criteria:**
   - Writes are append-friendly: new threads and comments are added at the end of their list, and every item has its own ID, so two people appending at once produce a simple git merge.
-  - When a git sync hits a conflict in a sidecar, Cept merges the two versions by thread and comment ID (union; for the same comment the later `edited` wins) instead of asking the user.
+  - When a git sync hits a conflict in a page that contains comment markers, Cept merges the markers by comment ID (union; for the same comment the later `edited` wins) instead of asking the user.
   - With co-editing, thread changes go through the same session as page edits.
 - **Current state:** **not-started.** Sync itself is not wired yet (see [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync)).
 - **Docs state:** undocumented.
 - **Gap:** ID-based merge function in core; hook into sync conflict handling.
 
 ### REQ-NTN-011 — Comment tests
+
+> **Scope: Phase 1 (D-34).** Tests cover the inline marker format.
 
 - **Statement:** The comment feature MUST ship with unit tests for the model, anchor resolver, loader and merge, and an e2e test that adds, replies to, resolves and reloads a thread.
 - **Priority:** MUST (next)
@@ -315,18 +339,22 @@ stateDiagram-v2
 
 ### REQ-NTN-012 — Move and reorder pages in the sidebar
 
+> **Scope: Phase 1 (D-35).** Move and reorder use a front-matter `order` field.
+
 - **Statement:** Users SHOULD be able to move a page under any other page, and reorder siblings, from the sidebar (drag and drop, and a "Move to…" picker).
 - **Priority:** SHOULD
 - **Source:** Notion parity.
 - **Acceptance criteria:**
   - Dragging a page onto another nests it; dragging between pages reorders.
   - "Move to…" offers a searchable page picker. Keyboard users can move pages without dragging.
-  - With a folder layout (D-3), moving a page moves its file, child folder and comment sidecar.
+  - With a folder layout (D-3), moving a page moves its file and child folder (comments travel inside the page).
 - **Current state:** **partial.** The tree renders and the context menu offers "Duplicate" and "Move…" (which calls `onMoveToRoot`, so it can only move to the top level) ([PageContextMenu.tsx](../../../packages/ui/src/components/sidebar/PageContextMenu.tsx)). No drag and drop.
 - **Docs state:** documented-as-desired (SPECIFICATION §5 page nesting).
 - **Gap:** Move-to picker, drag and drop, file moves.
 
 ### REQ-NTN-013 — Page icon and cover can be set in the UI
+
+> **Scope: Phase 1 (D-35).** Icon and cover are set in front matter.
 
 - **Statement:** Users SHOULD be able to set, change and remove a page's icon (emoji or image) and cover image from the page header.
 - **Priority:** SHOULD
@@ -341,6 +369,8 @@ stateDiagram-v2
 
 ### REQ-NTN-014 — Templates usable from the UI
 
+> **Scope: later (D-26, D-35).**
+
 - **Statement:** Users SHOULD be able to create a page or database from a template, and save a page as a template.
 - **Priority:** SHOULD
 - **Source:** Notion parity; SPECIFICATION §1 principle 4.
@@ -353,6 +383,8 @@ stateDiagram-v2
 
 ### REQ-NTN-015 — Synced blocks
 
+> **Scope: later (D-26, D-35).**
+
 - **Statement:** Users MAY place the same block content on several pages, with edits in one place showing everywhere.
 - **Priority:** MAY
 - **Source:** Notion parity.
@@ -363,6 +395,8 @@ stateDiagram-v2
 - **Gap:** Encoding decision, extension, resolver.
 
 ### REQ-NTN-016 — Page history UI
+
+> **Scope: Phase 1 (D-31, D-35).** History is provided by the storage backend (git history for GitHub-backed spaces); list, diff and restore are exposed via backend capabilities, and backends without history hide the UI.
 
 - **Statement:** Users SHOULD be able to see a page's history, view a diff and restore an earlier version, on backends that keep history (git).
 - **Priority:** SHOULD
@@ -376,6 +410,8 @@ stateDiagram-v2
 
 ### REQ-NTN-017 — Import from Notion
 
+> **Status: out of scope (D-26, D-35).** Notion import is not planned; existing importer code is left untouched.
+
 - **Statement:** Users SHOULD be able to import a Notion export (ZIP of Markdown and CSV) into a space, keeping page nesting, databases and attachments.
 - **Priority:** SHOULD
 - **Source:** Notion parity; [from-notion.md](../../content/migration/from-notion.md).
@@ -388,10 +424,10 @@ stateDiagram-v2
 
 ## 6. Conflicts and open questions
 
-1. **Comment file location.** Proposed: a sidecar per page (`setup.comments.cept.yaml`). It moves with the page, is easy to find in a checkout, and diffs per page. Its cost is one extra file next to commented pages. SPECIFICATION §4.6 uses `.cept/comments/<page-id>.yaml`. That keeps folders clean but needs a stable page ID in every page's front matter and an extra lookup to find a page's comments. Owner to choose.
-2. **Anchors in the Markdown or not.** The proposal keeps the Markdown untouched and anchors by quote. Writing invisible markers (HTML comments) into the Markdown would make anchors exact but would change the page file on every comment and show up in diffs. Recommendation: quotes only.
-3. **Notifications.** Notion notifies on replies and mentions. Cept has no server. Options: none (v1), an in-app "new since last visit" badge, or later via the daemon. Recommendation: in-app badge only.
-4. **Comment bodies as Markdown.** Proposed yes (inline formatting and links), stored as text. Mentions in comments wait for REQ-EDT-004.
+1. **Comment file location. Answered (D-34): inline in the page as `cept:comment` HTML comments; no sidecar.** Proposed: a sidecar per page (`setup.comments.cept.yaml`). It moves with the page, is easy to find in a checkout, and diffs per page. Its cost is one extra file next to commented pages. SPECIFICATION §4.6 uses `.cept/comments/<page-id>.yaml`. That keeps folders clean but needs a stable page ID in every page's front matter and an extra lookup to find a page's comments. Owner to choose.
+2. **Anchors in the Markdown or not. Answered (D-34):** the marker is inline and carries an `anchor` field; its exact format is to be specified. The proposal keeps the Markdown untouched and anchors by quote. Writing invisible markers (HTML comments) into the Markdown would make anchors exact but would change the page file on every comment and show up in diffs. Recommendation: quotes only.
+3. **Notifications. Answered (D-34): in-app "new since last visit" badge only.** Notion notifies on replies and mentions. Cept has no server. Options: none (v1), an in-app "new since last visit" badge, or later via the daemon. Recommendation: in-app badge only.
+4. **Comment bodies as Markdown. Answered (D-34): yes, `body` is Markdown.** Proposed yes (inline formatting and links), stored as text. Mentions in comments wait for REQ-EDT-004.
 
 ## 7. Stale documentation
 
@@ -405,7 +441,7 @@ stateDiagram-v2
 | This area needs                                     | From                    | Requirement(s)                                                                                                                                                                                                                                                                                                                                                                                                   |
 | --------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | File access on every backend, write capability flag | Spaces and storage      | [REQ-WS-008](03-spaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface)                                                                                                                                                                                                                                                                                                                    |
-| Folder layout so sidecars sit next to pages         | Spaces and storage      | [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem)                                                                                                                                                                                                                                                                                                                             |
+| Folder layout for pages that hold inline comments   | Spaces and storage      | [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem)                                                                                                                                                                                                                                                                                                                             |
 | Sync and conflict handling                          | Spaces and storage, CLI | [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync), [REQ-CLI-004](05-cli-and-daemon.md)                                                                                                                                                                                                                                                                              |
 | Signed-in identity                                  | Remotes and auth        | [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app)                                                                                                                                                                                                                                                                                                                             |
 | Live updates                                        | Collaboration           | [REQ-COL-001](04-collaboration.md#req-col-001--co-editing-available-for-shared-spaces)                                                                                                                                                                                                                                                                                                                           |
