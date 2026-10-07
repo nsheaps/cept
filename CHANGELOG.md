@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.33](https://github.com/nsheaps/cept/compare/v0.7.32...v0.7.33) (2026-10-07)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([6e1c257](https://github.com/nsheaps/cept/commit/6e1c257b7fdae160aef4798d66247b0029404205))
+* **specs:** add in-scope vs deferred doc for the current build-out ([27b1c0b](https://github.com/nsheaps/cept/commit/27b1c0b2b0f29b83427d0d24ac7a20594e4dfed6))
+
 ## [0.7.32](https://github.com/nsheaps/cept/compare/v0.7.31...v0.7.32) (2026-10-07)
 
 ### CI/CD
