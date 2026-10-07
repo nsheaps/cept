@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.32](https://github.com/nsheaps/cept/compare/v0.7.31...v0.7.32) (2026-10-07)
+
+### CI/CD
+
+* **e2e:** derive Playwright browser version from installed package ([#354](https://github.com/nsheaps/cept/issues/354)) ([c63848e](https://github.com/nsheaps/cept/commit/c63848e388246d77be404672a362d7720fbe646c))
+
 ## [0.7.31](https://github.com/nsheaps/cept/compare/v0.7.30...v0.7.31) (2026-08-23)
 
 ### Bug Fixes
