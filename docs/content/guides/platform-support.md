@@ -65,6 +65,16 @@ This means:
 
 The Add Space dialog only offers the kinds of space that work on your device: it checks for IndexedDB and the File System Access API before showing those options. Native mobile apps come later; on phones, install the PWA.
 
+## Opening a Folder in the Browser
+
+In Chrome or Edge on a computer, choose **Local folder** on the start page, or **Local folder** in the Add Space dialog, and pick a folder:
+
+- If the folder is a space (it has a `space.cept.yaml`), it opens right away.
+- If it is not, Cept lists the spaces in its subfolders, and offers to make the folder itself a space. Only that choice writes to the folder, and it adds a single file, `space.cept.yaml`.
+- Opening a folder and reading its pages changes nothing in it. Cept writes a page's file only after you edit that page. Your recent pages, favorites and expanded folders are kept in the browser, not in the folder.
+- Cept remembers the folder. After a reload or a new visit, the browser may ask for permission again: the space shows a **Reconnect folder** button, and the folder opens once you allow it.
+- Changes made to the folder outside Cept show after you reload the page; Cept does not watch the folder while it is open.
+
 ## Desktop-Specific Features (Coming Soon)
 
 - Native file system access for Local Folder backend

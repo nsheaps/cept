@@ -43,14 +43,19 @@ import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
+import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
-import { applyMoves, CeptSearchIndex, MemoryBackend } from '@cept/core';
-import type { ImportedPage, PageContent } from '@cept/core';
+import { applyMoves, CeptSearchIndex, MemoryBackend, reconnectFolder } from '@cept/core';
+import type { ImportedPage, PageContent, StorageBackend } from '@cept/core';
 import { parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
+import { initFolderSpace } from './storage/folder-space.js';
+import { useFolderHost } from './storage/folder-host.js';
+import { findSavedFolder, inspectFolder, restoreFolderSpaces } from './storage/folder-open.js';
+import type { FolderContents, FolderSpaceChoice } from './storage/folder-open.js';
 import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
 import type { GitHttp } from '@cept/core';
@@ -195,6 +200,21 @@ export function App() {
     error?: string;
   }>({ active: false });
   const [spaceLoadError, setSpaceLoadError] = useState<string | undefined>(undefined);
+  // Folders on this device (REQ-WS-012): null when this host cannot open them.
+  const folderHost = useFolderHost();
+  /** Saved folders the browser wants asked about again, by space id. */
+  const waitingFoldersRef = useRef(new Map<string, FileSystemDirectoryHandle>());
+  /** The page a link named in a folder space that was not connected yet. */
+  const pendingFolderPageRef = useRef<{ spaceId: string; pageId: string } | null>(null);
+  /** The active folder space whose folder must be reconnected from a click. */
+  const [folderToReconnect, setFolderToReconnect] = useState<
+    { id: string; name: string } | undefined
+  >(undefined);
+  /** A picked folder that is not a space, waiting for the user to choose what to open. */
+  const [pickedFolder, setPickedFolder] = useState<
+    | { handle: FileSystemDirectoryHandle; folder: StorageBackend; contents: FolderContents }
+    | undefined
+  >(undefined);
   /** Spaces opened this session whose conversion to folders still keeps a backup. */
   const [conversionBackups, setConversionBackups] = useState<Record<string, boolean>>({});
   const { messages: toastMessages, addToast, dismissToast } = useToast();
@@ -305,6 +325,13 @@ export function App() {
   const loadAndApplySpaceState = useCallback(
     async (spaceId: string, name: string) => {
       setSpaceLoadError(undefined);
+      setFolderToReconnect(undefined);
+      if (!spaces.isConnected(spaceId)) {
+        // A folder space after a reload: the browser asks again for its folder.
+        applySpace(emptySnapshot(name));
+        setFolderToReconnect({ id: spaceId, name });
+        return [];
+      }
       try {
         const { snapshot, selectedContent, converted, backupKept } = await spaces.open(
           spaceId,
@@ -380,7 +407,16 @@ export function App() {
     setSettings(initialSettings);
 
     // Load spaces manifest and then determine which space to restore
-    void spaces.load().then((manifest) => {
+    void spaces.load().then(async (manifest) => {
+      // Connect saved folders the browser still allows; the rest wait for a click.
+      if (folderHost) {
+        try {
+          const waiting = await restoreFolderSpaces(spaces, manifest, folderHost);
+          waitingFoldersRef.current = waiting;
+        } catch {
+          // Their spaces stay listed and offer to reconnect when opened.
+        }
+      }
       setSpacesManifest(manifest);
       const activeId = manifest.activeSpaceId;
       setUserSpaceId(activeId);
@@ -408,6 +444,7 @@ export function App() {
     initialSettings,
     shouldShowDemo,
     spaces,
+    folderHost,
     setSpacesManifest,
     setUserSpaceId,
     loadAndApplySpaceState,
@@ -451,6 +488,12 @@ export function App() {
 
     /** Show the route's page, following the migration map for a page of an old flat space. */
     const showRoutePage = async (spaceId: string, pageId: string, tree: PageTreeNode[]) => {
+      if (!spaces.isConnected(spaceId)) {
+        // A folder space waiting to be reconnected: show the page once it is.
+        routeDone();
+        pendingFolderPageRef.current = { spaceId, pageId };
+        return;
+      }
       let id: string | null = pageId;
       if (!findNode(tree, id)) {
         id = await spaces.movedPageId(spaceId, pageId).catch(() => null);
@@ -1109,6 +1152,8 @@ export function App() {
 
   const handleDeleteSpace = useCallback(
     (id: string) => {
+      waitingFoldersRef.current.delete(id);
+      void folderHost?.handles.remove(id).catch(() => undefined);
       void spaces.delete(id).then(({ manifest, active }) => {
         setSpacesManifest(manifest);
         if (id === userSpaceId) {
@@ -1117,7 +1162,7 @@ export function App() {
         }
       });
     },
-    [spaces, userSpaceId, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
+    [spaces, folderHost, userSpaceId, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
   );
 
   /** Keep a space's conversion to folders: its flat-layout backup is deleted. */
@@ -1196,6 +1241,158 @@ export function App() {
     },
     [spaces, saveActiveSpace, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
   );
+
+  /**
+   * Open a space in a picked folder: the space it already has (picking the
+   * same folder again goes back to it), or a new folder space. Reads only;
+   * nothing is written to the folder (REQ-WS-019).
+   */
+  const openFolderSpace = useCallback(
+    async (
+      handle: FileSystemDirectoryHandle,
+      folder: StorageBackend,
+      subPath: string,
+      name: string,
+    ) => {
+      if (!folderHost) return;
+      setPickedFolder(undefined);
+      const manifest = await spaces.load();
+      const savedId = await findSavedFolder(manifest, folderHost.handles, handle, subPath);
+      const saved = savedId ? manifest.spaces.find((s) => s.id === savedId) : undefined;
+      if (saved) {
+        waitingFoldersRef.current.delete(saved.id);
+        spaces.connectFolder(saved, folder);
+        setActiveSpace('user');
+        handleSwitchSpace(saved.id);
+        return;
+      }
+      saveActiveSpace();
+      setSpaceLoadError(undefined);
+      setNotFound(undefined);
+      setActiveSpace('user');
+      const id = `folder-${crypto.randomUUID()}`;
+      try {
+        await folderHost.handles.save(id, handle);
+      } catch {
+        addToast(`"${name}" opens now, but will need to be picked again after a reload.`, 'info');
+      }
+      const created = await spaces.create(name, undefined, {
+        kind: 'folder',
+        backend: folder,
+        ...(subPath ? { subPath } : {}),
+        id,
+      });
+      setSpacesManifest(created.manifest);
+      setUserSpaceId(id);
+      await loadAndApplySpaceState(id, name);
+    },
+    [
+      folderHost,
+      spaces,
+      saveActiveSpace,
+      handleSwitchSpace,
+      setSpacesManifest,
+      setUserSpaceId,
+      loadAndApplySpaceState,
+      addToast,
+    ],
+  );
+
+  /**
+   * "Open folder": show the folder picker (this must run from a click), then
+   * open the space the folder is, or ask which space in it to open.
+   */
+  const handleOpenFolder = useCallback(async () => {
+    if (!folderHost) return;
+    let handle: FileSystemDirectoryHandle | null;
+    try {
+      handle = await folderHost.pick();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Could not open that folder', 'error');
+      return;
+    }
+    if (!handle) return;
+    const folder = folderHost.open(handle);
+    try {
+      const contents = await inspectFolder(folder, handle.name);
+      if (contents.root?.error) {
+        addToast(
+          `"${handle.name}" has a space.cept.yaml Cept cannot use: ${contents.root.error}`,
+          'error',
+        );
+      } else if (contents.root) {
+        await openFolderSpace(handle, folder, '', contents.root.name);
+      } else {
+        setPickedFolder({ handle, folder, contents });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      addToast(`Could not read "${handle.name}": ${message}`, 'error');
+    }
+  }, [folderHost, openFolderSpace, addToast]);
+
+  /** Make the picked folder a space: write its marker, the one file Cept adds, then open it. */
+  const handleMakeFolderSpace = useCallback(async () => {
+    if (!pickedFolder) return;
+    const { handle, folder } = pickedFolder;
+    try {
+      await initFolderSpace(folder, handle.name);
+      await openFolderSpace(handle, folder, '', handle.name);
+    } catch (err) {
+      setPickedFolder(undefined);
+      const message = err instanceof Error ? err.message : String(err);
+      addToast(`Could not make "${handle.name}" a space: ${message}`, 'error');
+    }
+  }, [pickedFolder, openFolderSpace, addToast]);
+
+  /** Open a space found in a subfolder of the picked folder. */
+  const handleOpenNestedSpace = useCallback(
+    (choice: FolderSpaceChoice) => {
+      if (!pickedFolder) return;
+      const { handle, folder } = pickedFolder;
+      void openFolderSpace(handle, folder, choice.path, choice.name).catch((err: unknown) => {
+        addToast(err instanceof Error ? err.message : String(err), 'error');
+      });
+    },
+    [pickedFolder, openFolderSpace, addToast],
+  );
+
+  /**
+   * Ask the browser again for the folder of the active folder space (this
+   * must run from a click). Without a saved handle, the user picks it again.
+   */
+  const handleReconnectFolder = useCallback(async () => {
+    const target = folderToReconnect;
+    if (!target || !folderHost) return;
+    const space = spacesManifest?.spaces.find((s) => s.id === target.id);
+    if (!space) return;
+    let handle = waitingFoldersRef.current.get(target.id) ?? null;
+    if (!handle) handle = await folderHost.handles.load(target.id).catch(() => null);
+    if (handle) {
+      if (!(await reconnectFolder(handle))) {
+        addToast(`Cept was not allowed to open the folder "${handle.name}".`, 'error');
+        return;
+      }
+    } else {
+      try {
+        handle = await folderHost.pick();
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Could not open that folder', 'error');
+        return;
+      }
+      if (!handle) return;
+      await folderHost.handles.save(target.id, handle).catch(() => undefined);
+    }
+    waitingFoldersRef.current.delete(target.id);
+    spaces.connectFolder(space, folderHost.open(handle));
+    const tree = await loadAndApplySpaceState(target.id, target.name);
+    const pending = pendingFolderPageRef.current;
+    pendingFolderPageRef.current = null;
+    if (pending?.spaceId === target.id && findNode(tree, pending.pageId)) {
+      setSelectedPageId(pending.pageId);
+      setPages((prev) => expandToNode(prev, pending.pageId));
+    }
+  }, [folderToReconnect, folderHost, spacesManifest, spaces, loadAndApplySpaceState, addToast]);
 
   const handleImportComplete = useCallback(
     (importedPages: ImportedPage[]) => {
@@ -1753,6 +1950,43 @@ export function App() {
                 setShowTrash(false);
               }}
             />
+          ) : folderToReconnect && folderToReconnect.id === userSpaceId ? (
+            <div className="cept-space-error" data-testid="folder-reconnect">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M1.5 3.5h5l1.5 2h6.5v8h-13z" />
+              </svg>
+              <h2>Reconnect “{folderToReconnect.name}”</h2>
+              <p>
+                {folderHost
+                  ? 'This space is a folder on this device. Your browser asks again before Cept can open it.'
+                  : 'This space is a folder on this device, and this browser cannot open folders.'}
+              </p>
+              <div className="cept-space-error-actions">
+                {folderHost && (
+                  <button
+                    className="cept-space-error-btn"
+                    onClick={() => void handleReconnectFolder()}
+                    data-testid="folder-reconnect-btn"
+                  >
+                    Reconnect folder
+                  </button>
+                )}
+                <button
+                  className="cept-space-error-btn cept-space-error-btn--secondary"
+                  onClick={() => handleSwitchSpace('default')}
+                  data-testid="folder-reconnect-switch-default"
+                >
+                  Switch to default space
+                </button>
+              </div>
+            </div>
           ) : spaceLoadError ? (
             <div className="cept-space-error" data-testid="space-load-error">
               <svg
@@ -1793,6 +2027,7 @@ export function App() {
               onStartWriting={handleStartWriting}
               onTryDemo={handleResetDemo}
               onOpenDocs={handleOpenDocs}
+              onOpenFolder={folderHost ? () => void handleOpenFolder() : undefined}
             />
           ) : showTrash ? (
             <div className="cept-trash-view" data-testid="trash-view">
@@ -1953,7 +2188,26 @@ export function App() {
           setAddSpaceWizardOpen(false);
           setSettingsOpen(false);
         }}
+        onOpenFolder={
+          folderHost
+            ? () => {
+                // The picker opens first, while this is still the user's click.
+                void handleOpenFolder();
+                setAddSpaceWizardOpen(false);
+                setSettingsOpen(false);
+              }
+            : undefined
+        }
       />
+      {pickedFolder && (
+        <OpenFolderDialog
+          folderName={pickedFolder.handle.name}
+          spaces={pickedFolder.contents.nested}
+          onOpenSpace={handleOpenNestedSpace}
+          onMakeSpace={() => void handleMakeFolderSpace()}
+          onCancel={() => setPickedFolder(undefined)}
+        />
+      )}
       <ImportDialog
         isOpen={importDialogOpen}
         source={importSource}

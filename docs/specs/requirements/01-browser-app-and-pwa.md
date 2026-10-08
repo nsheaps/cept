@@ -78,7 +78,7 @@ Implementation status values: implemented, partial, stubbed, not-started, diverg
 | [REQ-WEB-020](#req-web-020--per-deployment-storage-isolation)                       | Per-deployment storage isolation                   | MUST     | partial     | undocumented           | n/a           |
 | [REQ-WEB-021](#req-web-021--spa-deep-link-fallback-on-pages)                        | SPA deep-link fallback on Pages                    | MUST     | implemented | documented-differently | stale         |
 | [REQ-WEB-022](#req-web-022--automated-tests-for-swpwa-on-the-built-bundle)          | Automated SW/PWA tests on the built bundle         | MUST     | partial     | undocumented           | n/a           |
-| [REQ-WEB-023](#req-web-023--browser-only-local-folder-spaces)                       | Browser-only local folder spaces                   | SHOULD   | stubbed     | documented-differently | stale         |
+| [REQ-WEB-023](#req-web-023--browser-only-local-folder-spaces)                       | Browser-only local folder spaces                   | SHOULD   | partial     | documented-as-desired  | accurate      |
 
 Rollup (23 requirements): 6 implemented, 12 partial, 1 stubbed, 3 not-started, 1 divergent.
 
@@ -615,11 +615,11 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 - The add-space wizard offers "Local folder" only when `showDirectoryPicker` exists.
 - The folder is opened through `WebFsBackend`, and existing files are not modified until the user edits them (CLAUDE.md rule 11).
 
-**Current state:** stubbed. [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) has `WebFsBackend` and the per-space handle store with permission restore (`createFolderHandleStore`, `restoreFolders`, `reconnectFolder`), all with tests, but nothing in `packages/ui` or `packages/web` references it or `showDirectoryPicker`. The landing page shows a disabled "Local folder … coming soon" button ([LandingPage.tsx](../../../packages/ui/src/components/landing/LandingPage.tsx) lines 112-117). The "Local" option in [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) creates another IndexedDB space, not a folder.
+**Current state:** partial. The landing page and the Add Space wizard open a folder through `WebFsBackend` when the browser has `showDirectoryPicker` (phase-1 plan PR 25); without it the landing button is disabled with a note and the wizard hides the option. Opening a folder writes nothing to it (REQ-WS-019); the marker is added only when the user asks. See [REQ-WS-012](03-spaces-and-storage.md#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) for the flow and tests.
 
-**Docs state:** documented-differently, stale. TASKS P2.7 ("Implement LocalFsBackend using File System Access API / Node fs") is checked, but [quick-start.md](../../content/getting-started/quick-start.md) (line 21) says "Local folder … (coming soon)". [platform-support.md](../../content/guides/platform-support.md) (lines 52-60) says web has File System Access support ("Chrome only"), which is not wired.
+**Docs state:** documented-as-desired, accurate. [platform-support.md](../../content/guides/platform-support.md#opening-a-folder-in-the-browser) and [quick-start.md](../../content/getting-started/quick-start.md) describe it.
 
-**Gap:** Wire `WebFsBackend` into the wizard (see [03-spaces-and-storage.md](03-spaces-and-storage.md)).
+**Gap:** A distinct backend type id (REQ-WS-012).
 
 ---
 

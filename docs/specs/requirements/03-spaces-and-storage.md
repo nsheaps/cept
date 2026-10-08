@@ -52,14 +52,14 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-009](#req-ws-009--local-app-only-native-filesystem-backend)                         | Local (app only) native filesystem backend                              | MUST     | stubbed     | documented-as-desired  | stale         |
 | [REQ-WS-010](#req-ws-010--native-fs-backend-detects-external-edits)                         | Native-fs backend detects external edits                                | MUST     | stubbed     | documented-as-desired  | accurate      |
 | [REQ-WS-011](#req-ws-011--local-browser-only-indexeddb-storage)                             | Local (browser only) IndexedDB storage                                  | MUST     | implemented | documented-as-desired  | stale         |
-| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API             | SHOULD   | stubbed     | documented-differently | stale         |
+| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-013](#req-ws-013--git-backed-space-cloneread-from-remote)                           | Git-backed space: clone and read                                        | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-WS-014](#req-ws-014--git-backed-space-write-commit-pushpull-sync)                      | Git-backed space: write, commit, push/pull                              | MUST     | stubbed     | documented-as-desired  | stale         |
 | [REQ-WS-015](#req-ws-015--google-drive-backend)                                             | Google Drive backend                                                    | MUST     | not-started | undocumented           | n/a           |
 | [REQ-WS-016](#req-ws-016--sftp-backend)                                                     | SFTP backend, served through app or daemon                              | MUST     | not-started | undocumented           | n/a           |
 | [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones | SHOULD   | partial     | documented             | current       |
 | [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                     | MUST     | partial     | documented-differently | stale         |
-| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | divergent   | documented-as-desired  | accurate      |
+| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
@@ -482,11 +482,11 @@ branch: docs # optional (D-30)
 - An E2E test with a mocked handle passes.
 - The docs state which browsers are supported.
 
-**Current state: stubbed.** [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) has `WebFsBackend`, `pickDirectory` and the handle persistence the app will use: `createFolderHandleStore` keeps one handle per space id in IndexedDB, `restoreFolders` lists the saved handles with their permission state on reload without prompting, and `reconnectFolder` re-requests read-write permission from a user gesture (`folderPermission` wraps `queryPermission`/`requestPermission`). Unit tests with mocked handles cover persist, reload and permission denied ([web-fs-handles.test.ts](../../../packages/core/src/storage/web-fs-handles.test.ts)). Nothing in `packages/ui` or `packages/web` calls them yet; the "Open folder" entry point is phase-1 plan PR 25. Permission prompts differ by browser; Phase 1 targets Chromium.
+**Current state: partial.** The web app opens a folder through `showDirectoryPicker` (phase-1 plan PR 25). [packages/web/src/folder-host.ts](../../../packages/web/src/folder-host.ts) builds a `FolderHost` (pick, open as `WebFsBackend`, the IndexedDB handle store) only when the browser has `showDirectoryPicker`; without it, the landing page's "Local folder" button is disabled with a note and the Add Space wizard hides the option. [folder-open.ts](../../../packages/ui/src/components/storage/folder-open.ts) inspects the picked folder with `discoverSpaces`: a folder with `space.cept.yaml` opens directly; otherwise [OpenFolderDialog](../../../packages/ui/src/components/settings/OpenFolderDialog.tsx) lists spaces found in subfolders and offers to make the folder a space. The handle is saved per space id; on reload, folders whose permission is still granted reconnect without a prompt, and the others show a "Reconnect folder" panel that re-requests permission from a click (`reconnectFolder`). Tests: [App.folders.test.tsx](../../../packages/ui/src/components/App.folders.test.tsx), [folder-open.test.ts](../../../packages/ui/src/components/storage/folder-open.test.ts), [folder-host.test.ts](../../../packages/web/src/folder-host.test.ts), and the Chromium E2E [open-folder.spec.ts](../../../e2e/tests/open-folder.spec.ts) with a picker mocked by an origin-private-file-system folder. The space manifest records `backend: 'folder'`, but `WebFsBackend.type` is still `'local'`, shared with the desktop backend. `watch()` is a no-op on the web, so changes made outside Cept show after a reload.
 
-**Docs state: documented-differently, stale.** [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 57 lists Local Folder on Web as "No\*", while roadmap.md line 40 says it is done. No doc separates the IndexedDB case from the real-folder case.
+**Docs state: documented-as-desired, accurate.** [platform-support.md](../../content/guides/platform-support.md#opening-a-folder-in-the-browser) describes the entry points, the browsers (Chrome and Edge on a computer), what Cept writes, reconnecting, and that external changes show on reload.
 
-**Gap.** UI entry points (landing page and Add Space wizard), a distinct type id, docs and tests. See also [REQ-WEB-023 in 01-browser-app-and-pwa.md](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-spaces).
+**Gap.** A distinct `StorageBackend.type` id for browser folders.
 
 **Related:** TASKS P2.7.
 
@@ -672,11 +672,11 @@ branch: docs # optional (D-30)
 - An existing `space.cept.yaml`, `.cept.yaml` or legacy `.cept/config.yaml` is never overwritten on open, and no `.cept.yaml` is created on open.
 - "Initialize new space" and "open existing" are separate code paths.
 
-**Current state: divergent.** `LocalFsBackend.initialize` (local-fs.ts ~lines 153-185) always creates `pages/` outside `.cept/`, writes `pages/index.md` when it is missing, and always overwrites `.cept/config.yaml`. web-fs.ts (~204-231) and browser-fs.ts (~140-170) do the same. The web app runs this `initialize()` on every load (main.tsx line 18), and every remote clone re-runs it on the shared IndexedDB root with `name: 'git-clone'` (git-backend.ts ~line 261), overwriting the space config. No open-existing flow exists.
+**Current state: partial.** Opening a folder in the browser (REQ-WS-012) is non-destructive: it never calls `initialize()`, the app's view state for the space lives in the app's own storage (`.cept/spaces/<id>/workspace-state.json`), unchanged state is not re-saved, a page file is written only when its text changes, and `space.cept.yaml` is written only when the user chooses "Make … a space" (`initFolderSpace`). Tests with a write-recording backend assert zero writes on open, browse, save and reload ([folder-open.test.ts](../../../packages/ui/src/components/storage/folder-open.test.ts), [App.folders.test.tsx](../../../packages/ui/src/components/App.folders.test.tsx)), and the E2E [open-folder.spec.ts](../../../e2e/tests/open-folder.spec.ts) compares every file in the folder before and after. Other backends still diverge: `LocalFsBackend.initialize` (local-fs.ts ~lines 153-185) creates `pages/`, writes `pages/index.md` when it is missing, and overwrites `.cept/config.yaml`; browser-fs.ts (~140-170) does the same, and every remote clone re-runs it on the shared IndexedDB root with `name: 'git-clone'` (git-backend.ts ~line 261).
 
 **Docs state: documented-as-desired, accurate.**
 
-**Gap.** Split initialize from open, never overwrite config, and add the regression test.
+**Gap.** The same split of initialize from open for the desktop folder and Git backends.
 
 **Related:** TASKS P6.2.
 
@@ -715,7 +715,7 @@ branch: docs # optional (D-30)
 - Opening a folder without `.git/` does not enable them.
 - If the space root is a subfolder of a repo, detection walks up to the repo root, and this is tested.
 
-**Current state: partial.** `findGitRoot` and the `gitRoot` field of each space returned by `discoverSpaces` ([packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) walk up from the space to the nearest folder holding `.git` (a directory, or a file as in worktrees and submodules), with tests for a space in a repo subfolder and for nested repos. There is no folder-open flow yet, so nothing turns the result into history and sync capabilities.
+**Current state: partial.** `findGitRoot` and the `gitRoot` field of each space returned by `discoverSpaces` ([packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) walk up from the space to the nearest folder holding `.git` (a directory, or a file as in worktrees and submodules), with tests for a space in a repo subfolder and for nested repos. The browser folder-open flow (REQ-WS-012) does not use `gitRoot` yet, so nothing turns the result into history and sync capabilities.
 
 **Docs state: documented-as-desired, accurate.**
 

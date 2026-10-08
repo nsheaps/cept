@@ -7,10 +7,11 @@
  * The default space uses the root workspace-state for backward compatibility.
  */
 
+import { ScopedBackend } from '@cept/core';
 import type { StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 import type { SidebarPageRef } from '../sidebar/Sidebar.js';
-import { DEFAULT_SPACE_ID, spaceDataDir } from './space-paths.js';
+import { DEFAULT_SPACE_ID, spaceDataDir, spaceWorkspaceFile } from './space-paths.js';
 import {
   appSpaceStore,
   deleteStorePage,
@@ -49,9 +50,12 @@ import { isRemoteSpaceId } from '../../router.js';
 /**
  * Where a space's data lives:
  * - `app`: inside the app's own backend (the default; see space-store.ts);
- * - `memory`: in a backend held only in memory, gone on reload.
+ * - `memory`: in a backend held only in memory, gone on reload;
+ * - `folder`: in a folder on this device (File System Access API). It stays
+ *   in the manifest, and after a reload it needs its folder connected again
+ *   ({@link SpaceManager.connectFolder}) before it can be opened.
  */
-export type SpaceBackendKind = 'app' | 'memory';
+export type SpaceBackendKind = 'app' | 'memory' | 'folder';
 
 export interface SpaceMeta {
   id: string;
@@ -62,7 +66,7 @@ export interface SpaceMeta {
   remoteUrl?: string;
   /** Branch to track (e.g., "main") */
   branch?: string;
-  /** Sub-path within the repo to scope the space to (e.g., "docs/") */
+  /** Sub-path within the repo (or the opened folder) to scope the space to (e.g., "docs/") */
   subPath?: string;
   /** Whether this space is read-only (true for cloned remote spaces) */
   readOnly?: boolean;
@@ -336,6 +340,10 @@ export class SpaceManager {
   private sessionActive: string | null = null;
   /** Whether each space opened or created so far uses the folder layout. */
   private readonly layouts = new Map<string, boolean>();
+  /** Folder spaces seen in the manifest; those not bound wait for their folder. */
+  private readonly folders = new Set<string>();
+  /** The state last read or written per space, so an unchanged state is not written again. */
+  private readonly savedState = new Map<string, string>();
 
   constructor(readonly backend: StorageBackend) {}
 
@@ -349,6 +357,20 @@ export class SpaceManager {
     this.bound.set(id, backend);
   }
 
+  /**
+   * Use a folder on this device as the store of folder space `space`: its
+   * root, or the space's `subPath` inside it. Opening it writes nothing.
+   */
+  connectFolder(space: SpaceMeta, folder: StorageBackend): void {
+    this.folders.add(space.id);
+    this.bind(space.id, space.subPath ? new ScopedBackend(folder, space.subPath) : folder);
+  }
+
+  /** Whether a space can be opened now: false only for a folder space whose folder is not connected. */
+  isConnected(id: string): boolean {
+    return !this.folders.has(id) || this.bound.has(id);
+  }
+
   /** The backend and state file a space is read and written through. */
   store(id: string): SpaceStore {
     const own = this.bound.get(id);
@@ -356,14 +378,16 @@ export class SpaceManager {
   }
 
   /**
-   * The manifest as this manager can serve it: saved spaces that need a
-   * backend this manager does not have (a memory space from before a reload,
-   * or another tab's) are left out, this session's memory spaces are added,
-   * and the active space falls back to the first one left.
+   * The manifest as this manager can serve it: saved memory spaces this
+   * manager has no backend for (from before a reload, or another tab's) are
+   * left out, folder spaces are kept even before their folder is connected,
+   * this session's memory spaces are added, and the active space falls back
+   * to the first one left.
    */
   private visible(manifest: SpacesManifest): SpacesManifest {
+    for (const s of manifest.spaces) if (this.kindOf(s) === 'folder') this.folders.add(s.id);
     const saved = manifest.spaces.filter(
-      (s) => !this.session.has(s.id) && (this.kindOf(s) === 'app' || this.bound.has(s.id)),
+      (s) => !this.session.has(s.id) && (this.kindOf(s) !== 'memory' || this.bound.has(s.id)),
     );
     const spaces = [...saved, ...this.session.values()];
     const wanted = this.sessionActive ?? manifest.activeSpaceId;
@@ -407,12 +431,35 @@ export class SpaceManager {
    * session only: neither it nor its being active is written to the manifest,
    * so the saved spaces and the saved active space stay as they were. With an
    * `id`, an earlier memory space with that id is replaced, data and all.
+   *
+   * Pass `{ kind: 'folder', backend, subPath }` for a space in a folder on this
+   * device (`backend` is the opened folder, `subPath` the space inside it). It
+   * is saved in the manifest, and nothing is written to the folder.
    */
   async create(
     name: string,
     icon?: string,
-    options?: { kind: 'memory'; backend: StorageBackend; id?: string },
+    options?:
+      | { kind: 'memory'; backend: StorageBackend; id?: string }
+      | { kind: 'folder'; backend: StorageBackend; subPath?: string; id?: string },
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    if (options?.kind === 'folder') {
+      const manifest = await loadSpaces(this.backend);
+      const space: SpaceMeta = {
+        id: options.id ?? `folder-${crypto.randomUUID()}`,
+        name,
+        icon,
+        createdAt: new Date().toISOString(),
+        backend: 'folder',
+        ...(options.subPath ? { subPath: options.subPath } : {}),
+      };
+      manifest.spaces = [...manifest.spaces.filter((s) => s.id !== space.id), space];
+      manifest.activeSpaceId = space.id;
+      this.connectFolder(space, options.backend);
+      this.sessionActive = null;
+      await saveSpaces(this.backend, manifest);
+      return { space, manifest: this.visible(manifest) };
+    }
     if (options) {
       const space: SpaceMeta = {
         id: options.id ?? `space-${crypto.randomUUID()}`,
@@ -484,7 +531,9 @@ export class SpaceManager {
     const inSession = this.session.delete(id);
     if (this.sessionActive === id) this.sessionActive = null;
     this.bound.delete(id);
+    this.folders.delete(id);
     this.layouts.delete(id);
+    this.savedState.delete(id);
     const manifest = inSession
       ? await this.load()
       : this.visible(await deleteSpace(this.backend, id));
@@ -514,21 +563,34 @@ export class SpaceManager {
   }
 
   /**
-   * Where a space's snapshot is saved. A folder space keeps it under its own
-   * `.cept/`, which the folder reader leaves out of the page tree.
+   * Where a space's snapshot is saved. A space in a folder on this device
+   * keeps it in the app's backend, so looking around (recent pages, expanded
+   * folders) adds no files to the user's folder (REQ-WS-019). Any other space
+   * in the folder layout keeps it under its own `.cept/`, which the folder
+   * reader leaves out of the page tree.
    */
   private stateStore(id: string): SpaceStore {
+    if (this.folders.has(id)) return { backend: this.backend, stateFile: spaceWorkspaceFile(id) };
     const store = this.store(id);
     return this.isFolder(id) ? { backend: store.backend, stateFile: SPACE_STATE_FILE } : store;
   }
 
-  /** Save a space's snapshot and any page contents held in memory. */
+  /**
+   * Save a space's snapshot and any page contents held in memory. A snapshot
+   * equal to the one last read or written is not written again. A folder
+   * space whose folder is not connected is skipped.
+   */
   async saveState(
     id: string,
     snapshot: SpaceSnapshot,
     pageContents: Record<string, string> = {},
   ): Promise<void> {
-    await saveStoreState(this.stateStore(id), snapshot);
+    if (!this.isConnected(id)) return;
+    const json = JSON.stringify(snapshot);
+    if (this.savedState.get(id) !== json) {
+      await saveStoreState(this.stateStore(id), snapshot);
+      this.savedState.set(id, json);
+    }
     await Promise.all(
       Object.entries(pageContents)
         .filter(([, content]) => content)
@@ -543,6 +605,9 @@ export class SpaceManager {
    * entries for pages no longer on disk are dropped.
    */
   async open(id: string, fallbackName: string): Promise<OpenedSpace> {
+    if (!this.isConnected(id)) {
+      throw new Error(`The folder of "${fallbackName}" is not connected`);
+    }
     let folder = await this.detectLayout(id);
     let converted = false;
     if (!folder && this.migrates(id)) {
@@ -586,6 +651,7 @@ export class SpaceManager {
     const selectedContent = snapshot.selectedPageId
       ? await this.readPage(id, snapshot.selectedPageId)
       : null;
+    this.savedState.set(id, JSON.stringify(snapshot));
     return { snapshot, selectedContent, converted, backupKept };
   }
 

@@ -151,14 +151,21 @@ export async function readFolderPage(backend: StorageBackend, id: string): Promi
   return bytes ? decoder.decode(bytes) : null;
 }
 
-/** Write a page's content. A page that no longer exists (renamed or deleted since) is left alone. */
+/**
+ * Write a page's content. A page that no longer exists (renamed or deleted
+ * since) is left alone, and a file that already holds `text` is not written
+ * again, so saving pages the user only read changes no file (REQ-WS-019).
+ */
 export async function writeFolderPage(
   backend: StorageBackend,
   id: string,
   text: string,
 ): Promise<void> {
   const file = await pageFileOf(backend, id);
-  if (file) await backend.writeFile(at(file), encoder.encode(text));
+  if (!file) return;
+  const current = await backend.readFile(at(file));
+  if (current && decoder.decode(current) === text) return;
+  await backend.writeFile(at(file), encoder.encode(text));
 }
 
 /** Every file below `dir`, depth first. */

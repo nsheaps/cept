@@ -1,12 +1,14 @@
 /**
  * Tests for keeping folder handles across reloads (REQ-WS-012, REQ-WEB-023):
- * the IndexedDB handle store, the permission check and the restore step.
+ * the folder picker, the IndexedDB handle store, the permission check and
+ * the restore step.
  */
 import 'fake-indexeddb/auto';
 import { describe, it, expect, vi } from 'vitest';
 import {
   createFolderHandleStore,
   folderPermission,
+  pickDirectory,
   reconnectFolder,
   restoreFolders,
   type FolderHandleStore,
@@ -187,5 +189,32 @@ describe('reconnectFolder', () => {
 
   it('is false when the browser will not ask (no user gesture)', async () => {
     expect(await reconnectFolder(mockHandle('prompt', 'throws'))).toBe(false);
+  });
+});
+
+describe('pickDirectory', () => {
+  it('asks for read-write access and returns the picked folder', async () => {
+    const folder = cloneable('notes');
+    const showDirectoryPicker = vi.fn(async () => folder);
+    expect(await pickDirectory({ showDirectoryPicker })).toBe(folder);
+    expect(showDirectoryPicker).toHaveBeenCalledWith({ mode: 'readwrite' });
+  });
+
+  it('returns null when the user cancels', async () => {
+    const showDirectoryPicker = vi.fn(async () => {
+      throw new DOMException('The user aborted a request.', 'AbortError');
+    });
+    expect(await pickDirectory({ showDirectoryPicker })).toBeNull();
+  });
+
+  it('returns null without the File System Access API', async () => {
+    expect(await pickDirectory({})).toBeNull();
+  });
+
+  it('passes on other failures, such as a blocked system folder', async () => {
+    const showDirectoryPicker = vi.fn(async () => {
+      throw new DOMException('Blocked', 'SecurityError');
+    });
+    await expect(pickDirectory({ showDirectoryPicker })).rejects.toThrow('Blocked');
   });
 });
