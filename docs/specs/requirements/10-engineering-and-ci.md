@@ -295,9 +295,9 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 
 **Current state:** partial (all but CI caching; plan PR 9).
 
-- The lint, typecheck, unit, integration, e2e and build jobs check out full history (`fetch-depth: 0`) and set `NX_BASE` to the pull request's base SHA. Their mise tasks run through [scripts/ci/nx-targets.ts](../../../scripts/ci/nx-targets.ts), which runs `nx affected -t <target> --base=$NX_BASE` when `NX_BASE` is set. Otherwise (pushes to `main`, `mise run check` locally) it runs `nx run-many -t <target>`.
+- The lint, typecheck, unit, integration, e2e and build jobs set `NX_BASE` to the pull request's base SHA and fetch that one commit into their shallow checkout. With no merge base in the shallow clone, Nx diffs the base against the checked-out merge commit, which is exactly the pull request's change. Their mise tasks run through [scripts/ci/nx-targets.ts](../../../scripts/ci/nx-targets.ts), which runs `nx affected -t <target> --base=$NX_BASE` when `NX_BASE` is set. Otherwise (pushes to `main`, `mise run check` locally) it runs `nx run-many -t <target>`.
 - Root config files (`nx.json`, `package.json`, `bun.lock`, `bunfig.toml`, `.mise.toml`, `tsconfig.json`, `tsconfig.base.json`, `vitest.config.ts`) are the `sharedGlobals` named input in [nx.json](../../../nx.json). They are part of every target's `default` inputs and of `lint`'s inputs, so changing one affects every project.
-- `@cept/e2e` has an implicit dependency on `@cept/web` (Playwright serves the web app), so UI changes run E2E. Its Playwright target is `test:e2e`.
+- `@cept/e2e` has an implicit dependency on `@cept/web` (Playwright serves the web app), so UI changes run E2E. Its Playwright target is `test:e2e`. The E2E job runs `mise run ci:affected -- @cept/e2e` ([scripts/ci/nx-affected.ts](../../../scripts/ci/nx-affected.ts)) first, and skips the browser setup and the run when E2E is not affected.
 - `cept-workspace` has an implicit dependency on every `@cept/*` project, because its integration tests lint and read package sources.
 - [scripts/ci/affected.integration.test.ts](../../../scripts/ci/affected.integration.test.ts) proves the following:
   - A signaling-server change does not affect `@cept/ui`.

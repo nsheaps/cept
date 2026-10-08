@@ -93,6 +93,10 @@ run = "bun scripts/ci/pr-title.ts"
 description = "Print version=<installed Playwright version> for $GITHUB_OUTPUT"
 run = "bun scripts/ci/playwright-version.ts"
 
+[tasks."ci:affected"]
+description = "Print affected=true|false for the project named after --, for $GITHUB_OUTPUT (true without NX_BASE)"
+run = "bun scripts/ci/nx-affected.ts"
+
 [tasks."ci:playwright-provision"]
 description = "Copy Playwright browsers out of the official image (needs PLAYWRIGHT_VERSION)"
 run = "scripts/ci/provision-playwright.sh"

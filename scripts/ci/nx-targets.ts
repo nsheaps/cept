@@ -19,5 +19,6 @@ if (import.meta.main) {
   const args = nxArgs(process.argv.slice(2), process.env);
   console.log(`nx ${args.join(' ')}`);
   const result = spawnSync('bunx', ['nx', ...args], { stdio: 'inherit' });
+  if (result.error) console.error(result.error.message);
   process.exit(result.status ?? 1);
 }

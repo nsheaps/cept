@@ -13,9 +13,13 @@ jobs:
       NX_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          # nx affected needs the base commit to diff against.
-          fetch-depth: 0
+
+      - name: Fetch the pull request base
+        # nx affected diffs against NX_BASE. Without a merge base in this shallow
+        # clone it diffs the two commits directly, which is the PR's change because
+        # the checkout is the merge of the PR into that base.
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "$NX_BASE"
 
       - name: Install mise
         uses: jdx/mise-action@v4
@@ -23,13 +27,20 @@ jobs:
       - name: Install dependencies
         run: mise run install
 
+      - name: Check whether e2e is affected
+        id: e2e
+        # On pull requests that cannot reach @cept/e2e, skip the browser setup and run.
+        run: mise run -q ci:affected -- @cept/e2e >> "$GITHUB_OUTPUT"
+
       - name: Resolve Playwright version
         id: pw
+        if: steps.e2e.outputs.affected == 'true'
         # Single source of truth: the installed @playwright/test, so the browser
         # cache key and image can't drift from the runtime when Renovate bumps it.
         run: mise run -q ci:playwright-version >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
+        if: steps.e2e.outputs.affected == 'true'
         id: pw-cache
         uses: actions/cache@v6
         with:
@@ -37,7 +48,7 @@ jobs:
           key: ${{ runner.os }}-playwright-v${{ steps.pw.outputs.version }}-noble
 
       - name: Provision Playwright browsers from official image
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+        if: steps.e2e.outputs.affected == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         # Copies browsers from Playwright's official image instead of its CDN, which
         # stalls intermittently from CI (see scripts/ci/provision-playwright.sh).
         run: mise run ci:playwright-provision
@@ -45,15 +56,17 @@ jobs:
           PLAYWRIGHT_VERSION: ${{ steps.pw.outputs.version }}
 
       - name: Install Playwright system dependencies
+        if: steps.e2e.outputs.affected == 'true'
         # apt-only (no browser download); installs the few libs the runner lacks.
         run: mise run ci:playwright-deps
 
       - name: Run E2E tests
+        if: steps.e2e.outputs.affected == 'true'
         run: mise run test:e2e
 
       - name: Upload test results
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && steps.e2e.outputs.affected == 'true'
         with:
           name: playwright-report
           path: playwright-report/
