@@ -55,6 +55,21 @@ describe('SpaceManager GitHub spaces (REQ-WS-027)', () => {
     expect(await spaces.readPage(ID, 'Hello.md')).toContain('from GitHub');
   });
 
+  it('shows the first page of a writable space opened for the first time', async () => {
+    await spaces.createRemote('Notes', URL, 'main', undefined, 'token', { writable: true });
+    const opened = await spaces.open(ID, 'Notes');
+    expect(opened.snapshot?.selectedPageId).toBe('Hello.md');
+    expect(opened.selectedContent).toContain('from GitHub');
+  });
+
+  it('keeps no page selected when the saved state selects none', async () => {
+    await spaces.createRemote('Notes', URL, 'main', undefined, 'token', { writable: true });
+    const { snapshot } = await spaces.open(ID, 'Notes');
+    await spaces.saveState(ID, { ...snapshot!, selectedPageId: undefined });
+    const reopened = await spaces.open(ID, 'Notes');
+    expect(reopened.snapshot?.selectedPageId).toBeUndefined();
+  });
+
   it('refuses writes to a writable space with no editing session', async () => {
     await spaces.createRemote('Notes', URL, 'main', undefined, 'token', { writable: true });
     await spaces.open(ID, 'Notes');

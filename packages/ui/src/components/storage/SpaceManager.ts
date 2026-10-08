@@ -851,10 +851,12 @@ export class SpaceManager {
         pages,
         favorites: present(snapshot.favorites),
         recentPages: present(snapshot.recentPages),
-        selectedPageId:
-          snapshot.selectedPageId && titles.has(snapshot.selectedPageId)
+        // A space opened for the first time shows its first page.
+        selectedPageId: state
+          ? snapshot.selectedPageId && titles.has(snapshot.selectedPageId)
             ? snapshot.selectedPageId
-            : undefined,
+            : undefined
+          : pages[0]?.id,
       };
     }
     const selectedContent = snapshot.selectedPageId
