@@ -90,6 +90,34 @@ describe('SettingsModal space lifecycle (REQ-WS-024)', () => {
     );
   });
 
+  it('warns before removing a GitHub space with changes not on GitHub yet (REQ-WS-027)', () => {
+    const repo: SpaceInfo = {
+      ...app('github.com/me/notes@main', 'Repo'),
+      kind: 'remote',
+      remoteUrl: 'github.com/me/notes',
+      unsyncedChanges: 3,
+    };
+    const { onDeleteSpace } = setup([app('default', 'My Space'), repo]);
+    fireEvent.click(screen.getByTestId('delete-space-github.com/me/notes@main'));
+    expect(screen.getByTestId('space-remove-unsynced').textContent).toMatch(
+      /3 changes made on this device are not on GitHub yet/,
+    );
+    fireEvent.click(screen.getByTestId('space-remove-confirm-btn'));
+    expect(onDeleteSpace).toHaveBeenCalledWith('github.com/me/notes@main');
+  });
+
+  it('gives no unsynced warning when everything is on GitHub', () => {
+    const repo: SpaceInfo = {
+      ...app('github.com/me/notes@main', 'Repo'),
+      kind: 'remote',
+      remoteUrl: 'github.com/me/notes',
+      unsyncedChanges: 0,
+    };
+    setup([app('default', 'My Space'), repo]);
+    fireEvent.click(screen.getByTestId('delete-space-github.com/me/notes@main'));
+    expect(screen.queryByTestId('space-remove-unsynced')).toBeNull();
+  });
+
   it('discards a memory space', () => {
     const temp: SpaceInfo = { ...app('mem', 'Scratch'), kind: 'memory' };
     const { onDeleteSpace } = setup([app('default', 'My Space'), temp]);

@@ -146,8 +146,11 @@ test.describe('Discovered spaces', () => {
     ).toHaveCount(0);
     expect(clones.length).toBeGreaterThan(0);
 
-    // Open clones the other space and switches to it.
+    // Open clones the other space and switches to it. A writable space is read
+    // like a folder space: its first page is shown, titled by its file name.
     await page.getByTestId(`discovered-open-${teamId}`).click();
-    await expect(page.getByTestId('breadcrumbs')).toContainText('The plan', { timeout: 20000 });
+    await expect(page.getByTestId('breadcrumbs')).toContainText('plan', { timeout: 20000 });
+    await expect(page.locator('.cept-editor-content')).toContainText('The plan');
+    await expect(page.getByTestId('sync-indicator')).not.toHaveAttribute('data-state', 'error');
   });
 });

@@ -283,6 +283,58 @@ describe('PatAuthProvider after sign-in', () => {
     expect(fetch.mock.calls[2]?.[0]).toBe('https://api.github.com/user/repos?page=2');
   });
 
+  it('creates a repository with a first commit', async () => {
+    const fetch = fetchReplying(
+      { status: 200, body: USER },
+      {
+        status: 201,
+        body: {
+          name: 'notes',
+          full_name: 'octo/notes',
+          html_url: 'https://github.com/octo/notes',
+          clone_url: 'https://github.com/octo/notes.git',
+          ssh_url: 'git@github.com:octo/notes.git',
+          private: true,
+          description: 'Mine',
+          default_branch: 'main',
+        },
+      },
+    );
+    const provider = new PatAuthProvider({ tokenStore: new MemoryTokenStore(), fetch });
+    await provider.signIn(CLASSIC);
+
+    const repo = await provider.createRepo({ name: 'notes', description: 'Mine' });
+
+    expect(repo).toMatchObject({ fullName: 'octo/notes', private: true, defaultBranch: 'main' });
+    const [url, init] = fetch.mock.calls[1] as [string, RequestInit];
+    expect(url).toBe('https://api.github.com/user/repos');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: 'notes',
+      description: 'Mine',
+      private: true,
+      auto_init: true,
+    });
+  });
+
+  it('reports a refused repository creation by its status only', async () => {
+    const fetch = fetchReplying(
+      { status: 200, body: USER },
+      { status: 422, body: { message: `name already exists ${CLASSIC}` } },
+    );
+    const provider = new PatAuthProvider({ tokenStore: new MemoryTokenStore(), fetch });
+    await provider.signIn(CLASSIC);
+
+    const failure = await provider.createRepo({ name: 'notes' }).catch((e: unknown) => e);
+
+    expect(failure).toBeInstanceOf(PatAuthError);
+    expect((failure as PatAuthError).status).toBe(422);
+    expect(surfaces(failure)).not.toContain('classicSecret');
+    // No description was asked for, so none is sent.
+    const [, init] = fetch.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).not.toHaveProperty('description');
+  });
+
   it('signs out by deleting the stored token', async () => {
     const store = new MemoryTokenStore();
     const provider = new PatAuthProvider({

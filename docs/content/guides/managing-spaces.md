@@ -38,6 +38,8 @@ Choose the trash icon next to a space, or the button at the bottom of its detail
 | Local folder          | **Remove from Cept**      | Cept forgets the space. The folder and its files stay on your computer, and you can open it again. |
 | Git repository        | **Remove from this device** | The copy on this device is deleted, with changes not yet synced. The repository on GitHub is not changed. |
 
+When a GitHub space has changes made on this device that are not on GitHub yet, Cept says how many and suggests syncing the space first.
+
 You can delete any space, including your first one and your only one. When you delete your only space, a new, empty space named **My Space** takes its place. Deleting a space never deletes your settings or your other spaces.
 
 ## Signing in to GitHub
@@ -67,6 +69,20 @@ If a space on this device can no longer be found (the token lost access, the spa
 
 Each space keeps its copy of the repository on this device. Refreshing it, or opening it more than 5 minutes after the last sync, downloads only what changed on GitHub.
 
+### Editing a GitHub space
+
+A space you added while signed in, whose folder holds a `space.cept.yaml` (or `space.cept.yml`), is editable. Spaces added without signing in, and folders without that file, are read-only.
+
+- Your edits are saved on this device and committed to the repository a few seconds after you stop typing, as your GitHub account (with its private `users.noreply.github.com` address). Deleting a page deletes its file in a commit.
+- While the tab is in view, Cept syncs about every 30 seconds: it gets what changed on GitHub, then sends your commits. A tab in the background does not sync on its own.
+- The header shows whether the space is synced, syncing, offline, in conflict or failed to sync, how many changes are not on GitHub yet, and when it last synced. Choose **Sync now** to sync at once, in any tab. Refreshing the space also syncs it, and never throws away your changes.
+- When the sync brings in changes, the page tree updates, and the page you are on reloads unless you are typing in it.
+- When you sign out, the space becomes read-only until you sign in again. Changes already on this device are kept.
+
+### Starting a space in a repository
+
+Signed in, choose **Start a space in a GitHub repository** in Settings > Spaces. Pick one of your repositories (or create a new one), name the space and, if you want, a folder. Cept writes `space.cept.yaml` in that folder, commits and pushes it, and opens the space. If the folder is already a space, Cept opens it as it is.
+
 ## Working in a repository space
 
 A link to a Markdown file on GitHub, in the form `/g/github.com/<owner>/<repo>/blob/<branch>/<path>`, opens it in Cept (see [Page links](../reference/space-config.md#page-links)). The first link into a repository adds it as a space; later links into the same repository and branch open in that space.
@@ -74,7 +90,7 @@ A link to a Markdown file on GitHub, in the form `/g/github.com/<owner>/<repo>/b
 While a repository space is open, the **Page actions** menu at the top right has:
 
 - **View on GitHub**: opens the page (or folder) on github.com in a new tab.
-- **Refresh from remote**: downloads what changed on GitHub. The page you are on stays open if the repository still has it.
+- **Refresh from remote**: downloads what changed on GitHub (in an editable space, syncs it). The page you are on stays open if the repository still has it.
 - **Space settings**: opens the space's details, which show the repository, branch, path and last sync, with **Open on GitHub** and a refresh button.
 
 Each time Cept starts it checks the saved token again. A token GitHub no longer accepts (expired or revoked) is forgotten and you are signed out. When GitHub cannot be reached, the token is kept and checked next time.

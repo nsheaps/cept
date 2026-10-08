@@ -217,6 +217,55 @@ describe('gitAuth', () => {
   });
 });
 
+describe('repositories (REQ-WS-027)', () => {
+  function probe(auth: PatAuth) {
+    let state: GitHubAccountState | null = null;
+    function Probe() {
+      state = useGitHubAccount();
+      return null;
+    }
+    render(
+      <GitHubAccountProvider auth={auth}>
+        <Probe />
+      </GitHubAccountProvider>,
+    );
+    return () => state;
+  }
+
+  const base: PatAuth = {
+    signIn: vi.fn(),
+    restore: async () => null,
+    logout: async () => undefined,
+    getHttpAuth: async () => ({ username: 'x', password: 'y' }),
+  };
+
+  it('lists and creates repositories through the host auth', async () => {
+    const repo = {
+      name: 'notes',
+      fullName: 'octo/notes',
+      url: 'https://github.com/octo/notes',
+      httpsUrl: 'https://github.com/octo/notes.git',
+      sshUrl: 'git@github.com:octo/notes.git',
+      private: true,
+      defaultBranch: 'main',
+    };
+    const getRepos = vi.fn(async () => [repo]);
+    const createRepo = vi.fn(async () => repo);
+    const state = probe({ ...base, getRepos, createRepo });
+    await waitFor(() => expect(state()?.status).toBe('signed-out'));
+    expect(await state()?.listRepos?.()).toEqual([repo]);
+    expect(await state()?.createRepo?.({ name: 'notes', private: true })).toEqual(repo);
+    expect(createRepo).toHaveBeenCalledWith({ name: 'notes', private: true });
+  });
+
+  it('offers neither when the host auth cannot', async () => {
+    const state = probe(base);
+    await waitFor(() => expect(state()?.status).toBe('signed-out'));
+    expect(state()?.listRepos).toBeUndefined();
+    expect(state()?.createRepo).toBeUndefined();
+  });
+});
+
 describe('describeGrants', () => {
   it('describes fine-grained, classic and expiring tokens', () => {
     expect(describeGrants({ kind: 'fine-grained', scopes: null })).toBe('Fine-grained token');

@@ -52,6 +52,7 @@ export {
   GitAuthRequiredError,
   GitDivergedError,
   GIT_REPOS_DIR,
+  countUnpushedCommits,
   remoteCloneDir,
   syncRemoteClone,
 } from './storage/index.js';
@@ -189,7 +190,11 @@ export type {
   AutoMergeConfig,
 } from './git/index.js';
 export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
-export type { GitSpaceSessionOptions, GitSpaceSyncResult } from './git/index.js';
+export type {
+  GitSpaceLocalChanges,
+  GitSpaceSessionOptions,
+  GitSpaceSyncResult,
+} from './git/index.js';
 export {
   SyncError,
   classifyPushReason,

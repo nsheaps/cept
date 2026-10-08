@@ -162,6 +162,17 @@ describe('SettingsModal', () => {
     expect(onOpenAddSpaceWizard).toHaveBeenCalled();
   });
 
+  it('offers to start a space in a GitHub repository only when it can', () => {
+    const onStartRepoSpace = vi.fn();
+    const { rerender } = render(<SettingsModal {...defaultProps} initialTab="spaces" />);
+    expect(screen.queryByTestId('start-repo-space-btn')).toBeNull();
+    rerender(
+      <SettingsModal {...defaultProps} initialTab="spaces" onStartRepoSpace={onStartRepoSpace} />,
+    );
+    screen.getByTestId('start-repo-space-btn').click();
+    expect(onStartRepoSpace).toHaveBeenCalled();
+  });
+
   it('shows import/export buttons when handlers provided', () => {
     render(
       <SettingsModal

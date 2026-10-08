@@ -47,6 +47,8 @@ export async function serveGit(
       ...process.env,
       GIT_PROJECT_ROOT: root,
       GIT_HTTP_EXPORT_ALL: '1',
+      // An authenticated user, so pushes (receive-pack) are accepted too.
+      REMOTE_USER: 'e2e',
       PATH_INFO: `/${repoName}${rest}`,
       QUERY_STRING: url.search.replace(/^\?/, ''),
       REQUEST_METHOD: request.method(),

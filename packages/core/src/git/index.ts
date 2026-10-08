@@ -67,4 +67,8 @@ export {
 export type { CommitIdentity, GitHubUserIdentity, SyncSettings } from './sync-policy.js';
 
 export { GitSpaceSession, RecordingBackend } from './git-space-session.js';
-export type { GitSpaceSessionOptions, GitSpaceSyncResult } from './git-space-session.js';
+export type {
+  GitSpaceLocalChanges,
+  GitSpaceSessionOptions,
+  GitSpaceSyncResult,
+} from './git-space-session.js';

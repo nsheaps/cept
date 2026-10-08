@@ -445,6 +445,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: integration test with a local bare repo: edit, commit, push, and a second clone pulls the change.
 - Accept: tests green; anonymous clones stay read-only.
 - Risk: lightning-fs under concurrent tabs; until PR 38, auto-push runs only in the focused tab.
+- Deviation (PR 36b): the app does not build `GitBackend`, `AutoCommitEngine` and `SyncEngine` itself; it opens a `GitSpaceSession` (PR 36a) per active writable space and binds its backend in `SpaceManager`. A space is writable when it was synced with the sign-in and its folder holds `space.cept.yaml`, so `readOnly` stays `true` for other remote spaces and anonymous clones. Manual push and pull are one "Sync now" action (`pushNow`). "Focused tab" is implemented as `document.visibilityState === 'visible'`. Left out: an App-level test with a live session (covered by the hook, indicator and bare-repo integration tests instead), and making anonymous spaces' local copies read-only (existing behaviour, unchanged).
 
 **PR 37 — `feat(sync): conflict view and push-to-new-branch fallback`**
 
