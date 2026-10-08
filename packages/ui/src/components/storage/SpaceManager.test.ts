@@ -98,8 +98,12 @@ describe('SpaceManager', () => {
       expect(manifest.activeSpaceId).toBe('default');
     });
 
-    it('throws when trying to delete the last space', async () => {
-      await expect(deleteSpace(backend, 'default')).rejects.toThrow('Cannot delete the last space');
+    it('replaces the last space with a new, empty default space', async () => {
+      await backend.writeFile('Home.md', new TextEncoder().encode('# Home'));
+      const manifest = await deleteSpace(backend, 'default');
+      expect(manifest.spaces).toHaveLength(1);
+      expect(manifest.spaces[0]).toMatchObject({ id: 'default', name: 'My Space' });
+      expect(await backend.readFile('Home.md')).toBeNull();
     });
   });
 

@@ -63,9 +63,10 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space         | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                 | MUST     | implemented | documented             | accurate      |
 
-Status counts: 2 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (23 requirements).
+Status counts: 2 implemented, 6 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (24 requirements).
 
 ## Architecture
 
@@ -744,6 +745,31 @@ branch: docs # optional (D-30)
 **Docs state: documented-differently, stale.** These requirement docs use "space". [SPECIFICATION.md](../../SPECIFICATION.md) and the user docs still say "workspace".
 
 **Related:** [#45](https://github.com/nsheaps/cept/issues/45).
+
+### REQ-WS-024 — Space lifecycle
+
+> **Scope: Phase 1 (D-30, D-42).** Phase 1 plan PR 26 (local spaces); deleting a space on GitHub is PR 36.
+
+**Statement.** Users MUST be able to create, rename, remove and delete spaces from the app. Renaming MUST edit the space's `space.cept.yaml`, keeping its comments and other keys, and changing the slug MUST warn that links using the old slug stop working. Removing MUST say whether data is deleted or kept, and ask first. Every listed space MUST show its page count and size, whether or not it is open.
+
+**Source.** Owner request (full space functionality); scope gap analysis ([scope.md](../scope.md)); D-30, D-42.
+
+**Acceptance criteria**
+
+- Create: a new space in the browser, a local folder (REQ-WS-012) or a GitHub repository, made active.
+- Rename: the name in the space list and in `space.cept.yaml` change together; a marker Cept cannot parse, or an invalid slug, refuses the rename, changes nothing and says why. A folder space whose folder is not connected cannot be renamed until it is reconnected. Read-only remote spaces are renamed in the list only.
+- Slug: shown in a space's details for spaces that have one, edited separately from the name, with a warning when it changes.
+- Remove versus delete: a space kept in the app is deleted with its pages. A folder space is removed from Cept and its folder left untouched. A GitHub space is removed from this device and the repository left unchanged. Each asks first, and the wording says which.
+- The last space and the default space: either can be deleted. Deleting the last one leaves a new, empty "My Space". Deleting the default space removes its pages and state from the app's storage but keeps settings and other spaces.
+- Stats: page count and bytes of page files for spaces not open, read without writing anything and without converting a flat space (REQ-WS-025); "unknown" for a folder space whose folder is not connected.
+
+**Current state: partial.** `SpaceManager.inspect`, `rename` (with `updateSpaceConfigText` from `@cept/core`) and `delete` in [packages/ui/src/components/storage/SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts); the confirmation, slug row and stats in Settings > Spaces ([SettingsModal.tsx](../../../packages/ui/src/components/settings/SettingsModal.tsx)). Errors show as toasts. Tests: `SpaceManager.lifecycle.test.ts`, `SettingsModal.lifecycle.test.tsx`, `App.folders.test.tsx`, `config.test.ts` and [e2e/tests/space-lifecycle.spec.ts](../../../e2e/tests/space-lifecycle.spec.ts).
+
+**Docs state: documented, accurate.** [Managing spaces](../../content/guides/managing-spaces.md).
+
+**Gap.** Deleting a space's folder on GitHub (a commit) is Phase 1 plan PR 36; until then a GitHub space can only be removed from this device. Creating a space in a new GitHub repository or a new subfolder of one comes with GitHub write support.
+
+**Related:** REQ-WS-004, REQ-WS-012, REQ-WS-025, D-30, D-42.
 
 ### REQ-WS-025 — Legacy flat spaces are converted to folders
 

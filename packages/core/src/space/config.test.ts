@@ -10,6 +10,7 @@ import {
   findSpaceMarker,
   parseSpaceConfig,
   serializeSpaceConfig,
+  updateSpaceConfigText,
   parseCeptConfig,
   serializeCeptConfig,
   mergeFolderConfigs,
@@ -176,6 +177,58 @@ describe('parseSpaceConfig (REQ-WS-004)', () => {
       'zeta',
       '',
     ]);
+  });
+});
+
+describe('updateSpaceConfigText (REQ-WS-024)', () => {
+  const text = [
+    '# Team notes',
+    'version: 1',
+    'name: Field notes # shown in the sidebar',
+    'slug: field-notes',
+    'owner: ops',
+    '',
+  ].join('\n');
+
+  function okUpdate(source: string, changes: { name?: string; slug?: string }) {
+    const r = updateSpaceConfigText(source, changes);
+    if (!r.ok) throw new Error(`expected ok, got ${r.errors.join('; ')}`);
+    return r.text;
+  }
+
+  it('changes only the name line, keeping comments, order and unknown keys', () => {
+    const out = okUpdate(text, { name: 'Lab notes' });
+    expect(out).toBe(text.replace('name: Field notes # shown in the sidebar', 'name: Lab notes'));
+    expect(okSpace(out)).toMatchObject({ name: 'Lab notes', slug: 'field-notes', owner: 'ops' });
+  });
+
+  it('changes the slug and the name together', () => {
+    const out = okUpdate(text, { name: 'Lab', slug: 'lab' });
+    expect(okSpace(out)).toMatchObject({ name: 'Lab', slug: 'lab' });
+    expect(out.startsWith('# Team notes\n')).toBe(true);
+  });
+
+  it('quotes a name YAML would read as something else', () => {
+    for (const name of ['yes', '12', 'a: b', '#hash', ' padded ', "it's", '- dash', 'null']) {
+      expect(okSpace(okUpdate(text, { name })).name).toBe(name);
+    }
+  });
+
+  it('rewrites the file when the name is not a plain one-line value', () => {
+    const block = 'version: 1\nname: >\n  Folded\n  name\nslug: s\nextra: [1, 2]\n';
+    const out = okUpdate(block, { name: 'Plain' });
+    expect(okSpace(out)).toMatchObject({ name: 'Plain', slug: 's', extra: [1, 2] });
+  });
+
+  it('adds a missing key', () => {
+    const out = okUpdate('version: 1\nname: A\n', { slug: 'a' });
+    expect(okSpace(out)).toMatchObject({ name: 'A', slug: 'a' });
+  });
+
+  it('refuses an invalid slug or name, and a file that does not parse', () => {
+    expect(updateSpaceConfigText(text, { slug: 'Not A Slug' }).ok).toBe(false);
+    expect(updateSpaceConfigText(text, { name: '' }).ok).toBe(false);
+    expect(updateSpaceConfigText('name: [unclosed', { name: 'x' }).ok).toBe(false);
   });
 });
 

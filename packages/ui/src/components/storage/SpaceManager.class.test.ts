@@ -64,8 +64,10 @@ describe('SpaceManager class', () => {
     expect(active.id).toBe(home.id);
   });
 
-  it('refuses to delete the last space', async () => {
-    await expect(spaces.delete('default')).rejects.toThrow(/last space/);
+  it('deleting the last space leaves a new default space', async () => {
+    const { manifest, active } = await spaces.delete('default');
+    expect(manifest.spaces.map((s) => s.id)).toEqual(['default']);
+    expect(active.id).toBe('default');
   });
 
   it('flat layout: saves and reopens a space with its selected page content', async () => {

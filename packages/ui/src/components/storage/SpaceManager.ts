@@ -7,8 +7,13 @@
  * The default space uses the root workspace-state for backward compatibility.
  */
 
-import { ScopedBackend } from '@cept/core';
-import type { StorageBackend } from '@cept/core';
+import {
+  findSpaceMarker,
+  parseSpaceConfig,
+  ScopedBackend,
+  updateSpaceConfigText,
+} from '@cept/core';
+import type { PageNode, StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 import type { SidebarPageRef } from '../sidebar/Sidebar.js';
 import { DEFAULT_SPACE_ID, spaceDataDir, spaceWorkspaceFile } from './space-paths.js';
@@ -22,7 +27,7 @@ import {
   writeStorePage,
 } from './space-store.js';
 import type { SpaceStore } from './space-store.js';
-import { SPACE_STATE_FILE } from './space-store.js';
+import { SPACE_PAGES_DIR, SPACE_STATE_FILE } from './space-store.js';
 import {
   addFolderPage,
   deleteFolderPage,
@@ -38,7 +43,10 @@ import {
 } from './folder-space.js';
 import type { FolderChange } from './folder-space.js';
 import {
+  BACKUP_DIR,
   confirmFlatMigration,
+  KEEP_FLAT_FILE,
+  MIGRATION_MAP_FILE,
   finishInterruptedUndo,
   hasMigrationBackup,
   migrateFlatSpace,
@@ -262,32 +270,46 @@ export async function switchSpace(
   return manifest;
 }
 
-/** Delete a space by id. Cannot delete the last space. */
+/**
+ * Delete a space by id, with its data in `backend`. Deleting the last space
+ * leaves a new, empty default space in its place.
+ */
 export async function deleteSpace(
   backend: StorageBackend,
   spaceId: string,
 ): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
-  if (manifest.spaces.length <= 1) {
-    throw new Error('Cannot delete the last space');
-  }
   manifest.spaces = manifest.spaces.filter((s) => s.id !== spaceId);
-
-  // Delete the space's data directory (for non-default spaces)
-  if (spaceId !== DEFAULT_SPACE_ID) {
-    try {
-      await backend.deleteFile(spaceDataDir(spaceId));
-    } catch {
-      // Ignore if not found
-    }
+  await deleteSpaceData(backend, spaceId);
+  if (manifest.spaces.length === 0) {
+    await saveSpaces(backend, { activeSpaceId: DEFAULT_SPACE_ID, spaces: [] });
+    return loadSpaces(backend);
   }
-
   // If active space was deleted, switch to first remaining
   if (manifest.activeSpaceId === spaceId) {
     manifest.activeSpaceId = manifest.spaces[0].id;
   }
   await saveSpaces(backend, manifest);
   return manifest;
+}
+
+/** The app's own files at the backend root, kept when the default space is deleted. */
+const APP_DIR = '.cept';
+
+/**
+ * Delete the data a space keeps in the app's backend. The default space is the
+ * backend root: its pages and files go, and of `.cept/` only its state and
+ * conversion files, so settings and the other spaces stay.
+ */
+async function deleteSpaceData(backend: StorageBackend, spaceId: string): Promise<void> {
+  const remove = (path: string) => backend.deleteFile(path).catch(() => undefined);
+  if (spaceId !== DEFAULT_SPACE_ID) {
+    await remove(spaceDataDir(spaceId));
+    return;
+  }
+  const entries = await backend.listDirectory('').catch(() => []);
+  await Promise.all(entries.filter((e) => e.name !== APP_DIR).map((e) => remove(e.name)));
+  await Promise.all([SPACE_STATE_FILE, BACKUP_DIR, MIGRATION_MAP_FILE, KEEP_FLAT_FILE].map(remove));
 }
 
 /** Rename a space. */
@@ -302,6 +324,28 @@ export async function renameSpace(
   space.name = name;
   await saveSpaces(backend, manifest);
   return manifest;
+}
+
+/** What a space holds, for spaces listed in settings without being opened. */
+export interface SpaceStats {
+  pageCount: number;
+  /** Bytes in the space's page files. */
+  contentSize: number;
+  /** The slug in the space's `space.cept.yaml`; absent for a flat space. */
+  slug?: string;
+}
+
+/** Total size of the files under `dir`, through every subfolder. */
+async function sizeOf(backend: StorageBackend, dir: string): Promise<number> {
+  const entries = await backend.listDirectory(dir).catch(() => []);
+  const sizes = await Promise.all(
+    entries.map(async (e) => {
+      const path = dir ? `${dir}/${e.name}` : e.name;
+      if (e.isDirectory) return sizeOf(backend, path);
+      return (await backend.stat(path))?.size ?? 0;
+    }),
+  );
+  return sizes.reduce((a, b) => a + b, 0);
 }
 
 /** The part of a space's state that is saved per space (page tree, sidebar lists). */
@@ -513,19 +557,91 @@ export class SpaceManager {
     return { space, manifest };
   }
 
-  async rename(id: string, name: string): Promise<SpacesManifest> {
+  /**
+   * Rename a space. A space in the folder layout has its `space.cept.yaml`
+   * edited too, keeping its comments and other keys; `slug` changes the slug
+   * there as well. Throws, changing nothing, when the marker cannot be read or
+   * the slug is not valid, or when a folder space's folder is not connected.
+   */
+  async rename(id: string, name: string, slug?: string): Promise<SpacesManifest> {
     const own = this.session.get(id);
     if (own) {
       this.session.set(id, { ...own, name });
       return this.load();
     }
     await this.requireVisible(id);
+    if (!this.isConnected(id)) {
+      throw new Error('Reconnect the folder of this space before renaming it');
+    }
+    const meta = (await loadSpaces(this.backend)).spaces.find((s) => s.id === id);
+    if (!meta?.readOnly) await this.renameMarker(id, name, slug);
     return this.visible(await renameSpace(this.backend, id, name));
   }
 
+  /** Write a new name (and slug) into a space's `space.cept.yaml`, if it has one. */
+  private async renameMarker(id: string, name: string, slug?: string): Promise<void> {
+    const { backend } = this.store(id);
+    const marker = await findSpaceMarker(backend, '');
+    if (!marker) return;
+    const path = `/${marker.name}`;
+    const data = await backend.readFile(path);
+    const text = data ? new TextDecoder().decode(data) : '';
+    const updated = updateSpaceConfigText(text, slug === undefined ? { name } : { name, slug });
+    if (!updated.ok) throw new Error(`${marker.name}: ${updated.errors.join('; ')}`);
+    if (updated.text !== text)
+      await backend.writeFile(path, new TextEncoder().encode(updated.text));
+  }
+
   /**
-   * Delete a space and its data. If it was active, the first remaining space
-   * becomes active; the returned `active` is the space now active.
+   * Count a space's pages and the bytes they hold without opening it: nothing
+   * is written, and a flat space is not converted. Null for a folder space
+   * whose folder is not connected.
+   */
+  async inspect(id: string): Promise<SpaceStats | null> {
+    if (!this.isConnected(id)) return null;
+    const { backend } = this.store(id);
+    const marker = await findSpaceMarker(backend, '');
+    if (marker) {
+      const tree = await readFolderTree(backend);
+      const files: string[] = [];
+      let pageCount = tree.root.file ? 1 : 0;
+      const walk = (node: PageNode) => {
+        if (node.file) files.push(node.file);
+        for (const child of node.children) {
+          pageCount += 1;
+          walk(child);
+        }
+      };
+      walk(tree.root);
+      const sizes = await Promise.all(
+        files.map(async (f) => (await backend.stat(`/${f}`))?.size ?? 0),
+      );
+      const data = await backend.readFile(`/${marker.name}`);
+      const config = data ? parseSpaceConfig(new TextDecoder().decode(data)) : null;
+      return {
+        pageCount,
+        contentSize: sizes.reduce((a, b) => a + b, 0),
+        ...(config?.ok ? { slug: config.config.slug } : {}),
+      };
+    }
+    const state = this.stateStore(id);
+    const raw = await state.backend.readFile(state.stateFile);
+    let pages: PageTreeNode[] = [];
+    try {
+      pages = raw ? ((JSON.parse(new TextDecoder().decode(raw)) as SpaceSnapshot).pages ?? []) : [];
+    } catch {
+      pages = [];
+    }
+    const count = (nodes: readonly PageTreeNode[]): number =>
+      nodes.reduce((n, node) => n + 1 + count(node.children ?? []), 0);
+    return { pageCount: count(pages), contentSize: await sizeOf(backend, SPACE_PAGES_DIR) };
+  }
+
+  /**
+   * Delete a space and its data in the app's backend; a folder space's folder
+   * is left as it is. If it was active, the first remaining space becomes
+   * active; deleting the last space leaves a new, empty default space. The
+   * returned `active` is the space now active.
    */
   async delete(id: string): Promise<{ manifest: SpacesManifest; active: SpaceMeta }> {
     const inSession = this.session.delete(id);

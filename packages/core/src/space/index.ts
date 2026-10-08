@@ -10,6 +10,7 @@ export {
   findSpaceMarker,
   parseSpaceConfig,
   serializeSpaceConfig,
+  updateSpaceConfigText,
   parseCeptConfig,
   serializeCeptConfig,
   mergeFolderConfigs,

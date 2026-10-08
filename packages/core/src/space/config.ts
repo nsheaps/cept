@@ -169,6 +169,51 @@ export function serializeSpaceConfig(config: SpaceConfig): string {
   return dumpOrdered(config, ['version', 'name', 'slug', 'branch']);
 }
 
+/** Stringify with keys sorted at every level, to compare parsed YAML. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    isMapping(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v,
+  );
+}
+
+/**
+ * Change `name` and/or `slug` in the text of a `space.cept.yaml` (REQ-WS-024).
+ * Each changed key's line is replaced in place, so comments, key order and
+ * other keys stay as they were; a missing key is added at the end. When an
+ * in-place edit cannot express the change (a multi-line value), the file is
+ * written again from its parsed content, which drops its comments. The result
+ * must be a valid space config.
+ */
+export function updateSpaceConfigText(
+  text: string,
+  changes: { name?: string; slug?: string },
+): { ok: true; text: string } | { ok: false; errors: string[] } {
+  const yaml = loadYaml(text);
+  if (!yaml.ok) return yaml;
+  if (yaml.value !== undefined && !isMapping(yaml.value))
+    return fail(['space.cept.yaml must be a YAML mapping (key: value pairs)']);
+  const wanted: Record<string, unknown> = { ...(yaml.value ?? {}) };
+  const lines = text.split('\n');
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === undefined) continue;
+    wanted[key] = value;
+    const line = `${key}: ${dump(value, { lineWidth: -1 }).trimEnd()}`;
+    const at = lines.findIndex((l) => new RegExp(`^${key}\\s*:`).test(l));
+    if (at >= 0) lines[at] = line;
+    else if (lines.at(-1) === '') lines.splice(lines.length - 1, 0, line);
+    else lines.push(line);
+  }
+  let out = lines.join('\n');
+  const edited = loadYaml(out);
+  if (!edited.ok || canonical(edited.value) !== canonical(wanted)) {
+    out = dumpOrdered(wanted, ['version', 'name', 'slug', 'branch']);
+  }
+  const check = parseSpaceConfig(out);
+  return check.ok ? { ok: true, text: out } : check;
+}
+
 // ---------------------------------------------------------------------------
 // .cept.yaml
 // ---------------------------------------------------------------------------

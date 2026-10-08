@@ -380,3 +380,77 @@ describe('App folder spaces', () => {
     expect((await handles.list()).map((e) => e.id)).toEqual([id]);
   });
 });
+
+describe('App space lifecycle (REQ-WS-024)', () => {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  /** An app with an inactive folder-layout space "Work" holding one page, then the notes folder opened. */
+  async function openNotesBesideWork() {
+    const app = new MemoryBackend();
+    app.seedText(
+      '.cept/spaces.json',
+      JSON.stringify({
+        activeSpaceId: 'default',
+        spaces: [
+          { id: 'default', name: 'My Space', createdAt: '2026-01-01T00:00:00Z' },
+          { id: 'space-1', name: 'Work', createdAt: '2026-01-01T00:00:00Z' },
+        ],
+      }),
+    );
+    app.seedText('.cept/spaces/space-1/space.cept.yaml', 'version: 1\nname: Work\nslug: work\n');
+    app.seedText('.cept/spaces/space-1/Plan.md', '# Plan\n');
+    const raw = notesFolder();
+    const { backend, writes } = writeSpy(raw);
+    const { host, next } = fakeHost(new Map([['notes', backend]]));
+    next.handle = folderHandle('notes');
+    renderApp(app, host);
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    expect((await screen.findAllByText('Welcome', {}, { timeout: 3000 })).length).toBeGreaterThan(
+      0,
+    );
+    await settle();
+    const manifest = JSON.parse(app.readText('.cept/spaces.json')!) as {
+      spaces: { id: string; backend?: string }[];
+    };
+    const id = manifest.spaces.find((s) => s.backend === 'folder')!.id;
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-settings'));
+    fireEvent.click(screen.getByTestId('settings-tab-spaces'));
+    return { app, raw, writes, host, id };
+  }
+
+  it('lists real stats for a space that is not open, and labels a folder space', async () => {
+    const { id } = await openNotesBesideWork();
+    await screen.findByText(/1 page · 7 B/, {}, { timeout: 3000 });
+    expect(screen.getByTestId('space-item-space-1').textContent).toMatch(/1 page · 7 B/);
+    expect(screen.getByTestId(`space-item-${id}`).textContent).toMatch(/Folder on this device/);
+  });
+
+  it('removes a folder space from Cept after asking, writing nothing to the folder', async () => {
+    const { app, writes, host, id } = await openNotesBesideWork();
+    fireEvent.click(screen.getByTestId(`delete-space-${id}`));
+    expect(screen.getByTestId('space-remove-title').textContent).toBe('Remove "Notes" from Cept?');
+    fireEvent.click(screen.getByTestId('space-remove-confirm-btn'));
+    await settle();
+    const manifest = JSON.parse(app.readText('.cept/spaces.json')!) as {
+      spaces: { id: string }[];
+    };
+    expect(manifest.spaces.map((s) => s.id)).toEqual(['default', 'space-1']);
+    expect(writes).toEqual([]);
+    expect(await host.handles.list()).toEqual([]);
+  });
+
+  it('a rename the space file refuses changes nothing and says why', async () => {
+    const { raw, id } = await openNotesBesideWork();
+    raw.seedText('space.cept.yaml', 'name: [unclosed');
+    fireEvent.click(screen.getByTestId(`space-settings-${id}`));
+    fireEvent.click(screen.getByTestId('space-details-name'));
+    fireEvent.change(screen.getByTestId('space-rename-input'), { target: { value: 'Lab' } });
+    fireEvent.click(screen.getByTestId('space-rename-save'));
+    await screen.findByText(/Could not rename the space: space\.cept\.yaml/, {}, { timeout: 3000 });
+    expect(raw.readText('space.cept.yaml')).toBe('name: [unclosed');
+    expect(screen.queryByText('Lab')).toBeNull();
+  });
+});

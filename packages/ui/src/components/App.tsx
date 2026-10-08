@@ -49,7 +49,7 @@ import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { applyMoves, CeptSearchIndex, MemoryBackend, reconnectFolder } from '@cept/core';
 import type { ImportedPage, PageContent, StorageBackend } from '@cept/core';
 import { parseRemoteSpaceId } from './storage/SpaceManager.js';
-import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
+import type { SpaceSnapshot, SpaceStats, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
 import { initFolderSpace } from './storage/folder-space.js';
@@ -234,6 +234,8 @@ export function App() {
   >(undefined);
   /** Spaces opened this session whose conversion to folders still keeps a backup. */
   const [conversionBackups, setConversionBackups] = useState<Record<string, boolean>>({});
+  /** Page counts, sizes and slugs of the listed spaces, read while settings are open. */
+  const [spaceStats, setSpaceStats] = useState<Record<string, SpaceStats | null>>({});
   const { messages: toastMessages, addToast, dismissToast } = useToast();
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -1157,29 +1159,58 @@ export function App() {
     setSettings({ ...DEFAULT_SETTINGS });
   }, [backend]);
 
+  /** Rename a space (and its `space.cept.yaml`); a refused rename changes nothing and says why. */
   const handleSpaceRename = useCallback(
-    (id: string, name: string) => {
-      if (id === userSpaceId) {
-        setSpaceName(name);
-      }
-      void spaces.rename(id, name).then(setSpacesManifest);
+    (id: string, name: string, slug?: string) => {
+      void spaces
+        .rename(id, name, slug)
+        .then((manifest) => {
+          if (id === userSpaceId) setSpaceName(name);
+          setSpacesManifest(manifest);
+        })
+        .catch((err: unknown) => {
+          addToast(
+            `Could not rename the space: ${err instanceof Error ? err.message : String(err)}`,
+            'error',
+          );
+        });
     },
-    [spaces, userSpaceId, setSpacesManifest],
+    [spaces, userSpaceId, setSpacesManifest, addToast],
   );
 
+  /**
+   * Delete a space, or remove a folder space from Cept (its folder is kept).
+   * Deleting the last space leaves a new, empty one (REQ-WS-024).
+   */
   const handleDeleteSpace = useCallback(
     (id: string) => {
       waitingFoldersRef.current.delete(id);
       void folderHost?.handles.remove(id).catch(() => undefined);
-      void spaces.delete(id).then(({ manifest, active }) => {
-        setSpacesManifest(manifest);
-        if (id === userSpaceId) {
-          setUserSpaceId(active.id);
-          void loadAndApplySpaceState(active.id, active.name);
-        }
-      });
+      void spaces
+        .delete(id)
+        .then(({ manifest, active }) => {
+          setSpacesManifest(manifest);
+          if (id === userSpaceId) {
+            setUserSpaceId(active.id);
+            void loadAndApplySpaceState(active.id, active.name);
+          }
+        })
+        .catch((err: unknown) => {
+          addToast(
+            `Could not remove the space: ${err instanceof Error ? err.message : String(err)}`,
+            'error',
+          );
+        });
     },
-    [spaces, folderHost, userSpaceId, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
+    [
+      spaces,
+      folderHost,
+      userSpaceId,
+      setSpacesManifest,
+      setUserSpaceId,
+      loadAndApplySpaceState,
+      addToast,
+    ],
   );
 
   /** Keep a space's conversion to folders: its flat-layout backup is deleted. */
@@ -1664,14 +1695,35 @@ export function App() {
   // The kinds of space this device can add (REQ-WS-017).
   const addableSources = useMemo(() => spaceSources(probePlatform(), backend), [backend]);
 
+  // Read the listed spaces' stats when settings open, and again when the spaces change.
+  useEffect(() => {
+    if (!settingsOpen || !spacesManifest) return;
+    let cancelled = false;
+    void Promise.all(
+      spacesManifest.spaces.map(
+        async (s) => [s.id, await spaces.inspect(s.id).catch(() => null)] as const,
+      ),
+    ).then((entries) => {
+      if (!cancelled) setSpaceStats(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [settingsOpen, spacesManifest, spaces]);
+
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
     const defaultSource = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
     if (spacesManifest) {
       for (const space of spacesManifest.spaces) {
-        const spaceSource = space.remoteUrl
-          ? `Git (${space.readOnly ? 'read-only' : 'sync'})`
-          : defaultSource;
+        const kind = space.remoteUrl ? 'remote' : spaces.kindOf(space);
+        const spaceSource =
+          kind === 'remote'
+            ? `Git (${space.readOnly ? 'read-only' : 'sync'})`
+            : kind === 'folder'
+              ? 'Folder on this device'
+              : defaultSource;
+        const stats = spaceStats[space.id];
         if (space.id === userSpaceId) {
           // Active space — use live React state for accurate counts
           const contentSize = Object.values(pageContents).reduce(
@@ -1684,6 +1736,8 @@ export function App() {
             source: spaceSource,
             pageCount: flattenPages(pages).length,
             contentSize,
+            kind,
+            ...(stats?.slug !== undefined ? { slug: stats.slug } : {}),
             createdAt: space.createdAt,
             remoteUrl: space.remoteUrl,
             branch: space.branch,
@@ -1696,8 +1750,10 @@ export function App() {
             id: space.id,
             name: space.name,
             source: spaceSource,
-            pageCount: 0,
-            contentSize: 0,
+            pageCount: stats?.pageCount ?? null,
+            contentSize: stats?.contentSize ?? null,
+            kind,
+            ...(stats?.slug !== undefined ? { slug: stats.slug } : {}),
             createdAt: space.createdAt,
             remoteUrl: space.remoteUrl,
             branch: space.branch,
@@ -1729,6 +1785,8 @@ export function App() {
     userSpaceId,
     backend.type,
     conversionBackups,
+    spaceStats,
+    spaces,
   ]);
 
   const commandItems: CommandItem[] = useMemo(
