@@ -25,3 +25,12 @@ export type {
   MergedFolderConfig,
   IgnoreMatcher,
 } from './config.js';
+export { discoverSpaces, walkSpaces, findGitRoot, DEFAULT_MAX_DEPTH } from './discover.js';
+export type {
+  DiscoveryBackend,
+  DiscoveredSpace,
+  NestedMarker,
+  DiscoverOptions,
+  DiscoveryEvent,
+  DiscoveryResult,
+} from './discover.js';

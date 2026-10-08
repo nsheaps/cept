@@ -61,7 +61,7 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                     | MUST     | partial     | documented-differently | stale         |
 | [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | divergent   | documented-as-desired  | accurate      |
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
-| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | not-started | documented-as-desired  | accurate      |
+| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
 
 Status counts: 1 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (22 requirements).
@@ -208,7 +208,7 @@ flowchart TB
 - The first key is `ignore:`, a list of gitignore-style patterns relative to the folder holding the `.cept.yaml`. Matching files and folders are hidden from the page tree, search, backlinks and the graph. Dotfiles, `.git/` and `.cept/` are hidden by default without any configuration. PR #67's `hide:` key is read as an alias of `ignore:`; if both keys are present the lists are combined (`ignore` first, then `hide`, duplicates removed) and Cept writes only `ignore`. Default-hidden paths (any dotfile or dotfolder at any depth) cannot be re-included by a pattern.
 - Cept writes a `.cept.yaml` only when the user changes a setting in that folder; opening or browsing never creates one (REQ-WS-019). Unit tests cover merge order, nearest-wins, the `hide:` alias and the default-hidden paths. The marker-versus-config distinction is documented in the reference page for REQ-WS-004.
 
-**Current state: partial.** The parsers, serializers, marker precedence, nearest-wins merge and gitignore-style matcher exist in [packages/core/src/space/config.ts](../../../packages/core/src/space/config.ts) (PR 14). Discovery over a `StorageBackend` tree (PR 15), the writer flows and the `.cept/config.yaml` migration are not built yet. Before PR 14 a grep found no `space.cept.yaml`; the older artifacts are:
+**Current state: partial.** The parsers, serializers, marker precedence, nearest-wins merge and gitignore-style matcher exist in [packages/core/src/space/config.ts](../../../packages/core/src/space/config.ts) (PR 14). Read-only discovery over any `StorageBackend` (`discoverSpaces` and the lazy `walkSpaces` in [packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) finds every marker, does not descend into a found space, can report nested markers as warnings, and flags duplicate slugs. No UI calls it yet, and the writer flows and the `.cept/config.yaml` migration are not built. Before PR 14 a grep found no `space.cept.yaml`; the older artifacts are:
 
 - `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/desktop/src/local-fs.ts](../../../packages/desktop/src/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
 - A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, from PR #67, now closed per D-42; not on `main`). It is rebuilt as the D-41 `.cept.yaml` with `ignore:` (and `hide:` as an alias).
@@ -267,7 +267,7 @@ branch: docs # optional (D-30)
 **Acceptance criteria**
 
 - The schema is published as a Zod schema (`spaceConfigSchema`, `packages/core/src/space/config.ts`) with the three required fields above; unknown keys are preserved on write. `version` is the string `'1'`: an unquoted YAML `1` is normalized to `'1'`, and any other value (a future version, a non-number) is rejected with an "unsupported version" error. `name` and `branch`, when present, are non-empty strings.
-- `slug` is validated: must match `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` or be a single character `[a-z0-9]`; duplicate slugs within a listing are an error.
+- `slug` is validated: must match `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` or be a single character `[a-z0-9]`; duplicate slugs within a listing are an error. A listing is one discovery over one backend (one folder tree or repository); `discoverSpaces` reports the error on every space sharing the slug (PR 15).
 - The parser and serializer use a real YAML library (`js-yaml`), and a test round-trips names that contain `:`, `#` and quotes.
 - A reference page exists under `docs/content/reference/`.
 
@@ -706,7 +706,7 @@ branch: docs # optional (D-30)
 - Opening a folder without `.git/` does not enable them.
 - If the space root is a subfolder of a repo, detection walks up to the repo root, and this is tested.
 
-**Current state: not-started.** There is no detection code and no folder-open flow.
+**Current state: partial.** `findGitRoot` and the `gitRoot` field of each space returned by `discoverSpaces` ([packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) walk up from the space to the nearest folder holding `.git` (a directory, or a file as in worktrees and submodules), with tests for a space in a repo subfolder and for nested repos. There is no folder-open flow yet, so nothing turns the result into history and sync capabilities.
 
 **Docs state: documented-as-desired, accurate.**
 
@@ -760,7 +760,7 @@ branch: docs # optional (D-30)
 9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
 10. **Config schema shape.** _(Answered D-47: camelCase everywhere. `space.cept.yaml` and `.cept.yaml` use flat camelCase keys; SPECIFICATION.md Appendix F's snake_case is superseded.)_
 11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39).)_
-12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
+12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance? _(Answered in PR 15: a listing is one discovery over one backend, so slugs must be unique within one folder tree or repository. Uniqueness across repositories, for autodiscovery listings, is left to the space list that merges them.)_
 13. **Per-folder `.cept.yaml` (PR #67).** _(Answered D-41, D-42: in scope for Phase 1, independent of nested spaces. Per-folder `.cept.yaml` holds Cept config with `ignore:` (alias `hide:`), merges from the space root down with nearest-wins, and is never a space marker; PR #67 is closed and its ideas are rebuilt. See REQ-WS-002.)_
 
 ## Stale documentation

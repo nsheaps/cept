@@ -31,6 +31,15 @@ Unknown keys are kept and written back unchanged, so a newer or hand-edited file
 
 Both `space.cept.yaml` and `space.cept.yml` are recognized. If both exist in the same folder, `space.cept.yaml` wins, `space.cept.yml` is ignored, and Cept reports a warning. The same rule applies to `.cept.yaml` and `.cept.yml`.
 
+### How Cept finds spaces
+
+When you open a folder or a repository, Cept looks through it for `space.cept.yaml` files without changing anything. Every folder that holds one is a space, so one repository can hold several spaces in different folders.
+
+- Cept does not look for more spaces inside a space. A `space.cept.yaml` inside another space is not opened as a space; Cept can warn about it, because nested spaces are not supported yet.
+- Folders whose name starts with `.` (such as `.git` and `.cept`) are never searched.
+- Two spaces found in the same folder or repository must not share a `slug`. If they do, both are shown with an error until one is renamed.
+- If the space, or any folder above it, holds a `.git` folder (or a `.git` file, as git worktrees and submodules use), the space is part of that git repository.
+
 ## `.cept.yaml`
 
 A `.cept.yaml` in a folder configures that folder and everything below it. It never defines a space. Cept writes one only when you change a setting in that folder; opening or browsing never creates or rewrites it.
