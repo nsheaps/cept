@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 /** Targets every Nx project must have, or skip with a reason. */
@@ -14,7 +15,8 @@ export interface ProjectTargets {
 
 /**
  * Returns one problem per required target a project neither has nor skips with a
- * non-empty reason, and per skip marker that names a target the project does have.
+ * non-empty reason, per skip marker that names a target the project does have, and
+ * per skip marker that names a target outside `required` (usually a typo).
  */
 export function findTargetProblems(
   projects: ProjectTargets[],
@@ -35,12 +37,15 @@ export function findTargetProblems(
         problems.push(`${project.name}: cept.skipTargets["${target}"] needs a reason`);
       }
     }
+    for (const skipped of Object.keys(project.skip)) {
+      if (!required.includes(skipped)) {
+        problems.push(
+          `${project.name}: cept.skipTargets["${skipped}"] is not a required target (${required.join(', ')})`,
+        );
+      }
+    }
   }
   return problems;
-}
-
-function nx(...args: string[]): string {
-  return execFileSync('bunx', ['nx', ...args], { encoding: 'utf8' });
 }
 
 function readSkip(root: string): Record<string, string> {
@@ -52,20 +57,25 @@ function readSkip(root: string): Record<string, string> {
   return pkg.cept?.skipTargets ?? {};
 }
 
-/** Reads every project's targets from the Nx project graph. */
+interface ProjectGraph {
+  graph: { nodes: Record<string, { data: { root: string; targets?: Record<string, unknown> } }> };
+}
+
+/** Reads every project's targets from one `nx graph --file` export. */
 export function loadProjects(): ProjectTargets[] {
-  const names = JSON.parse(nx('show', 'projects', '--json')) as string[];
-  return names.map((name) => {
-    const project = JSON.parse(nx('show', 'project', name, '--json')) as {
-      root: string;
-      targets?: Record<string, unknown>;
-    };
-    return {
+  const dir = mkdtempSync(path.join(tmpdir(), 'check-targets-'));
+  try {
+    const file = path.join(dir, 'graph.json');
+    execFileSync('bunx', ['nx', 'graph', `--file=${file}`], { stdio: 'ignore' });
+    const { graph } = JSON.parse(readFileSync(file, 'utf8')) as ProjectGraph;
+    return Object.entries(graph.nodes).map(([name, { data }]) => ({
       name,
-      targets: Object.keys(project.targets ?? {}),
-      skip: readSkip(project.root),
-    };
-  });
+      targets: Object.keys(data.targets ?? {}),
+      skip: readSkip(data.root),
+    }));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 if (import.meta.main) {

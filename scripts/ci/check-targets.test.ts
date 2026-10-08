@@ -37,4 +37,12 @@ describe('findTargetProblems', () => {
     const p = project({ skip: { build: 'stale' } });
     expect(findTargetProblems([p])).toEqual(['p: skips "build" but also defines it; remove one']);
   });
+
+  it('rejects a skip marker for a target that is not required (a typo)', () => {
+    const p = project({ targets: ['typecheck', 'test:unit'], skip: { bulid: 'later' } });
+    expect(findTargetProblems([p])).toEqual([
+      'p: no "build" target; add one or a cept.skipTargets reason',
+      'p: cept.skipTargets["bulid"] is not a required target (build, typecheck, test:unit)',
+    ]);
+  });
 });
