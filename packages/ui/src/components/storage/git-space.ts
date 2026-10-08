@@ -1,13 +1,14 @@
 /**
  * git-space — Utilities for cloning a remote Git repository into a Cept space.
  *
- * Handles the full flow: clone → read files → build page tree → save as space.
- * The clone itself (transport, isomorphic-git, a throwaway clone directory)
+ * Handles the full flow: clone or fetch → read files → build page tree → save
+ * as space. Each remote space keeps its clone (under `/.cept/git-repos/`), so a
+ * refresh fetches only what changed. The git work (transport, isomorphic-git)
  * lives in `@cept/core`; this module turns the cloned Markdown into pages.
  */
 
-import { withShallowClone } from '@cept/core';
-import type { GitFs, StorageBackend } from '@cept/core';
+import { GitAuthRequiredError, remoteCloneDir, syncRemoteClone } from '@cept/core';
+import type { GitAuth, GitFs, StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
 /**
@@ -27,6 +28,23 @@ export function canHostGitClone(backend: StorageBackend): backend is GitCloneHos
 export interface ClonedSpaceData {
   pages: PageTreeNode[];
   pageContents: Record<string, string>;
+  /** `token` when the clone used the GitHub sign-in, which makes the space writable-capable (D-42). */
+  access: 'anonymous' | 'token';
+}
+
+export interface CloneRemoteOptions {
+  /** The space the clone belongs to; its clone is kept and fetched into on refresh. */
+  spaceId: string;
+  /** Repository URL (e.g., "github.com/user/repo"). */
+  url: string;
+  /** Branch to track (default: "main"). */
+  branch?: string;
+  /** Optional sub-path to scope the space to (e.g., "docs/"). */
+  subPath?: string;
+  /** Optional CORS proxy URL for browser environments. */
+  corsProxy?: string;
+  /** The GitHub sign-in; sent only to github.com. */
+  auth?: GitAuth;
 }
 
 /**
@@ -43,40 +61,56 @@ export function normalizeRepoUrl(url: string): string {
   return normalized;
 }
 
+/** Whether `url` (already normalized) is a repository on github.com. */
+export function isGitHubUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname === 'github.com';
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Clone a remote Git repository and extract markdown files as Cept pages.
- * The clone is shallow and is deleted once its pages are read.
+ * Clone a remote Git repository, or fetch into the space's kept clone, and
+ * extract its Markdown files as Cept pages. The token in `auth` is only sent
+ * to github.com. A repository that needs a (different) sign-in rejects with
+ * core's `GitAuthRequiredError`; see {@link cloneErrorMessage}.
  *
  * @param backend - A backend that can host the clone (see canHostGitClone)
- * @param url - Repository URL (e.g., "github.com/user/repo")
- * @param branch - Branch to clone (default: "main")
- * @param subPath - Optional sub-path to scope the space to (e.g., "docs/")
- * @param corsProxy - Optional CORS proxy URL for browser environments
  */
 export async function cloneRemoteRepo(
   backend: GitCloneHost,
-  url: string,
-  branch: string = 'main',
-  subPath?: string,
-  corsProxy?: string,
+  options: CloneRemoteOptions,
 ): Promise<ClonedSpaceData> {
-  const prefix = subPath ? subPath.replace(/^\//, '').replace(/\/$/, '') : '';
-  return withShallowClone(
-    {
-      host: backend,
-      fs: backend.getRawFs() as GitFs,
-      url: normalizeRepoUrl(url),
-      ref: branch,
-      corsProxy,
-    },
-    async (cloneDir) => {
-      const pages: PageTreeNode[] = [];
-      const pageContents: Record<string, string> = {};
-      const scanDir = prefix ? `${cloneDir}/${prefix}` : cloneDir;
-      await walkMarkdownFiles(backend, scanDir, '', pages, pageContents);
-      return { pages, pageContents };
-    },
-  );
+  const url = normalizeRepoUrl(options.url);
+  const auth = options.auth && isGitHubUrl(url) ? options.auth : undefined;
+  const prefix = options.subPath ? options.subPath.replace(/^\//, '').replace(/\/$/, '') : '';
+  const { dir } = await syncRemoteClone({
+    host: backend,
+    fs: backend.getRawFs() as GitFs,
+    dir: remoteCloneDir(options.spaceId),
+    url,
+    ref: options.branch ?? 'main',
+    corsProxy: options.corsProxy,
+    auth,
+    // Remote spaces are read-only, so a rewritten branch just replaces the files.
+    resetOnDivergence: true,
+  });
+  const pages: PageTreeNode[] = [];
+  const pageContents: Record<string, string> = {};
+  const scanDir = prefix ? `${dir}/${prefix}` : dir;
+  await walkMarkdownFiles(backend, scanDir, '', pages, pageContents);
+  return { pages, pageContents, access: auth ? 'token' : 'anonymous' };
+}
+
+/** What to tell the user when cloning or refreshing a remote space failed. */
+export function cloneErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof GitAuthRequiredError) {
+    return err.status === 401
+      ? `GitHub asked for a sign-in to read ${err.url}. Sign in with a personal access token under Settings → GitHub, then try again.`
+      : `Your GitHub token cannot read ${err.url}. Sign in with a token that has access under Settings → GitHub, then try again.`;
+  }
+  return err instanceof Error ? err.message : fallback;
 }
 
 /**

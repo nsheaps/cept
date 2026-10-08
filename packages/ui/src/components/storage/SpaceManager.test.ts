@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { remoteCloneDir } from '@cept/core';
 import { MemoryBackend } from './test-helpers.js';
 import {
   loadSpaces,
@@ -134,6 +135,42 @@ describe('SpaceManager', () => {
       expect(space.subPath).toBe('docs/');
       expect(space.readOnly).toBe(true);
       expect(space.lastSyncedAt).toBeDefined();
+    });
+
+    it('records whether the clone used the GitHub sign-in, and keeps it read-only', async () => {
+      const anonymous = await createRemoteSpace(backend, 'A', 'https://github.com/u/a', 'main');
+      const signedIn = await createRemoteSpace(
+        backend,
+        'B',
+        'https://github.com/u/b',
+        'main',
+        undefined,
+        'token',
+      );
+      expect(anonymous.access).toBeUndefined();
+      expect(signedIn.access).toBe('token');
+      expect(signedIn.readOnly).toBe(true);
+
+      const manifest = await updateSpaceSyncTimestamp(backend, anonymous.id, 'token');
+      expect(manifest.spaces.find((s) => s.id === anonymous.id)?.access).toBe('token');
+    });
+
+    it("deletes the space's kept clone with it, and only its own", async () => {
+      const space = await createRemoteSpace(backend, 'R', 'https://github.com/u/r', 'main');
+      const nested = await createRemoteSpace(
+        backend,
+        'D',
+        'https://github.com/u/r',
+        'main',
+        'docs',
+      );
+      const head = new TextEncoder().encode('ref: refs/heads/main\n');
+      await backend.writeFile(`${remoteCloneDir(space.id)}/.git/HEAD`, head);
+      await backend.writeFile(`${remoteCloneDir(nested.id)}/.git/HEAD`, head);
+
+      await deleteSpace(backend, space.id);
+      expect(await backend.exists(remoteCloneDir(space.id))).toBe(false);
+      expect(await backend.exists(`${remoteCloneDir(nested.id)}/.git/HEAD`)).toBe(true);
     });
 
     it('replaces existing space with same ID on re-clone', async () => {

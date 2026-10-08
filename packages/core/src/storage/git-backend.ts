@@ -41,6 +41,17 @@ const GIT_CAPABILITIES: BackendCapabilities = {
   watchForExternalChanges: true,
 };
 
+/** The depth git asks for on `fetch --unshallow`: everything. */
+const UNSHALLOW_DEPTH = 2147483647;
+
+/** The remote branch was rewritten: it no longer contains the local commit. */
+export class GitDivergedError extends Error {
+  constructor(readonly ref: string) {
+    super(`The remote branch "${ref}" was rewritten and no longer contains the local commit.`);
+    this.name = 'GitDivergedError';
+  }
+}
+
 /** Auth credentials for Git HTTP operations */
 export interface GitAuth {
   username?: string;
@@ -296,6 +307,59 @@ export class GitBackend implements GitStorageBackend {
       corsProxy: this.corsProxy,
       onAuth: this.auth ? () => this.getOnAuth() : undefined,
     });
+  }
+
+  /**
+   * Fetch `ref` from `origin` and move the local branch and the working tree
+   * to it, without re-cloning. Only new objects come over the wire.
+   *
+   * `fullHistory` also fetches the commits a shallow clone left out. When the
+   * remote branch no longer contains the local commit (a force push), this
+   * throws {@link GitDivergedError} unless `resetOnDivergence` is set, which
+   * replaces the working tree with the remote's (for clones nobody edits).
+   */
+  async updateFromRemote(
+    ref: string,
+    options?: { fullHistory?: boolean; resetOnDivergence?: boolean },
+  ): Promise<'updated' | 'unchanged'> {
+    if (!this.http) throw new Error('GitBackend: http client required for fetch');
+    await git.fetch({
+      fs: this.fs,
+      http: this.http,
+      dir: this.dir,
+      ref,
+      singleBranch: true,
+      tags: false,
+      // git's own --unshallow depth.
+      depth: options?.fullHistory ? UNSHALLOW_DEPTH : undefined,
+      corsProxy: this.corsProxy,
+      onAuth: this.auth ? () => this.getOnAuth() : undefined,
+    });
+    const local = await git.resolveRef({ fs: this.fs, dir: this.dir, ref: `refs/heads/${ref}` });
+    const remote = await git.resolveRef({
+      fs: this.fs,
+      dir: this.dir,
+      ref: `refs/remotes/origin/${ref}`,
+    });
+    if (local === remote) return 'unchanged';
+    const fastForward = await git
+      .isDescendent({ fs: this.fs, dir: this.dir, oid: remote, ancestor: local, depth: -1 })
+      .catch(() => false);
+    if (!fastForward && !options?.resetOnDivergence) throw new GitDivergedError(ref);
+    await git.writeRef({
+      fs: this.fs,
+      dir: this.dir,
+      ref: `refs/heads/${ref}`,
+      value: remote,
+      force: true,
+    });
+    await git.checkout({ fs: this.fs, dir: this.dir, ref, force: true });
+    return 'updated';
+  }
+
+  /** The commit the current branch points at. */
+  async head(): Promise<CommitHash> {
+    return git.resolveRef({ fs: this.fs, dir: this.dir, ref: 'HEAD' });
   }
 
   async log(path?: string, options?: LogOptions): Promise<CommitInfo[]> {

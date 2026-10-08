@@ -31,7 +31,12 @@ export {
   reconnectFolder,
 } from './web-fs.js';
 export type { FolderPermission, FolderHandleStore, RestoredFolder } from './web-fs.js';
-export { GitBackend, createGitHttp } from './git-backend.js';
+export { GitBackend, GitDivergedError, createGitHttp } from './git-backend.js';
 export type { GitAuth, GitHttp, GitFs } from './git-backend.js';
-export { GIT_CLONES_DIR, withShallowClone } from './git-clone.js';
-export type { ShallowCloneOptions } from './git-clone.js';
+export {
+  GIT_REPOS_DIR,
+  GitAuthRequiredError,
+  remoteCloneDir,
+  syncRemoteClone,
+} from './git-clone.js';
+export type { RemoteCloneOptions, RemoteCloneResult } from './git-clone.js';

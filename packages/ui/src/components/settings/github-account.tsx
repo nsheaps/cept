@@ -18,7 +18,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { PatAccount } from '@cept/core';
+import type { GitAuth, HttpAuth, PatAccount } from '@cept/core';
 
 /** The part of `PatAuthProvider` the UI uses. */
 export interface PatAuth {
@@ -26,6 +26,8 @@ export interface PatAuth {
   /** The saved token's account; null when none is saved or GitHub rejects it. Rejects when offline. */
   restore(): Promise<PatAccount | null>;
   logout(): Promise<void>;
+  /** Git-over-HTTPS credentials for the saved token. Rejects when none is saved. */
+  getHttpAuth(): Promise<HttpAuth>;
 }
 
 /**
@@ -41,6 +43,11 @@ export interface GitHubAccountState {
   signIn(token: string): Promise<void>;
   /** Forget the saved token. */
   signOut(): Promise<void>;
+  /**
+   * Credentials for cloning and fetching from GitHub with the saved token, or
+   * undefined when signed out (an anonymous clone).
+   */
+  gitAuth(): Promise<GitAuth | undefined>;
 }
 
 const GitHubAccountContext = createContext<GitHubAccountState | null>(null);
@@ -95,9 +102,18 @@ export function GitHubAccountProvider({
     setStatus('signed-out');
   }, [auth]);
 
+  // Asks the store, not `status`, so a clone during the startup check still uses the token.
+  const gitAuth = useCallback(async (): Promise<GitAuth | undefined> => {
+    if (!auth) return undefined;
+    const credentials = await auth.getHttpAuth().catch(() => null);
+    return credentials?.password
+      ? { username: 'x-access-token', password: credentials.password }
+      : undefined;
+  }, [auth]);
+
   const value = useMemo(
-    () => (auth ? { status, account, signIn, signOut } : null),
-    [auth, status, account, signIn, signOut],
+    () => (auth ? { status, account, signIn, signOut, gitAuth } : null),
+    [auth, status, account, signIn, signOut, gitAuth],
   );
   return <GitHubAccountContext.Provider value={value}>{children}</GitHubAccountContext.Provider>;
 }

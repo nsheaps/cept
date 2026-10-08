@@ -47,8 +47,15 @@ export {
 } from './storage/index.js';
 export type { FolderPermission, FolderHandleStore, RestoredFolder } from './storage/index.js';
 export type { GitAuth, GitHttp, GitFs } from './storage/index.js';
-export { createGitHttp, GIT_CLONES_DIR, withShallowClone } from './storage/index.js';
-export type { ShallowCloneOptions } from './storage/index.js';
+export {
+  createGitHttp,
+  GitAuthRequiredError,
+  GitDivergedError,
+  GIT_REPOS_DIR,
+  remoteCloneDir,
+  syncRemoteClone,
+} from './storage/index.js';
+export type { RemoteCloneOptions, RemoteCloneResult } from './storage/index.js';
 
 // Auth
 export type {
