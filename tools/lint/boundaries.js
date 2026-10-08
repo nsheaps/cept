@@ -8,6 +8,9 @@
  *
  * `no-git-type-check` enforces rule 4: ui gates Git features on
  * `backend.capabilities`, never on a type being `'git'`.
+ *
+ * `no-cors-proxy-literal` keeps the git CORS proxy URL in one build setting
+ * (D-39): only `packages/ui/src/config/git-proxy.ts` may name the public proxy.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -261,7 +264,43 @@ const noGitTypeCheck = {
   },
 };
 
+/** The public git CORS proxy, and the one module allowed to name it. */
+const CORS_PROXY_HOST = 'cors.isomorphic-git.org';
+const CORS_PROXY_CONFIG = 'packages/ui/src/config/git-proxy.ts';
+
+/** @type {import('eslint').Rule.RuleModule} */
+const noCorsProxyLiteral = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Forbid naming the git CORS proxy outside its config module' },
+    schema: [],
+    messages: {
+      forbidden: `Do not name ${CORS_PROXY_HOST} here: call gitCorsProxy() from ${CORS_PROXY_CONFIG} (D-39).`,
+    },
+  },
+  create(context) {
+    const file = path.relative(ROOT, context.filename).split(path.sep).join('/');
+    if (file === CORS_PROXY_CONFIG) return {};
+    return {
+      /** @param {any} node */
+      Literal(node) {
+        if (typeof node.value === 'string' && node.value.includes(CORS_PROXY_HOST))
+          context.report({ node, messageId: 'forbidden' });
+      },
+      /** @param {any} node */
+      TemplateElement(node) {
+        if (node.value.raw.includes(CORS_PROXY_HOST))
+          context.report({ node, messageId: 'forbidden' });
+      },
+    };
+  },
+};
+
 export default {
   meta: { name: 'cept-boundaries' },
-  rules: { 'restricted-imports': restrictedImports, 'no-git-type-check': noGitTypeCheck },
+  rules: {
+    'restricted-imports': restrictedImports,
+    'no-git-type-check': noGitTypeCheck,
+    'no-cors-proxy-literal': noCorsProxyLiteral,
+  },
 };

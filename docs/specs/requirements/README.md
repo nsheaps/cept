@@ -121,7 +121,7 @@ Cept is a Bun, TypeScript and Nx monorepo for a Notion-like editor whose pages a
 - It specifies a WebSocket relay, where the owner wants P2P WebRTC.
 - It says Starlight/VitePress docs, where the owner wants docs built by Cept's own static generator.
 
-**By the numbers.** Of 209 requirements, 12 are implemented, 53 partial, 32 stubbed, 89 not started, 20 divergent and 2 deferred.
+**By the numbers.** Of 209 requirements, 12 are implemented, 54 partial, 32 stubbed, 89 not started, 19 divergent and 2 deferred.
 
 ## 3. Component overview
 
@@ -137,10 +137,10 @@ Counts are requirements per area by implementation status (generated from the ar
 | VS Code extension                                       | [06](06-vscode-extension.md)           | 16           | 0           | 1       | 0       | 15          | 0         | 0        |
 | Packaged native apps                                    | [07](07-native-apps.md)                | 21           | 0           | 2       | 7       | 11          | 1         | 0        |
 | Editor, databases, Markdown, graph                      | [08](08-editor.md)                     | 25           | 1           | 9       | 4       | 6           | 5         | 0        |
-| Remotes & auth                                          | [09](09-remotes-and-auth.md)           | 18           | 0           | 5       | 6       | 5           | 2         | 0        |
+| Remotes & auth                                          | [09](09-remotes-and-auth.md)           | 18           | 0           | 6       | 6       | 5           | 1         | 0        |
 | Monorepo, toolchain & CI/CD                             | [10](10-engineering-and-ci.md)         | 20           | 3           | 7       | 0       | 7           | 3         | 0        |
 | Notion parity and comment threads                       | [11](11-notion-parity-and-comments.md) | 17           | 0           | 4       | 3       | 10          | 0         | 0        |
-| **Total**                                               |                                        | **207**      | **7**       | **56**  | **32**  | **89**      | **21**    | **2**    |
+| **Total**                                               |                                        | **207**      | **7**       | **57**  | **32**  | **89**      | **20**    | **2**    |
 
 How each handler requirement maps to areas:
 
@@ -484,7 +484,7 @@ Every requirement, linked to its section in the area file. Priority, statuses an
 | [REQ-AUTH-006](09-remotes-and-auth.md#req-auth-006--google-sign-in-for-google-drive-remotes)                         | Google login app for Google Drive remotes                                    | MUST        | not-started    | undocumented           | n/a           |
 | [REQ-AUTH-007](09-remotes-and-auth.md#req-auth-007--sftp-remote-credentials)                                         | SFTP remote credentials (password or key)                                    | MUST        | not-started    | undocumented           | n/a           |
 | [REQ-AUTH-008](09-remotes-and-auth.md#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac                       | MUST        | stubbed        | undocumented           | n/a           |
-| [REQ-AUTH-009](09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy                         | MUST        | divergent      | undocumented           | n/a           |
+| [REQ-AUTH-009](09-remotes-and-auth.md#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy                         | MUST        | partial        | undocumented           | n/a           |
 | [REQ-AUTH-010](09-remotes-and-auth.md#req-auth-010--authenticated-git-transport)                                     | Authenticated Git clone, fetch, pull and push                                | MUST        | partial        | documented-as-desired  | stale         |
 | [REQ-AUTH-011](09-remotes-and-auth.md#req-auth-011--anonymous-read-only-access-to-public-remotes)                    | Anonymous read-only access to public remotes                                 | SHOULD      | partial        | documented-as-desired  | stale         |
 | [REQ-AUTH-012](09-remotes-and-auth.md#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                            | MUST        | stubbed        | documented-as-desired  | accurate      |

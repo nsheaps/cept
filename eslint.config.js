@@ -58,6 +58,7 @@ export default [
       '@nx/enforce-module-boundaries': ['error', { allow: [], depConstraints }],
       'cept/restricted-imports': ['error', { baseline: readBaseline() }],
       'cept/no-git-type-check': 'error',
+      'cept/no-cors-proxy-literal': 'error',
     },
   },
   prettier,

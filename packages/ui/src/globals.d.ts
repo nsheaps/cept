@@ -7,6 +7,8 @@ declare const __IS_PREVIEW__: boolean;
 /** Build flag (VITE_DEMO_DEFAULT): open the demo on a fresh visit. */
 declare const __DEMO_DEFAULT__: boolean;
 declare const __HEAD_BRANCH__: string;
+/** Build setting (VITE_CORS_PROXY): the git CORS proxy URL; empty for the default. */
+declare const __GIT_CORS_PROXY__: string;
 
 // Vite's import.meta.env — BASE_URL is always available in Vite builds.
 interface ImportMetaEnv {

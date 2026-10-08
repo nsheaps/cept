@@ -76,6 +76,7 @@ import {
 } from '../router.js';
 import type { AppRoute } from '../router.js';
 import { NotFoundPage } from './shared/NotFoundPage.js';
+import { gitCorsProxy } from '../config/git-proxy.js';
 
 const DEMO_PAGES: PageTreeNode[] = [
   {
@@ -613,7 +614,7 @@ export function App() {
                       parsed.repo,
                       parsed.branch,
                       parsed.subPath || undefined,
-                      'https://cors.isomorphic-git.org',
+                      gitCorsProxy(),
                     );
 
                   const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
@@ -712,7 +713,7 @@ export function App() {
           spaceMeta.remoteUrl!,
           spaceMeta.branch!,
           spaceMeta.subPath || undefined,
-          'https://cors.isomorphic-git.org',
+          gitCorsProxy(),
         );
 
         const manifest = await spaces.markSynced(userSpaceId);
@@ -1595,7 +1596,7 @@ export function App() {
           config.url,
           config.branch || 'main',
           config.subPath.trim() || undefined,
-          'https://cors.isomorphic-git.org',
+          gitCorsProxy(),
         );
 
         // Create the space with remote metadata
@@ -1656,7 +1657,7 @@ export function App() {
         spaceMeta.remoteUrl,
         spaceMeta.branch,
         spaceMeta.subPath,
-        'https://cors.isomorphic-git.org',
+        gitCorsProxy(),
       );
 
       // Update the sync timestamp

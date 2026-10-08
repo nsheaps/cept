@@ -42,6 +42,8 @@ export default defineConfig({
     __IS_PREVIEW__: JSON.stringify(process.env.VITE_IS_PREVIEW === 'true'),
     __DEMO_DEFAULT__: JSON.stringify(process.env.VITE_DEMO_DEFAULT === 'true'),
     __HEAD_BRANCH__: JSON.stringify(process.env.HEAD_BRANCH || 'main'),
+    // Git CORS proxy (D-39); empty means the default in packages/ui/src/config/git-proxy.ts
+    __GIT_CORS_PROXY__: JSON.stringify(process.env.VITE_CORS_PROXY || ''),
     // isomorphic-git checks process.platform at runtime
     'process.platform': JSON.stringify('browser'),
   },

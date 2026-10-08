@@ -45,7 +45,7 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-006](#req-auth-006--google-sign-in-for-google-drive-remotes)                         | Google login app for Google Drive remotes                        | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-007](#req-auth-007--sftp-remote-credentials)                                         | SFTP remote credentials (password or key)                        | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-008](#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac           | MUST     | stubbed     | undocumented           | n/a           |
-| [REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy             | MUST     | divergent   | undocumented           | n/a           |
+| [REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy             | MUST     | partial     | undocumented           | n/a           |
 | [REQ-AUTH-010](#req-auth-010--authenticated-git-transport)                                     | Authenticated Git clone, fetch, pull and push                    | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-AUTH-011](#req-auth-011--anonymous-read-only-access-to-public-remotes)                    | Anonymous read-only access to public remotes                     | SHOULD   | partial     | documented-as-desired  | stale         |
 | [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                | MUST     | stubbed     | documented-as-desired  | accurate      |
@@ -353,11 +353,11 @@ flowchart LR
 - Authenticated requests never go to `cors.isomorphic-git.org`.
 - The CD and preview workflows inject the URL.
 
-**Current state:** divergent. [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) hardcodes `https://cors.isomorphic-git.org` at lines 363, 467, 987 and 1064. PR #67 (closed per D-42) added another literal in a new `docs-loader.ts`; it is not carried over. The only Vite env vars are `VITE_BASE_PATH`, `VITE_APP_VERSION` and `VITE_IS_PREVIEW`.
+**Current state:** partial (PR 27). [packages/ui/src/config/git-proxy.ts](../../../packages/ui/src/config/git-proxy.ts) is the one module that reads the proxy URL: `gitCorsProxy()` returns the `VITE_CORS_PROXY` build setting (injected as `__GIT_CORS_PROXY__` in [vite.config.ts](../../../packages/web/vite.config.ts)), or the public `https://cors.isomorphic-git.org` when it is unset. Every clone in App.tsx uses it. The ESLint rule `cept/no-cors-proxy-literal` ([tools/lint/boundaries.js](../../../tools/lint/boundaries.js)) fails on the proxy host anywhere else, proven by fixtures in `tools/boundary-fixtures/`. Still missing: `VITE_AUTH_RELAY`, the first-party Worker as the default, keeping authenticated requests off the public proxy, and the workflows injecting the URL (all Phase 2, D-39).
 
 **Docs state:** undocumented.
 
-**Gap:** Centralize the proxy URL and point it at the iac Worker. The space work rebuilt from PR #67 (D-42) must use the shared config.
+**Gap:** Point the proxy URL at the iac Worker (Phase 2). The space work rebuilt from PR #67 (D-42) must use `gitCorsProxy()`.
 
 **Related PRs/issues:** PR #67 (closed per D-42; ideas rebuilt in Phase 1).
 
