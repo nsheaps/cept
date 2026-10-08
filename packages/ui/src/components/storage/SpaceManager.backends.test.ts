@@ -101,4 +101,78 @@ describe('SpaceManager per-space backends', () => {
     const y = await spaces.create('Y');
     expect(x.space.id).not.toBe(y.space.id);
   });
+
+  describe('memory spaces are session-only', () => {
+    let before: string | null;
+
+    beforeEach(async () => {
+      await spaces.create('Work');
+      await spaces.switch('default');
+      before = app.readText('.cept/spaces.json');
+    });
+
+    it('creating one leaves .cept/spaces.json untouched but shows it as active', async () => {
+      const { space, manifest } = await spaces.create('Demo', undefined, {
+        kind: 'memory',
+        backend: new MemoryBackend(),
+      });
+      expect(app.readText('.cept/spaces.json')).toBe(before);
+      expect(manifest.activeSpaceId).toBe(space.id);
+      expect(manifest.spaces.map((s) => s.id)).toContain(space.id);
+      expect((await spaces.load()).activeSpaceId).toBe(space.id);
+    });
+
+    it('switching into one and back writes only the switch back', async () => {
+      const { space } = await spaces.create('Demo', undefined, {
+        kind: 'memory',
+        backend: new MemoryBackend(),
+      });
+      const into = await spaces.switch(space.id);
+      expect(into.manifest.activeSpaceId).toBe(space.id);
+      expect(app.readText('.cept/spaces.json')).toBe(before);
+      const back = await spaces.switch('default');
+      expect(back.manifest.activeSpaceId).toBe('default');
+      expect(app.readText('.cept/spaces.json')).toBe(before);
+    });
+
+    it('renaming and deleting one never writes the manifest', async () => {
+      const { space } = await spaces.create('Demo', undefined, {
+        kind: 'memory',
+        backend: new MemoryBackend(),
+      });
+      const renamed = await spaces.rename(space.id, 'Renamed');
+      expect(renamed.spaces.find((s) => s.id === space.id)?.name).toBe('Renamed');
+      const { manifest, active } = await spaces.delete(space.id);
+      expect(manifest.spaces.map((s) => s.id)).not.toContain(space.id);
+      expect(active.id).toBe('default');
+      expect(app.readText('.cept/spaces.json')).toBe(before);
+    });
+
+    it('saving a manifest that lists one does not persist it', async () => {
+      const { space, manifest } = await spaces.create('Demo', undefined, {
+        kind: 'memory',
+        backend: new MemoryBackend(),
+      });
+      await spaces.save(manifest);
+      const stored = JSON.parse(app.readText('.cept/spaces.json') ?? '{}') as {
+        activeSpaceId: string;
+        spaces: { id: string }[];
+      };
+      expect(stored.spaces.map((s) => s.id)).not.toContain(space.id);
+      expect(stored.activeSpaceId).toBe('default');
+    });
+
+    it('creating one with a fixed id replaces the earlier one and its data', async () => {
+      const first = new MemoryBackend();
+      await spaces.create('Demo', undefined, { kind: 'memory', backend: first, id: 'demo' });
+      await spaces.writePage('demo', 'p', 'edited');
+      const { manifest } = await spaces.create('Demo', undefined, {
+        kind: 'memory',
+        backend: new MemoryBackend(),
+        id: 'demo',
+      });
+      expect(manifest.spaces.filter((s) => s.id === 'demo')).toHaveLength(1);
+      expect(await spaces.readPage('demo', 'p')).toBeNull();
+    });
+  });
 });

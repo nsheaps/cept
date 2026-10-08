@@ -42,6 +42,16 @@ test.describe('Smoke Tests', () => {
     await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
   });
 
+  test('?demo opens the in-memory demo, and a reload without it starts fresh', async ({ page }) => {
+    await page.goto('/?demo');
+    await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
+    await closeSidebarOnMobile(page);
+    await expect(page.locator('.cept-editor')).toBeVisible({ timeout: 10000 });
+    // The demo lives in memory only, so nothing was saved for the next visit.
+    await page.goto('/');
+    await expect(page.getByTestId('landing-page')).toBeVisible({ timeout: 10000 });
+  });
+
   test('start writing creates a new page', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('landing-page')).toBeVisible();

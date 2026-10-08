@@ -13,17 +13,14 @@ export interface CeptSettings {
   themeMode: ThemeMode;
 }
 
-function isNsheapsDeployment(): boolean {
-  try {
-    return typeof window !== 'undefined' && window.location.hostname === 'nsheaps.github.io';
-  } catch {
-    return false;
-  }
+/** Whether this build opens the demo by default (the VITE_DEMO_DEFAULT build flag). */
+function demoByDefault(): boolean {
+  return typeof __DEMO_DEFAULT__ !== 'undefined' && __DEMO_DEFAULT__;
 }
 
 export const DEFAULT_SETTINGS: CeptSettings = {
   autoSave: true,
-  showDemoContent: isNsheapsDeployment(),
+  showDemoContent: demoByDefault(),
   redirectToGitUrl: true,
   themeMode: 'system',
 };

@@ -36,7 +36,6 @@ import {
   resetSettingsOnBackend,
   clearAllData,
   readPageContent,
-  writePageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -47,7 +46,7 @@ import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
-import { CeptSearchIndex } from '@cept/core';
+import { CeptSearchIndex, MemoryBackend } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
@@ -81,6 +80,36 @@ const DEMO_PAGES: PageTreeNode[] = [
     children: [],
   },
 ];
+
+/** The demo is a session-only memory space, so it never touches the user's spaces. */
+const DEMO_SPACE_ID = 'demo';
+const DEMO_SPACE_NAME = 'Demo Space';
+
+const DEMO_SNAPSHOT: SpaceSnapshot = {
+  pages: DEMO_PAGES,
+  favorites: [],
+  recentPages: [],
+  selectedPageId: 'welcome',
+  spaceName: DEMO_SPACE_NAME,
+};
+
+function demoPageContents(): Record<string, string> {
+  return {
+    welcome: DEMO_CONTENT,
+    'getting-started': DEMO_GETTING_STARTED_CONTENT,
+    features: DEMO_FEATURES_CONTENT,
+    notes: '',
+  };
+}
+
+/** Whether the page URL asks for the demo (`?demo`). */
+function demoRequestedByUrl(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).has('demo');
+  } catch {
+    return false;
+  }
+}
 
 const MAX_RECENT = 10;
 
@@ -118,7 +147,8 @@ export function App() {
     save,
   } = useWorkspacePersistence(backend);
 
-  // Demo mode: determined by showDemoContent setting (auto-detected on nsheaps.github.io)
+  // Demo mode: the showDemoContent setting (on by default in builds with
+  // VITE_DEMO_DEFAULT) opens the demo when there is nothing saved yet.
   const shouldShowDemo = initialSettings.showDemoContent;
 
   const [pages, setPages] = useState<PageTreeNode[]>([]);
@@ -243,6 +273,20 @@ export function App() {
     [spaces, applySpace],
   );
 
+  /** Open a fresh demo in its own memory space and make it active. */
+  const openDemoSpace = useCallback(async () => {
+    const contents = demoPageContents();
+    const { manifest } = await spaces.create(DEMO_SPACE_NAME, undefined, {
+      kind: 'memory',
+      backend: new MemoryBackend(),
+      id: DEMO_SPACE_ID,
+    });
+    await spaces.saveState(DEMO_SPACE_ID, DEMO_SNAPSHOT, contents);
+    setSpacesManifest(manifest);
+    setUserSpaceId(DEMO_SPACE_ID);
+    applySpace(DEMO_SNAPSHOT, contents);
+  }, [spaces, applySpace, setSpacesManifest, setUserSpaceId]);
+
   // Apply loaded state once backend is ready
   const initializedRef = useRef(false);
   useEffect(() => {
@@ -256,6 +300,12 @@ export function App() {
       setSpacesManifest(manifest);
       const activeId = manifest.activeSpaceId;
       setUserSpaceId(activeId);
+
+      // `?demo` opens the demo whatever is saved; the saved spaces stay as they are.
+      if (demoRequestedByUrl()) {
+        void openDemoSpace();
+        return;
+      }
 
       // If the active space is NOT the default, load it from its per-space storage
       if (activeId !== 'default') {
@@ -292,36 +342,7 @@ export function App() {
           });
         }
       } else if (shouldShowDemo) {
-        setPages(DEMO_PAGES);
-        setSelectedPageId('welcome');
-        const demoContents: Record<string, string> = {
-          welcome: DEMO_CONTENT,
-          'getting-started': DEMO_GETTING_STARTED_CONTENT,
-          features: DEMO_FEATURES_CONTENT,
-          notes: '',
-        };
-        setPageContents(demoContents);
-        setSpaceName('Demo Space');
-        setHasStarted(true);
-        void Promise.all(
-          Object.entries(demoContents).map(([id, content]) =>
-            writePageContent(backend, id, content),
-          ),
-        );
-        void spaces.saveState('default', {
-          pages: DEMO_PAGES,
-          favorites: [],
-          recentPages: [],
-          selectedPageId: 'welcome',
-          spaceName: 'Demo Space',
-        });
-        // Update manifest to reflect demo space name
-        const defaultSpace = manifest.spaces.find((s) => s.id === 'default');
-        if (defaultSpace && defaultSpace.name === 'My Space') {
-          defaultSpace.name = 'Demo Space';
-          void spaces.save(manifest);
-          setSpacesManifest({ ...manifest });
-        }
+        void openDemoSpace();
       }
     });
   }, [
@@ -334,6 +355,7 @@ export function App() {
     setSpacesManifest,
     setUserSpaceId,
     loadAndApplySpaceState,
+    openDemoSpace,
   ]);
 
   useEffect(() => {
@@ -850,73 +872,29 @@ export function App() {
   }, [currentWritePage]);
 
   const handleResetDemo = useCallback(() => {
-    // Always recreate — if space was renamed, this creates what is effectively a duplicate
-    setPages(DEMO_PAGES);
-    const demoContents: Record<string, string> = {
-      welcome: DEMO_CONTENT,
-      'getting-started': DEMO_GETTING_STARTED_CONTENT,
-      features: DEMO_FEATURES_CONTENT,
-      notes: '',
-    };
-    setPageContents(demoContents);
-    setSelectedPageId('welcome');
-    setFavorites([]);
-    setRecentPages([]);
-    setTrash([]);
-    setSpaceName('Demo Space');
-    setUserSpaceId('default');
-    setHasStarted(true);
-    void Promise.all(
-      Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
-    );
-    void spaces.saveState('default', {
-      pages: DEMO_PAGES,
-      favorites: [],
-      recentPages: [],
-      selectedPageId: 'welcome',
-      spaceName: 'Demo Space',
-    });
-  }, [backend]);
+    saveActiveSpace();
+    setSpaceLoadError(undefined);
+    setActiveSpace('user');
+    void openDemoSpace();
+  }, [saveActiveSpace, openDemoSpace]);
 
   const handleClearAllData = useCallback(() => {
-    // Reset React state immediately so the UI is responsive
+    // Drop any pending save of the old state so it cannot land after the clear
+    if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     setSettings({ ...DEFAULT_SETTINGS });
-    setPages(DEMO_PAGES);
-    const demoContents: Record<string, string> = {
-      welcome: DEMO_CONTENT,
-      'getting-started': DEMO_GETTING_STARTED_CONTENT,
-      features: DEMO_FEATURES_CONTENT,
-      notes: '',
-    };
-    setPageContents(demoContents);
-    setSelectedPageId('welcome');
-    setFavorites([]);
-    setRecentPages([]);
-    setTrash([]);
-    setSpaceName('Demo Space');
-    setUserSpaceId('default');
-    setHasStarted(true);
     setSettingsOpen(false);
+    setSpaceLoadError(undefined);
+    setActiveSpace('user');
     const freshManifest: SpacesManifest = {
       activeSpaceId: 'default',
-      spaces: [{ id: 'default', name: 'Demo Space', createdAt: new Date().toISOString() }],
+      spaces: [{ id: 'default', name: 'My Space', createdAt: new Date().toISOString() }],
     };
-    setSpacesManifest(freshManifest);
-    // Clear storage FIRST, then write fresh data so writes aren't deleted by the concurrent clear
-    void clearAllData(backend).then(() => {
-      void Promise.all(
-        Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
-      );
-      void spaces.saveState('default', {
-        pages: DEMO_PAGES,
-        favorites: [],
-        recentPages: [],
-        selectedPageId: 'welcome',
-        spaceName: 'Demo Space',
-      });
-      void spaces.save(freshManifest);
-    });
-  }, [backend, spaces, setSpacesManifest, setUserSpaceId]);
+    // Clear storage first, then show the demo in its own memory space: the
+    // emptied default space is left empty.
+    void clearAllData(backend)
+      .then(() => spaces.save(freshManifest))
+      .then(() => openDemoSpace());
+  }, [backend, spaces, openDemoSpace]);
 
   const handleSettingsChange = useCallback(
     (updated: CeptSettings) => {

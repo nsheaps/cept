@@ -343,13 +343,13 @@ branch: docs # optional (D-30)
 - Each space is read and written through a backend of its own. `SpaceManager.store(id)` returns it (see [space-store.ts](../../../packages/ui/src/components/storage/space-store.ts)):
   - A space bound with `SpaceManager.bind` or created with `{ kind: 'memory', backend }` uses that backend. Its `.cept/workspace-state.json` and `pages/` sit at the backend's root.
   - Spaces in the app's backend keep their existing paths, so stored data still loads. The default space is the backend root. Every other space is a `ScopedBackend` (in `@cept/core`) over `.cept/spaces/<id>/`.
-- `SpaceMeta.backend` records where a space lives: `app` (the default) or `memory`. After a reload, any space that is not `app` and has no bound backend is left out of the manifest `SpaceManager` returns, and `switch` and `rename` refuse it before writing. Its row stays in `.cept/spaces.json` until the space is deleted.
+- `SpaceMeta.backend` records where a space lives: `app` (the default) or `memory`. Memory spaces are session-only (PR 18): `SpaceManager` lists them while it lives but never writes them, or their being active, to `.cept/spaces.json`. Any saved space that is not `app` and has no bound backend is left out of the manifest `SpaceManager` returns, and `switch` and `rename` refuse it before writing. The demo is such a memory space (REQ-WEB-012).
 - The app still creates one root backend: `new BrowserFsBackend(...)` in [packages/web/src/main.tsx](../../../packages/web/src/main.tsx). Cloned git spaces are still copied into it through `/.cept/git-clones/<ts>`.
 - `@cept/ui` has no `instanceof` backend checks. Git cloning is gated on `canHostGitClone` in git-space.ts: the backend must expose a raw filesystem for isomorphic-git.
 
 **Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "Every workspace is backed by a StorageBackend. The user chooses their backend when creating or opening a workspace", which implies one backend per space. The app does not behave this way.
 
-**Gap.** A backend factory keyed by type id plus config, folder- and remote-backed space kinds, the E2E test with two backends in one session, and removing rows for unbound memory spaces from `.cept/spaces.json`.
+**Gap.** A backend factory keyed by type id plus config, folder- and remote-backed space kinds, and the E2E test with two backends in one session.
 
 **Related:** [#40](https://github.com/nsheaps/cept/issues/40), [#45](https://github.com/nsheaps/cept/issues/45).
 
@@ -799,7 +799,7 @@ branch: docs # optional (D-30)
 
 - **CLI and daemon:** see [05-cli-and-daemon.md](05-cli-and-daemon.md). SFTP (REQ-WS-016), and native-fs access from browser, PWA and VS Code clients, depend on a local daemon hosting the backends. Git push/pull (REQ-WS-014) is likely owned by the daemon.
 - **Service worker and PWA:** see [REQ-WEB-007](01-browser-app-and-pwa.md#req-web-007--service-worker-handles-syncing) and [REQ-WEB-010](01-browser-app-and-pwa.md#req-web-010--pwa-shares-local-daemon-when-present). When no daemon is present, the service worker owns sync. Today sync is a timer effect in App.tsx.
-- **Demo space:** see [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-space-uses-in-memory-file-storage). Only a test-only `MemoryBackend` exists ([packages/ui/src/components/storage/test-helpers.ts](../../../packages/ui/src/components/storage/test-helpers.ts), ~line 16). Shipping one needs the open `type` id from REQ-WS-008.
+- **Demo space:** see [REQ-WEB-012](01-browser-app-and-pwa.md#req-web-012--demo-space-uses-in-memory-file-storage). The demo runs on the `MemoryBackend` from `@cept/core` as a session-only memory space.
 - **Per-deployment isolation:** see [REQ-WEB-020](01-browser-app-and-pwa.md#req-web-020--per-deployment-storage-isolation), which relies on REQ-WS-011.
 - **Browser-only folders:** [REQ-WEB-023](01-browser-app-and-pwa.md#req-web-023--browser-only-local-folder-spaces) corresponds to REQ-WS-012.
 - **Remotes and auth:** see [09-remotes-and-auth.md](09-remotes-and-auth.md). The Git, Drive and SFTP backends need the AuthProvider abstraction (GitHub app, Google login, PAT), and the CORS proxy must move to the nsheaps/iac Cloudflare worker.

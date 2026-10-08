@@ -288,47 +288,137 @@ describe('App', () => {
     expect(screen.queryByTestId('reset-demo')).toBeNull();
   });
 
-  it('persists tree state when demo content is shown', async () => {
+  it('demo mode writes nothing to the app backend', async () => {
     vi.useFakeTimers();
     const backend = new MemoryBackend();
     seedDemoMode(backend);
     renderApp(backend);
 
-    // Flush the async useEffect that loads persisted state
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
     });
-    // Now wait for the debounced persist (300ms)
+    // Let the debounced persist run
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
     });
     vi.useRealTimers();
 
-    const stored = await backend.readFile('.cept/workspace-state.json');
-    expect(stored).not.toBeNull();
-    const parsed = JSON.parse(new TextDecoder().decode(stored!));
-    expect(parsed.pages).toBeDefined();
-    expect(parsed.pages.length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+    expect(backend.hasFile('pages/welcome.md')).toBe(false);
+    expect(backend.hasFile('.cept/workspace-state.json')).toBe(false);
+    const manifest = JSON.parse(backend.readText('.cept/spaces.json') ?? '{}') as {
+      spaces: { id: string; name: string }[];
+    };
+    expect(manifest.spaces.map((s) => [s.id, s.name])).toEqual([['default', 'My Space']]);
   });
 
-  it('demo mode writes page content to individual files', async () => {
-    vi.useFakeTimers();
+  it('clearing all data empties the default space and shows the demo in memory', async () => {
     const backend = new MemoryBackend();
     seedDemoMode(backend);
+    seedWorkspace(backend, {
+      pages: [{ id: 'mine', title: 'Mine', children: [] }],
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'mine',
+      spaceName: 'Mine',
+    });
+    seedPageContent(backend, 'mine', 'my own words');
     renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('Mine').length).toBeGreaterThanOrEqual(1);
+    });
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(50);
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-settings'));
+    fireEvent.click(screen.getByTestId('settings-tab-spaces'));
+    fireEvent.click(screen.getByTestId('clear-all-data-btn'));
+    await waitFor(() => {
+      expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
     });
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(100);
+      await new Promise((resolve) => setTimeout(resolve, 400));
     });
-    vi.useRealTimers();
 
-    // Demo pages should have individual files
-    const welcomeContent = await backend.readText('pages/welcome.md');
-    expect(welcomeContent).not.toBeNull();
-    expect(welcomeContent).toContain('demo space');
+    expect(backend.hasFile('pages/mine.md')).toBe(false);
+    expect(backend.hasFile('pages/welcome.md')).toBe(false);
+    expect(backend.hasFile('.cept/workspace-state.json')).toBe(false);
+    const manifest = JSON.parse(backend.readText('.cept/spaces.json') ?? '{}') as {
+      spaces: { id: string; name: string }[];
+    };
+    expect(manifest.spaces.map((s) => [s.id, s.name])).toEqual([['default', 'My Space']]);
+  });
+
+  it('?demo opens the demo without touching saved spaces', async () => {
+    const backend = new MemoryBackend();
+    seedWorkspace(backend, {
+      pages: [{ id: 'mine', title: 'Mine', children: [] }],
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'mine',
+      spaceName: 'Mine',
+    });
+    seedPageContent(backend, 'mine', 'my own words');
+    backend.seedFile('.cept/spaces.json', {
+      activeSpaceId: 'default',
+      spaces: [{ id: 'default', name: 'Mine', createdAt: '2026-01-01T00:00:00.000Z' }],
+    });
+    const files = ['.cept/spaces.json', '.cept/workspace-state.json', 'pages/mine.md'];
+    const before = files.map((f) => backend.readText(f));
+    window.history.pushState({}, '', '/?demo');
+    try {
+      renderApp(backend);
+      await waitFor(() => {
+        expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      });
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+
+    expect(files.map((f) => backend.readText(f))).toEqual(before);
+    expect(backend.hasFile('pages/welcome.md')).toBe(false);
+  });
+
+  it('recreating the demo leaves the default space and the manifest untouched', async () => {
+    const backend = new MemoryBackend();
+    seedDemoMode(backend);
+    seedWorkspace(backend, {
+      pages: [{ id: 'mine', title: 'Mine', children: [] }],
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'mine',
+      spaceName: 'Mine',
+    });
+    seedPageContent(backend, 'mine', 'my own words');
+    backend.seedFile('.cept/spaces.json', {
+      activeSpaceId: 'default',
+      spaces: [{ id: 'default', name: 'Mine', createdAt: '2026-01-01T00:00:00.000Z' }],
+    });
+    renderApp(backend);
+    await waitFor(() => {
+      expect(screen.getAllByText('Mine').length).toBeGreaterThanOrEqual(1);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+    const files = ['.cept/spaces.json', '.cept/workspace-state.json', 'pages/mine.md'];
+    const before = files.map((f) => backend.readText(f));
+
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+    fireEvent.click(screen.getByTestId('sidebar-app-menu-settings'));
+    fireEvent.click(screen.getByTestId('settings-tab-spaces'));
+    fireEvent.click(screen.getByTestId('recreate-demo-btn'));
+    await waitFor(() => {
+      expect(screen.getAllByText('Welcome to Cept').length).toBeGreaterThanOrEqual(1);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(files.map((f) => backend.readText(f))).toEqual(before);
+    expect(backend.hasFile('pages/welcome.md')).toBe(false);
   });
 
   it('demo mode shows demo content initially', async () => {
@@ -397,28 +487,6 @@ describe('App', () => {
       expect(screen.getByTestId('sidebar-add-page')).toBeDefined();
       expect(screen.getByTestId('trash-toggle')).toBeDefined();
     });
-  });
-
-  it('persists space name', async () => {
-    vi.useFakeTimers();
-    const backend = new MemoryBackend();
-    seedDemoMode(backend);
-    renderApp(backend);
-
-    // Flush the async useEffect that loads persisted state
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(50);
-    });
-    // Now wait for the debounced persist
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-    vi.useRealTimers();
-
-    const stored = await backend.readFile('.cept/workspace-state.json');
-    expect(stored).not.toBeNull();
-    const parsed = JSON.parse(new TextDecoder().decode(stored!));
-    expect(parsed.spaceName).toBe('Demo Space');
   });
 
   it('migrates from legacy localStorage on first load', async () => {
