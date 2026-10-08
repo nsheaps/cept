@@ -58,12 +58,19 @@ export function pickCeptConfigFile(fileNames: Iterable<string>): PickedFile | nu
   return pickByExtension(fileNames, CEPT_CONFIG_YAML, CEPT_CONFIG_YML);
 }
 
-/** List `dir` on a backend and pick its space marker. Read-only. */
+/**
+ * List `dir` on a backend and pick its space marker. Read-only.
+ *
+ * `dir` follows the module's path contract (see {@link splitPath}): `/`-separated,
+ * relative to the backend root, with `''`, `'/'` and `'.'` all naming the root.
+ * It is normalized to the backend's absolute form (`'/notes'`, `'/'`) before
+ * listing, so every backend sees the same spelling.
+ */
 export async function findSpaceMarker(
   backend: Pick<StorageBackend, 'listDirectory'>,
   dir: string,
 ): Promise<PickedFile | null> {
-  const entries = await backend.listDirectory(dir === '' ? '/' : dir);
+  const entries = await backend.listDirectory(`/${normalizeFolder(dir)}`);
   return pickSpaceMarker(entries.filter((e) => e.isFile).map((e) => e.name));
 }
 
@@ -235,11 +242,16 @@ export function mergeFolderConfigs(layers: readonly ConfigLayer[]): MergedFolder
 // Hidden paths and gitignore-style matching
 // ---------------------------------------------------------------------------
 
+/**
+ * Path contract for this module: paths are POSIX-style, `/`-separated and
+ * relative to the space (or backend) root, the same form every
+ * `StorageBackend` uses. Leading, trailing and repeated `/` and `.` segments
+ * are ignored, so `''`, `'/'` and `'.'` all name the root. `\\` is an ordinary
+ * filename character, not a separator: callers holding native Windows paths
+ * convert them before calling in.
+ */
 function splitPath(path: string): string[] {
-  return path
-    .replace(/\\/g, '/')
-    .split('/')
-    .filter((s) => s !== '' && s !== '.');
+  return path.split('/').filter((s) => s !== '' && s !== '.');
 }
 
 function normalizeFolder(folder: string): string {

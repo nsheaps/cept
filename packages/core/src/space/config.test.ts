@@ -68,6 +68,18 @@ describe('marker precedence (REQ-WS-003)', () => {
     expect(found?.warnings).toHaveLength(1);
     expect(await findSpaceMarker(backend, 'other')).toBeNull();
   });
+
+  it('accepts every spelling of the root and of a folder', async () => {
+    const backend = new MemoryBackend();
+    await backend.writeFile('space.cept.yaml', new TextEncoder().encode('x'));
+    await backend.writeFile('notes/space.cept.yml', new TextEncoder().encode('x'));
+    for (const root of ['', '/', '.', './']) {
+      expect((await findSpaceMarker(backend, root))?.name).toBe(SPACE_MARKER_YAML);
+    }
+    for (const notes of ['notes', '/notes', 'notes/', './notes', 'notes//']) {
+      expect((await findSpaceMarker(backend, notes))?.name).toBe(SPACE_MARKER_YML);
+    }
+  });
 });
 
 describe('parseSpaceConfig (REQ-WS-004)', () => {
@@ -357,5 +369,12 @@ describe('gitignore-style matching', () => {
     expect(m.isHidden('')).toBe(false);
     expect(m.isHidden('/a/b.md')).toBe(false);
     expect(m.isHidden('a\\b.md')).toBe(false);
+  });
+
+  it('treats a backslash as a filename character, not a separator', () => {
+    const m = createIgnoreMatcher([{ folder: '', config: okCept('ignore: [a/]') }]);
+    expect(m.isHidden('a/b.md')).toBe(true);
+    expect(m.isHidden('a\\b.md')).toBe(false);
+    expect(isDefaultHidden('x\\.git')).toBe(false);
   });
 });
