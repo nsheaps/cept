@@ -45,6 +45,24 @@ describe('planMerge (REQ-WS-026)', () => {
     );
   });
 
+  it('keeps a mode change from either side when the contents merge', async () => {
+    const at = (text: string, mode: string): FlatTree =>
+      new Map([['run.sh', { oid: `blob:${text}`, mode }]]);
+    const merge = (mineMode: string, theirMode: string) =>
+      planMerge({
+        base: at('one\ntwo\nthree\n', '100644'),
+        mine: at('ONE\ntwo\nthree\n', mineMode),
+        theirs: at('one\ntwo\nTHREE\n', theirMode),
+        read,
+        labels,
+      });
+    const theirsExec = await merge('100644', '100755');
+    expect(theirsExec.conflicts).toEqual([]);
+    expect(theirsExec.files.get('run.sh')?.mode).toBe('100755');
+    expect(textOf(theirsExec.files.get('run.sh'))).toBe('ONE\ntwo\nTHREE\n');
+    expect((await merge('100755', '100644')).files.get('run.sh')?.mode).toBe('100755');
+  });
+
   it('reports overlapping edits as a conflict with both versions and a marked merge', async () => {
     const plan = await planMerge({
       base: tree({ 'p.md': 'line\n' }),

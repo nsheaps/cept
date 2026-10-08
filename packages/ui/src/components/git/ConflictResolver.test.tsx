@@ -94,6 +94,23 @@ describe('ConflictResolver (REQ-WS-026)', () => {
     ]);
   });
 
+  it('refuses an emptied merge unless both sides were empty', () => {
+    render(<ConflictResolver conflicts={[content]} />);
+    fireEvent.click(screen.getByTestId('conflict-choose-merged'));
+    fireEvent.change(screen.getByTestId('conflict-merged-editor'), { target: { value: '  \n' } });
+    expect(screen.getByTestId('conflict-empty-merge')).toBeDefined();
+    expect(screen.getByTestId('conflict-apply')).toHaveProperty('disabled', true);
+    expect(screen.getByTestId('conflict-count').textContent).toBe('0/1 resolved');
+  });
+
+  it('accepts an empty merge when both sides were empty', () => {
+    const empty: MergeConflict = { ...content, ours: '', theirs: '', merged: '' };
+    render(<ConflictResolver conflicts={[empty]} />);
+    fireEvent.click(screen.getByTestId('conflict-choose-merged'));
+    expect(screen.queryByTestId('conflict-empty-merge')).toBeNull();
+    expect(screen.getByTestId('conflict-apply')).toHaveProperty('disabled', false);
+  });
+
   it('does not offer to edit a binary file', () => {
     render(<ConflictResolver conflicts={[binary]} />);
     expect(screen.queryByTestId('conflict-choose-merged')).toBeNull();

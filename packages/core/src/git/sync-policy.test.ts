@@ -101,4 +101,12 @@ describe('fallbackBranchName (REQ-WS-026)', () => {
     expect(fallbackBranchName('a b~c', date, 'abcdef1234')).toBe('cept/a-b-c/2026-01-02-abcdef1');
     expect(fallbackBranchName('..', date, 'abcdef1234')).toBe('cept/cept/2026-01-02-abcdef1');
   });
+
+  it('never yields `..` or a `.lock` component', () => {
+    const date = new Date('2026-01-02T00:00:00Z');
+    expect(fallbackBranchName('a..b', date, 'abcdef1234')).toBe('cept/a.b/2026-01-02-abcdef1');
+    expect(fallbackBranchName('a.lock', date, 'abcdef1234')).toBe('cept/a/2026-01-02-abcdef1');
+    expect(fallbackBranchName('x.LOCK', date, 'abcdef1234')).toBe('cept/x/2026-01-02-abcdef1');
+    expect(fallbackBranchName('.lock', date, 'abcdef1234')).toBe('cept/lock/2026-01-02-abcdef1');
+  });
 });

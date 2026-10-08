@@ -131,7 +131,9 @@ export async function planMerge(input: MergePlanInput): Promise<MergePlan> {
     if (m && t && !binary) {
       const result = mergeText(path, b ? baseText : null, mineText!, theirText!);
       if (result.clean) {
-        files.set(path, { mode: m.mode, content: new TextEncoder().encode(result.merged) });
+        // Take a mode change from whichever side made it (mine when both did).
+        const mode = m.mode === t.mode || m.mode !== b?.mode ? m.mode : t.mode;
+        files.set(path, { mode, content: new TextEncoder().encode(result.merged) });
         continue;
       }
       const conflict: MergeConflict = {

@@ -166,20 +166,22 @@ interface PageParts {
 }
 
 function splitPage(text: string): PageParts {
-  if (!text.startsWith('---\n')) return { frontMatter: null, body: text };
-  const close = /\n---(\n|$)/g;
-  close.lastIndex = 3;
+  const open = /^---\r?\n/.exec(text);
+  if (!open) return { frontMatter: null, body: text };
+  const start = open[0].length;
+  const close = /\r?\n---(\r?\n|$)/g;
+  close.lastIndex = start - 1;
   const found = close.exec(text);
   if (!found) return { frontMatter: null, body: text };
   return {
-    frontMatter: found.index > 3 ? text.slice(4, found.index).split('\n') : [],
+    frontMatter: found.index > start - 1 ? text.slice(start, found.index).split(/\r?\n/) : [],
     body: text.slice(found.index + found[0].length),
   };
 }
 
-/** A page from its parts; the closing `---` always ends its line. */
-function joinPage(frontMatter: string[], body: string): string {
-  return ['---', ...frontMatter, '---', ''].join('\n') + body;
+/** A page from its parts; the closing `---` always ends its line, with `eol`. */
+function joinPage(frontMatter: string[], body: string, eol: string): string {
+  return ['---', ...frontMatter, '---', ''].join(eol) + body;
 }
 
 /** A top-level key of a front matter block, with the lines that belong to it. */
@@ -285,6 +287,11 @@ export function mergeText(
   const body = mergeLines(b.body, m.body, t.body);
   return {
     clean: front.clean && body.clean,
-    merged: joinPage(front.lines, body.merged),
+    // Keep my line endings for the front matter fences.
+    merged: joinPage(
+      front.lines,
+      body.merged,
+      (m.frontMatter ? mine : theirs).includes('\r\n') ? '\r\n' : '\n',
+    ),
   };
 }

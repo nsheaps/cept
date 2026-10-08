@@ -30,10 +30,21 @@ interface Draft {
   content?: string;
 }
 
-/** Whether `draft` can be applied: a merged edit must be free of conflict markers. */
-function isValid(draft: Draft | undefined): boolean {
+/** Why a merged edit cannot be applied yet, or null when it can. */
+function mergedProblem(draft: Draft, conflict: MergeConflict): 'markers' | 'empty' | null {
+  const content = draft.content ?? '';
+  if (hasConflictMarkers(content)) return 'markers';
+  // An emptied file is only a real merge when both sides were empty too.
+  if (content.trim() === '' && ((conflict.ours ?? '') !== '' || (conflict.theirs ?? '') !== '')) {
+    return 'empty';
+  }
+  return null;
+}
+
+/** Whether `draft` can be applied: a merged edit must be free of markers and not emptied. */
+function isValid(draft: Draft | undefined, conflict: MergeConflict): boolean {
   if (!draft) return false;
-  return draft.choice !== 'merged' || !hasConflictMarkers(draft.content ?? '');
+  return draft.choice !== 'merged' || mergedProblem(draft, conflict) === null;
 }
 
 /** The choices offered for a conflict, as [choice, label] pairs. */
@@ -78,7 +89,7 @@ export function ConflictResolver({
 
   const current = conflicts[Math.min(activeConflict, conflicts.length - 1)];
   const resolvedCount = useMemo(
-    () => conflicts.filter((c) => isValid(drafts.get(c.path))).length,
+    () => conflicts.filter((c) => isValid(drafts.get(c.path), c)).length,
     [conflicts, drafts],
   );
   const allResolved = conflicts.length > 0 && resolvedCount === conflicts.length;
@@ -129,7 +140,7 @@ export function ConflictResolver({
   }
 
   const draft = drafts.get(current.path);
-  const markersLeft = draft?.choice === 'merged' && !isValid(draft);
+  const problem = draft?.choice === 'merged' ? mergedProblem(draft, current) : null;
 
   return (
     <div className="cept-conflict-resolver" data-testid="conflict-resolver">
@@ -205,10 +216,19 @@ export function ConflictResolver({
               }
               data-testid="conflict-merged-editor"
             />
-            {markersLeft && (
+            {problem === 'markers' && (
               <div className="cept-conflict-warning" role="alert" data-testid="conflict-markers">
                 Remove the conflict markers (&lt;&lt;&lt;&lt;&lt;&lt;&lt;, =======,
                 &gt;&gt;&gt;&gt;&gt;&gt;&gt;) before applying.
+              </div>
+            )}
+            {problem === 'empty' && (
+              <div
+                className="cept-conflict-warning"
+                role="alert"
+                data-testid="conflict-empty-merge"
+              >
+                The merged file is empty. To remove the file, keep a version or delete it instead.
               </div>
             )}
           </>

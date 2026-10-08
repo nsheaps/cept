@@ -146,6 +146,17 @@ describe('mergeText (REQ-WS-026)', () => {
     });
   });
 
+  it('merges CRLF front matter key by key and keeps CRLF', () => {
+    const crlf = (front: string[], body: string) => ['---', ...front, '---', body].join('\r\n');
+    const base = crlf(['title: Plan'], 'Body\r\n');
+    const mine = crlf(['title: Plan', 'a: 1'], 'Body\r\n');
+    const theirs = crlf(['title: Plan', 'b: 2'], 'Body\r\n');
+    expect(mergeText('plan.md', base, mine, theirs)).toEqual({
+      clean: true,
+      merged: crlf(['title: Plan', 'a: 1', 'b: 2'], 'Body\r\n'),
+    });
+  });
+
   it('merges other files line by line', () => {
     const result = mergeText('space.cept.yaml', 'name: A\n', 'name: B\n', 'name: C\n');
     expect(result.clean).toBe(false);
