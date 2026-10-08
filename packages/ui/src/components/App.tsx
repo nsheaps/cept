@@ -400,7 +400,7 @@ export function App() {
       } else {
         done();
       }
-    });
+    }, done);
   }, [
     ready,
     persisted,

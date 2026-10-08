@@ -588,6 +588,33 @@ describe('App', () => {
       expect(window.location.pathname).toBe('/s/space-f/guides/set%20up.md');
     });
 
+    it('still resolves a deep link when loading the spaces at startup fails', async () => {
+      visit('/s/space-f/todo.md');
+      const backend = seedFolderSpace();
+      // A saved default space, so the app has state to start from.
+      backend.seedFile('.cept/workspace-state.json', {
+        pages: [{ id: 'mine', title: 'Mine', children: [] }],
+        favorites: [],
+        recentPages: [],
+        spaceName: 'My Space',
+      });
+      const readFile = backend.readFile.bind(backend);
+      let failed = false;
+      vi.spyOn(backend, 'readFile').mockImplementation(async (path) => {
+        if (path === '.cept/spaces.json' && !failed) {
+          failed = true;
+          throw new Error('storage unavailable');
+        }
+        return readFile(path);
+      });
+      renderApp(backend);
+      await waitFor(() => {
+        expect(screen.getByTestId('breadcrumbs').textContent).toContain('todo');
+      });
+      expect(failed).toBe(true);
+      expect(window.location.pathname).toBe('/s/space-f/todo.md');
+    });
+
     it('shows the not-found page for a missing page and keeps its URL', async () => {
       visit('/s/space-f/guides/gone.md');
       renderApp(seedFolderSpace());
