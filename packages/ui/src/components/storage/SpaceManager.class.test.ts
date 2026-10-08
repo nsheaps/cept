@@ -59,8 +59,6 @@ describe('SpaceManager class', () => {
 
   it('deleting another space keeps the active one', async () => {
     const { space: work } = await spaces.create('Work');
-    // Ids come from Date.now(); keep the two creates in different milliseconds.
-    await new Promise((r) => setTimeout(r, 2));
     const { space: home } = await spaces.create('Home');
     const { active } = await spaces.delete(work.id);
     expect(active.id).toBe(home.id);

@@ -21,6 +21,7 @@ export type {
 
 export { BrowserFsBackend } from './browser-fs.js';
 export { MemoryBackend } from './memory.js';
+export { ScopedBackend } from './scoped.js';
 export {
   WebFsBackend,
   pickDirectory,

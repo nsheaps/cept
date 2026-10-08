@@ -153,6 +153,7 @@ export type {
   SpacesManifest,
   SpaceSnapshot,
   OpenedSpace,
+  SpaceBackendKind,
 } from './components/storage/SpaceManager.js';
 export { useSpaces } from './components/storage/useSpaces.js';
 export type { UseSpaces } from './components/storage/useSpaces.js';

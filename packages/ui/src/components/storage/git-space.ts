@@ -5,9 +5,22 @@
  * Works in the browser via isomorphic-git + lightning-fs.
  */
 
-import { GitBackend, BrowserFsBackend } from '@cept/core';
-import type { GitHttp, GitFs } from '@cept/core';
+import { GitBackend } from '@cept/core';
+import type { GitHttp, GitFs, StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
+
+/**
+ * A backend that can hand isomorphic-git its raw filesystem, which a clone
+ * needs (today: the IndexedDB-backed browser backend).
+ */
+export interface GitCloneHost extends StorageBackend {
+  getRawFs(): unknown;
+}
+
+/** Whether `backend` can host a Git clone. */
+export function canHostGitClone(backend: StorageBackend): backend is GitCloneHost {
+  return typeof (backend as Partial<GitCloneHost>).getRawFs === 'function';
+}
 
 /** Result of cloning a remote repo into a space */
 export interface ClonedSpaceData {
@@ -32,7 +45,7 @@ export function normalizeRepoUrl(url: string): string {
 /**
  * Clone a remote Git repository and extract markdown files as Cept pages.
  *
- * @param backend - The BrowserFsBackend to use for storage
+ * @param backend - A backend that can host the clone (see canHostGitClone)
  * @param http - The HTTP client (isomorphic-git/http/web for browsers)
  * @param url - Repository URL (e.g., "github.com/user/repo")
  * @param branch - Branch to clone (default: "main")
@@ -40,7 +53,7 @@ export function normalizeRepoUrl(url: string): string {
  * @param corsProxy - Optional CORS proxy URL for browser environments
  */
 export async function cloneRemoteRepo(
-  backend: BrowserFsBackend,
+  backend: GitCloneHost,
   http: GitHttp,
   url: string,
   branch: string = 'main',
@@ -87,7 +100,7 @@ export async function cloneRemoteRepo(
  * Recursively walk a directory and collect markdown files as pages.
  */
 async function walkMarkdownFiles(
-  backend: BrowserFsBackend,
+  backend: StorageBackend,
   baseDir: string,
   relativePath: string,
   pages: PageTreeNode[],

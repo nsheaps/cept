@@ -37,7 +37,6 @@ import {
   clearAllData,
   readPageContent,
   writePageContent,
-  saveSpaceState,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -53,8 +52,7 @@ import type { ImportedPage, PageContent } from '@cept/core';
 import { parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
-import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
-import { BrowserFsBackend } from '@cept/core';
+import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import type { GitHttp } from '@cept/core';
 import {
   restoreRoute,
@@ -265,7 +263,10 @@ export function App() {
         void loadAndApplySpaceState(activeId, space?.name ?? 'My Space');
         // Still save the default persisted state for backward compat
         if (persisted) {
-          void saveSpaceState(backend, 'default', persisted);
+          void spaces.saveState('default', {
+            ...persisted,
+            spaceName: persisted.spaceName ?? 'My Space',
+          });
         }
         return;
       }
@@ -280,7 +281,10 @@ export function App() {
         setHasStarted(true);
         setTrash([]);
         // Also save to per-space file so switching back works
-        void saveSpaceState(backend, 'default', persisted);
+        void spaces.saveState('default', {
+          ...persisted,
+          spaceName: persisted.spaceName ?? 'My Space',
+        });
         // Load selected page content from backend
         if (persisted.selectedPageId) {
           void readPageContent(backend, persisted.selectedPageId).then((content) => {
@@ -304,7 +308,7 @@ export function App() {
             writePageContent(backend, id, content),
           ),
         );
-        void saveSpaceState(backend, 'default', {
+        void spaces.saveState('default', {
           pages: DEMO_PAGES,
           favorites: [],
           recentPages: [],
@@ -387,7 +391,7 @@ export function App() {
         }
 
         // Space not found — if it's a remote space ID, auto-create it by cloning
-        if (isRemoteSpaceId(route.spaceId) && backend instanceof BrowserFsBackend) {
+        if (isRemoteSpaceId(route.spaceId) && canHostGitClone(backend)) {
           const parsed = parseRemoteSpaceId(route.spaceId);
           if (parsed) {
             const autoSetupGitSpace = async () => {
@@ -463,7 +467,7 @@ export function App() {
   const SYNC_INTERVAL_MS = 5 * 60 * 1000;
   useEffect(() => {
     if (!hasStarted || !spacesManifest || !isRemoteSpaceId(userSpaceId)) return;
-    if (!(backend instanceof BrowserFsBackend)) return;
+    if (!canHostGitClone(backend)) return;
 
     const spaceMeta = spacesManifest.spaces.find((s) => s.id === userSpaceId);
     if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
@@ -593,9 +597,9 @@ export function App() {
         save(state);
       }
       // Save to per-space file
-      void saveSpaceState(backend, userSpaceId, state);
+      void spaces.saveState(userSpaceId, state);
     }, 300);
-  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, backend, userSpaceId]);
+  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, spaces, userSpaceId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -865,7 +869,7 @@ export function App() {
     void Promise.all(
       Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
     );
-    void saveSpaceState(backend, 'default', {
+    void spaces.saveState('default', {
       pages: DEMO_PAGES,
       favorites: [],
       recentPages: [],
@@ -903,7 +907,7 @@ export function App() {
       void Promise.all(
         Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
       );
-      void saveSpaceState(backend, 'default', {
+      void spaces.saveState('default', {
         pages: DEMO_PAGES,
         favorites: [],
         recentPages: [],
@@ -1030,8 +1034,8 @@ export function App() {
         : repoName;
       const displayName = `${name} (${config.branch || 'main'})`;
 
-      // Check if the backend is a BrowserFsBackend (required for git cloning)
-      if (!(backend instanceof BrowserFsBackend)) {
+      // Cloning needs a backend that can hand isomorphic-git a raw filesystem
+      if (!canHostGitClone(backend)) {
         // Fall back to creating an empty space for non-browser backends
         handleCreateSpace(displayName);
         return;
@@ -1100,7 +1104,7 @@ export function App() {
   /** Refresh a git space by re-cloning from the remote. */
   const handleRefreshSpace = useCallback(
     async (spaceId: string) => {
-      if (!(backend instanceof BrowserFsBackend)) return;
+      if (!canHostGitClone(backend)) return;
 
       // Find the space metadata
       const manifest = await spaces.load();

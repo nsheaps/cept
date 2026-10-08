@@ -9,24 +9,10 @@
       "removedBy": "PR 28"
     },
     {
-      "file": "packages/ui/src/components/App.tsx",
-      "group": "concrete-backend",
-      "module": "@cept/core",
-      "name": "BrowserFsBackend",
-      "removedBy": "PR 28"
-    },
-    {
       "file": "packages/ui/src/components/storage/git-space.ts",
       "group": "concrete-backend",
       "module": "@cept/core",
       "name": "GitBackend",
-      "removedBy": "PR 28"
-    },
-    {
-      "file": "packages/ui/src/components/storage/git-space.ts",
-      "group": "concrete-backend",
-      "module": "@cept/core",
-      "name": "BrowserFsBackend",
       "removedBy": "PR 28"
     }
   ]
