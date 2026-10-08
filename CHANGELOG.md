@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.43](https://github.com/nsheaps/cept/compare/v0.7.42...v0.7.43) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([3ee9044](https://github.com/nsheaps/cept/commit/3ee9044219943bba596743407cfb19c3cfa14e03))
+
+### Styles
+
+* format the repo with prettier ([#367](https://github.com/nsheaps/cept/issues/367)) ([489901f](https://github.com/nsheaps/cept/commit/489901fcfb70d59b458a7b4eb91f84f353e50c83)), references [#24](https://github.com/nsheaps/cept/issues/24) [#37](https://github.com/nsheaps/cept/issues/37) [#69](https://github.com/nsheaps/cept/issues/69) [#246](https://github.com/nsheaps/cept/issues/246)
+
 ## [0.7.42](https://github.com/nsheaps/cept/compare/v0.7.41...v0.7.42) (2026-10-08)
 
 ### Documentation

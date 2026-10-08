@@ -1,6 +1,6 @@
 {
   "name": "cept",
-  "version": "0.7.42",
+  "version": "0.7.43",
   "private": true,
   "type": "module",
   "description": "A fully-featured Notion clone backed by Git. Client-only. Offline-first. Collaborative.",
