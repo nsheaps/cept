@@ -105,6 +105,13 @@ export async function readSpaceTree(backend: TreeReadBackend, root = ''): Promis
   async function walk(folder: string, layers: ConfigLayer[]): Promise<PageNode | null> {
     const entries = await backend.listDirectory(toBackendPath(joinPath(spaceRoot, folder)));
     const fileNames = entries.filter((e) => e.isFile).map((e) => e.name);
+    if (folder !== '') {
+      const marker = pickSpaceMarker(fileNames);
+      if (marker) {
+        warnings.push(`${folder}: holds ${marker.name}, so it is a separate space and is left out`);
+        return null;
+      }
+    }
 
     const ownLayers = [...layers];
     const configFile = pickCeptConfigFile(fileNames);
@@ -136,12 +143,6 @@ export async function readSpaceTree(backend: TreeReadBackend, root = ''): Promis
       if (!entry.isDirectory) continue;
       const sub = joinPath(folder, entry.name);
       if (matcher.isHidden(sub, { isDirectory: true })) continue;
-      const subEntries = await backend.listDirectory(toBackendPath(joinPath(spaceRoot, sub)));
-      const marker = pickSpaceMarker(subEntries.filter((e) => e.isFile).map((e) => e.name));
-      if (marker) {
-        warnings.push(`${sub}: holds ${marker.name}, so it is a separate space and is left out`);
-        continue;
-      }
       const node = await walk(sub, ownLayers);
       if (node) children.push(node);
     }
@@ -255,11 +256,20 @@ async function movePath(
   await backend.deleteFile(toBackendPath(src));
 }
 
+/** The child file a page name maps to: `name` itself when it has a page extension, else `name.md`. */
+function pageFileName(name: string): string {
+  return isPageFile(name) ? name : `${name}.md`;
+}
+
 /**
  * Create a page named `name` under `parentId` with `text`. Under a folder page
- * it is the file `<parent>/<name>.md`. Under a file page `a/b.md`, the parent
- * first becomes a folder page: `a/b.md` moves to `a/b/index.md`, and the
- * result reports that move. Refuses to overwrite an existing page.
+ * it is the file `<parent>/<name>.md` (`name` is used as is when it already
+ * ends in `.md` or `.markdown`). Under a file page `a/b.md`, the parent first
+ * becomes a folder page: `a/b.md` moves to `a/b/index.md` (always `.md`, since
+ * only `index.md` and `README.md` are folder pages), and the result reports
+ * that move. `index` and `readme` are reserved for folder pages and rejected;
+ * write a folder page's content with {@link writePageText}. Refuses to
+ * overwrite an existing page. Every check runs before anything is written.
  */
 export async function createPage(
   backend: TreeWriteBackend,
@@ -269,25 +279,35 @@ export async function createPage(
   text: string,
 ): Promise<{ id: string; moved: Moved[] }> {
   assertSafeName(name);
+  const childFile = pageFileName(name);
+  if (pickFolderPage([childFile]) !== null)
+    throw new Error(
+      `Cannot create a page named ${JSON.stringify(name)}: it is reserved for folder pages`,
+    );
+  const folder =
+    parent.kind === 'file'
+      ? joinPath(parentFolder(parent.id) ?? '', stripExtension(splitPath(parent.id).at(-1)!))
+      : parent.id;
+  const id = joinPath(folder, childFile);
   const moved: Moved[] = [];
-  let folder = parent.id;
   if (parent.kind === 'file') {
-    folder = joinPath(parentFolder(parent.id) ?? '', stripExtension(splitPath(parent.id).at(-1)!));
     if (await backend.exists(toBackendPath(joinPath(root, folder))))
       throw new Error(`Cannot turn ${parent.id} into a folder page: ${folder} already exists`);
     await movePath(backend, root, parent.id, joinPath(folder, NEW_FOLDER_PAGE), false);
     moved.push({ from: parent.id, to: folder });
-  }
-  const id = joinPath(folder, isPageFile(name) ? name : `${name}.md`);
-  if (await backend.exists(toBackendPath(joinPath(root, id))))
+  } else if (await backend.exists(toBackendPath(joinPath(root, id)))) {
     throw new Error(`Cannot create ${id}: it already exists`);
+  }
   await backend.writeFile(toBackendPath(joinPath(root, id)), encoder.encode(text));
   return { id, moved };
 }
 
 /**
  * Move or rename a page to `newParent` (a folder page id) with `newName`. A
- * file page keeps its extension when `newName` has none; a folder page moves
+ * file page keeps its extension unless `newName` ends in `.md` or `.markdown`:
+ * any other name gets the old extension appended, so `notes.txt` becomes
+ * `notes.txt.md` and the page stays a page. `index` and `readme` are reserved
+ * for folder pages and rejected for a file page. A folder page moves
  * with everything inside it. Refuses to overwrite, to move the root, or to
  * move a folder into itself. Returns the new id.
  */
@@ -306,6 +326,10 @@ export async function movePage(
     const old = splitPath(page.id).at(-1)!;
     name = newName + old.slice(stripExtension(old).length);
   }
+  if (page.kind === 'file' && pickFolderPage([name]) !== null)
+    throw new Error(
+      `Cannot name a page ${JSON.stringify(newName)}: it is reserved for folder pages`,
+    );
   const id = joinPath(parent, name);
   if (id === page.id) return { id, moved: [] };
   if (page.kind === 'folder' && (parent === page.id || parent.startsWith(`${page.id}/`)))

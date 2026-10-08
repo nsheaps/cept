@@ -183,6 +183,59 @@ describe.each(backends)('space folder tree on %s', (_name, make) => {
     expect(setup.children.map((c) => c.id)).toEqual(['guides/setup/linux.md']);
   });
 
+  it('rejects index and readme as child names before changing anything', async () => {
+    for (const parent of [
+      { id: 'guides/setup.md', kind: 'file' as const },
+      { id: 'journal', kind: 'folder' as const },
+    ]) {
+      for (const bad of ['index', 'index.md', 'INDEX', 'readme', 'README.md']) {
+        await expect(createPage(backend, '', parent, bad, 'x')).rejects.toThrow('reserved');
+      }
+    }
+    await expect(
+      movePage(backend, '', { id: 'guides/2-basics.md', kind: 'file' }, 'journal', 'index'),
+    ).rejects.toThrow('reserved');
+    expect(await snapshot(backend)).toEqual(await snapshotOf(FIXTURE, make));
+  });
+
+  it('turns a .markdown file page into a folder page with index.md', async () => {
+    const { id, moved } = await createPage(
+      backend,
+      '',
+      { id: 'Changelog.markdown', kind: 'file' },
+      '2.0',
+      '## 2.0\n',
+    );
+    expect(id).toBe('Changelog/2.0.md');
+    expect(moved).toEqual([{ from: 'Changelog.markdown', to: 'Changelog' }]);
+    const page = findPage(await readSpaceTree(backend), 'Changelog')!;
+    expect(page.file).toBe('Changelog/index.md');
+    expect(await readPageText(backend, '', page)).toBe('## 1.0\n');
+  });
+
+  it('keeps the page extension when a new name has another extension', async () => {
+    const { id } = await movePage(
+      backend,
+      '',
+      { id: 'guides/setup.md', kind: 'file' },
+      'guides',
+      'notes.txt',
+    );
+    expect(id).toBe('guides/notes.txt.md');
+  });
+
+  it('lists each folder once', async () => {
+    const listed: string[] = [];
+    const counting: StorageBackend = Object.assign(Object.create(backend) as StorageBackend, {
+      listDirectory: (path: string) => {
+        listed.push(path);
+        return backend.listDirectory(path);
+      },
+    });
+    await readSpaceTree(counting);
+    expect(listed.length).toBe(new Set(listed).size);
+  });
+
   it('refuses to create a page over an existing one', async () => {
     await expect(
       createPage(backend, '', { id: 'guides', kind: 'folder' }, 'setup', 'x'),

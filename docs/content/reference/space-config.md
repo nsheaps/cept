@@ -85,4 +85,7 @@ A space is a folder, and Cept reads its page tree straight from the files in it.
 - **Page addresses are paths.** A page is identified by its path from the space root, such as `guides/setup.md`, or `guides` for a folder page. Renaming or moving a page renames or moves its file, so its address changes with it.
 - **Order:** pages are sorted by name, with numbers compared by value (`2-basics` before `10-advanced`).
 
-When you add a page inside a page that is a single file, such as `guides/setup.md`, Cept turns it into a folder page: the file moves to `guides/setup/index.md` and the new page goes next to it. A new folder page gets an `index.md`.
+When you add a page inside a page that is a single file, such as `guides/setup.md`, Cept turns it into a folder page: the file moves to `guides/setup/index.md` and the new page goes next to it. The moved file is always named `index.md`, even if it was a `.markdown` file, because only `index.md` and `README.md` hold a folder's content. A new folder page gets an `index.md`.
+
+- **Reserved names.** A page cannot be named `index` or `readme` (with or without `.md`, in any case), because those files hold a folder's own content. To change a folder page, edit the folder page itself.
+- **Extensions.** A new page is saved as `<name>.md`. A renamed page keeps its extension unless the new name ends in `.md` or `.markdown`, so renaming `notes.md` to `notes.txt` gives `notes.txt.md`.
