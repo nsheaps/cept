@@ -11,6 +11,7 @@ import {
   countUnpushedCommits,
   findSpaceMarker,
   GitAuthRequiredError,
+  openRemoteClone,
   GitSpaceSession,
   createGitHttp,
   remoteCloneDir,
@@ -20,13 +21,14 @@ import {
 import type {
   CommitIdentity,
   GitAuth,
+  GitBackend,
   GitFs,
   GitHttp,
   GitSpaceSyncResult,
   StorageBackend,
 } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
-import { initFolderSpace } from './folder-space.js';
+import { folderPageFile, initFolderSpace } from './folder-space.js';
 
 /**
  * A backend that can hand isomorphic-git its raw filesystem, which a clone
@@ -228,6 +230,61 @@ export function unpushedCommitsOf(host: GitCloneHost, spaceId: string): Promise<
     fs: host.getRawFs() as GitFs,
     dir: remoteCloneDir(spaceId),
   }).catch(() => 0);
+}
+
+/**
+ * What page history (REQ-NTN-016) offers for the open page: nothing outside
+ * remote spaces or on a host that cannot keep a clone, the list and diffs for
+ * read-only spaces, and restoring too when the space is open for editing.
+ */
+export type PageHistoryAccess = 'none' | 'view' | 'restore';
+
+export function pageHistoryAccess(options: {
+  space: { remoteUrl?: string } | undefined;
+  hostCanClone: boolean;
+  /** The space has an open editing session and is not locked. */
+  editable: boolean;
+}): PageHistoryAccess {
+  if (!options.space?.remoteUrl || !options.hostCanClone) return 'none';
+  return options.editable ? 'restore' : 'view';
+}
+
+/** Where a page's history is read: the clone, and the page's path in it. */
+export interface PageHistorySource {
+  git: GitBackend;
+  /** The page's file, relative to the clone's root. */
+  path: string;
+  /** The branch the clone tracks, which older versions are fetched for. */
+  ref: string;
+}
+
+/**
+ * The history source of page `pageId` in a remote space: the editing
+ * session's repository when one is open, otherwise the kept clone, read-only.
+ * Null when the page has no file (a folder without an index page).
+ */
+export async function pageHistorySource(
+  host: GitCloneHost,
+  space: { id: string; remoteUrl?: string; subPath?: string; branch?: string },
+  pageId: string,
+  options: { sessionGit?: GitBackend; auth?: GitAuth; corsProxy?: string; http?: GitHttp } = {},
+): Promise<PageHistorySource | null> {
+  const root = new ScopedBackend(host, cloneSpaceRoot(space.id, space.subPath));
+  const file = await folderPageFile(root, pageId).catch(() => null);
+  if (!file) return null;
+  const path = [...(space.subPath ?? '').split('/'), file].filter(Boolean).join('/');
+  const ref = space.branch ?? 'main';
+  if (options.sessionGit) return { git: options.sessionGit, path, ref };
+  const github = space.remoteUrl ? isGitHubUrl(normalizeRepoUrl(space.remoteUrl)) : false;
+  const git = await openRemoteClone({
+    host,
+    fs: host.getRawFs() as GitFs,
+    dir: remoteCloneDir(space.id),
+    http: options.http,
+    corsProxy: options.corsProxy,
+    auth: github ? options.auth : undefined,
+  });
+  return { git, path, ref };
 }
 
 /** Starting a space in a repository: where, and as whom. */

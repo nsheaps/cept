@@ -111,6 +111,28 @@ export async function syncRemoteClone(options: RemoteCloneOptions): Promise<Remo
 }
 
 /**
+ * The kept clone at `dir`, opened to read its history (page history,
+ * REQ-NTN-016) and fetch older commits into it. Nothing is fetched until asked.
+ */
+export async function openRemoteClone(options: {
+  host: StorageBackend;
+  fs: GitFs;
+  dir: string;
+  corsProxy?: string;
+  auth?: GitAuth;
+  http?: GitHttp;
+}): Promise<GitBackend> {
+  return new GitBackend({
+    underlying: options.host,
+    dir: options.dir,
+    fs: options.fs,
+    http: options.http ?? (await createGitHttp()),
+    corsProxy: options.corsProxy,
+    auth: options.auth,
+  });
+}
+
+/**
  * How many commits in the kept clone at `dir` are not on its remote yet (see
  * `GitBackend.unpushedCommits`); 0 when there is no finished clone there. Reads
  * only: nothing is fetched.

@@ -11,13 +11,19 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import 'fake-indexeddb/auto';
-import { BrowserFsBackend, commitIdentityFor } from '@cept/core';
+import {
+  BrowserFsBackend,
+  commitIdentityFor,
+  listPageHistory,
+  pageVersionContent,
+} from '@cept/core';
 import type { GitAuth, GitHttp } from '@cept/core';
 import { SpaceManager, generateRemoteSpaceId } from './SpaceManager.js';
 import {
   cloneRemoteRepo,
   isWritableClone,
   openGitSpaceSession,
+  pageHistorySource,
   startSpaceInRepo,
   unpushedCommitsOf,
 } from './git-space.js';
@@ -240,5 +246,71 @@ describe('writable GitHub spaces (REQ-WS-027)', () => {
         http,
       }),
     ).rejects.toThrow(/GitHub sign-in/);
+  });
+});
+
+describe('page history (REQ-NTN-016)', () => {
+  /** Change `file` in `octo/<name>` with a new commit pushed to the bare repository. */
+  function pushChange(name: string, file: string, text: string, message: string): void {
+    const work = path.join(root, `${name}-work`);
+    writeFileSync(path.join(work, file), text);
+    git(work, 'add', '-A');
+    git(work, '-c', 'user.name=T', '-c', 'user.email=t@example.com', 'commit', '-qm', message);
+    git(work, 'push', '-q', path.join(root, 'octo', name), 'main');
+  }
+
+  it("reads a folder page's history from a read-only clone, older versions on request", async () => {
+    makeRepo('handbook', { 'docs/Team/index.md': '# Team\n', 'docs/Other.md': '# Other\n' });
+    pushChange('handbook', 'docs/Team/index.md', '# Team\n\nUpdated.\n', 'update team');
+    const url = 'https://github.com/octo/handbook';
+    const id = generateRemoteSpaceId(url, 'main', 'docs');
+    const host = newHost();
+    await cloneRemoteRepo(host, { spaceId: id, url, branch: 'main', subPath: 'docs', http });
+
+    const space = { id, remoteUrl: url, subPath: 'docs', branch: 'main' };
+    const source = await pageHistorySource(host, space, 'Team', { http });
+    expect(source?.path).toBe('docs/Team/index.md');
+    const shallow = await listPageHistory(source!.git, source!.path);
+    expect(shallow).toMatchObject({ truncated: true });
+    expect(shallow.commits.map((c) => c.message)).toEqual(['update team']);
+
+    await source!.git.fetchFullHistory(source!.ref);
+    const full = await listPageHistory(source!.git, source!.path);
+    expect(full.commits.map((c) => c.message)).toEqual(['update team', 'first']);
+    expect(await pageVersionContent(source!.git, source!.path, full.commits[1]!.hash)).toBe(
+      '# Team\n',
+    );
+    // A folder page without a file of its own has no history.
+    expect(await pageHistorySource(host, space, 'Missing', { http })).toBeNull();
+  });
+
+  it('restores an older version in a writable space as a new pushed commit', async () => {
+    const bare = makeRepo('journal', { 'space.cept.yaml': 'name: Journal\n', 'Day.md': 'one\n' });
+    pushChange('journal', 'Day.md', 'two\n', 'second');
+    const url = 'https://github.com/octo/journal';
+    const id = generateRemoteSpaceId(url, 'main');
+    const host = newHost();
+    const cloned = await cloneRemoteRepo(host, { spaceId: id, url, branch: 'main', auth, http });
+    const spaces = new SpaceManager(host);
+    await spaces.createRemote('Journal', url, 'main', undefined, cloned.access, { writable: true });
+    await spaces.open(id, 'Journal');
+    const session = await openGitSpaceSession(host, { spaceId: id, auth, identity, http });
+    spaces.bind(id, session.backend);
+
+    const source = await pageHistorySource(host, { id, remoteUrl: url }, 'Day.md', {
+      sessionGit: session.git,
+    });
+    expect(source?.git).toBe(session.git);
+    await source!.git.fetchFullHistory(source!.ref);
+    const [, first] = (await listPageHistory(source!.git, source!.path)).commits;
+    const old = await pageVersionContent(source!.git, source!.path, first!.hash);
+    await spaces.writePage(id, 'Day.md', old!);
+    await session.autoCommit.flushNow();
+    const result = await session.pushNow();
+    await session.dispose();
+
+    expect(result.status.state).toBe('synced');
+    expect(git(bare, 'show', 'main:Day.md')).toBe('one');
+    expect(git(bare, 'log', '--format=%s', 'main').split('\n')).toHaveLength(3);
   });
 });

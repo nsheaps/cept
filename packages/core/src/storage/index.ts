@@ -37,6 +37,7 @@ export {
   GIT_REPOS_DIR,
   GitAuthRequiredError,
   countUnpushedCommits,
+  openRemoteClone,
   remoteCloneDir,
   syncRemoteClone,
 } from './git-clone.js';

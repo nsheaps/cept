@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import type { CommitInfo, DiffResult } from '@cept/core';
 
 export interface HistoryViewerProps {
@@ -16,6 +17,10 @@ export interface HistoryViewerProps {
   onRestore?: (hash: string, path: string) => void;
   /** Path filter — showing history for a specific file */
   filePath?: string;
+  /** Shown under the commit list (e.g. "Show older versions"). */
+  footer?: ReactNode;
+  /** Shown instead of the changes when the selected commit's diff cannot be computed. */
+  diffUnavailable?: string;
 }
 
 function formatTimestamp(timestamp: number): string {
@@ -56,6 +61,8 @@ export function HistoryViewer({
   onSelectCommit,
   onRestore,
   filePath,
+  footer,
+  diffUnavailable,
 }: HistoryViewerProps) {
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -128,6 +135,7 @@ export function HistoryViewer({
               </div>
             </div>
           ))}
+          {footer}
         </div>
 
         {selectedHash && (
@@ -135,6 +143,11 @@ export function HistoryViewer({
             {diffLoading && (
               <div className="cept-history-diff-loading" data-testid="history-diff-loading">
                 Loading changes...
+              </div>
+            )}
+            {!diffLoading && !diff && diffUnavailable && (
+              <div className="cept-history-diff-empty" data-testid="history-diff-unavailable">
+                {diffUnavailable}
               </div>
             )}
             {!diffLoading && diff && (

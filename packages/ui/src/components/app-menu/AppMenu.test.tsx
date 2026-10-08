@@ -81,6 +81,16 @@ describe('AppMenu', () => {
     expect(screen.queryByTestId('page-menu-view-remote')).toBeNull();
     expect(screen.queryByTestId('page-menu-refresh-space')).toBeNull();
     expect(screen.queryByTestId('page-menu-space-settings')).toBeNull();
+    expect(screen.queryByTestId('page-menu-history')).toBeNull();
+  });
+
+  it('offers page history only when the space keeps history, and opens it', () => {
+    const onOpenHistory = vi.fn();
+    render(<AppMenu pageId="test-page" onOpenHistory={onOpenHistory} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-history'));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('page-menu-history')).toBeNull();
   });
 
   it('links to the remote page in a new tab', () => {

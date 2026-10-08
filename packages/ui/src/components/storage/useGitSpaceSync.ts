@@ -15,6 +15,7 @@ import { electSyncLeader } from './sync-leader.js';
 import type { Foreground } from './sync-leader.js';
 import type {
   ConflictResolution,
+  GitBackend,
   GitSpaceLocalChanges,
   GitSpaceNewBranchResult,
   GitSpaceSession,
@@ -28,6 +29,8 @@ import type {
 /** The parts of a `GitSpaceSession` the app uses; tests pass a fake. */
 export interface SpaceSyncSession {
   readonly backend: StorageBackend;
+  /** The session's repository, which page history reads (REQ-NTN-016). */
+  readonly git?: GitBackend;
   syncNow(): Promise<GitSpaceSyncResult>;
   pushNow(): Promise<GitSpaceSyncResult>;
   start(onSynced?: (result: GitSpaceSyncResult) => void): void;

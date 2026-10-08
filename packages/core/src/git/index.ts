@@ -87,6 +87,14 @@ export {
 } from './sync-policy.js';
 export type { CommitIdentity, GitHubUserIdentity, SyncSettings } from './sync-policy.js';
 
+export {
+  listPageHistory,
+  PAGE_HISTORY_PAGE_SIZE,
+  pageVersionContent,
+  pageVersionDiff,
+} from './page-history.js';
+export type { PageHistory } from './page-history.js';
+
 export { GitSpaceSession, RecordingBackend } from './git-space-session.js';
 export type {
   GitSpaceLocalChanges,

@@ -13,6 +13,8 @@ export interface AppMenuProps {
   onRefreshSpace?: () => void;
   /** Open the current space's settings. */
   onOpenSpaceSettings?: () => void;
+  /** Open the page's history, shown for spaces that keep history (REQ-NTN-016). */
+  onOpenHistory?: () => void;
 }
 
 export function AppMenu({
@@ -25,6 +27,7 @@ export function AppMenu({
   remoteLink,
   onRefreshSpace,
   onOpenSpaceSettings,
+  onOpenHistory,
 }: AppMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -119,8 +122,31 @@ export function AppMenu({
             </svg>
             Duplicate
           </button>
-          {(remoteLink || onRefreshSpace || onOpenSpaceSettings) && (
+          {(onOpenHistory || remoteLink || onRefreshSpace || onOpenSpaceSettings) && (
             <div className="cept-app-menu-divider" />
+          )}
+          {onOpenHistory && (
+            <button
+              className="cept-app-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onOpenHistory();
+              }}
+              data-testid="page-menu-history"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <circle cx="8" cy="8" r="6" />
+                <path d="M8 4.5V8l2.5 1.5" />
+              </svg>
+              Page history
+            </button>
           )}
           {remoteLink && (
             <a
