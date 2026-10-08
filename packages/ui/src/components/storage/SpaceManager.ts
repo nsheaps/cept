@@ -327,14 +327,18 @@ export class SpaceManager {
    * the active space falls back to the first one left.
    */
   private visible(manifest: SpacesManifest): SpacesManifest {
-    const spaces = manifest.spaces.filter(
-      (s) => this.kindOf(s) !== 'memory' || this.bound.has(s.id),
-    );
+    const spaces = manifest.spaces.filter((s) => this.kindOf(s) === 'app' || this.bound.has(s.id));
     if (spaces.length === manifest.spaces.length) return manifest;
     const activeSpaceId = spaces.some((s) => s.id === manifest.activeSpaceId)
       ? manifest.activeSpaceId
       : (spaces[0]?.id ?? DEFAULT_SPACE_ID);
     return { activeSpaceId, spaces };
+  }
+
+  /** Throw before touching disk for an id this manager would not hand back. */
+  private async requireVisible(id: string): Promise<void> {
+    const manifest = this.visible(await loadSpaces(this.backend));
+    if (!manifest.spaces.some((s) => s.id === id)) throw new Error(`Space not found: ${id}`);
   }
 
   /** The manifest, created with a default space if missing. */
@@ -379,6 +383,7 @@ export class SpaceManager {
 
   /** Make `id` the active space. Throws if there is no such space. */
   async switch(id: string): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    await this.requireVisible(id);
     const manifest = this.visible(await switchSpace(this.backend, id));
     const space = manifest.spaces.find((s) => s.id === id);
     if (!space) throw new Error(`Space not found: ${id}`);
@@ -386,6 +391,7 @@ export class SpaceManager {
   }
 
   async rename(id: string, name: string): Promise<SpacesManifest> {
+    await this.requireVisible(id);
     return this.visible(await renameSpace(this.backend, id, name));
   }
 

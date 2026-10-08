@@ -37,7 +37,6 @@ import {
   clearAllData,
   readPageContent,
   writePageContent,
-  saveSpaceState,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -264,7 +263,10 @@ export function App() {
         void loadAndApplySpaceState(activeId, space?.name ?? 'My Space');
         // Still save the default persisted state for backward compat
         if (persisted) {
-          void saveSpaceState(backend, 'default', persisted);
+          void spaces.saveState('default', {
+            ...persisted,
+            spaceName: persisted.spaceName ?? 'My Space',
+          });
         }
         return;
       }
@@ -279,7 +281,10 @@ export function App() {
         setHasStarted(true);
         setTrash([]);
         // Also save to per-space file so switching back works
-        void saveSpaceState(backend, 'default', persisted);
+        void spaces.saveState('default', {
+          ...persisted,
+          spaceName: persisted.spaceName ?? 'My Space',
+        });
         // Load selected page content from backend
         if (persisted.selectedPageId) {
           void readPageContent(backend, persisted.selectedPageId).then((content) => {
@@ -303,7 +308,7 @@ export function App() {
             writePageContent(backend, id, content),
           ),
         );
-        void saveSpaceState(backend, 'default', {
+        void spaces.saveState('default', {
           pages: DEMO_PAGES,
           favorites: [],
           recentPages: [],
@@ -592,9 +597,9 @@ export function App() {
         save(state);
       }
       // Save to per-space file
-      void saveSpaceState(backend, userSpaceId, state);
+      void spaces.saveState(userSpaceId, state);
     }, 300);
-  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, backend, userSpaceId]);
+  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, spaces, userSpaceId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -864,7 +869,7 @@ export function App() {
     void Promise.all(
       Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
     );
-    void saveSpaceState(backend, 'default', {
+    void spaces.saveState('default', {
       pages: DEMO_PAGES,
       favorites: [],
       recentPages: [],
@@ -902,7 +907,7 @@ export function App() {
       void Promise.all(
         Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
       );
-      void saveSpaceState(backend, 'default', {
+      void spaces.saveState('default', {
         pages: DEMO_PAGES,
         favorites: [],
         recentPages: [],

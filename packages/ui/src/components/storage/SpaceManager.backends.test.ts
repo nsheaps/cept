@@ -75,6 +75,19 @@ describe('SpaceManager per-space backends', () => {
     expect((await spaces.load()).spaces.map((s) => s.id)).toContain(space.id);
   });
 
+  it('refuses to switch to or rename a dropped memory space without touching disk', async () => {
+    const { space } = await spaces.create('Mem', undefined, {
+      kind: 'memory',
+      backend: new MemoryBackend(),
+    });
+    await spaces.switch('default');
+    const reloaded = new SpaceManager(app);
+    const before = app.readText('.cept/spaces.json');
+    await expect(reloaded.switch(space.id)).rejects.toThrow('Space not found');
+    await expect(reloaded.rename(space.id, 'Renamed')).rejects.toThrow('Space not found');
+    expect(app.readText('.cept/spaces.json')).toBe(before);
+  });
+
   it('forgets a deleted memory space', async () => {
     const backend = new MemoryBackend();
     const { space } = await spaces.create('Mem', undefined, { kind: 'memory', backend });

@@ -14,14 +14,6 @@ import type { SidebarPageRef } from '../sidebar/Sidebar.js';
 import { DEFAULT_SETTINGS } from '../settings/SettingsModal.js';
 import type { CeptSettings } from '../settings/SettingsModal.js';
 import { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
-import {
-  appSpaceStore,
-  deleteStorePage,
-  loadStoreState,
-  readStorePage,
-  saveStoreState,
-  writeStorePage,
-} from './space-store.js';
 
 /** Shape of the persisted workspace state stored via the backend */
 export interface PersistedState {
@@ -228,51 +220,6 @@ export async function deletePageContent(backend: StorageBackend, pageId: string)
   } catch {
     // Ignore legacy file
   }
-}
-
-/** Save workspace state for a space kept in the app's backend */
-export async function saveSpaceState(
-  backend: StorageBackend,
-  spaceId: string,
-  state: PersistedState,
-): Promise<void> {
-  await saveStoreState(appSpaceStore(backend, spaceId), state);
-}
-
-/** Load workspace state for a space kept in the app's backend */
-export async function loadSpaceState(
-  backend: StorageBackend,
-  spaceId: string,
-): Promise<PersistedState | null> {
-  return loadStoreState(appSpaceStore(backend, spaceId));
-}
-
-/** Read page content for a space kept in the app's backend */
-export async function readSpacePageContent(
-  backend: StorageBackend,
-  spaceId: string,
-  pageId: string,
-): Promise<string | null> {
-  return readStorePage(appSpaceStore(backend, spaceId), pageId);
-}
-
-/** Write page content for a space kept in the app's backend */
-export async function writeSpacePageContent(
-  backend: StorageBackend,
-  spaceId: string,
-  pageId: string,
-  content: string,
-): Promise<void> {
-  await writeStorePage(appSpaceStore(backend, spaceId), pageId, content);
-}
-
-/** Delete page content for a space kept in the app's backend */
-export async function deleteSpacePageContent(
-  backend: StorageBackend,
-  spaceId: string,
-  pageId: string,
-): Promise<void> {
-  await deleteStorePage(appSpaceStore(backend, spaceId), pageId);
 }
 
 /** Clear all workspace data from the backend */
