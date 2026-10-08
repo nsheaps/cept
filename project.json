@@ -4,6 +4,7 @@
   "metadata": {
     "description": "Repo-level code outside the packages: scripts/ci, tools/ and the features/ integration suite."
   },
+  "tags": ["scope:tooling", "platform:node"],
   "targets": {
     "test:unit": {
       "command": "vitest run --project unit scripts/",
@@ -26,6 +27,7 @@
       "inputs": [
         "{workspaceRoot}/scripts/**/*.ts",
         "{workspaceRoot}/tools/**/*.ts",
+        "{workspaceRoot}/tools/lint/**/*.js",
         "{workspaceRoot}/features/**/*.ts",
         "{workspaceRoot}/*.config.ts",
         "{workspaceRoot}/tsconfig.scripts.json",

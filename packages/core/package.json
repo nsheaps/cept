@@ -24,5 +24,11 @@
   },
   "devDependencies": {
     "@types/mdast": "4.0.4"
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "platform:none"
+    ]
   }
 }

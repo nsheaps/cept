@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { findTargetProblems, type ProjectTargets } from './check-targets';
+import { findTagProblems, findTargetProblems, type ProjectTargets } from './check-targets';
 
 const all = ['build', 'typecheck', 'test:unit'];
 const project = (overrides: Partial<ProjectTargets>): ProjectTargets => ({
   name: 'p',
   targets: all,
   skip: {},
+  tags: ['scope:shared', 'platform:none'],
   ...overrides,
 });
 
@@ -43,6 +44,26 @@ describe('findTargetProblems', () => {
     expect(findTargetProblems([p])).toEqual([
       'p: no "build" target; add one or a cept.skipTargets reason',
       'p: cept.skipTargets["bulid"] is not a required target (build, typecheck, test:unit)',
+    ]);
+  });
+});
+
+describe('findTagProblems', () => {
+  it('accepts one scope: and one platform: tag', () => {
+    expect(findTagProblems([project({})])).toEqual([]);
+  });
+
+  it('reports a missing tag', () => {
+    const p = project({ tags: ['scope:shared'] });
+    expect(findTagProblems([p])).toEqual([
+      'p: needs exactly one "platform:" tag in nx.tags, has none',
+    ]);
+  });
+
+  it('reports a repeated tag', () => {
+    const p = project({ tags: ['scope:shared', 'scope:client', 'platform:none'] });
+    expect(findTagProblems([p])).toEqual([
+      'p: needs exactly one "scope:" tag in nx.tags, has scope:shared, scope:client',
     ]);
   });
 });

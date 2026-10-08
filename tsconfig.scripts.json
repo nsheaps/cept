@@ -1,8 +1,21 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node", "bun"]
+    "types": ["node", "bun"],
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["scripts/**/*.ts", "tools/**/*.ts", "features/**/*.ts", "*.config.ts"],
-  "exclude": ["node_modules", "**/dist/**", "tools/security-fixtures/**"]
+  "include": [
+    "scripts/**/*.ts",
+    "tools/**/*.ts",
+    "tools/lint/**/*.js",
+    "features/**/*.ts",
+    "*.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist/**",
+    "tools/security-fixtures/**",
+    "tools/boundary-fixtures/**"
+  ]
 }

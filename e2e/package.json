@@ -13,5 +13,11 @@
       "build": "Playwright specs are run, not built.",
       "test:unit": "E2E specs run through the test target (Playwright), not Vitest."
     }
+  },
+  "nx": {
+    "tags": [
+      "scope:test",
+      "platform:node"
+    ]
   }
 }

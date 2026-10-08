@@ -13,5 +13,11 @@
     "skipTargets": {
       "build": "The docs site build is Phase 2 (REQ-ENG-016); typecheck already covers docs/src."
     }
+  },
+  "nx": {
+    "tags": [
+      "scope:docs",
+      "platform:none"
+    ]
   }
 }

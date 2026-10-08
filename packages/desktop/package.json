@@ -12,5 +12,11 @@
   },
   "dependencies": {
     "@cept/core": "workspace:*"
+  },
+  "nx": {
+    "tags": [
+      "scope:app",
+      "platform:desktop"
+    ]
   }
 }
