@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.45](https://github.com/nsheaps/cept/compare/v0.7.44...v0.7.45) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([c7ca004](https://github.com/nsheaps/cept/commit/c7ca0047472d84a37970f2d554b2ad6065defb07))
+
+### Build System
+
+* **nx:** tag projects and enforce module boundaries ([#370](https://github.com/nsheaps/cept/issues/370)) ([17f748a](https://github.com/nsheaps/cept/commit/17f748a490c25d48c0776974a3c0c5be362bf820))
+
 ## [0.7.44](https://github.com/nsheaps/cept/compare/v0.7.43...v0.7.44) (2026-10-08)
 
 ### Documentation
