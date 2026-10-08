@@ -22,11 +22,12 @@ description = "Fail if any mise tool is not pinned to an exact version"
 run = "bun scripts/ci/check-pins.ts .mise.toml"
 
 [tasks."lint:workflows"]
-description = "actionlint (with shellcheck), shellcheck on scripts/ci, and no multi-command run steps"
+description = "actionlint (with shellcheck), shellcheck on scripts/ci, no multi-command run steps, and no fake-green release steps"
 run = [
   "actionlint",
   "shellcheck scripts/ci/*.sh",
   "bun scripts/ci/no-inline-logic.ts .github/workflows",
+  "bun scripts/ci/no-fake-green.ts .github/workflows scripts/ci",
 ]
 
 [tasks."lint:format"]
