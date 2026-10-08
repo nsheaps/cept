@@ -63,6 +63,8 @@ This means:
 
 \*\* Git runs in the browser with isomorphic-git, through a CORS proxy for the network calls. No server-side Git is needed.
 
+Browsers can clear a site's storage when the device runs low on space. When you create your first space, Cept asks the browser to keep its storage. If the browser says no, or if storage is almost full, Cept shows a warning: link your spaces to GitHub, or install Cept as an app (installed apps are usually allowed to keep their storage), so nothing is lost.
+
 The Add Space dialog only offers the kinds of space that work on your device: it checks for IndexedDB and the File System Access API before showing those options. Native mobile apps come later; on phones, install the PWA.
 
 ## Opening a Folder in the Browser
