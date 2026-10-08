@@ -20,6 +20,7 @@ export type {
 } from './backend.js';
 
 export { BrowserFsBackend } from './browser-fs.js';
+export { MemoryBackend } from './memory.js';
 export { LocalFsBackend } from './local-fs.js';
 export {
   WebFsBackend,

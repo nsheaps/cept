@@ -29,6 +29,8 @@ function nodeStubs(): Plugin {
     // Common named exports used by local-fs.ts — Rollup validates these at
     // build time so they must be declared explicitly.
     'export const watch = noop;',
+    'export const existsSync = () => false;',
+    'export const mkdirSync = noop;',
     'export const readFile = noop;',
     'export const writeFile = noop;',
     'export const mkdir = noop;',
