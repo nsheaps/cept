@@ -16,6 +16,12 @@ export {
 } from './components/storage/StorageContext.js';
 export { FolderHostProvider, useFolderHost } from './components/storage/folder-host.js';
 export type { FolderHost } from './components/storage/folder-host.js';
+export { GitHubAccountProvider, useGitHubAccount } from './components/settings/github-account.js';
+export type {
+  GitHubAccountState,
+  GitHubAccountStatus,
+  PatAuth,
+} from './components/settings/github-account.js';
 export { CeptEditor } from './components/editor/index.js';
 export type { CeptEditorProps } from './components/editor/index.js';
 export { Sidebar } from './components/sidebar/Sidebar.js';

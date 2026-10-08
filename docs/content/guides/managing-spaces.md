@@ -39,3 +39,15 @@ Choose the trash icon next to a space, or the button at the bottom of its detail
 | Git repository        | **Remove from this device** | The copy on this device is deleted, with changes not yet synced. The repository on GitHub is not changed. |
 
 You can delete any space, including your first one and your only one. When you delete your only space, a new, empty space named **My Space** takes its place. Deleting a space never deletes your settings or your other spaces.
+
+## Signing in to GitHub
+
+To open private repositories, sign in with a GitHub personal access token in **Settings > Settings**, under **GitHub**. A [fine-grained token](https://github.com/settings/personal-access-tokens/new) limited to the repositories you want is recommended; classic tokens also work.
+
+Paste the token and choose **Sign in**. Cept checks it with GitHub before keeping it, then shows the account it signs in as and what the token grants: its scopes for a classic token, and when it expires. The token is stored encrypted on this device and never written to your pages.
+
+In the browser, git traffic goes through a proxy, which can see the token when Cept clones or syncs a repository. Settings names the proxy in use.
+
+Each time Cept starts it checks the saved token again. A token GitHub no longer accepts (expired or revoked) is forgotten and you are signed out. When GitHub cannot be reached, the token is kept and checked next time.
+
+Choose **Sign out** to forget the token on this device. To revoke it, delete it on GitHub.
