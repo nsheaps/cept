@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.41](https://github.com/nsheaps/cept/compare/v0.7.40...v0.7.41) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([5236088](https://github.com/nsheaps/cept/commit/5236088898113a48cab9c6d61f67616d2c7cfa48))
+
+### Chores
+
+* **deps:** update dependency linkify-it to v6 ([#362](https://github.com/nsheaps/cept/issues/362)) ([66ad312](https://github.com/nsheaps/cept/commit/66ad3123e893811d91dd6f6b1a9109e584067a43))
+
 ## [0.7.40](https://github.com/nsheaps/cept/compare/v0.7.39...v0.7.40) (2026-10-08)
 
 ### Documentation
