@@ -4,7 +4,7 @@
 
 This spec covers the installable Cept applications for Windows, macOS, Linux, Android and iOS. **Scope (D-43):** the desktop apps (Electrobun) are Phase 1; native Android and iOS apps (Capacitor) are later, and the Phase 1 mobile story is the PWA installed on phones (see [01](01-browser-app-and-pwa.md)), with mobile usability fixed and validated in CI for the PWA (REQ-APP-020). Every native shell, desktop now and mobile when it returns, is a thin wrapper around the web view with as little native code as possible. Each one wraps the same browser component (`@cept/ui` built by `@cept/web`) in a native shell, reaches native features through a bridge, and is built, signed, versioned, published and updated by CI. Every requirement below was checked against the code, the open pull requests and the current documentation as of the date above. Each one records whether it is implemented, whether it is documented as the owner wants, and whether that documentation is accurate.
 
-**Bottom line:** Cept has no packaged native app on any platform today. `packages/desktop` and `packages/mobile` hold only renderer-side bridge interfaces, web fallbacks, an update checker and a deep-link OAuth helper. Nothing creates a window, a Capacitor project or an installer. The `cd.yml` platform jobs pass but produce no artifacts, and every one of the 75 GitHub Releases (through v0.7.31) has zero assets (`gh api repos/nsheaps/cept/releases`, checked 2026-10-06).
+**Bottom line:** Cept has no packaged native app on any platform today. `packages/desktop` and `packages/mobile` hold only renderer-side bridge interfaces, web fallbacks, an update checker and a deep-link OAuth helper. Nothing creates a window, a Capacitor project or an installer. Until plan PR 10 the `cd.yml` platform jobs passed without producing artifacts, and every one of the 75 GitHub Releases (through v0.7.31) has zero assets (`gh api repos/nsheaps/cept/releases`, checked 2026-10-06). Since PR 10, `cd.yml` has only two placeholder jobs, `desktop-packages` and `mobile-packages`, which emit a `::warning::` that no native assets were built.
 
 **Related:**
 [Requirements index & traceability matrix](README.md) ·
@@ -194,7 +194,7 @@ sequenceDiagram
 
 - There is no main process, window or packaging config in `packages/desktop`. The only Windows-relevant code is renderer-side IPC stubs in [packages/desktop/src/electron-bridge.ts](../../../packages/desktop/src/electron-bridge.ts) (lines 25-37).
 - [packages/desktop/package.json](../../../packages/desktop/package.json) has no build or package script and no `electron` dependency.
-- In [.github/workflows/cd.yml](../../../.github/workflows/cd.yml), `build-windows` only runs `bun run build` and uploads `packages/desktop/dist/*.exe` with `if-no-files-found: warn`.
+- [.github/workflows/cd.yml](../../../.github/workflows/cd.yml) has no Windows build; the `desktop-packages` placeholder job emits a `::warning::` until PR 79.
 - All 75 releases, including v0.7.27 to v0.7.31, have 0 assets (`gh api repos/nsheaps/cept/releases`).
 - TASKS P6.1 and P6.3 are unchecked. T7.2 is marked done ([TASKS.md](../../../TASKS.md) line 117), which is wrong.
 
@@ -225,7 +225,7 @@ sequenceDiagram
 **Current state:** not-started.
 
 - There is no Electrobun or Electron code. `PlatformBridge.platform` allows `'electrobun'` ([packages/desktop/src/platform-bridge.ts](../../../packages/desktop/src/platform-bridge.ts) line 75), but nothing implements it.
-- `build-macos` in [cd.yml](../../../.github/workflows/cd.yml) uploads `packages/desktop/dist/*.dmg`, which is never produced.
+- [cd.yml](../../../.github/workflows/cd.yml) has no macOS build; the `desktop-packages` placeholder job emits a `::warning::` until PR 78.
 - TASKS T7.1 is marked done ([TASKS.md](../../../TASKS.md) line 116) but no Electrobun shell exists. P6.4 is unchecked.
 
 **Docs state:** documented-as-desired, stale.
@@ -252,7 +252,7 @@ sequenceDiagram
 - The AppImage launches on a current Ubuntu LTS and renders the UI.
 - The CI job fails if the AppImage is missing.
 
-**Current state:** not-started. Nothing produces a Linux build. `build-linux` in [cd.yml](../../../.github/workflows/cd.yml) uploads `packages/desktop/dist/*.AppImage`, which never exists. CD run 32660431419 reported "Build Linux: success" and uploaded zero artifacts.
+**Current state:** not-started. Nothing produces a Linux build. Before PR 10, `build-linux` in [cd.yml](../../../.github/workflows/cd.yml) uploaded `packages/desktop/dist/*.AppImage`, which never existed (CD run 32660431419 reported "Build Linux: success" and uploaded zero artifacts). It is now the `desktop-packages` placeholder, which emits a `::warning::` until PR 79.
 
 **Docs state:** documented-as-desired, stale. [SPECIFICATION.md](../../SPECIFICATION.md) line 1015 lists `.AppImage`, `.deb`, `.rpm` and `.snap`. [platform-support.md](../../content/guides/platform-support.md) line 12 says "Coming soon (AppImage, deb, rpm)", which is accurate. README and CLAUDE.md are stale.
 
@@ -277,7 +277,7 @@ sequenceDiagram
 **Current state:** not-started.
 
 - There is no `capacitor.config.ts`, no `android/` directory and no `@capacitor/*` dependency ([packages/mobile/package.json](../../../packages/mobile/package.json)).
-- `build-android` in [cd.yml](../../../.github/workflows/cd.yml) runs `npx cap sync android` with `continue-on-error: true`, has no `gradle assemble` step, and uploads `packages/mobile/android/app/build/outputs/`, which does not exist.
+- [cd.yml](../../../.github/workflows/cd.yml) has no Android build; the `mobile-packages` placeholder job emits a `::warning::` (D-43). `scripts/ci/no-fake-green.ts` (part of `mise run lint:workflows`) fails on any `cap sync` in workflows or CI scripts.
 - `upload-release-assets` never globs Android or iOS outputs.
 - TASKS P6.6 and P6.7 are unchecked. T7.4 is marked done ([TASKS.md](../../../TASKS.md) line 119), which is wrong.
 
@@ -301,7 +301,7 @@ sequenceDiagram
 - A signed `.ipa` is produced on tags and uploaded to TestFlight (see [REQ-APP-015](#req-app-015--distribution-channels)).
 - The app renders the UI on an iOS simulator in a CI smoke test.
 
-**Current state:** not-started. There is no `ios/` project and no Capacitor config. `build-ios` in [cd.yml](../../../.github/workflows/cd.yml) runs `npx cap sync ios` with `continue-on-error: true`, has no `xcodebuild archive` step, and uploads `packages/mobile/ios/`, which does not exist.
+**Current state:** not-started. There is no `ios/` project and no Capacitor config. [cd.yml](../../../.github/workflows/cd.yml) has no iOS build; the `mobile-packages` placeholder job emits a `::warning::` (D-43).
 
 **Docs state:** documented-as-desired, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §8.4 and §9.4 (lines 1263-1270) cover this. [platform-support.md](../../content/guides/platform-support.md) line 13 says "Coming soon … via App Store", which is accurate. README and CLAUDE.md are stale.
 
@@ -452,7 +452,7 @@ sequenceDiagram
 
 **Current state:** stubbed.
 
-- [cd.yml](../../../.github/workflows/cd.yml) has `build-macos`, `build-windows`, `build-linux`, `build-ios` and `build-android` jobs. Each runs only `bun run build`, which excludes desktop and mobile because they have no build target, then uploads with `if-no-files-found: warn`. The `cap sync` steps use `continue-on-error: true`.
+- [cd.yml](../../../.github/workflows/cd.yml) has two placeholder jobs, `desktop-packages` and `mobile-packages`, that emit a `::warning::` and build nothing (plan PR 10). They replaced `build-macos`, `build-windows`, `build-linux`, `build-ios` and `build-android`, which ran only `bun run build`, uploaded with `if-no-files-found: warn` and ran `cap sync` with `continue-on-error: true`, so they passed without artifacts. `scripts/ci/no-fake-green.ts` (in `mise run lint:workflows`) fails on those patterns.
 - CD run 32660431419 (v0.7.31, `create` event) passed every job and produced no artifacts (artifact count 0).
 - Tags come from two places, both running release-it: [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) (called from CI on releasable merges to `main`) and the manual [release.yml](../../../.github/workflows/release.yml) (`workflow_dispatch` with an `increment` choice). `cd.yml` triggers on the tag's `create` event because the release commit carries `[skip ci]`. Neither tagging workflow builds or validates native packaging before the tag is pushed.
 - TASKS T10.1 is marked done ([TASKS.md](../../../TASKS.md) line 142).
@@ -477,7 +477,7 @@ sequenceDiagram
 - The upload step fails on error and is not silenced.
 - Update metadata files needed by [REQ-APP-014](#req-app-014--desktop-auto-update) are attached.
 
-**Current state:** stubbed. `upload-release-assets` in [cd.yml](../../../.github/workflows/cd.yml) only globs `dist/*.dmg`, `*.exe` and `*.AppImage`, swallows errors with `2>/dev/null || true`, and ignores iOS and Android outputs. The GitHub API shows 0 assets on v0.7.27 to v0.7.31. [.release-it.json](../../../.release-it.json) has `github.release: false`; the release is created by the `github-release` job in cd.yml.
+**Current state:** not-started. Plan PR 10 removed the `upload-release-assets` job from [cd.yml](../../../.github/workflows/cd.yml); it globbed `dist/*.dmg`, `*.exe` and `*.AppImage` and swallowed errors with `2>/dev/null || true`, so releases silently got no assets (0 on v0.7.27 to v0.7.31). PR 79 adds a strict upload back. [.release-it.json](../../../.release-it.json) has `github.release: false`; the release is created by the `github-release` job in cd.yml.
 
 **Docs state:** documented-as-desired, accurate. SPECIFICATION §9.2 says "Upload to GitHub Release assets", and §9.4 says the same for mobile.
 

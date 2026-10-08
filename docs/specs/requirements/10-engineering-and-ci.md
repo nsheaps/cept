@@ -111,7 +111,7 @@ flowchart TD
   tag --> cd["cd.yml on tag create"]
   cd --> rel["GitHub Release"]
   cd --> app["deploy-web: gh-pages /cept/app/"]
-  cd --> nat["build-macos/windows/linux/ios/android: no artifacts produced"]
+  cd --> nat["desktop-packages / mobile-packages: placeholders that warn"]
   nodocs["No docs workflow: docs ship only bundled in the app"]
   noaffected["No nx affected, no mise tasks, no security scan"]
 ```
@@ -325,7 +325,7 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 
 > **Owner direction (D-24, D-43):** Native-platform CI jobs (Electrobun packaging, signing, upload in Phase 1; Capacitor jobs later) are scoped to their respective platform artifacts only. These jobs MUST fail (or emit `::warning::` and produce unsigned builds on PRs) when expected artifacts are missing. No `continue-on-error` and no `|| true` on any build, sync or upload step. See [REQ-APP-011](07-native-apps.md#req-app-011--release-pipeline-builds-per-platform-artifacts).
 
-**Current state:** partial. [\_lint.yml](../../../.github/workflows/_lint.yml) runs typecheck via `nx run-many`, and [\_build.yml](../../../.github/workflows/_build.yml) runs `bun run build`, which covers only core, ui and web. The docs build is `echo`. [cd.yml](../../../.github/workflows/cd.yml) `build-macos/windows/linux/ios/android` upload `packages/desktop/dist/*` and `packages/mobile/{ios,android}` with `if-no-files-found: warn` and `continue-on-error` on `cap sync`, so they pass and produce nothing.
+**Current state:** partial. [\_lint.yml](../../../.github/workflows/_lint.yml) runs typecheck via `nx run-many`, and [\_build.yml](../../../.github/workflows/_build.yml) runs `bun run build`, which covers only core, ui and web. The docs build is `echo`. [cd.yml](../../../.github/workflows/cd.yml) builds no native packages: since plan PR 10 its `desktop-packages` and `mobile-packages` placeholder jobs emit a `::warning::` instead of uploading nothing with `if-no-files-found: warn`, and `scripts/ci/no-fake-green.ts` keeps those patterns out.
 
 **Docs state:** documented-differently, stale. [TASKS.md](../../../TASKS.md) T10.1 (release CI for desktop/web/mobile) and T10.2 (code signing) are checked while P6.1-P6.7 are not. [SPECIFICATION.md](../../SPECIFICATION.md) §9.2/§9.4 describe electron-builder, signing and gradle steps that do not exist.
 

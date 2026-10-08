@@ -74,117 +74,22 @@ jobs:
       - name: Deploy to GitHub Pages
         run: scripts/ci/deploy-prod-pages.sh
 
-  build-macos:
-    name: Build macOS
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v4
-      - run: mise run install
-      - run: mise run build
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cept-macos
-          path: packages/desktop/dist/*.dmg
-          if-no-files-found: warn
-
-  build-windows:
-    name: Build Windows
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v4
-      - run: mise run install
-      - run: mise run build
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cept-windows
-          path: packages/desktop/dist/*.exe
-          if-no-files-found: warn
-
-  build-linux:
-    name: Build Linux
+  # Native packaging is not built yet. These jobs stand in for it so a release
+  # says so instead of reporting success for artifacts nobody built: desktop
+  # packages are Phase 1 milestone M5 work (D-28), mobile packages come later
+  # (D-43). The jobs that build them replace these placeholders.
+  desktop-packages:
+    name: Desktop packages (not built yet)
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v4
-      - run: mise run install
-      - run: mise run build
+      - name: Report that desktop packages are not built
+        run: echo "::warning title=No desktop packages::desktop packaging (macOS, Windows, Linux) is not built yet (D-28); this release has no desktop assets"
 
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cept-linux
-          path: packages/desktop/dist/*.AppImage
-          if-no-files-found: warn
-
-  build-ios:
-    name: Build iOS
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v4
-      - run: mise run install
-      - run: mise run build
-
-      - name: Sync Capacitor iOS
-        run: scripts/ci/cap-sync.sh ios
-        continue-on-error: true
-
-      - name: Upload iOS artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cept-ios
-          path: packages/mobile/ios/
-          if-no-files-found: warn
-
-  build-android:
-    name: Build Android
+  mobile-packages:
+    name: Mobile packages (not built yet)
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v4
-
-      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - run: mise run install
-      - run: mise run build
-
-      - name: Sync Capacitor Android
-        run: scripts/ci/cap-sync.sh android
-        continue-on-error: true
-
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: cept-android
-          path: packages/mobile/android/app/build/outputs/
-          if-no-files-found: warn
-
-  upload-release-assets:
-    name: Upload Release Assets
-    needs: [github-release, build-macos, build-windows, build-linux, build-ios, build-android]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          merge-multiple: true
-          path: dist
-
-      - name: Upload assets to release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: scripts/ci/upload-release-assets.sh
+      - name: Report that mobile packages are not built
+        run: echo "::warning title=No mobile packages::iOS and Android packaging is deferred past Phase 1 (D-43); this release has no mobile assets"
