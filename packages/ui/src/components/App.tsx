@@ -313,7 +313,11 @@ export function App() {
   const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
   /** The space being published to a new GitHub repository (REQ-WS-020). */
   const [publishSpaceId, setPublishSpaceId] = useState<string | null>(null);
-  /** The repository created by a publish whose push failed, reused when it is tried again. */
+  /**
+   * The repository created by a publish whose push failed, reused when it is
+   * tried again under the same name so a second repository is not created
+   * (see the retry case in git-space.integration.test.ts).
+   */
   const publishRepoRef = useRef<{ spaceId: string; repo: RepoInfo } | null>(null);
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -2118,22 +2122,38 @@ export function App() {
         login: signedInAccount.login,
         corsProxy: gitCorsProxy(),
       });
+      // The space is on GitHub now: from here on, failures are reported in a
+      // toast, not in the dialog (which is closed), and never as a failed publish.
       publishRepoRef.current = null;
       setPublishSpaceId(null);
       setSettingsOpen(false);
-      setActiveSpace('user');
-      saveActiveSpace();
-      const created = await spaces.createRemote(local.name, remoteUrl, branch, undefined, 'token', {
-        writable: true,
-      });
-      setSpacesManifest(created.manifest);
-      setUserSpaceId(created.space.id);
-      void requestPersistentStorage();
-      await loadAndApplySpaceState(created.space.id, local.name);
-      addToast(
-        `"${local.name}" is published to ${repo.fullName}. Edits here are committed and synced; the copy on this device is kept until you remove it.`,
-        'success',
-      );
+      try {
+        setActiveSpace('user');
+        saveActiveSpace();
+        const created = await spaces.createRemote(
+          local.name,
+          remoteUrl,
+          branch,
+          undefined,
+          'token',
+          { writable: true },
+        );
+        setSpacesManifest(created.manifest);
+        setUserSpaceId(created.space.id);
+        void requestPersistentStorage();
+        await loadAndApplySpaceState(created.space.id, local.name);
+        addToast(
+          `"${local.name}" is published to ${repo.fullName}. Edits here are committed and synced; the copy on this device is kept until you remove it.`,
+          'success',
+        );
+      } catch (err) {
+        addToast(
+          `"${local.name}" is published to ${repo.fullName}, but could not be opened here: ${
+            err instanceof Error ? err.message : String(err)
+          }. Add it from Settings > Spaces.`,
+          'error',
+        );
+      }
     },
     [
       publishSpaceId,

@@ -28,7 +28,10 @@ export interface PublishSpaceDialogProps {
 /** What to tell the user when GitHub refused to create a repository. */
 export function createRepoErrorMessage(err: unknown): string {
   const status = (err as { status?: unknown } | null)?.status;
-  if (status === 403 || status === 404) {
+  if (status === 404) {
+    return 'GitHub did not accept the sign-in for creating a repository. Sign in again under Settings → GitHub; if it still fails, the token may lack the permission to create repositories.';
+  }
+  if (status === 403) {
     return 'Your GitHub token cannot create repositories. A classic token needs the "repo" scope (or "public_repo" for a public repository); a fine-grained token needs access to all repositories with the "Administration" permission set to read and write.';
   }
   if (status === 422) {
@@ -37,9 +40,9 @@ export function createRepoErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-/** Repository names GitHub accepts: letters, digits, `.`, `-` and `_`. */
+/** Repository names GitHub accepts: letters, digits, `.`, `-` and `_`, not starting with `.` or `-`. */
 export function isValidRepoName(name: string): boolean {
-  return /^[A-Za-z0-9._-]{1,100}$/.test(name) && name !== '.' && name !== '..';
+  return /^[A-Za-z0-9_][A-Za-z0-9._-]{0,99}$/.test(name);
 }
 
 export function PublishSpaceDialog({
@@ -107,7 +110,7 @@ export function PublishSpaceDialog({
           </div>
           {!valid && name && (
             <p className="cept-wizard-desc" data-testid="publish-space-repo-invalid">
-              Use letters, digits, ".", "-" and "_" only.
+              Use letters, digits, ".", "-" and "_" only, not starting with "." or "-".
             </p>
           )}
           <div className="cept-wizard-form-row">

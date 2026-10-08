@@ -409,8 +409,8 @@ export async function publishableFiles(source: StorageBackend, dir = ''): Promis
   return files;
 }
 
-function sameBytes(a: Uint8Array | null, b: Uint8Array | null): boolean {
-  if (!a || !b || a.length !== b.length) return false;
+function sameBytes(a: Uint8Array, b: Uint8Array | null): boolean {
+  if (!b || a.length !== b.length) return false;
   return a.every((byte, i) => byte === b[i]);
 }
 
@@ -460,10 +460,9 @@ export async function publishSpaceToRepo(
     }
     for (const file of files) {
       const data = await source.readFile(file);
-      if (data) await target.writeFile(file, data);
-    }
-    for (const file of files) {
-      if (!sameBytes(await source.readFile(file), await target.readFile(file))) {
+      if (!data) throw new Error(`"${file}" could not be read from the space; nothing was pushed.`);
+      await target.writeFile(file, data);
+      if (!sameBytes(data, await target.readFile(file))) {
         throw new Error(`"${file}" did not copy correctly; nothing was pushed.`);
       }
     }

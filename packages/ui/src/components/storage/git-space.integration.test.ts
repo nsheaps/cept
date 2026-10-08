@@ -338,6 +338,24 @@ describe('publishing a local space (REQ-WS-020)', () => {
     expect(await unpushedCommitsOf(host, request('pub-retry').spaceId)).toBe(0);
   });
 
+  it('pushes nothing when a file does not copy byte for byte', async () => {
+    const bare = makeRepo('pub-corrupt', { 'README.md': '# x\n' });
+    const source = await localSpace({
+      'space.cept.yaml': 'version: 1\nname: C\nslug: c\n',
+      'Page.md': 'text',
+    });
+    const host = newHost();
+    const write = host.writeFile.bind(host);
+    // A misbehaving store that changes what it is given for one file.
+    host.writeFile = (file, data) =>
+      write(file, file.endsWith('Page.md') ? enc.encode('changed') : data);
+
+    await expect(
+      publishSpaceToRepo(host, source, { ...request('pub-corrupt'), http }),
+    ).rejects.toThrow(/"Page\.md" did not copy correctly; nothing was pushed/);
+    expect(git(bare, 'ls-tree', '--name-only', 'main')).toBe('README.md');
+  });
+
   it('refuses a space without a marker, or without the sign-in', async () => {
     makeRepo('pub-refused', { 'README.md': '# x\n' });
     const flat = await localSpace({ '.cept/workspace-state.json': '{}' });

@@ -13,6 +13,10 @@ describe('createRepoErrorMessage', () => {
     expect(createRepoErrorMessage(refused)).toContain('"Administration"');
   });
 
+  it('asks to sign in again when GitHub does not know the sign-in', () => {
+    expect(createRepoErrorMessage({ status: 404 })).toContain('Sign in again');
+  });
+
   it('explains a name GitHub would not take, and passes other errors on', () => {
     expect(createRepoErrorMessage({ status: 422 })).toContain('Pick another name');
     expect(createRepoErrorMessage(new Error('offline'))).toBe('offline');
@@ -24,6 +28,9 @@ describe('isValidRepoName', () => {
     expect(isValidRepoName('my-notes_2.0')).toBe(true);
     expect(isValidRepoName('my notes')).toBe(false);
     expect(isValidRepoName('..')).toBe(false);
+    expect(isValidRepoName('.notes')).toBe(false);
+    expect(isValidRepoName('-notes')).toBe(false);
+    expect(isValidRepoName('_notes')).toBe(true);
     expect(isValidRepoName('')).toBe(false);
   });
 });
