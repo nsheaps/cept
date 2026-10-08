@@ -47,7 +47,4 @@ export {
   applyTemplateVariables,
   searchTemplates,
 } from './built-in-templates.js';
-export type {
-  BuiltInTemplate,
-  TemplateCategory,
-} from './built-in-templates.js';
+export type { BuiltInTemplate, TemplateCategory } from './built-in-templates.js';

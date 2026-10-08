@@ -123,9 +123,7 @@ describe('SyncEngine', () => {
   });
 
   it('handles network errors', async () => {
-    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('network timeout'),
-    );
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network timeout'));
 
     const engine = new SyncEngine(backend, { maxRetries: 1 });
     const events: SyncEvent[] = [];
@@ -150,9 +148,7 @@ describe('SyncEngine', () => {
   });
 
   it('does not retry on non-retryable error', async () => {
-    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('auth failed'),
-    );
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('auth failed'));
 
     const engine = new SyncEngine(backend, { maxRetries: 3 });
     await engine.sync();
@@ -206,9 +202,7 @@ describe('SyncEngine', () => {
   });
 
   it('reportOnline transitions from offline to idle', async () => {
-    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('network offline'),
-    );
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network offline'));
     const engine = new SyncEngine(backend, { maxRetries: 1 });
 
     await engine.sync();

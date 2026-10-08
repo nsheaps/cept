@@ -90,7 +90,8 @@ function createBrowserVaultReader(files: FileList): VaultReader {
       const result: VaultFile[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        const path =
+          (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
         result.push({
           path,
           isDirectory: false,
@@ -109,33 +110,36 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    setState('importing');
-    setProgress(null);
-    setError(null);
+      setState('importing');
+      setProgress(null);
+      setError(null);
 
-    try {
-      if (source === 'notion') {
-        const file = files[0];
-        const zipReader = createBrowserZipReader(file);
-        const importResult = await importNotionZip(zipReader, {}, (p) => setProgress(p));
-        setResult(importResult);
-        onImportComplete(importResult.pages);
-      } else {
-        const vaultReader = createBrowserVaultReader(files);
-        const importResult = await importObsidianVault(vaultReader, {}, (p) => setProgress(p));
-        setResult(importResult);
-        onImportComplete(importResult.pages);
+      try {
+        if (source === 'notion') {
+          const file = files[0];
+          const zipReader = createBrowserZipReader(file);
+          const importResult = await importNotionZip(zipReader, {}, (p) => setProgress(p));
+          setResult(importResult);
+          onImportComplete(importResult.pages);
+        } else {
+          const vaultReader = createBrowserVaultReader(files);
+          const importResult = await importObsidianVault(vaultReader, {}, (p) => setProgress(p));
+          setResult(importResult);
+          onImportComplete(importResult.pages);
+        }
+        setState('done');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Import failed');
+        setState('error');
       }
-      setState('done');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
-      setState('error');
-    }
-  }, [source, onImportComplete]);
+    },
+    [source, onImportComplete],
+  );
 
   const handleReset = useCallback(() => {
     setState('idle');
@@ -154,14 +158,14 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
 
   return (
     <div className="cept-modal-overlay" onClick={onClose} data-testid="import-dialog">
-      <div className="cept-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
+      <div
+        className="cept-modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 500 }}
+      >
         <div className="cept-modal-header">
           <h2>{title}</h2>
-          <button
-            className="cept-modal-close"
-            onClick={onClose}
-            data-testid="import-close"
-          >
+          <button className="cept-modal-close" onClick={onClose} data-testid="import-close">
             &times;
           </button>
         </div>
@@ -180,7 +184,9 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
                 accept={accept}
                 onChange={handleFileSelect}
                 data-testid="import-file-input"
-                {...(source === 'obsidian' ? { webkitdirectory: '', directory: '' } as Record<string, string> : {})}
+                {...(source === 'obsidian'
+                  ? ({ webkitdirectory: '', directory: '' } as Record<string, string>)
+                  : {})}
               />
             </div>
           )}
@@ -189,12 +195,11 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
             <div data-testid="import-progress">
               <p>Importing: {progress.currentFile}</p>
               <div className="cept-progress-bar">
-                <div
-                  className="cept-progress-fill"
-                  style={{ width: `${progress.percent}%` }}
-                />
+                <div className="cept-progress-fill" style={{ width: `${progress.percent}%` }} />
               </div>
-              <p>{progress.processed} / {progress.total} files</p>
+              <p>
+                {progress.processed} / {progress.total} files
+              </p>
             </div>
           )}
 
@@ -215,9 +220,7 @@ export function ImportDialog({ isOpen, source, onClose, onImportComplete }: Impo
                 {result.errors.length > 0 && (
                   <li style={{ color: 'orange' }}>{result.errors.length} errors</li>
                 )}
-                {result.skippedFiles > 0 && (
-                  <li>{result.skippedFiles} files skipped</li>
-                )}
+                {result.skippedFiles > 0 && <li>{result.skippedFiles} files skipped</li>}
               </ul>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
                 <button onClick={onClose} data-testid="import-done-close">

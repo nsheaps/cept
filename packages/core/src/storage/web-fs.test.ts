@@ -22,7 +22,11 @@ class MockFileHandle {
     this.data = data;
   }
 
-  async getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; size: number; lastModified: number }> {
+  async getFile(): Promise<{
+    arrayBuffer(): Promise<ArrayBuffer>;
+    size: number;
+    lastModified: number;
+  }> {
     const buf = this.data.buffer.slice(
       this.data.byteOffset,
       this.data.byteOffset + this.data.byteLength,
@@ -34,7 +38,10 @@ class MockFileHandle {
     };
   }
 
-  async createWritable(): Promise<{ write(data: Uint8Array): Promise<void>; close(): Promise<void> }> {
+  async createWritable(): Promise<{
+    write(data: Uint8Array): Promise<void>;
+    close(): Promise<void>;
+  }> {
     return {
       write: async (d: Uint8Array) => {
         this.data = new Uint8Array(d);
@@ -54,10 +61,7 @@ class MockDirectoryHandle {
     this.name = name;
   }
 
-  async getFileHandle(
-    name: string,
-    opts?: { create?: boolean },
-  ): Promise<MockFileHandle> {
+  async getFileHandle(name: string, opts?: { create?: boolean }): Promise<MockFileHandle> {
     let handle = this.files.get(name);
     if (!handle) {
       if (opts?.create) {

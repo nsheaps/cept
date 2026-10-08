@@ -195,18 +195,14 @@ describe('importObsidianVault', () => {
   });
 
   it('does not convert links when disabled', async () => {
-    const reader = createMockVaultReader([
-      { path: 'a.md', content: 'See [[b]]' },
-    ]);
+    const reader = createMockVaultReader([{ path: 'a.md', content: 'See [[b]]' }]);
 
     const result = await importObsidianVault(reader, { convertLinks: false });
     expect(result.pages[0].content).toBe('See [[b]]');
   });
 
   it('skips files exceeding max size', async () => {
-    const reader = createMockVaultReader([
-      { path: 'huge.md', content: 'x'.repeat(100) },
-    ]);
+    const reader = createMockVaultReader([{ path: 'huge.md', content: 'x'.repeat(100) }]);
 
     const result = await importObsidianVault(reader, { maxFileSize: 10 });
     expect(result.pages.length).toBe(0);
@@ -214,9 +210,7 @@ describe('importObsidianVault', () => {
   });
 
   it('skips attachments when disabled', async () => {
-    const reader = createMockVaultReader([
-      { path: 'image.png', content: new Uint8Array([1]) },
-    ]);
+    const reader = createMockVaultReader([{ path: 'image.png', content: new Uint8Array([1]) }]);
 
     const result = await importObsidianVault(reader, { importAttachments: false });
     expect(result.assets.length).toBe(0);
@@ -224,9 +218,7 @@ describe('importObsidianVault', () => {
   });
 
   it('uses custom target path', async () => {
-    const reader = createMockVaultReader([
-      { path: 'note.md', content: '# Note' },
-    ]);
+    const reader = createMockVaultReader([{ path: 'note.md', content: '# Note' }]);
 
     const result = await importObsidianVault(reader, { targetPath: '/imported/obsidian' });
     expect(result.pages[0].targetPath).toContain('/imported/obsidian');
@@ -246,7 +238,9 @@ describe('importObsidianVault', () => {
 
   it('handles vault read errors', async () => {
     const reader: VaultReader = {
-      async listFiles() { throw new Error('access denied'); },
+      async listFiles() {
+        throw new Error('access denied');
+      },
     };
 
     const result = await importObsidianVault(reader);
@@ -257,11 +251,15 @@ describe('importObsidianVault', () => {
   it('handles file read errors gracefully', async () => {
     const reader: VaultReader = {
       async listFiles() {
-        return [{
-          path: 'broken.md',
-          isDirectory: false,
-          async getData(): Promise<Uint8Array> { throw new Error('corrupt'); },
-        }];
+        return [
+          {
+            path: 'broken.md',
+            isDirectory: false,
+            async getData(): Promise<Uint8Array> {
+              throw new Error('corrupt');
+            },
+          },
+        ];
       },
     };
 

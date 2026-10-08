@@ -83,11 +83,7 @@ export interface MobileBridge {
   onKeyboardHide(callback: () => void): () => void;
 
   /** Show a native alert */
-  showAlert(options: {
-    title: string;
-    message: string;
-    buttons?: string[];
-  }): Promise<number>;
+  showAlert(options: { title: string; message: string; buttons?: string[] }): Promise<number>;
 
   /** Clean up */
   dispose(): Promise<void>;

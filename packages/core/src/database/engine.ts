@@ -54,10 +54,7 @@ export class CeptDatabaseEngine {
     await this.writeDatabase(schema.id, db);
   }
 
-  async updateSchema(
-    databaseId: string,
-    update: Partial<DatabaseSchema>,
-  ): Promise<void> {
+  async updateSchema(databaseId: string, update: Partial<DatabaseSchema>): Promise<void> {
     const db = await this.readDatabase(databaseId);
     if (!db) throw new Error(`Database not found: ${databaseId}`);
 
@@ -96,10 +93,7 @@ export class CeptDatabaseEngine {
     return rows;
   }
 
-  async getGroupedRows(
-    databaseId: string,
-    query: DatabaseQuery,
-  ): Promise<GroupedRows[]> {
+  async getGroupedRows(databaseId: string, query: DatabaseQuery): Promise<GroupedRows[]> {
     const rows = await this.getRows(databaseId, {
       filter: query.filter,
       sort: query.sort,
@@ -165,11 +159,7 @@ export class CeptDatabaseEngine {
     return db.views.find((v) => v.id === viewId) ?? null;
   }
 
-  evaluateFormula(
-    expression: string,
-    row: DatabaseRow,
-    schema: DatabaseSchema,
-  ): unknown {
+  evaluateFormula(expression: string, row: DatabaseRow, schema: DatabaseSchema): unknown {
     return formulaEvaluate(expression, row, schema);
   }
 
@@ -221,10 +211,7 @@ export class CeptDatabaseEngine {
 
   private async writeDatabase(databaseId: string, db: DatabaseFile): Promise<void> {
     const text = dump(db, { lineWidth: -1 });
-    await this.backend.writeFile(
-      this.databasePath(databaseId),
-      new TextEncoder().encode(text),
-    );
+    await this.backend.writeFile(this.databasePath(databaseId), new TextEncoder().encode(text));
   }
 }
 

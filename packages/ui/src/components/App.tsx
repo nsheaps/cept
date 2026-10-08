@@ -3,7 +3,16 @@ import { CeptEditor } from './editor/CeptEditor.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { SidebarPageRef } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
-import { expandToNode, getBreadcrumbs, renameNode, removeNode, moveNode, findNode, addChild, findAncestorIds } from './sidebar/page-tree-utils.js';
+import {
+  expandToNode,
+  getBreadcrumbs,
+  renameNode,
+  removeNode,
+  moveNode,
+  findNode,
+  addChild,
+  findAncestorIds,
+} from './sidebar/page-tree-utils.js';
 import { Breadcrumbs } from './topbar/Breadcrumbs.js';
 import { CommandPalette } from './command-palette/CommandPalette.js';
 import type { CommandItem } from './command-palette/CommandPalette.js';
@@ -13,7 +22,13 @@ import { PageHeader } from './page-header/PageHeader.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { useTheme } from './settings/useTheme.js';
-import { DOCS_PAGES, DOCS_CONTENT, DOCS_SPACE_INFO, getDocsSourceUrl, resolveDocsContent } from './docs/docs-content.js';
+import {
+  DOCS_PAGES,
+  DOCS_CONTENT,
+  DOCS_SPACE_INFO,
+  getDocsSourceUrl,
+  resolveDocsContent,
+} from './docs/docs-content.js';
 import {
   useStorage,
   useWorkspacePersistence,
@@ -40,13 +55,29 @@ import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import { createSpace as createSpaceInBackend, createRemoteSpace as createRemoteSpaceInBackend, switchSpace as switchSpaceInBackend, deleteSpace as deleteSpaceInBackend, renameSpace as renameSpaceInBackend, loadSpaces, saveSpaces as saveSpacesManifest, updateSpaceSyncTimestamp, parseRemoteSpaceId } from './storage/SpaceManager.js';
+import {
+  createSpace as createSpaceInBackend,
+  createRemoteSpace as createRemoteSpaceInBackend,
+  switchSpace as switchSpaceInBackend,
+  deleteSpace as deleteSpaceInBackend,
+  renameSpace as renameSpaceInBackend,
+  loadSpaces,
+  saveSpaces as saveSpacesManifest,
+  updateSpaceSyncTimestamp,
+  parseRemoteSpaceId,
+} from './storage/SpaceManager.js';
 import type { SpacesManifest } from './storage/SpaceManager.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
-import { restoreRoute, replaceRoute, pushRoute, parseRoute, isRemoteSpaceId, setUseGitPrefix } from '../router.js';
-
+import {
+  restoreRoute,
+  replaceRoute,
+  pushRoute,
+  parseRoute,
+  isRemoteSpaceId,
+  setUseGitPrefix,
+} from '../router.js';
 
 const DEMO_PAGES: PageTreeNode[] = [
   {
@@ -86,7 +117,12 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
  */
 export function App() {
   const backend = useStorage();
-  const { state: persisted, settings: initialSettings, ready, save } = useWorkspacePersistence(backend);
+  const {
+    state: persisted,
+    settings: initialSettings,
+    ready,
+    save,
+  } = useWorkspacePersistence(backend);
 
   // Demo mode: determined by showDemoContent setting (auto-detected on nsheaps.github.io)
   const shouldShowDemo = initialSettings.showDemoContent;
@@ -118,7 +154,11 @@ export function App() {
   const [showTrash, setShowTrash] = useState(false);
   const [userSpaceId, setUserSpaceId] = useState('default');
   const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
-  const [cloneStatus, setCloneStatus] = useState<{ active: boolean; message?: string; error?: string }>({ active: false });
+  const [cloneStatus, setCloneStatus] = useState<{
+    active: boolean;
+    message?: string;
+    error?: string;
+  }>({ active: false });
   const [spaceLoadError, setSpaceLoadError] = useState<string | undefined>(undefined);
   const { messages: toastMessages, addToast, dismissToast } = useToast();
   const lastSyncCheckRef = useRef<Record<string, number>>({});
@@ -126,95 +166,112 @@ export function App() {
   const searchIndexRef = useRef(new CeptSearchIndex());
 
   // Space-aware page content helpers — for default space, use legacy paths for backward compat
-  const currentReadPage = useCallback((pageId: string) => {
-    if (userSpaceId === 'default') return readPageContent(backend, pageId);
-    return readSpacePageContent(backend, userSpaceId, pageId);
-  }, [backend, userSpaceId]);
-  const currentWritePage = useCallback((pageId: string, content: string) => {
-    if (userSpaceId === 'default') return writePageContent(backend, pageId, content);
-    return writeSpacePageContent(backend, userSpaceId, pageId, content);
-  }, [backend, userSpaceId]);
-  const currentDeletePage = useCallback((pageId: string) => {
-    if (userSpaceId === 'default') return deletePageContent(backend, pageId);
-    return deleteSpacePageContent(backend, userSpaceId, pageId);
-  }, [backend, userSpaceId]);
+  const currentReadPage = useCallback(
+    (pageId: string) => {
+      if (userSpaceId === 'default') return readPageContent(backend, pageId);
+      return readSpacePageContent(backend, userSpaceId, pageId);
+    },
+    [backend, userSpaceId],
+  );
+  const currentWritePage = useCallback(
+    (pageId: string, content: string) => {
+      if (userSpaceId === 'default') return writePageContent(backend, pageId, content);
+      return writeSpacePageContent(backend, userSpaceId, pageId, content);
+    },
+    [backend, userSpaceId],
+  );
+  const currentDeletePage = useCallback(
+    (pageId: string) => {
+      if (userSpaceId === 'default') return deletePageContent(backend, pageId);
+      return deleteSpacePageContent(backend, userSpaceId, pageId);
+    },
+    [backend, userSpaceId],
+  );
 
   /** Save current space state to its per-space workspace file */
-  const saveCurrentSpaceState = useCallback((
-    currentSpaceId: string,
-    currentPages: PageTreeNode[],
-    currentFavorites: SidebarPageRef[],
-    currentRecentPages: SidebarPageRef[],
-    currentSelectedPageId: string | undefined,
-    currentSpaceName: string,
-    currentPageContents: Record<string, string>,
-  ) => {
-    void saveSpaceState(backend, currentSpaceId, {
-      pages: currentPages,
-      favorites: currentFavorites,
-      recentPages: currentRecentPages,
-      selectedPageId: currentSelectedPageId,
-      spaceName: currentSpaceName,
-    });
-    // Also write page contents to per-space dir
-    for (const [pageId, content] of Object.entries(currentPageContents)) {
-      if (content) {
-        void writeSpacePageContent(backend, currentSpaceId, pageId, content);
+  const saveCurrentSpaceState = useCallback(
+    (
+      currentSpaceId: string,
+      currentPages: PageTreeNode[],
+      currentFavorites: SidebarPageRef[],
+      currentRecentPages: SidebarPageRef[],
+      currentSelectedPageId: string | undefined,
+      currentSpaceName: string,
+      currentPageContents: Record<string, string>,
+    ) => {
+      void saveSpaceState(backend, currentSpaceId, {
+        pages: currentPages,
+        favorites: currentFavorites,
+        recentPages: currentRecentPages,
+        selectedPageId: currentSelectedPageId,
+        spaceName: currentSpaceName,
+      });
+      // Also write page contents to per-space dir
+      for (const [pageId, content] of Object.entries(currentPageContents)) {
+        if (content) {
+          void writeSpacePageContent(backend, currentSpaceId, pageId, content);
+        }
       }
-    }
-  }, [backend]);
+    },
+    [backend],
+  );
 
   /** Load a space's state from storage and apply it to React state */
-  const loadAndApplySpaceState = useCallback(async (spaceId: string, name: string) => {
-    setSpaceLoadError(undefined);
-    try {
-      const state = await loadSpaceState(backend, spaceId);
-      if (state && state.pages.length > 0) {
-        setPages(state.pages);
-        setSelectedPageId(state.selectedPageId);
-        setFavorites(state.favorites ?? []);
-        setRecentPages(state.recentPages ?? []);
-        setSpaceName(state.spaceName ?? name);
-        setPageContents({});
-        setTrash([]);
-        setHasStarted(true);
-        // Load selected page content
-        if (state.selectedPageId) {
-          const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
-          setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
+  const loadAndApplySpaceState = useCallback(
+    async (spaceId: string, name: string) => {
+      setSpaceLoadError(undefined);
+      try {
+        const state = await loadSpaceState(backend, spaceId);
+        if (state && state.pages.length > 0) {
+          setPages(state.pages);
+          setSelectedPageId(state.selectedPageId);
+          setFavorites(state.favorites ?? []);
+          setRecentPages(state.recentPages ?? []);
+          setSpaceName(state.spaceName ?? name);
+          setPageContents({});
+          setTrash([]);
+          setHasStarted(true);
+          // Load selected page content
+          if (state.selectedPageId) {
+            const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
+            setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
+          }
+        } else if (isRemoteSpaceId(spaceId)) {
+          // Remote space with no persisted content — show error
+          setPages([]);
+          setPageContents({});
+          setSelectedPageId(undefined);
+          setFavorites([]);
+          setRecentPages([]);
+          setTrash([]);
+          setSpaceName(name);
+          setHasStarted(true);
+          setSpaceLoadError(
+            `Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`,
+          );
+        } else {
+          // Empty local space
+          setPages([]);
+          setPageContents({});
+          setSelectedPageId(undefined);
+          setFavorites([]);
+          setRecentPages([]);
+          setTrash([]);
+          setSpaceName(name);
+          setHasStarted(true);
         }
-      } else if (isRemoteSpaceId(spaceId)) {
-        // Remote space with no persisted content — show error
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load space';
+        setSpaceLoadError(`Error loading "${name}": ${message}`);
         setPages([]);
         setPageContents({});
         setSelectedPageId(undefined);
-        setFavorites([]);
-        setRecentPages([]);
-        setTrash([]);
-        setSpaceName(name);
-        setHasStarted(true);
-        setSpaceLoadError(`Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`);
-      } else {
-        // Empty local space
-        setPages([]);
-        setPageContents({});
-        setSelectedPageId(undefined);
-        setFavorites([]);
-        setRecentPages([]);
-        setTrash([]);
         setSpaceName(name);
         setHasStarted(true);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load space';
-      setSpaceLoadError(`Error loading "${name}": ${message}`);
-      setPages([]);
-      setPageContents({});
-      setSelectedPageId(undefined);
-      setSpaceName(name);
-      setHasStarted(true);
-    }
-  }, [backend]);
+    },
+    [backend],
+  );
 
   // Apply loaded state once backend is ready
   const initializedRef = useRef(false);
@@ -261,11 +318,20 @@ export function App() {
       } else if (shouldShowDemo) {
         setPages(DEMO_PAGES);
         setSelectedPageId('welcome');
-        const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+        const demoContents: Record<string, string> = {
+          welcome: DEMO_CONTENT,
+          'getting-started': DEMO_GETTING_STARTED_CONTENT,
+          features: DEMO_FEATURES_CONTENT,
+          notes: '',
+        };
         setPageContents(demoContents);
         setSpaceName('Demo Space');
         setHasStarted(true);
-        void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+        void Promise.all(
+          Object.entries(demoContents).map(([id, content]) =>
+            writePageContent(backend, id, content),
+          ),
+        );
         void saveSpaceState(backend, 'default', {
           pages: DEMO_PAGES,
           favorites: [],
@@ -497,8 +563,8 @@ export function App() {
 
         // Check if current page was updated
         const newPageIds = new Set(clonedPages.map((p) => p.id));
-        const hasChanges = oldPageIds.size !== newPageIds.size ||
-          [...oldPageIds].some((id) => !newPageIds.has(id));
+        const hasChanges =
+          oldPageIds.size !== newPageIds.size || [...oldPageIds].some((id) => !newPageIds.has(id));
 
         if (hasChanges) {
           addToast(`"${spaceMeta.name}" updated with new content.`, 'success');
@@ -513,7 +579,6 @@ export function App() {
 
     void syncSpace();
   }, [hasStarted, userSpaceId, spacesManifest, backend]);
-
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -583,48 +648,54 @@ export function App() {
     });
   }, []);
 
-  const handlePageSelect = useCallback((id: string) => {
-    setSelectedPageId(id);
-    setShowTrash(false);
-    setPages((prev) => expandToNode(prev, id));
-    const node = findNode(pages, id);
-    if (node) {
-      addToRecent(id, node.title, node.icon);
-    }
-    // Load page content from backend if not already cached
-    if (!pageContents[id]) {
-      void currentReadPage(id).then((content) => {
-        if (content !== null) {
-          setPageContents((prev) => ({ ...prev, [id]: content }));
-        }
-      });
-    }
-    // Close sidebar on narrow screens after selecting a page
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, [pages, addToRecent, pageContents, currentReadPage]);
+  const handlePageSelect = useCallback(
+    (id: string) => {
+      setSelectedPageId(id);
+      setShowTrash(false);
+      setPages((prev) => expandToNode(prev, id));
+      const node = findNode(pages, id);
+      if (node) {
+        addToRecent(id, node.title, node.icon);
+      }
+      // Load page content from backend if not already cached
+      if (!pageContents[id]) {
+        void currentReadPage(id).then((content) => {
+          if (content !== null) {
+            setPageContents((prev) => ({ ...prev, [id]: content }));
+          }
+        });
+      }
+      // Close sidebar on narrow screens after selecting a page
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    },
+    [pages, addToRecent, pageContents, currentReadPage],
+  );
 
   const handlePageToggle = useCallback((id: string) => {
     setPages((prev) => toggleNode(prev, id));
   }, []);
 
-  const handlePageAdd = useCallback((parentId?: string) => {
-    const newPage: PageTreeNode = {
-      id: `page-${Date.now()}`,
-      title: 'Untitled',
-      children: [],
-    };
-    if (parentId) {
-      setPages((prev) => addChild(prev, parentId, newPage));
-    } else {
-      setPages((prev) => [...prev, newPage]);
-    }
-    setPageContents((prev) => ({ ...prev, [newPage.id]: '' }));
-    setSelectedPageId(newPage.id);
-    void currentWritePage(newPage.id, '');
-    if (!hasStarted) setHasStarted(true);
-  }, [hasStarted, currentWritePage]);
+  const handlePageAdd = useCallback(
+    (parentId?: string) => {
+      const newPage: PageTreeNode = {
+        id: `page-${Date.now()}`,
+        title: 'Untitled',
+        children: [],
+      };
+      if (parentId) {
+        setPages((prev) => addChild(prev, parentId, newPage));
+      } else {
+        setPages((prev) => [...prev, newPage]);
+      }
+      setPageContents((prev) => ({ ...prev, [newPage.id]: '' }));
+      setSelectedPageId(newPage.id);
+      void currentWritePage(newPage.id, '');
+      if (!hasStarted) setHasStarted(true);
+    },
+    [hasStarted, currentWritePage],
+  );
 
   const handlePageRename = useCallback((id: string, title: string) => {
     setPages((prev) => renameNode(prev, id, title));
@@ -633,48 +704,61 @@ export function App() {
     setFavorites((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
   }, []);
 
-  const handlePageDelete = useCallback((id: string) => {
-    const node = findNode(pages, id);
-    if (node) {
-      const ancestors = findAncestorIds(pages, id);
-      const parentId = ancestors && ancestors.length > 0 ? ancestors[ancestors.length - 1] : undefined;
-      setTrash((prev) => [...prev, { id: node.id, title: node.title, icon: node.icon, parentId }]);
-    }
-    setPages((prev) => {
-      const { tree } = removeNode(prev, id);
-      return tree;
-    });
-    setSelectedPageId((prev) => (prev === id ? undefined : prev));
-    setFavorites((prev) => prev.filter((f) => f.id !== id));
-    setRecentPages((prev) => prev.filter((r) => r.id !== id));
-  }, [pages]);
+  const handlePageDelete = useCallback(
+    (id: string) => {
+      const node = findNode(pages, id);
+      if (node) {
+        const ancestors = findAncestorIds(pages, id);
+        const parentId =
+          ancestors && ancestors.length > 0 ? ancestors[ancestors.length - 1] : undefined;
+        setTrash((prev) => [
+          ...prev,
+          { id: node.id, title: node.title, icon: node.icon, parentId },
+        ]);
+      }
+      setPages((prev) => {
+        const { tree } = removeNode(prev, id);
+        return tree;
+      });
+      setSelectedPageId((prev) => (prev === id ? undefined : prev));
+      setFavorites((prev) => prev.filter((f) => f.id !== id));
+      setRecentPages((prev) => prev.filter((r) => r.id !== id));
+    },
+    [pages],
+  );
 
-  const handleRestoreFromTrash = useCallback((id: string) => {
-    const item = trash.find((t) => t.id === id);
-    if (!item) return;
-    setTrash((prev) => prev.filter((t) => t.id !== id));
-    const restoredPage: PageTreeNode = {
-      id: item.id,
-      title: item.title,
-      icon: item.icon,
-      children: [],
-    };
-    if (item.parentId && findNode(pages, item.parentId)) {
-      setPages((prev) => addChild(prev, item.parentId!, restoredPage));
-    } else {
-      setPages((prev) => [...prev, restoredPage]);
-    }
-  }, [trash, pages]);
+  const handleRestoreFromTrash = useCallback(
+    (id: string) => {
+      const item = trash.find((t) => t.id === id);
+      if (!item) return;
+      setTrash((prev) => prev.filter((t) => t.id !== id));
+      const restoredPage: PageTreeNode = {
+        id: item.id,
+        title: item.title,
+        icon: item.icon,
+        children: [],
+      };
+      if (item.parentId && findNode(pages, item.parentId)) {
+        setPages((prev) => addChild(prev, item.parentId!, restoredPage));
+      } else {
+        setPages((prev) => [...prev, restoredPage]);
+      }
+    },
+    [trash, pages],
+  );
 
-  const handlePermanentDelete = useCallback((id: string) => {
-    setTrash((prev) => prev.filter((t) => t.id !== id));
-    setPageContents((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-    void currentDeletePage(id);
-  }, [currentDeletePage]);
+  const handlePermanentDelete = useCallback(
+    (id: string) => {
+      setTrash((prev) => prev.filter((t) => t.id !== id));
+      setPageContents((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      void currentDeletePage(id);
+    },
+    [currentDeletePage],
+  );
 
   const handleEmptyTrash = useCallback(() => {
     setTrash((prev) => {
@@ -690,60 +774,69 @@ export function App() {
     });
   }, [currentDeletePage]);
 
-  const handleToggleFavorite = useCallback((id: string) => {
-    setFavorites((prev) => {
-      const exists = prev.find((f) => f.id === id);
-      if (exists) {
-        return prev.filter((f) => f.id !== id);
-      }
-      const node = findNode(pages, id);
-      if (!node) return prev;
-      return [...prev, { id: node.id, title: node.title, icon: node.icon }];
-    });
-  }, [pages]);
+  const handleToggleFavorite = useCallback(
+    (id: string) => {
+      setFavorites((prev) => {
+        const exists = prev.find((f) => f.id === id);
+        if (exists) {
+          return prev.filter((f) => f.id !== id);
+        }
+        const node = findNode(pages, id);
+        if (!node) return prev;
+        return [...prev, { id: node.id, title: node.title, icon: node.icon }];
+      });
+    },
+    [pages],
+  );
 
-  const handlePageDuplicate = useCallback((id: string) => {
-    setPages((prev) => {
-      const original = findNode(prev, id);
-      if (!original) return prev;
-      const duplicateId = `page-${Date.now()}`;
-      const duplicate: PageTreeNode = {
-        id: duplicateId,
-        title: `${original.title} (copy)`,
-        icon: original.icon,
-        cover: original.cover,
-        children: [],
-      };
-      // Copy content only (not children)
-      const content = pageContents[id] ?? '';
-      setPageContents((pc) => ({ ...pc, [duplicateId]: content }));
-      void currentWritePage(duplicateId, content);
-      const ancestors = findAncestorIds(prev, id);
-      if (!ancestors || ancestors.length === 0) {
-        const idx = prev.findIndex((n) => n.id === id);
-        const result = [...prev];
-        result.splice(idx + 1, 0, duplicate);
-        return result;
-      }
-      const parentId = ancestors[ancestors.length - 1];
-      return addChild(prev, parentId, duplicate);
-    });
-  }, [pageContents, currentWritePage]);
+  const handlePageDuplicate = useCallback(
+    (id: string) => {
+      setPages((prev) => {
+        const original = findNode(prev, id);
+        if (!original) return prev;
+        const duplicateId = `page-${Date.now()}`;
+        const duplicate: PageTreeNode = {
+          id: duplicateId,
+          title: `${original.title} (copy)`,
+          icon: original.icon,
+          cover: original.cover,
+          children: [],
+        };
+        // Copy content only (not children)
+        const content = pageContents[id] ?? '';
+        setPageContents((pc) => ({ ...pc, [duplicateId]: content }));
+        void currentWritePage(duplicateId, content);
+        const ancestors = findAncestorIds(prev, id);
+        if (!ancestors || ancestors.length === 0) {
+          const idx = prev.findIndex((n) => n.id === id);
+          const result = [...prev];
+          result.splice(idx + 1, 0, duplicate);
+          return result;
+        }
+        const parentId = ancestors[ancestors.length - 1];
+        return addChild(prev, parentId, duplicate);
+      });
+    },
+    [pageContents, currentWritePage],
+  );
 
   const handlePageMoveToRoot = useCallback((id: string) => {
     setPages((prev) => moveNode(prev, id, undefined));
   }, []);
 
-  const handleContentUpdate = useCallback((markdown: string) => {
-    if (!selectedPageId) return;
-    setPageContents((prev) => ({ ...prev, [selectedPageId]: markdown }));
+  const handleContentUpdate = useCallback(
+    (markdown: string) => {
+      if (!selectedPageId) return;
+      setPageContents((prev) => ({ ...prev, [selectedPageId]: markdown }));
 
-    // Debounced write to backend
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      void currentWritePage(selectedPageId, markdown);
-    }, 500);
-  }, [selectedPageId, currentWritePage]);
+      // Debounced write to backend
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        void currentWritePage(selectedPageId, markdown);
+      }, 500);
+    },
+    [selectedPageId, currentWritePage],
+  );
 
   // Keep search index in sync with page content
   const indexedRef = useRef(new Set<string>());
@@ -794,7 +887,12 @@ export function App() {
   const handleResetDemo = useCallback(() => {
     // Always recreate — if space was renamed, this creates what is effectively a duplicate
     setPages(DEMO_PAGES);
-    const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+    const demoContents: Record<string, string> = {
+      welcome: DEMO_CONTENT,
+      'getting-started': DEMO_GETTING_STARTED_CONTENT,
+      features: DEMO_FEATURES_CONTENT,
+      notes: '',
+    };
     setPageContents(demoContents);
     setSelectedPageId('welcome');
     setFavorites([]);
@@ -803,9 +901,15 @@ export function App() {
     setSpaceName('Demo Space');
     setUserSpaceId('default');
     setHasStarted(true);
-    void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+    void Promise.all(
+      Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
+    );
     void saveSpaceState(backend, 'default', {
-      pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+      pages: DEMO_PAGES,
+      favorites: [],
+      recentPages: [],
+      selectedPageId: 'welcome',
+      spaceName: 'Demo Space',
     });
   }, [backend]);
 
@@ -813,7 +917,12 @@ export function App() {
     // Reset React state immediately so the UI is responsive
     setSettings({ ...DEFAULT_SETTINGS });
     setPages(DEMO_PAGES);
-    const demoContents: Record<string, string> = { welcome: DEMO_CONTENT, 'getting-started': DEMO_GETTING_STARTED_CONTENT, features: DEMO_FEATURES_CONTENT, notes: '' };
+    const demoContents: Record<string, string> = {
+      welcome: DEMO_CONTENT,
+      'getting-started': DEMO_GETTING_STARTED_CONTENT,
+      features: DEMO_FEATURES_CONTENT,
+      notes: '',
+    };
     setPageContents(demoContents);
     setSelectedPageId('welcome');
     setFavorites([]);
@@ -830,96 +939,157 @@ export function App() {
     setSpacesManifest(freshManifest);
     // Clear storage FIRST, then write fresh data so writes aren't deleted by the concurrent clear
     void clearAllData(backend).then(() => {
-      void Promise.all(Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)));
+      void Promise.all(
+        Object.entries(demoContents).map(([id, content]) => writePageContent(backend, id, content)),
+      );
       void saveSpaceState(backend, 'default', {
-        pages: DEMO_PAGES, favorites: [], recentPages: [], selectedPageId: 'welcome', spaceName: 'Demo Space',
+        pages: DEMO_PAGES,
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'welcome',
+        spaceName: 'Demo Space',
       });
       void saveSpacesManifest(backend, freshManifest);
     });
   }, [backend]);
 
-  const handleSettingsChange = useCallback((updated: CeptSettings) => {
-    setSettings(updated);
-    void saveSettingsToBackend(backend, updated);
-  }, [backend]);
+  const handleSettingsChange = useCallback(
+    (updated: CeptSettings) => {
+      setSettings(updated);
+      void saveSettingsToBackend(backend, updated);
+    },
+    [backend],
+  );
 
   const handleResetSettings = useCallback(() => {
     void resetSettingsOnBackend(backend);
     setSettings({ ...DEFAULT_SETTINGS });
   }, [backend]);
 
-  const handleSpaceRename = useCallback((id: string, name: string) => {
-    if (id === userSpaceId) {
-      setSpaceName(name);
-    }
-    void renameSpaceInBackend(backend, id, name).then(() => {
-      void loadSpaces(backend).then((manifest) => setSpacesManifest(manifest));
-    });
-  }, [backend, userSpaceId]);
-
-  const handleDeleteSpace = useCallback((id: string) => {
-    void deleteSpaceInBackend(backend, id).then(() => {
-      void loadSpaces(backend).then((manifest) => {
-        setSpacesManifest(manifest);
-        if (id === userSpaceId) {
-          const targetId = manifest.activeSpaceId;
-          const targetSpace = manifest.spaces.find((s) => s.id === targetId);
-          setUserSpaceId(targetId);
-          void loadAndApplySpaceState(targetId, targetSpace?.name ?? 'My Space');
-        }
+  const handleSpaceRename = useCallback(
+    (id: string, name: string) => {
+      if (id === userSpaceId) {
+        setSpaceName(name);
+      }
+      void renameSpaceInBackend(backend, id, name).then(() => {
+        void loadSpaces(backend).then((manifest) => setSpacesManifest(manifest));
       });
-    });
-  }, [backend, userSpaceId, loadAndApplySpaceState]);
+    },
+    [backend, userSpaceId],
+  );
 
-  const handleCreateSpace = useCallback((name: string) => {
-    // Save current space state before switching
-    saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
-    setSpaceLoadError(undefined);
-    // Switch to user view (important when creating from docs view)
-    setActiveSpace('user');
-    void createSpaceInBackend(backend, name).then((newSpace) => {
-      void loadSpaces(backend).then((manifest) => {
-        setSpacesManifest(manifest);
+  const handleDeleteSpace = useCallback(
+    (id: string) => {
+      void deleteSpaceInBackend(backend, id).then(() => {
+        void loadSpaces(backend).then((manifest) => {
+          setSpacesManifest(manifest);
+          if (id === userSpaceId) {
+            const targetId = manifest.activeSpaceId;
+            const targetSpace = manifest.spaces.find((s) => s.id === targetId);
+            setUserSpaceId(targetId);
+            void loadAndApplySpaceState(targetId, targetSpace?.name ?? 'My Space');
+          }
+        });
       });
-      setUserSpaceId(newSpace.id);
-      setPages([]);
-      setPageContents({});
-      setSelectedPageId(undefined);
-      setFavorites([]);
-      setRecentPages([]);
-      setTrash([]);
-      setSpaceName(name);
-      setHasStarted(true);
-    });
-  }, [backend, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
+    },
+    [backend, userSpaceId, loadAndApplySpaceState],
+  );
 
-  const handleSwitchSpace = useCallback((id: string) => {
-    // Save current space state before switching
-    saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
-    setSpaceLoadError(undefined);
-    void switchSpaceInBackend(backend, id).then(() => {
-      setUserSpaceId(id);
-      void loadSpaces(backend).then((manifest) => {
-        setSpacesManifest(manifest);
-        const space = manifest.spaces.find((s) => s.id === id);
-        void loadAndApplySpaceState(id, space?.name ?? 'My Space');
+  const handleCreateSpace = useCallback(
+    (name: string) => {
+      // Save current space state before switching
+      saveCurrentSpaceState(
+        userSpaceId,
+        pages,
+        favorites,
+        recentPages,
+        selectedPageId,
+        spaceName,
+        pageContents,
+      );
+      setSpaceLoadError(undefined);
+      // Switch to user view (important when creating from docs view)
+      setActiveSpace('user');
+      void createSpaceInBackend(backend, name).then((newSpace) => {
+        void loadSpaces(backend).then((manifest) => {
+          setSpacesManifest(manifest);
+        });
+        setUserSpaceId(newSpace.id);
+        setPages([]);
+        setPageContents({});
+        setSelectedPageId(undefined);
+        setFavorites([]);
+        setRecentPages([]);
+        setTrash([]);
+        setSpaceName(name);
+        setHasStarted(true);
       });
-    });
-  }, [backend, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState, loadAndApplySpaceState]);
+    },
+    [
+      backend,
+      userSpaceId,
+      pages,
+      favorites,
+      recentPages,
+      selectedPageId,
+      spaceName,
+      pageContents,
+      saveCurrentSpaceState,
+    ],
+  );
 
-  const handleImportComplete = useCallback((importedPages: ImportedPage[]) => {
-    for (const page of importedPages) {
-      const newPage: PageTreeNode = {
-        id: page.targetPath.replace(/[^a-zA-Z0-9-_]/g, '-'),
-        title: page.title,
-        children: [],
-      };
-      setPages((prev) => [...prev, newPage]);
-      setPageContents((prev) => ({ ...prev, [newPage.id]: page.content }));
-      void currentWritePage(newPage.id, page.content);
-    }
-    if (!hasStarted) setHasStarted(true);
-  }, [currentWritePage, hasStarted]);
+  const handleSwitchSpace = useCallback(
+    (id: string) => {
+      // Save current space state before switching
+      saveCurrentSpaceState(
+        userSpaceId,
+        pages,
+        favorites,
+        recentPages,
+        selectedPageId,
+        spaceName,
+        pageContents,
+      );
+      setSpaceLoadError(undefined);
+      void switchSpaceInBackend(backend, id).then(() => {
+        setUserSpaceId(id);
+        void loadSpaces(backend).then((manifest) => {
+          setSpacesManifest(manifest);
+          const space = manifest.spaces.find((s) => s.id === id);
+          void loadAndApplySpaceState(id, space?.name ?? 'My Space');
+        });
+      });
+    },
+    [
+      backend,
+      userSpaceId,
+      pages,
+      favorites,
+      recentPages,
+      selectedPageId,
+      spaceName,
+      pageContents,
+      saveCurrentSpaceState,
+      loadAndApplySpaceState,
+    ],
+  );
+
+  const handleImportComplete = useCallback(
+    (importedPages: ImportedPage[]) => {
+      for (const page of importedPages) {
+        const newPage: PageTreeNode = {
+          id: page.targetPath.replace(/[^a-zA-Z0-9-_]/g, '-'),
+          title: page.title,
+          children: [],
+        };
+        setPages((prev) => [...prev, newPage]);
+        setPageContents((prev) => ({ ...prev, [newPage.id]: page.content }));
+        void currentWritePage(newPage.id, page.content);
+      }
+      if (!hasStarted) setHasStarted(true);
+    },
+    [currentWritePage, hasStarted],
+  );
 
   const handleOpenImport = useCallback((source: ImportSource) => {
     setImportSource(source);
@@ -943,158 +1113,186 @@ export function App() {
   }, []);
 
   /** Handle "Add Space" from the remote repo form in the wizard. */
-  const handleAddRemoteRepo = useCallback(async (config: RemoteSpaceConfig) => {
-    // Build a human-readable name from the repo URL
-    const normalizedUrl = config.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\.git$/, '').replace(/\/$/, '');
-    const repoName = normalizedUrl.split('/').pop() ?? 'Remote';
-    const name = config.subPath.trim()
-      ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
-      : repoName;
-    const displayName = `${name} (${config.branch || 'main'})`;
+  const handleAddRemoteRepo = useCallback(
+    async (config: RemoteSpaceConfig) => {
+      // Build a human-readable name from the repo URL
+      const normalizedUrl = config.url
+        .replace(/^https?:\/\/(www\.)?/, '')
+        .replace(/\.git$/, '')
+        .replace(/\/$/, '');
+      const repoName = normalizedUrl.split('/').pop() ?? 'Remote';
+      const name = config.subPath.trim()
+        ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
+        : repoName;
+      const displayName = `${name} (${config.branch || 'main'})`;
 
-    // Check if the backend is a BrowserFsBackend (required for git cloning)
-    if (!(backend instanceof BrowserFsBackend)) {
-      // Fall back to creating an empty space for non-browser backends
-      handleCreateSpace(displayName);
-      return;
-    }
+      // Check if the backend is a BrowserFsBackend (required for git cloning)
+      if (!(backend instanceof BrowserFsBackend)) {
+        // Fall back to creating an empty space for non-browser backends
+        handleCreateSpace(displayName);
+        return;
+      }
 
-    // Dynamically import the browser HTTP client for isomorphic-git
-    let gitHttp: GitHttp;
-    try {
-      const httpModule = await import('isomorphic-git/http/web');
-      gitHttp = httpModule.default as GitHttp;
-    } catch {
-      // Fallback: create empty space if http module unavailable
-      handleCreateSpace(displayName);
-      return;
-    }
+      // Dynamically import the browser HTTP client for isomorphic-git
+      let gitHttp: GitHttp;
+      try {
+        const httpModule = await import('isomorphic-git/http/web');
+        gitHttp = httpModule.default as GitHttp;
+      } catch {
+        // Fallback: create empty space if http module unavailable
+        handleCreateSpace(displayName);
+        return;
+      }
 
-    setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
+      setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
 
-    try {
-      // Save current space state before switching
-      saveCurrentSpaceState(userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents);
-      setActiveSpace('user');
+      try {
+        // Save current space state before switching
+        saveCurrentSpaceState(
+          userSpaceId,
+          pages,
+          favorites,
+          recentPages,
+          selectedPageId,
+          spaceName,
+          pageContents,
+        );
+        setActiveSpace('user');
 
-      // Clone the remote repo and extract pages
+        // Clone the remote repo and extract pages
+        const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
+          backend,
+          gitHttp,
+          config.url,
+          config.branch || 'main',
+          config.subPath.trim() || undefined,
+          'https://cors.isomorphic-git.org',
+        );
+
+        // Create the space with remote metadata
+        const branch = config.branch || 'main';
+        const newSpace = await createRemoteSpaceInBackend(
+          backend,
+          displayName,
+          normalizeRepoUrl(config.url),
+          branch,
+          config.subPath.trim() || undefined,
+        );
+
+        // Update manifest in state
+        const manifest = await loadSpaces(backend);
+        setSpacesManifest(manifest);
+        setUserSpaceId(newSpace.id);
+
+        // Apply cloned pages to the UI
+        setPages(clonedPages);
+        setPageContents(clonedContents);
+        setSelectedPageId(clonedPages[0]?.id);
+        setFavorites([]);
+        setRecentPages([]);
+        setTrash([]);
+        setSpaceName(displayName);
+        setHasStarted(true);
+
+        // Persist the cloned pages to the space's storage
+        await saveSpaceState(backend, newSpace.id, {
+          pages: clonedPages,
+          favorites: [],
+          recentPages: [],
+          selectedPageId: clonedPages[0]?.id,
+          spaceName: displayName,
+        });
+
+        // Write page contents to individual files
+        for (const [pageId, content] of Object.entries(clonedContents)) {
+          if (content) {
+            void writeSpacePageContent(backend, newSpace.id, pageId, content);
+          }
+        }
+
+        setCloneStatus({ active: false });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Clone failed';
+        setCloneStatus({ active: false, error: message });
+        console.error('Failed to clone remote repo:', err);
+      }
+    },
+    [
+      backend,
+      handleCreateSpace,
+      userSpaceId,
+      pages,
+      favorites,
+      recentPages,
+      selectedPageId,
+      spaceName,
+      pageContents,
+      saveCurrentSpaceState,
+    ],
+  );
+
+  /** Refresh a git space by re-cloning from the remote. */
+  const handleRefreshSpace = useCallback(
+    async (spaceId: string) => {
+      if (!(backend instanceof BrowserFsBackend)) return;
+
+      // Find the space metadata
+      const manifest = await loadSpaces(backend);
+      const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
+      if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
+
+      // Dynamically import the browser HTTP client for isomorphic-git
+      let gitHttp: GitHttp;
+      try {
+        const httpModule = await import('isomorphic-git/http/web');
+        gitHttp = httpModule.default as GitHttp;
+      } catch {
+        return;
+      }
+
+      // Clone fresh from remote
       const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
         backend,
         gitHttp,
-        config.url,
-        config.branch || 'main',
-        config.subPath.trim() || undefined,
+        spaceMeta.remoteUrl,
+        spaceMeta.branch,
+        spaceMeta.subPath,
         'https://cors.isomorphic-git.org',
       );
 
-      // Create the space with remote metadata
-      const branch = config.branch || 'main';
-      const newSpace = await createRemoteSpaceInBackend(
-        backend,
-        displayName,
-        normalizeRepoUrl(config.url),
-        branch,
-        config.subPath.trim() || undefined,
-      );
+      // Update the sync timestamp
+      await updateSpaceSyncTimestamp(backend, spaceId);
 
-      // Update manifest in state
-      const manifest = await loadSpaces(backend);
-      setSpacesManifest(manifest);
-      setUserSpaceId(newSpace.id);
-
-      // Apply cloned pages to the UI
-      setPages(clonedPages);
-      setPageContents(clonedContents);
-      setSelectedPageId(clonedPages[0]?.id);
-      setFavorites([]);
-      setRecentPages([]);
-      setTrash([]);
-      setSpaceName(displayName);
-      setHasStarted(true);
-
-      // Persist the cloned pages to the space's storage
-      await saveSpaceState(backend, newSpace.id, {
+      // Persist the refreshed pages
+      await saveSpaceState(backend, spaceId, {
         pages: clonedPages,
         favorites: [],
         recentPages: [],
         selectedPageId: clonedPages[0]?.id,
-        spaceName: displayName,
+        spaceName: spaceMeta.name,
       });
 
-      // Write page contents to individual files
       for (const [pageId, content] of Object.entries(clonedContents)) {
         if (content) {
-          void writeSpacePageContent(backend, newSpace.id, pageId, content);
+          void writeSpacePageContent(backend, spaceId, pageId, content);
         }
       }
 
-      setCloneStatus({ active: false });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Clone failed';
-      setCloneStatus({ active: false, error: message });
-      console.error('Failed to clone remote repo:', err);
-    }
-  }, [backend, handleCreateSpace, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents, saveCurrentSpaceState]);
-
-  /** Refresh a git space by re-cloning from the remote. */
-  const handleRefreshSpace = useCallback(async (spaceId: string) => {
-    if (!(backend instanceof BrowserFsBackend)) return;
-
-    // Find the space metadata
-    const manifest = await loadSpaces(backend);
-    const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
-    if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
-
-    // Dynamically import the browser HTTP client for isomorphic-git
-    let gitHttp: GitHttp;
-    try {
-      const httpModule = await import('isomorphic-git/http/web');
-      gitHttp = httpModule.default as GitHttp;
-    } catch {
-      return;
-    }
-
-    // Clone fresh from remote
-    const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
-      backend,
-      gitHttp,
-      spaceMeta.remoteUrl,
-      spaceMeta.branch,
-      spaceMeta.subPath,
-      'https://cors.isomorphic-git.org',
-    );
-
-    // Update the sync timestamp
-    await updateSpaceSyncTimestamp(backend, spaceId);
-
-    // Persist the refreshed pages
-    await saveSpaceState(backend, spaceId, {
-      pages: clonedPages,
-      favorites: [],
-      recentPages: [],
-      selectedPageId: clonedPages[0]?.id,
-      spaceName: spaceMeta.name,
-    });
-
-    for (const [pageId, content] of Object.entries(clonedContents)) {
-      if (content) {
-        void writeSpacePageContent(backend, spaceId, pageId, content);
+      // If we're refreshing the currently active space, update the UI state
+      if (spaceId === userSpaceId) {
+        setPages(clonedPages);
+        setPageContents(clonedContents);
+        setSelectedPageId(clonedPages[0]?.id);
+        setFavorites([]);
+        setRecentPages([]);
       }
-    }
 
-    // If we're refreshing the currently active space, update the UI state
-    if (spaceId === userSpaceId) {
-      setPages(clonedPages);
-      setPageContents(clonedContents);
-      setSelectedPageId(clonedPages[0]?.id);
-      setFavorites([]);
-      setRecentPages([]);
-    }
-
-    // Reload manifest to get updated lastSyncedAt
-    const updatedManifest = await loadSpaces(backend);
-    setSpacesManifest(updatedManifest);
-  }, [backend, userSpaceId]);
+      // Reload manifest to get updated lastSyncedAt
+      const updatedManifest = await loadSpaces(backend);
+      setSpacesManifest(updatedManifest);
+    },
+    [backend, userSpaceId],
+  );
 
   const handleDocsPageSelect = useCallback((id: string) => {
     setDocsSelectedPageId(id);
@@ -1118,7 +1316,10 @@ export function App() {
           : defaultSource;
         if (space.id === userSpaceId) {
           // Active space — use live React state for accurate counts
-          const contentSize = Object.values(pageContents).reduce((sum, c) => sum + (c?.length ?? 0), 0);
+          const contentSize = Object.values(pageContents).reduce(
+            (sum, c) => sum + (c?.length ?? 0),
+            0,
+          );
           list.push({
             id: space.id,
             name: spaceName,
@@ -1161,18 +1362,81 @@ export function App() {
     return list;
   }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type]);
 
-  const commandItems: CommandItem[] = useMemo(() => [
-    { id: 'new-page', title: 'New Page', icon: '\u{1F4C4}', category: 'Pages', action: () => handlePageAdd() },
-    { id: 'search', title: 'Search', icon: '\u{1F50D}', category: 'Navigation', action: () => { setCommandPaletteOpen(false); setSearchOpen(true); } },
-    { id: 'toggle-sidebar', title: 'Toggle Sidebar', icon: '\u{1F4CB}', category: 'View', action: () => { setSidebarOpen((p) => !p); setCommandPaletteOpen(false); } },
-    { id: 'import-notion', title: 'Import from Notion', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('notion'); } },
-    { id: 'import-obsidian', title: 'Import from Obsidian', icon: '\u{1F4E5}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenImport('obsidian'); } },
-    { id: 'export-page', title: 'Export Current Page', icon: '\u{1F4E4}', category: 'Import / Export', action: () => { setCommandPaletteOpen(false); handleOpenExport(); } },
-    { id: 'manage-spaces', title: 'Manage Spaces', icon: '\u{1F4C2}', category: 'Spaces', action: () => { setCommandPaletteOpen(false); handleOpenSettings('spaces'); } },
-  ], [handlePageAdd, handleOpenExport, handleOpenSettings, handleOpenImport]);
+  const commandItems: CommandItem[] = useMemo(
+    () => [
+      {
+        id: 'new-page',
+        title: 'New Page',
+        icon: '\u{1F4C4}',
+        category: 'Pages',
+        action: () => handlePageAdd(),
+      },
+      {
+        id: 'search',
+        title: 'Search',
+        icon: '\u{1F50D}',
+        category: 'Navigation',
+        action: () => {
+          setCommandPaletteOpen(false);
+          setSearchOpen(true);
+        },
+      },
+      {
+        id: 'toggle-sidebar',
+        title: 'Toggle Sidebar',
+        icon: '\u{1F4CB}',
+        category: 'View',
+        action: () => {
+          setSidebarOpen((p) => !p);
+          setCommandPaletteOpen(false);
+        },
+      },
+      {
+        id: 'import-notion',
+        title: 'Import from Notion',
+        icon: '\u{1F4E5}',
+        category: 'Import / Export',
+        action: () => {
+          setCommandPaletteOpen(false);
+          handleOpenImport('notion');
+        },
+      },
+      {
+        id: 'import-obsidian',
+        title: 'Import from Obsidian',
+        icon: '\u{1F4E5}',
+        category: 'Import / Export',
+        action: () => {
+          setCommandPaletteOpen(false);
+          handleOpenImport('obsidian');
+        },
+      },
+      {
+        id: 'export-page',
+        title: 'Export Current Page',
+        icon: '\u{1F4E4}',
+        category: 'Import / Export',
+        action: () => {
+          setCommandPaletteOpen(false);
+          handleOpenExport();
+        },
+      },
+      {
+        id: 'manage-spaces',
+        title: 'Manage Spaces',
+        icon: '\u{1F4C2}',
+        category: 'Spaces',
+        action: () => {
+          setCommandPaletteOpen(false);
+          handleOpenSettings('spaces');
+        },
+      },
+    ],
+    [handlePageAdd, handleOpenExport, handleOpenSettings, handleOpenImport],
+  );
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
-  const contentLoaded = selectedPageId ? (selectedPageId in pageContents) : false;
+  const contentLoaded = selectedPageId ? selectedPageId in pageContents : false;
   const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
   const showOnboarding = !hasStarted;
@@ -1182,7 +1446,10 @@ export function App() {
   // Show loading state while backend loads persisted data
   if (!ready) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-white dark:bg-gray-900 text-gray-500" data-testid="app-loading">
+      <div
+        className="h-dvh flex items-center justify-center bg-white dark:bg-gray-900 text-gray-500"
+        data-testid="app-loading"
+      >
         Loading...
       </div>
     );
@@ -1197,7 +1464,14 @@ export function App() {
           data-testid="sidebar-toggle"
           title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M3 5h14M3 10h14M3 15h14" />
           </svg>
         </button>
@@ -1220,7 +1494,11 @@ export function App() {
       </header>
       <main className="flex flex-1 min-h-0">
         {sidebarOpen && (
-          <div className="cept-sidebar-backdrop" onClick={() => setSidebarOpen(false)} data-testid="sidebar-backdrop" />
+          <div
+            className="cept-sidebar-backdrop"
+            onClick={() => setSidebarOpen(false)}
+            data-testid="sidebar-backdrop"
+          />
         )}
         {sidebarOpen && activeSpace === 'user' && (
           <Sidebar
@@ -1243,7 +1521,10 @@ export function App() {
             onSearch={() => setSearchOpen(true)}
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
-            onOpenTrash={() => { setShowTrash(true); setSelectedPageId(undefined); }}
+            onOpenTrash={() => {
+              setShowTrash(true);
+              setSelectedPageId(undefined);
+            }}
             spaceName={spaceName}
             onSpaceRename={(name) => handleSpaceRename(userSpaceId, name)}
             spaces={spaceInfoList.map((s) => ({ id: s.id, name: s.name }))}
@@ -1268,15 +1549,33 @@ export function App() {
             selectedPageId={docsSelectedPageId}
             onPageSelect={handleDocsPageSelect}
             onPageToggle={handleDocsPageToggle}
-            onPageAdd={() => {/* read-only */}}
-            onPageRename={() => {/* read-only */}}
-            onPageDuplicate={() => {/* read-only */}}
-            onPageDelete={() => {/* read-only */}}
-            onPageMoveToRoot={() => {/* read-only */}}
-            onToggleFavorite={() => {/* read-only */}}
-            onRestoreFromTrash={() => {/* read-only */}}
-            onPermanentDelete={() => {/* read-only */}}
-            onEmptyTrash={() => {/* read-only */}}
+            onPageAdd={() => {
+              /* read-only */
+            }}
+            onPageRename={() => {
+              /* read-only */
+            }}
+            onPageDuplicate={() => {
+              /* read-only */
+            }}
+            onPageDelete={() => {
+              /* read-only */
+            }}
+            onPageMoveToRoot={() => {
+              /* read-only */
+            }}
+            onToggleFavorite={() => {
+              /* read-only */
+            }}
+            onRestoreFromTrash={() => {
+              /* read-only */
+            }}
+            onPermanentDelete={() => {
+              /* read-only */
+            }}
+            onEmptyTrash={() => {
+              /* read-only */
+            }}
             onSearch={() => setSearchOpen(true)}
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
@@ -1301,7 +1600,14 @@ export function App() {
             docsSelectedPageId && DOCS_CONTENT[docsSelectedPageId] ? (
               <>
                 <div className="cept-docs-banner" data-testid="docs-banner">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
                     <rect x="2" y="1" width="12" height="14" rx="1" />
                     <path d="M5 5h6M5 8h6M5 11h3" />
                   </svg>
@@ -1316,7 +1622,7 @@ export function App() {
                       title="View source on GitHub"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
                       </svg>
                     </a>
                   )}
@@ -1325,7 +1631,9 @@ export function App() {
                   key={`docs-${docsSelectedPageId}`}
                   content={resolveDocsContent(DOCS_CONTENT[docsSelectedPageId])}
                   placeholder=""
-                  onUpdate={() => {/* read-only */}}
+                  onUpdate={() => {
+                    /* read-only */
+                  }}
                   editable={false}
                 />
                 {docsSelectedNode && docsSelectedNode.children.length > 0 && (
@@ -1342,7 +1650,14 @@ export function App() {
             )
           ) : spaceLoadError ? (
             <div className="cept-space-error" data-testid="space-load-error">
-              <svg width="32" height="32" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <circle cx="8" cy="8" r="7" />
                 <path d="M8 4v5M8 11v1" />
               </svg>
@@ -1358,7 +1673,10 @@ export function App() {
                 </button>
                 <button
                   className="cept-space-error-btn cept-space-error-btn--secondary"
-                  onClick={() => { setSpaceLoadError(undefined); handleSwitchSpace('default'); }}
+                  onClick={() => {
+                    setSpaceLoadError(undefined);
+                    handleSwitchSpace('default');
+                  }}
                   data-testid="space-error-switch-default"
                 >
                   Switch to default space
@@ -1374,7 +1692,14 @@ export function App() {
           ) : showTrash ? (
             <div className="cept-trash-view" data-testid="trash-view">
               <h2 className="cept-trash-view-title">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
                   <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
                 </svg>
                 Trash
@@ -1385,9 +1710,17 @@ export function App() {
                 <>
                   <div className="cept-trash-view-list">
                     {trash.map((item) => (
-                      <div key={item.id} className="cept-trash-view-item" data-testid={`trash-item-${item.id}`}>
-                        <span className="cept-trash-view-item-icon">{item.icon ?? '\u{1F4C4}'}</span>
-                        <span className="cept-trash-view-item-title">{item.title || 'Untitled'}</span>
+                      <div
+                        key={item.id}
+                        className="cept-trash-view-item"
+                        data-testid={`trash-item-${item.id}`}
+                      >
+                        <span className="cept-trash-view-item-icon">
+                          {item.icon ?? '\u{1F4C4}'}
+                        </span>
+                        <span className="cept-trash-view-item-title">
+                          {item.title || 'Untitled'}
+                        </span>
                         <button
                           className="cept-trash-view-action"
                           onClick={() => handleRestoreFromTrash(item.id)}
@@ -1436,13 +1769,12 @@ export function App() {
                   onUpdate={handleContentUpdate}
                 />
               ) : (
-                <div className="text-center text-gray-400 mt-8" data-testid="page-loading">Loading...</div>
+                <div className="text-center text-gray-400 mt-8" data-testid="page-loading">
+                  Loading...
+                </div>
               )}
               {selectedNode.children.length > 0 && (
-                <FolderView
-                  children={selectedNode.children}
-                  onPageSelect={handlePageSelect}
-                />
+                <FolderView children={selectedNode.children} onPageSelect={handlePageSelect} />
               )}
             </>
           ) : (
@@ -1470,7 +1802,10 @@ export function App() {
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
         onSearch={handleSearch}
-        onResultSelect={(pageId) => { handlePageSelect(pageId); setSearchOpen(false); }}
+        onResultSelect={(pageId) => {
+          handlePageSelect(pageId);
+          setSearchOpen(false);
+        }}
       />
       <SettingsModal
         isOpen={settingsOpen}
@@ -1491,14 +1826,25 @@ export function App() {
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
         backend={backend}
-        onNavigateToPage={(pageId) => { setSettingsOpen(false); handlePageSelect(pageId); }}
+        onNavigateToPage={(pageId) => {
+          setSettingsOpen(false);
+          handlePageSelect(pageId);
+        }}
         onRefreshSpace={handleRefreshSpace}
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
         onClose={() => setAddSpaceWizardOpen(false)}
-        onCreateSpace={(name) => { handleCreateSpace(name); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
-        onAddRemoteRepo={(config) => { handleAddRemoteRepo(config); setAddSpaceWizardOpen(false); setSettingsOpen(false); }}
+        onCreateSpace={(name) => {
+          handleCreateSpace(name);
+          setAddSpaceWizardOpen(false);
+          setSettingsOpen(false);
+        }}
+        onAddRemoteRepo={(config) => {
+          handleAddRemoteRepo(config);
+          setAddSpaceWizardOpen(false);
+          setSettingsOpen(false);
+        }}
       />
       <ImportDialog
         isOpen={importDialogOpen}
@@ -1509,11 +1855,15 @@ export function App() {
       <ExportDialog
         isOpen={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}
-        page={selectedPageId && selectedNode ? {
-          title: selectedNode.title,
-          markdown: pageContents[selectedPageId] ?? '',
-          path: `pages/${selectedPageId}.md`,
-        } as PageContent : null}
+        page={
+          selectedPageId && selectedNode
+            ? ({
+                title: selectedNode.title,
+                markdown: pageContents[selectedPageId] ?? '',
+                path: `pages/${selectedPageId}.md`,
+              } as PageContent)
+            : null
+        }
       />
       {cloneStatus.active && (
         <div className="cept-clone-overlay" data-testid="clone-status">
@@ -1552,7 +1902,6 @@ function toggleNode(nodes: PageTreeNode[], id: string): PageTreeNode[] {
     return node;
   });
 }
-
 
 const DEMO_CONTENT = `This is a demo space running in your browser. All data is stored locally.
 

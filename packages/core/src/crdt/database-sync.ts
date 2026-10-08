@@ -46,12 +46,7 @@ export interface DatabaseSyncConfig {
 }
 
 export type DatabaseSyncEventType =
-  | 'change-queued'
-  | 'changes-sent'
-  | 'changes-received'
-  | 'change-applied'
-  | 'conflict'
-  | 'error';
+  'change-queued' | 'changes-sent' | 'changes-received' | 'change-applied' | 'conflict' | 'error';
 
 export interface DatabaseSyncEvent {
   type: DatabaseSyncEventType;
@@ -139,9 +134,7 @@ export class DatabaseSyncAdapter {
 
   /** Receive changes from a remote peer */
   async receiveChanges(changes: DatabaseChange[]): Promise<void> {
-    const newChanges = changes.filter(
-      (c) => !this.appliedChangeIds.has(c.changeId),
-    );
+    const newChanges = changes.filter((c) => !this.appliedChangeIds.has(c.changeId));
 
     if (newChanges.length === 0) return;
 

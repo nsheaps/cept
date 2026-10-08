@@ -82,10 +82,7 @@ export class ElectronBridge implements PlatformBridge {
     filters?: FileFilter[];
     properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>;
   }): Promise<FileDialogResult> {
-    return this.ipc.invoke(
-      IPC_CHANNELS.SHOW_OPEN_DIALOG,
-      options,
-    ) as Promise<FileDialogResult>;
+    return this.ipc.invoke(IPC_CHANNELS.SHOW_OPEN_DIALOG, options) as Promise<FileDialogResult>;
   }
 
   async showSaveDialog(options: {
@@ -93,10 +90,7 @@ export class ElectronBridge implements PlatformBridge {
     defaultPath?: string;
     filters?: FileFilter[];
   }): Promise<FileDialogResult> {
-    return this.ipc.invoke(
-      IPC_CHANNELS.SHOW_SAVE_DIALOG,
-      options,
-    ) as Promise<FileDialogResult>;
+    return this.ipc.invoke(IPC_CHANNELS.SHOW_SAVE_DIALOG, options) as Promise<FileDialogResult>;
   }
 
   getWindowState(): WindowState {

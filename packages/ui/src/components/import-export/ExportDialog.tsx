@@ -24,9 +24,10 @@ export function ExportDialog({ isOpen, onClose, page }: ExportDialogProps) {
     setExported(result);
 
     // Trigger download
-    const blobContent = typeof result.content === 'string'
-      ? result.content
-      : new Uint8Array(result.content) as BlobPart;
+    const blobContent =
+      typeof result.content === 'string'
+        ? result.content
+        : (new Uint8Array(result.content) as BlobPart);
     const blob = new Blob([blobContent], { type: result.mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -45,14 +46,14 @@ export function ExportDialog({ isOpen, onClose, page }: ExportDialogProps) {
 
   return (
     <div className="cept-modal-overlay" onClick={onClose} data-testid="export-dialog">
-      <div className="cept-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+      <div
+        className="cept-modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 400 }}
+      >
         <div className="cept-modal-header">
           <h2>Export Page</h2>
-          <button
-            className="cept-modal-close"
-            onClick={handleClose}
-            data-testid="export-close"
-          >
+          <button className="cept-modal-close" onClick={handleClose} data-testid="export-close">
             &times;
           </button>
         </div>
@@ -85,8 +86,8 @@ export function ExportDialog({ isOpen, onClose, page }: ExportDialogProps) {
                     checked={includeFrontMatter}
                     onChange={(e) => setIncludeFrontMatter(e.target.checked)}
                     data-testid="export-frontmatter"
-                  />
-                  {' '}Include front matter
+                  />{' '}
+                  Include front matter
                 </label>
               )}
 
@@ -100,9 +101,7 @@ export function ExportDialog({ isOpen, onClose, page }: ExportDialogProps) {
             </div>
           ) : (
             <div data-testid="export-done">
-              <p style={{ color: 'green', fontWeight: 'bold' }}>
-                Exported: {exported.filename}
-              </p>
+              <p style={{ color: 'green', fontWeight: 'bold' }}>Exported: {exported.filename}</p>
               <button onClick={handleClose} data-testid="export-done-close">
                 Done
               </button>

@@ -10,11 +10,7 @@
 import type { AwarenessUser } from '@cept/core';
 
 /** Client → Server messages */
-export type ClientMessage =
-  | JoinMessage
-  | LeaveMessage
-  | AwarenessUpdateMessage
-  | SyncMessage;
+export type ClientMessage = JoinMessage | LeaveMessage | AwarenessUpdateMessage | SyncMessage;
 
 export interface JoinMessage {
   type: 'join';

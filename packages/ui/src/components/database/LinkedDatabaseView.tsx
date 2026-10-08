@@ -58,10 +58,13 @@ export function LinkedDatabaseView({
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(config.name);
 
-  const handleViewTypeChange = useCallback((viewType: ViewType) => {
-    onViewTypeChange?.(viewType);
-    onConfigChange?.({ ...config, viewType });
-  }, [config, onViewTypeChange, onConfigChange]);
+  const handleViewTypeChange = useCallback(
+    (viewType: ViewType) => {
+      onViewTypeChange?.(viewType);
+      onConfigChange?.({ ...config, viewType });
+    },
+    [config, onViewTypeChange, onConfigChange],
+  );
 
   const handleNameSave = useCallback(() => {
     setEditingName(false);
@@ -72,13 +75,16 @@ export function LinkedDatabaseView({
     }
   }, [nameValue, config, onConfigChange]);
 
-  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleNameSave();
-    if (e.key === 'Escape') {
-      setEditingName(false);
-      setNameValue(config.name);
-    }
-  }, [handleNameSave, config.name]);
+  const handleNameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') handleNameSave();
+      if (e.key === 'Escape') {
+        setEditingName(false);
+        setNameValue(config.name);
+      }
+    },
+    [handleNameSave, config.name],
+  );
 
   const renderProps: LinkedViewRenderProps = {
     properties,

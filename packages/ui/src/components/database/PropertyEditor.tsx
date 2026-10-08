@@ -7,7 +7,15 @@ export interface PropertyEditorProps {
   placeholder?: string;
 }
 
-function TextEditor({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+function TextEditor({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <input
       className="cept-prop-editor-input"
@@ -20,7 +28,13 @@ function TextEditor({ value, onChange, placeholder }: { value: string; onChange:
   );
 }
 
-function NumberEditor({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+function NumberEditor({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
   return (
     <input
       className="cept-prop-editor-input"
@@ -45,9 +59,7 @@ function CheckboxEditor({ value, onChange }: { value: boolean; onChange: (v: boo
         onChange={(e) => onChange(e.target.checked)}
         data-testid="prop-editor-checkbox-input"
       />
-      <span className="cept-prop-editor-checkbox-label">
-        {value ? '\u2611' : '\u2610'}
-      </span>
+      <span className="cept-prop-editor-checkbox-label">{value ? '\u2611' : '\u2610'}</span>
     </label>
   );
 }
@@ -147,12 +159,7 @@ export function PropertyEditor({ type, value, onChange, placeholder }: PropertyE
       return <TextEditor value={strVal} onChange={onChange} placeholder={placeholder} />;
 
     case 'number':
-      return (
-        <NumberEditor
-          value={value != null ? Number(value) : null}
-          onChange={onChange}
-        />
-      );
+      return <NumberEditor value={value != null ? Number(value) : null} onChange={onChange} />;
 
     case 'checkbox':
       return <CheckboxEditor value={Boolean(value)} onChange={onChange} />;
@@ -174,11 +181,15 @@ export function PropertyEditor({ type, value, onChange, placeholder }: PropertyE
 
     case 'created_time':
     case 'last_edited_time':
-      return <ReadOnlyEditor value={strVal} label={type === 'created_time' ? 'Created' : 'Edited'} />;
+      return (
+        <ReadOnlyEditor value={strVal} label={type === 'created_time' ? 'Created' : 'Edited'} />
+      );
 
     case 'created_by':
     case 'last_edited_by':
-      return <ReadOnlyEditor value={strVal} label={type === 'created_by' ? 'Created by' : 'Edited by'} />;
+      return (
+        <ReadOnlyEditor value={strVal} label={type === 'created_by' ? 'Created by' : 'Edited by'} />
+      );
 
     case 'formula':
       return <ReadOnlyEditor value={strVal} label="Formula" />;

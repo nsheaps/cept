@@ -35,6 +35,7 @@ The project was bootstrapped and developed through 10 phases in the original ini
 **What was built is a working v0.1.0 with ~33,000 lines of real TypeScript.** The implementations are substantive — not stubs. However, many modules exist as **isolated, well-implemented components that are not connected to the running application**. The app shell (`packages/ui/src/App.tsx`) uses **raw localStorage** for persistence rather than the `StorageBackend` interface. The actual `BrowserFsBackend` (lightning-fs/IndexedDB), `LocalFsBackend`, and `GitBackend` implementations exist and have tests, but they aren't wired to the UI.
 
 **What works end-to-end today:**
+
 - TipTap editor with all 20+ block types
 - Sidebar page tree with infinite nesting
 - localStorage persistence (survives page reloads)
@@ -44,6 +45,7 @@ The project was bootstrapped and developed through 10 phases in the original ini
 - Mobile-responsive UI
 
 **What exists as real code but is NOT accessible from the running app:**
+
 - Database views (table, board, calendar, gallery, list) — components exist, not routed
 - Knowledge graph (D3 force-directed) — component exists, no graph builder feeds it data
 - Git integration (commit, push, pull, branch, merge) — GitBackend exists, not wired to UI
@@ -60,32 +62,33 @@ The project was bootstrapped and developed through 10 phases in the original ini
 
 The complete git history tells the story. Key milestones:
 
-| Commit | Description |
-|--------|-------------|
-| `16fd326` | Phase -1 complete: Claude Code infrastructure bootstrap |
-| `0439217` | Phase 0: Monorepo initialized (Nx, Bun, TypeScript) |
-| `2a8bf2f` | T1.1: BrowserFsBackend and LocalFsBackend implementations |
-| `b6d7e07` | T1.2: GitBackend with isomorphic-git |
-| `4aeef8a` | T1.3+T1.4: Markdown parser and YAML front matter |
-| `e11238a` | T1.5: Database engine with CRUD, filter, sort, group |
-| `efc54b0` | T2.1: TipTap editor with basic blocks |
-| `04dddee` | T3.9: Knowledge Graph — global view with D3 |
-| `7eb3f5f` | T4.1: Database schema UI |
-| `60e65f5` | T5.1: GitHub OAuth flow |
-| `ff9e409` | T6.1: Collaboration provider (Yjs) |
-| `b6480a6` | T7.1: Desktop shell with PlatformBridge |
-| `06d704e` | T8.1: Notion export ZIP importer |
-| `c967f91` | T9.1: Documentation site setup |
-| `ad8b4c3` | T10.4: First release preparation (v0.1.0) |
-| `97c82b0` | Fix: Wire up App integration layer, Tailwind build, layout |
+| Commit    | Description                                                               |
+| --------- | ------------------------------------------------------------------------- |
+| `16fd326` | Phase -1 complete: Claude Code infrastructure bootstrap                   |
+| `0439217` | Phase 0: Monorepo initialized (Nx, Bun, TypeScript)                       |
+| `2a8bf2f` | T1.1: BrowserFsBackend and LocalFsBackend implementations                 |
+| `b6d7e07` | T1.2: GitBackend with isomorphic-git                                      |
+| `4aeef8a` | T1.3+T1.4: Markdown parser and YAML front matter                          |
+| `e11238a` | T1.5: Database engine with CRUD, filter, sort, group                      |
+| `efc54b0` | T2.1: TipTap editor with basic blocks                                     |
+| `04dddee` | T3.9: Knowledge Graph — global view with D3                               |
+| `7eb3f5f` | T4.1: Database schema UI                                                  |
+| `60e65f5` | T5.1: GitHub OAuth flow                                                   |
+| `ff9e409` | T6.1: Collaboration provider (Yjs)                                        |
+| `b6480a6` | T7.1: Desktop shell with PlatformBridge                                   |
+| `06d704e` | T8.1: Notion export ZIP importer                                          |
+| `c967f91` | T9.1: Documentation site setup                                            |
+| `ad8b4c3` | T10.4: First release preparation (v0.1.0)                                 |
+| `97c82b0` | Fix: Wire up App integration layer, Tailwind build, layout                |
 | `867939d` | Add localStorage persistence, service worker types, App integration tests |
-| `d3203a6` | Add dark mode CSS, mobile sidebar backdrop, 49 new tests |
-| `98b35f0` | Fix persistence, sidebar, trash/favorites discoverability |
-| `d572437` | Add Settings modal, rename workspace to space, SVG icons |
-| `3d90b75` | Add built-in docs space, move app menu to sidebar |
-| `d313398` | Add inline space renaming, fix review issues |
+| `d3203a6` | Add dark mode CSS, mobile sidebar backdrop, 49 new tests                  |
+| `98b35f0` | Fix persistence, sidebar, trash/favorites discoverability                 |
+| `d572437` | Add Settings modal, rename workspace to space, SVG icons                  |
+| `3d90b75` | Add built-in docs space, move app menu to sidebar                         |
+| `d313398` | Add inline space renaming, fix review issues                              |
 
 **Post-release polish work** (commits after `ad8b4c3`) focused on:
+
 - Wiring up the actual App integration layer (connecting stores to components)
 - localStorage persistence (making data survive page reloads)
 - Dark mode CSS implementation
@@ -107,6 +110,7 @@ The complete git history tells the story. Key milestones:
 ### 1.5 What "Done" Actually Means
 
 The current Phase 1 (from `docs/content/reference/roadmap.md`) is genuinely complete and functional:
+
 - Block editor with 20+ block types (TipTap-based)
 - Slash command menu with search/filter
 - Page management (create, rename, delete, duplicate, move)
@@ -121,6 +125,7 @@ The current Phase 1 (from `docs/content/reference/roadmap.md`) is genuinely comp
 - Built-in documentation space
 
 **What exists as code but needs to be elevated to production quality:**
+
 - Storage backends exist as interfaces + localStorage-based implementations, but `BrowserFsBackend` (lightning-fs/IndexedDB), `LocalFsBackend` (real filesystem), and `GitBackend` (isomorphic-git) need to be wired up as the actual persistence layer
 - Database engine exists in `@cept/core` with tests, but the UI views (table, board, calendar, etc.) exist as components but aren't fully integrated with real data flow
 - Knowledge graph components exist but use in-memory data
@@ -133,19 +138,20 @@ The current Phase 1 (from `docs/content/reference/roadmap.md`) is genuinely comp
 
 ### 2.1 Packages Overview
 
-| Package | Path | Lines | State |
-|---------|------|-------|-------|
-| `@cept/core` | `packages/core/` | ~5,000 | Real implementations: storage backends (BrowserFsBackend uses lightning-fs, GitBackend uses isomorphic-git), database engine, markdown parser, search index (TF-IDF), formula evaluator (hand-written lexer+parser), template engine, Git sync/commit/merge engines, GitHub OAuth. **Gap:** Graph builder missing (types only, no page scanner). GitBackend's `diff` has empty hunks. |
-| `@cept/ui` | `packages/ui/` | ~10,000 | Real implementations: TipTap editor with all custom extensions, sidebar, all database view components, knowledge graph (D3 force-directed), slash menu, command palette, settings, conflict resolver, history viewer, repo picker, presence UI. **Gap:** App.tsx uses localStorage not StorageBackend. Database views, graph, git UI, collab UI not routed in app shell. Map view has no Leaflet — shows placeholder. |
-| `@cept/web` | `packages/web/` | ~1,500 | Working Vite SPA (13-line main.tsx mounting App). PWA service worker. Deployed to GitHub Pages. |
-| `@cept/desktop` | `packages/desktop/` | ~800 | ElectronBridge with IPC channel definitions, PlatformBridge interface, AutoUpdater. **Gap:** No Electron main process, no BrowserWindow, no preload script. Bridge exists but shell doesn't. |
-| `@cept/mobile` | `packages/mobile/` | ~600 | MobileBridge interface, WebMobileBridge fallback, MobileAuth. **Gap:** No Capacitor project files, no iOS/Android folders. |
-| `@cept/signaling` | `packages/signaling-server/` | ~400 | RoomManager (~257 lines) — complete room join/leave/disconnect, awareness broadcasting, sync message forwarding. **Gap:** No WebSocket server entry point (no HTTP listener). |
-| `@cept/docs` | `docs/` | ~2,000 | 11 real Markdown docs (intro, quick-start, features, platform support, migration guides, shortcuts, roadmap, comparisons). Rendered in app as built-in docs space. |
+| Package           | Path                         | Lines   | State                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ---------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@cept/core`      | `packages/core/`             | ~5,000  | Real implementations: storage backends (BrowserFsBackend uses lightning-fs, GitBackend uses isomorphic-git), database engine, markdown parser, search index (TF-IDF), formula evaluator (hand-written lexer+parser), template engine, Git sync/commit/merge engines, GitHub OAuth. **Gap:** Graph builder missing (types only, no page scanner). GitBackend's `diff` has empty hunks.                                 |
+| `@cept/ui`        | `packages/ui/`               | ~10,000 | Real implementations: TipTap editor with all custom extensions, sidebar, all database view components, knowledge graph (D3 force-directed), slash menu, command palette, settings, conflict resolver, history viewer, repo picker, presence UI. **Gap:** App.tsx uses localStorage not StorageBackend. Database views, graph, git UI, collab UI not routed in app shell. Map view has no Leaflet — shows placeholder. |
+| `@cept/web`       | `packages/web/`              | ~1,500  | Working Vite SPA (13-line main.tsx mounting App). PWA service worker. Deployed to GitHub Pages.                                                                                                                                                                                                                                                                                                                       |
+| `@cept/desktop`   | `packages/desktop/`          | ~800    | ElectronBridge with IPC channel definitions, PlatformBridge interface, AutoUpdater. **Gap:** No Electron main process, no BrowserWindow, no preload script. Bridge exists but shell doesn't.                                                                                                                                                                                                                          |
+| `@cept/mobile`    | `packages/mobile/`           | ~600    | MobileBridge interface, WebMobileBridge fallback, MobileAuth. **Gap:** No Capacitor project files, no iOS/Android folders.                                                                                                                                                                                                                                                                                            |
+| `@cept/signaling` | `packages/signaling-server/` | ~400    | RoomManager (~257 lines) — complete room join/leave/disconnect, awareness broadcasting, sync message forwarding. **Gap:** No WebSocket server entry point (no HTTP listener).                                                                                                                                                                                                                                         |
+| `@cept/docs`      | `docs/`                      | ~2,000  | 11 real Markdown docs (intro, quick-start, features, platform support, migration guides, shortcuts, roadmap, comparisons). Rendered in app as built-in docs space.                                                                                                                                                                                                                                                    |
 
 ### 2.2 What Works End-to-End Today
 
 Open `bun run dev:web`, and you get a working note-taking app:
+
 - Create/edit/delete pages with rich block editing
 - Slash commands to insert any block type
 - Sidebar navigation with page tree
@@ -206,20 +212,20 @@ The single biggest piece of remaining work is replacing the localStorage persist
 
 See the full roadmap in Section 4, but the high-level gaps are:
 
-| Area | Gap |
-|------|-----|
-| **Storage** | Real IndexedDB, filesystem, and Git backends replacing localStorage |
-| **Data Persistence** | Markdown file roundtripping (not just in-memory blocks) |
-| **Databases** | Full integration of DB engine → UI views with real data |
-| **Knowledge Graph** | Real link extraction from pages, not sample data |
-| **Templates** | Integration with storage backend (load/save .cept/templates/) |
-| **Import/Export** | Notion ZIP and Obsidian vault importers need real file I/O |
-| **Git** | Auto-commit, auto-branch, sync engine with real isomorphic-git |
-| **Collaboration** | Yjs CRDTs wired to TipTap with real signaling server |
-| **Desktop** | Electron/Electrobun shells tested and packaged |
-| **Mobile** | Capacitor builds tested |
-| **MCP Server** | New feature — expose Cept spaces to AI assistants |
-| **Public Rendering** | New feature — read-only GitHub Pages renderer |
+| Area                 | Gap                                                                 |
+| -------------------- | ------------------------------------------------------------------- |
+| **Storage**          | Real IndexedDB, filesystem, and Git backends replacing localStorage |
+| **Data Persistence** | Markdown file roundtripping (not just in-memory blocks)             |
+| **Databases**        | Full integration of DB engine → UI views with real data             |
+| **Knowledge Graph**  | Real link extraction from pages, not sample data                    |
+| **Templates**        | Integration with storage backend (load/save .cept/templates/)       |
+| **Import/Export**    | Notion ZIP and Obsidian vault importers need real file I/O          |
+| **Git**              | Auto-commit, auto-branch, sync engine with real isomorphic-git      |
+| **Collaboration**    | Yjs CRDTs wired to TipTap with real signaling server                |
+| **Desktop**          | Electron/Electrobun shells tested and packaged                      |
+| **Mobile**           | Capacitor builds tested                                             |
+| **MCP Server**       | New feature — expose Cept spaces to AI assistants                   |
+| **Public Rendering** | New feature — read-only GitHub Pages renderer                       |
 
 ---
 
@@ -232,6 +238,7 @@ The roadmap has been reorganized from the original init.md's 10 phases into a mo
 This is the foundational work that everything else depends on. The core insight: **the backend implementations already exist and have tests**. The gap is wiring them to the app shell.
 
 **Tasks:**
+
 - P2.1: Fix known bugs — GitBackend `node:fs` hardcode, diff empty hunks, signaling server entry point
 - P2.2: Harden Markdown parser/serializer roundtrip — fuzz-test with all block types, fix `extractText` inline formatting loss
 - P2.3: **Replace App.tsx localStorage with BrowserFsBackend** — this is the keystone task. Wire workspace store → `BrowserFsBackend` → real Markdown files in virtual IndexedDB filesystem
@@ -250,6 +257,7 @@ This is the foundational work that everything else depends on. The core insight:
 The database engine in `@cept/core` is complete (CRUD, filter, sort, group, formulas, relations, rollups all have tests). All 5 view components exist in `@cept/ui` (table ~282 LOC, board ~196 LOC, calendar ~256 LOC, gallery, list). **The gap is routing them into the app shell and connecting them to real data via StorageBackend.**
 
 **Tasks:**
+
 - P3.1: Add database navigation — create database button in sidebar, database list section, route to database views
 - P3.2: Wire database engine to StorageBackend (already done in P2.5, validate it works)
 - P3.3: Wire TableView to real database data — connect the existing component to the engine's CRUD/filter/sort
@@ -268,6 +276,7 @@ The database engine in `@cept/core` is complete (CRUD, filter, sort, group, form
 The D3 KnowledgeGraph component is a real force-directed graph implementation (~400 LOC) with zoom, drag, global/local mode, depth slider, and color groups. The template engine is complete (~204 LOC) with variable substitution. **The gap: no graph builder exists to scan pages and extract links, and templates aren't accessible from the app.**
 
 **Tasks:**
+
 - P4.1: **Implement graph builder** in `packages/core/src/graph/` — scan all pages via StorageBackend, extract internal links from Markdown, extract `<!-- cept:mention -->` references, extract database relations, build `GraphData` (this is the biggest gap)
 - P4.2: Wire KnowledgeGraph component into app shell — add route/panel to navigate to it
 - P4.3: Implement backlinks panel (pages that link to the current page — derived from graph data)
@@ -283,6 +292,7 @@ The D3 KnowledgeGraph component is a real force-directed graph implementation (~
 All Git subsystem implementations exist in `@cept/core`: sync engine (~280 LOC), auto-commit (~200 LOC), merge engine (~250 LOC), branch strategy (~180 LOC), GitHub OAuth (~543 LOC). UI components for repo picker, conflict resolver, history viewer, avatar stack, cursor overlay all exist. **The gap: none of this is accessible from the app shell, and the CRDT layer has no concrete Yjs binding.**
 
 **Tasks:**
+
 - P5.1: Wire GitHub OAuth into app — enable the "Connect a Git repo" onboarding flow
 - P5.2: Wire RepoPicker component into settings/onboarding
 - P5.3: Wire auto-commit engine to the app — trigger on page saves when using GitBackend
@@ -300,6 +310,7 @@ All Git subsystem implementations exist in `@cept/core`: sync engine (~280 LOC),
 ElectronBridge exists (~157 LOC) with IPC channel definitions. MobileBridge interface and WebMobileBridge fallback exist. **The gap: no Electron main process/BrowserWindow, no Capacitor project files.**
 
 **Tasks:**
+
 - P6.1: **Create Electron main process** — `main.ts` with BrowserWindow, preload script, IPC handlers connecting to ElectronBridge
 - P6.2: Wire native "Open Folder" dialog → LocalFsBackend
 - P6.3: Test Electron packaging (electron-builder) — `.exe`, `.dmg`, `.AppImage`
@@ -312,6 +323,7 @@ ElectronBridge exists (~157 LOC) with IPC channel definitions. MobileBridge inte
 ### Phase 7: Polish, Observability & Ecosystem (Lower Priority)
 
 **Tasks:**
+
 - P7.1: Drag-and-drop page reordering in sidebar (real persistence)
 - P7.2: Page cover images
 - P7.3: Page icons (emoji picker + custom upload)
@@ -327,6 +339,7 @@ ElectronBridge exists (~157 LOC) with IPC channel definitions. MobileBridge inte
 ### Phase 8: Integration & Public Rendering (New Features)
 
 **Tasks:**
+
 - P8.1: MCP server — expose Cept spaces to AI assistants (tools: CRUD pages/databases, search)
 - P8.2: MCP resources — page content, database schemas, space metadata
 - P8.3: MCP prompts — pre-built prompts for common tasks
@@ -350,6 +363,7 @@ This is the most critical phase. Every subsequent feature depends on real file-b
 **Why:** localStorage has a 5-10MB limit and no file/directory semantics. lightning-fs gives us a proper virtual filesystem that works with isomorphic-git.
 
 **Implementation:**
+
 - The existing `BrowserFsBackend` already uses `@isomorphic-git/lightning-fs` (~241 LOC). The issue is that `App.tsx` bypasses it and uses raw localStorage. Wire the existing backend implementation into the app.
 - File paths follow the workspace layout from init.md Section 4.6
 - Pages stored as Markdown files in `pages/`
@@ -377,6 +391,7 @@ The storage system has three tiers that use different browser APIs:
 **Why:** If roundtripping is lossy, user data gets corrupted on every save.
 
 **Key concerns:**
+
 - `<!-- cept:block -->` HTML comments must be preserved exactly
 - YAML front matter must survive roundtrip
 - GFM extensions (tables, task lists, strikethrough) must be handled
@@ -389,6 +404,7 @@ The storage system has three tiers that use different browser APIs:
 **What:** Replace the Zustand stores' direct localStorage access with `StorageBackend` calls.
 
 **Flow:**
+
 1. App boots → creates `BrowserFsBackend` instance
 2. Workspace store calls `backend.listDirectory('pages/')` to discover pages
 3. Page store calls `backend.readFile('pages/my-page.md')` → parse Markdown → populate editor
@@ -402,6 +418,7 @@ The storage system has three tiers that use different browser APIs:
 **What:** Enable the "Open Folder" experience where users point Cept at a directory on disk.
 
 **Browser implementation — File System Access API:**
+
 - Use `window.showDirectoryPicker()` to prompt the user to select a folder
 - Returns a `FileSystemDirectoryHandle` — use it for all file I/O
 - **Persist the handle to IndexedDB** so the user doesn't have to re-pick on every visit
@@ -411,6 +428,7 @@ The storage system has three tiers that use different browser APIs:
 - This is Chromium-only for now (Chrome, Edge, Opera). Firefox and Safari support OPFS but not the picker API. Degrade gracefully.
 
 **Desktop implementation — Node fs:**
+
 - Use Node `fs` via Electron/Electrobun IPC through the `PlatformBridge`
 - The `ElectronBridge` already has IPC channel stubs for this
 
@@ -446,11 +464,13 @@ The database engine in `@cept/core` already implements CRUD, filter, sort, group
 These are **new features** not in the original init.md. Specifications from `docs/content/reference/roadmap.md`:
 
 **MCP Server:**
+
 - Tools: CRUD pages, CRUD database records, search across spaces, manage properties/views
 - Resources: page content, database schemas, space metadata
 - Prompts: "summarize this page", "create meeting notes page", etc.
 
 **GitHub Pages Renderer:**
+
 - Pre-built JS bundle that renders Cept Markdown files as read-only pages
 - Drop-in `<script>` tag — zero build step
 - Full Cept UI in read-only mode (sidebar, search, all block types)
@@ -546,6 +566,7 @@ After EVERY commit, ask yourself:
 ### 6.4 When to Ask for Help
 
 If you encounter:
+
 - An ambiguous requirement in the spec
 - A library limitation that prevents the specified approach
 - A test that seems impossible to make pass
@@ -560,6 +581,7 @@ If you encounter:
 ### 7.1 Per-Task Gate
 
 Every task must pass before moving to the next:
+
 ```bash
 bun run lint       # Zero errors
 bun run typecheck  # Zero errors
@@ -573,6 +595,7 @@ bun run build      # Build succeeds (no bundler errors)
 ### 7.2 Per-Phase Gate
 
 Before starting a new phase, run the full `/phase-gate` command:
+
 1. All tasks in the current phase marked `[x]` in TASKS.md
 2. `bun run validate` passes
 3. No TODO/FIXME comments related to the completed phase
@@ -670,6 +693,7 @@ The current `TASKS.md` has all original tasks marked complete. **Create a new ta
 ### 8.4 Multi-Session Continuity
 
 All work happens on `main`. Push frequently. Each session:
+
 1. `git pull` to get latest
 2. Check for `wip/` branches → rebase onto main, merge, delete
 3. Read TASKS.md → find next task
@@ -699,57 +723,57 @@ These rules are **inviolable**. Read init.md Section 2.4 and Section 5.10.6 for 
 
 ### 10.1 Must-Read Before Starting
 
-| Document | Location | What It Contains |
-|----------|----------|-----------------|
-| **Init prompt** | `.claude/prompts/init.md` | Full spec: architecture, data model, feature requirements, testing strategy |
-| **CLAUDE.md** | `CLAUDE.md` | Project knowledge, key commands, architecture rules |
-| **TASKS.md** | `TASKS.md` | Task tracker — update this as you work |
-| **Roadmap** | `docs/content/reference/roadmap.md` | Current phase status and planned features |
+| Document        | Location                            | What It Contains                                                            |
+| --------------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| **Init prompt** | `.claude/prompts/init.md`           | Full spec: architecture, data model, feature requirements, testing strategy |
+| **CLAUDE.md**   | `CLAUDE.md`                         | Project knowledge, key commands, architecture rules                         |
+| **TASKS.md**    | `TASKS.md`                          | Task tracker — update this as you work                                      |
+| **Roadmap**     | `docs/content/reference/roadmap.md` | Current phase status and planned features                                   |
 
 ### 10.2 Key init.md Sections by Phase
 
-| Phase | Relevant init.md Sections |
-|-------|--------------------------|
-| Phase 2 (Storage) | 2.3 (libraries), 2.4 (abstractions), 4.1-4.7 (data model), 5.10 (storage backends) |
-| Phase 3 (Databases) | 4.3-4.5 (schema, property types, views), 5.1 (editor DB blocks) |
-| Phase 4 (Graph) | 5.8 (knowledge graph spec with D3/3d-force-graph details) |
-| Phase 5 (Git) | 6.1-6.6 (Git ops, auto-commit, branching, conflicts, sync), 7 (auth) |
-| Phase 6 (Desktop/Mobile) | 8.1-8.5 (platform specs, NativeShell) |
-| Phase 7 (Polish) | 5.2-5.5 (sidebar, pages, templates, command palette) |
-| Phase 8 (MCP/Rendering) | roadmap.md Phase 8 section |
+| Phase                    | Relevant init.md Sections                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| Phase 2 (Storage)        | 2.3 (libraries), 2.4 (abstractions), 4.1-4.7 (data model), 5.10 (storage backends) |
+| Phase 3 (Databases)      | 4.3-4.5 (schema, property types, views), 5.1 (editor DB blocks)                    |
+| Phase 4 (Graph)          | 5.8 (knowledge graph spec with D3/3d-force-graph details)                          |
+| Phase 5 (Git)            | 6.1-6.6 (Git ops, auto-commit, branching, conflicts, sync), 7 (auth)               |
+| Phase 6 (Desktop/Mobile) | 8.1-8.5 (platform specs, NativeShell)                                              |
+| Phase 7 (Polish)         | 5.2-5.5 (sidebar, pages, templates, command palette)                               |
+| Phase 8 (MCP/Rendering)  | roadmap.md Phase 8 section                                                         |
 
 ### 10.3 Key Source Files
 
-| File | Purpose |
-|------|---------|
-| `packages/core/src/storage/backend.ts` | `StorageBackend` interface + `BackendCapabilities` |
-| `packages/core/src/storage/browser-fs.ts` | Current BrowserFsBackend (needs lightning-fs upgrade) |
-| `packages/core/src/storage/git-backend.ts` | Current GitBackend (needs real isomorphic-git) |
-| `packages/core/src/database/engine.ts` | Database engine (CRUD, filter, sort, group) |
-| `packages/core/src/markdown/parser.ts` | Markdown ↔ Block tree parser |
-| `packages/core/src/search/index.ts` | Search index |
-| `packages/core/src/graph/index.ts` | Knowledge graph builder |
-| `packages/ui/src/stores/` | Zustand stores (workspace, page, editor, settings) |
-| `packages/ui/src/components/editor/CeptEditor.tsx` | TipTap editor wrapper |
-| `packages/ui/src/components/sidebar/Sidebar.tsx` | Navigation sidebar |
+| File                                               | Purpose                                               |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| `packages/core/src/storage/backend.ts`             | `StorageBackend` interface + `BackendCapabilities`    |
+| `packages/core/src/storage/browser-fs.ts`          | Current BrowserFsBackend (needs lightning-fs upgrade) |
+| `packages/core/src/storage/git-backend.ts`         | Current GitBackend (needs real isomorphic-git)        |
+| `packages/core/src/database/engine.ts`             | Database engine (CRUD, filter, sort, group)           |
+| `packages/core/src/markdown/parser.ts`             | Markdown ↔ Block tree parser                          |
+| `packages/core/src/search/index.ts`                | Search index                                          |
+| `packages/core/src/graph/index.ts`                 | Knowledge graph builder                               |
+| `packages/ui/src/stores/`                          | Zustand stores (workspace, page, editor, settings)    |
+| `packages/ui/src/components/editor/CeptEditor.tsx` | TipTap editor wrapper                                 |
+| `packages/ui/src/components/sidebar/Sidebar.tsx`   | Navigation sidebar                                    |
 
 ### 10.4 Testing Infrastructure
 
-| Tool | Config | Purpose |
-|------|--------|---------|
-| Vitest | `packages/*/vitest.config.ts` | Unit + integration tests |
-| Playwright | `e2e/playwright.config.ts` | E2E tests |
-| @amiceli/vitest-cucumber | `features/` | BDD Gherkin feature files |
+| Tool                     | Config                        | Purpose                   |
+| ------------------------ | ----------------------------- | ------------------------- |
+| Vitest                   | `packages/*/vitest.config.ts` | Unit + integration tests  |
+| Playwright               | `e2e/playwright.config.ts`    | E2E tests                 |
+| @amiceli/vitest-cucumber | `features/`                   | BDD Gherkin feature files |
 
 ### 10.5 CI/CD
 
-| Workflow | Path | Triggers |
-|----------|------|----------|
-| CI | `.github/workflows/ci.yml` | Push, PR |
-| Preview Deploy | `.github/workflows/preview-deploy.yml` | PR |
+| Workflow        | Path                                    | Triggers          |
+| --------------- | --------------------------------------- | ----------------- |
+| CI              | `.github/workflows/ci.yml`              | Push, PR          |
+| Preview Deploy  | `.github/workflows/preview-deploy.yml`  | PR                |
 | Release Desktop | `.github/workflows/release-desktop.yml` | Release published |
-| Release Web | `.github/workflows/release-web.yml` | Release published |
-| Release Mobile | `.github/workflows/release-mobile.yml` | Release published |
+| Release Web     | `.github/workflows/release-web.yml`     | Release published |
+| Release Mobile  | `.github/workflows/release-mobile.yml`  | Release published |
 
 ---
 
@@ -768,11 +792,13 @@ The following plugins are configured in `.claude/settings.json`:
 **A Ralph loop MUST be used for each phase of development.** The Ralph loop is the mechanism by which the agent runs autonomously, iterating on the same task until it is satisfactorily completed.
 
 **How to use:**
+
 ```
 /ralph-loop "Complete Phase 2 tasks P2.1 through P2.4. For each task: read the spec, write failing tests, implement, refactor, validate with bun run validate, self-review against architecture rules, commit and push. Stop when all 4 tasks pass validation." --max-iterations 20 --completion-promise "PHASE_2_BATCH_COMPLETE"
 ```
 
 **Ralph loop rules for this project:**
+
 1. Each Ralph iteration must complete at least one sub-task or make meaningful progress
 2. The completion promise should only be output when ALL tasks in the batch pass `bun run validate`
 3. If an iteration fails validation, the next iteration must fix the issue before proceeding
@@ -780,6 +806,7 @@ The following plugins are configured in `.claude/settings.json`:
 5. After the Ralph loop completes, verify the full test suite still passes
 
 **Recommended batching for Ralph loops:**
+
 - Phase 2: Run 3 Ralph loops (P2.1-P2.4, P2.5-P2.8, P2.9-P2.12)
 - Phase 3: Run 2 Ralph loops (P3.1-P3.6, P3.7-P3.12)
 - Phase 4: Run 2 Ralph loops (P4.1-P4.5, P4.6-P4.9)
@@ -789,6 +816,7 @@ The following plugins are configured in `.claude/settings.json`:
 ### 11.3 SCM-Utils Review Process
 
 Use the scm-utils plugin's review process for all commits:
+
 - Use `/commit` from scm-utils instead of manual `git add && git commit` — it handles staging, message generation, and validation
 - Use `/update-branch` when rebasing or updating the working branch
 

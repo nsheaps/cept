@@ -29,7 +29,14 @@ export interface GraphViewOptions {
 }
 
 export function buildGraphData(
-  pages: Array<{ id: string; title: string; icon?: string; parent?: string; links?: string[]; group?: string }>,
+  pages: Array<{
+    id: string;
+    title: string;
+    icon?: string;
+    parent?: string;
+    links?: string[];
+    group?: string;
+  }>,
 ): GraphData {
   const nodes: GraphNode[] = pages.map((p) => ({
     id: p.id,
@@ -57,17 +64,15 @@ export function buildGraphData(
   return { nodes, links };
 }
 
-export function filterByDepth(
-  data: GraphData,
-  focusId: string,
-  maxDepth: number,
-): GraphData {
+export function filterByDepth(data: GraphData, focusId: string, maxDepth: number): GraphData {
   if (maxDepth < 0) return { nodes: [], links: [] };
 
   const adjacency = new Map<string, Set<string>>();
   for (const link of data.links) {
-    const s = typeof link.source === 'string' ? link.source : (link.source as unknown as GraphNode).id;
-    const t = typeof link.target === 'string' ? link.target : (link.target as unknown as GraphNode).id;
+    const s =
+      typeof link.source === 'string' ? link.source : (link.source as unknown as GraphNode).id;
+    const t =
+      typeof link.target === 'string' ? link.target : (link.target as unknown as GraphNode).id;
     if (!adjacency.has(s)) adjacency.set(s, new Set());
     if (!adjacency.has(t)) adjacency.set(t, new Set());
     adjacency.get(s)!.add(t);

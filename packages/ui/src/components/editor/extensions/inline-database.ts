@@ -46,24 +46,21 @@ export const InlineDatabase = Node.create<InlineDatabaseOptions>({
     return {
       databaseId: {
         default: null,
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-database-id'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-database-id'),
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-database-id': attributes.databaseId as string,
         }),
       },
       viewType: {
         default: 'table',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-view-type') || 'table',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-view-type') || 'table',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-view-type': attributes.viewType as string,
         }),
       },
       viewId: {
         default: null,
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-view-id'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-view-id'),
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-view-id': attributes.viewId as string | null,
         }),
@@ -110,10 +107,7 @@ export const InlineDatabase = Node.create<InlineDatabaseOptions>({
         ['span', { class: 'cept-inline-database-title' }, title],
         ['span', { class: 'cept-inline-database-view-type' }, viewType],
       ],
-      [
-        'div',
-        { class: 'cept-inline-database-body', 'data-database-id': databaseId },
-      ],
+      ['div', { class: 'cept-inline-database-body', 'data-database-id': databaseId }],
     ] as const;
   },
 

@@ -114,9 +114,7 @@ export function filterCommands(items: CommandItem[], query: string): CommandItem
   if (!query) return items;
   const q = query.toLowerCase();
   return items.filter(
-    (item) =>
-      item.title.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q),
+    (item) => item.title.toLowerCase().includes(q) || item.category.toLowerCase().includes(q),
   );
 }
 

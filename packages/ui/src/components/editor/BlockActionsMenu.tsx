@@ -44,11 +44,7 @@ export function getDefaultBlockActions(): BlockAction[] {
         const node = resolvedPos.nodeAfter;
         if (node) {
           const endPos = pos + node.nodeSize;
-          editor
-            .chain()
-            .focus()
-            .insertContentAt(endPos, node.toJSON())
-            .run();
+          editor.chain().focus().insertContentAt(endPos, node.toJSON()).run();
         }
       },
     },
@@ -57,12 +53,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Text',
       icon: 'T',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .setParagraph()
-          .run();
+        editor.chain().focus().setNodeSelection(pos).setParagraph().run();
       },
     },
     {
@@ -70,12 +61,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Heading 1',
       icon: 'H1',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .setHeading({ level: 1 })
-          .run();
+        editor.chain().focus().setNodeSelection(pos).setHeading({ level: 1 }).run();
       },
     },
     {
@@ -83,12 +69,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Heading 2',
       icon: 'H2',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .setHeading({ level: 2 })
-          .run();
+        editor.chain().focus().setNodeSelection(pos).setHeading({ level: 2 }).run();
       },
     },
     {
@@ -96,12 +77,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Heading 3',
       icon: 'H3',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .setHeading({ level: 3 })
-          .run();
+        editor.chain().focus().setNodeSelection(pos).setHeading({ level: 3 }).run();
       },
     },
     {
@@ -109,12 +85,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Bullet List',
       icon: '\u2022',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .toggleBulletList()
-          .run();
+        editor.chain().focus().setNodeSelection(pos).toggleBulletList().run();
       },
     },
     {
@@ -122,12 +93,7 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Numbered List',
       icon: '1.',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .toggleOrderedList()
-          .run();
+        editor.chain().focus().setNodeSelection(pos).toggleOrderedList().run();
       },
     },
     {
@@ -135,115 +101,103 @@ export function getDefaultBlockActions(): BlockAction[] {
       label: 'Quote',
       icon: '\u201C',
       action: (editor, pos) => {
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(pos)
-          .toggleBlockquote()
-          .run();
+        editor.chain().focus().setNodeSelection(pos).toggleBlockquote().run();
       },
     },
   ];
 }
 
-export const BlockActionsMenu = forwardRef<
-  BlockActionsMenuRef,
-  BlockActionsMenuProps
->(({ editor, actions }, ref) => {
-  const [visible, setVisible] = useState(false);
-  const [currentPos, setCurrentPos] = useState(0);
-  const [section, setSection] = useState<'main' | 'turn-into'>('main');
+export const BlockActionsMenu = forwardRef<BlockActionsMenuRef, BlockActionsMenuProps>(
+  ({ editor, actions }, ref) => {
+    const [visible, setVisible] = useState(false);
+    const [currentPos, setCurrentPos] = useState(0);
+    const [section, setSection] = useState<'main' | 'turn-into'>('main');
 
-  const hide = useCallback(() => {
-    setVisible(false);
-    setSection('main');
-  }, []);
+    const hide = useCallback(() => {
+      setVisible(false);
+      setSection('main');
+    }, []);
 
-  const show = useCallback((pos: number) => {
-    setCurrentPos(pos);
-    setVisible(true);
-    setSection('main');
-  }, []);
+    const show = useCallback((pos: number) => {
+      setCurrentPos(pos);
+      setVisible(true);
+      setSection('main');
+    }, []);
 
-  useImperativeHandle(ref, () => ({
-    show: (pos: number) => show(pos),
-    hide,
-    isVisible: () => visible,
-  }));
+    useImperativeHandle(ref, () => ({
+      show: (pos: number) => show(pos),
+      hide,
+      isVisible: () => visible,
+    }));
 
-  if (!visible || !editor) {
-    return null;
-  }
+    if (!visible || !editor) {
+      return null;
+    }
 
-  const mainActions = actions.filter(
-    (a) =>
-      a.id === 'delete' || a.id === 'duplicate',
-  );
+    const mainActions = actions.filter((a) => a.id === 'delete' || a.id === 'duplicate');
 
-  const turnIntoActions = actions.filter(
-    (a) =>
-      a.id !== 'delete' && a.id !== 'duplicate',
-  );
+    const turnIntoActions = actions.filter((a) => a.id !== 'delete' && a.id !== 'duplicate');
 
-  const handleAction = (action: BlockAction) => {
-    action.action(editor, currentPos);
-    hide();
-  };
+    const handleAction = (action: BlockAction) => {
+      action.action(editor, currentPos);
+      hide();
+    };
 
-  return (
-    <div className="cept-block-actions" data-testid="block-actions-menu">
-      {section === 'main' && (
-        <>
-          {mainActions.map((action) => (
+    return (
+      <div className="cept-block-actions" data-testid="block-actions-menu">
+        {section === 'main' && (
+          <>
+            {mainActions.map((action) => (
+              <button
+                key={action.id}
+                className="cept-block-action-item"
+                onClick={() => handleAction(action)}
+                data-testid={`block-action-${action.id}`}
+              >
+                <span className="cept-block-action-icon">{action.icon}</span>
+                <span className="cept-block-action-label">{action.label}</span>
+              </button>
+            ))}
+            {turnIntoActions.length > 0 && (
+              <button
+                className="cept-block-action-item"
+                onClick={() => setSection('turn-into')}
+                data-testid="block-action-turn-into"
+              >
+                <span className="cept-block-action-icon">{'\u21C4'}</span>
+                <span className="cept-block-action-label">Turn into</span>
+                <span className="cept-block-action-arrow">{'\u203A'}</span>
+              </button>
+            )}
+          </>
+        )}
+        {section === 'turn-into' && (
+          <>
             <button
-              key={action.id}
-              className="cept-block-action-item"
-              onClick={() => handleAction(action)}
-              data-testid={`block-action-${action.id}`}
+              className="cept-block-action-item cept-block-action-back"
+              onClick={() => setSection('main')}
+              data-testid="block-action-back"
             >
-              <span className="cept-block-action-icon">{action.icon}</span>
-              <span className="cept-block-action-label">{action.label}</span>
+              <span className="cept-block-action-icon">{'\u2039'}</span>
+              <span className="cept-block-action-label">Back</span>
             </button>
-          ))}
-          {turnIntoActions.length > 0 && (
-            <button
-              className="cept-block-action-item"
-              onClick={() => setSection('turn-into')}
-              data-testid="block-action-turn-into"
-            >
-              <span className="cept-block-action-icon">{'\u21C4'}</span>
-              <span className="cept-block-action-label">Turn into</span>
-              <span className="cept-block-action-arrow">{'\u203A'}</span>
-            </button>
-          )}
-        </>
-      )}
-      {section === 'turn-into' && (
-        <>
-          <button
-            className="cept-block-action-item cept-block-action-back"
-            onClick={() => setSection('main')}
-            data-testid="block-action-back"
-          >
-            <span className="cept-block-action-icon">{'\u2039'}</span>
-            <span className="cept-block-action-label">Back</span>
-          </button>
-          <div className="cept-block-action-divider" />
-          {turnIntoActions.map((action) => (
-            <button
-              key={action.id}
-              className="cept-block-action-item"
-              onClick={() => handleAction(action)}
-              data-testid={`block-action-${action.id}`}
-            >
-              <span className="cept-block-action-icon">{action.icon}</span>
-              <span className="cept-block-action-label">{action.label}</span>
-            </button>
-          ))}
-        </>
-      )}
-    </div>
-  );
-});
+            <div className="cept-block-action-divider" />
+            {turnIntoActions.map((action) => (
+              <button
+                key={action.id}
+                className="cept-block-action-item"
+                onClick={() => handleAction(action)}
+                data-testid={`block-action-${action.id}`}
+              >
+                <span className="cept-block-action-icon">{action.icon}</span>
+                <span className="cept-block-action-label">{action.label}</span>
+              </button>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  },
+);
 
 BlockActionsMenu.displayName = 'BlockActionsMenu';

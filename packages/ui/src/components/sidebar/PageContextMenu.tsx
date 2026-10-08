@@ -66,7 +66,10 @@ export function PageContextMenu({
       {onToggleFavorite && (
         <button
           className="cept-context-menu-item"
-          onClick={() => { onToggleFavorite(pageId); onClose(); }}
+          onClick={() => {
+            onToggleFavorite(pageId);
+            onClose();
+          }}
           data-testid="ctx-toggle-favorite"
         >
           {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -81,14 +84,20 @@ export function PageContextMenu({
       </button>
       <button
         className="cept-context-menu-item"
-        onClick={() => { onDuplicate(pageId); onClose(); }}
+        onClick={() => {
+          onDuplicate(pageId);
+          onClose();
+        }}
         data-testid="ctx-duplicate"
       >
         Duplicate
       </button>
       <button
         className="cept-context-menu-item"
-        onClick={() => { onMoveToRoot(pageId); onClose(); }}
+        onClick={() => {
+          onMoveToRoot(pageId);
+          onClose();
+        }}
         data-testid="ctx-move-to-root"
       >
         Move...
@@ -96,7 +105,10 @@ export function PageContextMenu({
       <div className="cept-context-menu-divider" />
       <button
         className="cept-context-menu-item cept-context-menu-item--danger"
-        onClick={() => { onDelete(pageId); onClose(); }}
+        onClick={() => {
+          onDelete(pageId);
+          onClose();
+        }}
         data-testid="ctx-delete"
       >
         Delete

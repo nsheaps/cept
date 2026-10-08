@@ -1,8 +1,4 @@
-export {
-  AutoCommitEngine,
-  generateCommitMessage,
-  matchesPattern,
-} from './auto-commit.js';
+export { AutoCommitEngine, generateCommitMessage, matchesPattern } from './auto-commit.js';
 export type {
   AutoCommitConfig,
   FileChange,
@@ -20,17 +16,9 @@ export {
   generateDeviceId,
   generateSessionId,
 } from './branch-strategy.js';
-export type {
-  BranchStrategyType,
-  BranchStrategyConfig,
-  BranchInfo,
-} from './branch-strategy.js';
+export type { BranchStrategyType, BranchStrategyConfig, BranchInfo } from './branch-strategy.js';
 
-export {
-  parseConflictMarkers,
-  threeWayMerge,
-  autoResolve,
-} from './merge-engine.js';
+export { parseConflictMarkers, threeWayMerge, autoResolve } from './merge-engine.js';
 export type {
   MergeConflict,
   ResolutionStrategy,

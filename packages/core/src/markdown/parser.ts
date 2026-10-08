@@ -12,16 +12,7 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
 import { dump, load } from 'js-yaml';
-import type {
-  Content,
-  Heading,
-  Code,
-  List,
-  ListItem,
-  Table,
-  TableRow,
-  TableCell,
-} from 'mdast';
+import type { Content, Heading, Code, List, ListItem, Table, TableRow, TableCell } from 'mdast';
 import type { Block, BlockType, PageMeta } from '../models/index.js';
 
 export class CeptMarkdownParser {
@@ -184,7 +175,8 @@ export class CeptMarkdownParser {
 
       // Recursively preprocess the content so nested toggles are detected
       const innerMarkdown = contentLines.join('\n');
-      const preprocessedInner = contentLines.length > 0 ? this.preprocessToggles(innerMarkdown) : '';
+      const preprocessedInner =
+        contentLines.length > 0 ? this.preprocessToggles(innerMarkdown) : '';
 
       // Emit cept:block comments
       const config = JSON.stringify({ type: 'toggle', summary });
@@ -262,11 +254,7 @@ export class CeptMarkdownParser {
     switch (node.type) {
       case 'paragraph': {
         // Check if paragraph contains only an image (standalone image block)
-        if (
-          'children' in node &&
-          node.children.length === 1 &&
-          node.children[0].type === 'image'
-        ) {
+        if ('children' in node && node.children.length === 1 && node.children[0].type === 'image') {
           const img = node.children[0];
           return {
             ...this.createBlock('image', ''),
@@ -313,9 +301,7 @@ export class CeptMarkdownParser {
         }
         return {
           ...this.createBlock('bulletList', ''),
-          children: listNode.children.map((item: ListItem) =>
-            this.convertListItem(item),
-          ),
+          children: listNode.children.map((item: ListItem) => this.convertListItem(item)),
         };
       }
 
@@ -513,9 +499,7 @@ export class CeptMarkdownParser {
         return block.children.map((child) => `- ${child.content}`).join('\n');
 
       case 'numberedList':
-        return block.children
-          .map((child, i) => `${i + 1}. ${child.content}`)
-          .join('\n');
+        return block.children.map((child, i) => `${i + 1}. ${child.content}`).join('\n');
 
       case 'todoList':
         return block.children
@@ -526,9 +510,7 @@ export class CeptMarkdownParser {
           .join('\n');
 
       case 'blockquote':
-        return block.children
-          .map((child) => `> ${this.serializeBlock(child)}`)
-          .join('\n');
+        return block.children.map((child) => `> ${this.serializeBlock(child)}`).join('\n');
 
       case 'codeBlock':
         return `\`\`\`${block.attrs.language ?? ''}\n${block.content}\n\`\`\``;
@@ -632,13 +614,17 @@ export class CeptMarkdownParser {
       case 'inlineCode':
         return `\`${(node as Content & { value: string }).value}\``;
       case 'strong':
-        return `**${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}**`;
+        return `**${(node as Content & { children: Content[] }).children.map((c) => this.extractText(c)).join('')}**`;
       case 'emphasis':
-        return `*${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}*`;
+        return `*${(node as Content & { children: Content[] }).children.map((c) => this.extractText(c)).join('')}*`;
       case 'delete':
-        return `~~${((node as Content & { children: Content[] }).children).map((c) => this.extractText(c)).join('')}~~`;
+        return `~~${(node as Content & { children: Content[] }).children.map((c) => this.extractText(c)).join('')}~~`;
       case 'link': {
-        const linkNode = node as Content & { url: string; title?: string | null; children: Content[] };
+        const linkNode = node as Content & {
+          url: string;
+          title?: string | null;
+          children: Content[];
+        };
         const text = linkNode.children.map((c) => this.extractText(c)).join('');
         if (linkNode.title) {
           return `[${text}](${linkNode.url} "${linkNode.title}")`;

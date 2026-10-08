@@ -207,7 +207,10 @@ export function RepoPicker({
               data-testid="repo-picker-create-desc"
             />
           </label>
-          <label className="cept-repo-picker-checkbox-label" data-testid="repo-picker-create-private-label">
+          <label
+            className="cept-repo-picker-checkbox-label"
+            data-testid="repo-picker-create-private-label"
+          >
             <input
               type="checkbox"
               checked={newRepoPrivate}

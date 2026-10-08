@@ -60,7 +60,9 @@ describe('DatabaseBoardView', () => {
       />,
     );
     expect(screen.getByTestId('board-column-header-To Do').textContent).toContain('To Do');
-    expect(screen.getByTestId('board-column-header-In Progress').textContent).toContain('In Progress');
+    expect(screen.getByTestId('board-column-header-In Progress').textContent).toContain(
+      'In Progress',
+    );
     expect(screen.getByTestId('board-column-header-Done').textContent).toContain('Done');
   });
 
@@ -225,13 +227,7 @@ describe('DatabaseBoardView', () => {
   });
 
   it('works without options (creates columns from data)', () => {
-    render(
-      <DatabaseBoardView
-        properties={properties}
-        rows={rows}
-        groupByProperty="Status"
-      />,
-    );
+    render(<DatabaseBoardView properties={properties} rows={rows} groupByProperty="Status" />);
     expect(screen.getByTestId('board-column-In Progress')).toBeDefined();
     expect(screen.getByTestId('board-column-Done')).toBeDefined();
     expect(screen.getByTestId('board-column-To Do')).toBeDefined();

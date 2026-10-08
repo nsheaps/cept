@@ -66,14 +66,16 @@ describe('GitHubAuthProvider', () => {
 
   describe('exchangeCode', () => {
     it('exchanges code for token', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: {
-          access_token: 'gho_abc123',
-          token_type: 'bearer',
-          scope: 'repo',
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: {
+            access_token: 'gho_abc123',
+            token_type: 'bearer',
+            scope: 'repo',
+          },
         },
-      }]);
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       const token = await provider.exchangeCode('auth-code-123', 'state');
@@ -90,25 +92,29 @@ describe('GitHubAuthProvider', () => {
     });
 
     it('throws on OAuth error response', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: { error: 'bad_verification_code', error_description: 'The code is invalid' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { error: 'bad_verification_code', error_description: 'The code is invalid' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       await expect(provider.exchangeCode('bad-code')).rejects.toThrow('The code is invalid');
     });
 
     it('handles token with expiry', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: {
-          access_token: 'gho_abc',
-          scope: 'repo',
-          refresh_token: 'ghr_refresh',
-          expires_in: 3600,
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: {
+            access_token: 'gho_abc',
+            scope: 'repo',
+            refresh_token: 'ghr_refresh',
+            expires_in: 3600,
+          },
         },
-      }]);
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       const token = await provider.exchangeCode('code');
@@ -120,10 +126,12 @@ describe('GitHubAuthProvider', () => {
 
     it('stores token after exchange', async () => {
       const store = new MemoryTokenStore();
-      const fetch = mockFetch([{
-        status: 200,
-        body: { access_token: 'gho_stored', scope: 'repo' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { access_token: 'gho_stored', scope: 'repo' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, store, fetch);
 
       await provider.exchangeCode('code');
@@ -162,16 +170,18 @@ describe('GitHubAuthProvider', () => {
 
   describe('startDeviceFlow', () => {
     it('returns device verification info', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: {
-          device_code: 'dc_123',
-          user_code: 'ABCD-1234',
-          verification_uri: 'https://github.com/login/device',
-          expires_in: 900,
-          interval: 5,
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: {
+            device_code: 'dc_123',
+            user_code: 'ABCD-1234',
+            verification_uri: 'https://github.com/login/device',
+            expires_in: 900,
+            interval: 5,
+          },
         },
-      }]);
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       const result = await provider.startDeviceFlow();
@@ -191,10 +201,12 @@ describe('GitHubAuthProvider', () => {
 
   describe('pollDeviceFlow', () => {
     it('returns token when user completes authorization', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: { access_token: 'gho_device', scope: 'repo' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { access_token: 'gho_device', scope: 'repo' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       const token = await provider.pollDeviceFlow('dc_123');
@@ -202,30 +214,36 @@ describe('GitHubAuthProvider', () => {
     });
 
     it('throws AuthPendingError when authorization pending', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: { error: 'authorization_pending' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { error: 'authorization_pending' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       await expect(provider.pollDeviceFlow('dc_123')).rejects.toThrow(AuthPendingError);
     });
 
     it('throws AuthSlowDownError when polling too fast', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: { error: 'slow_down' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { error: 'slow_down' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       await expect(provider.pollDeviceFlow('dc_123')).rejects.toThrow(AuthSlowDownError);
     });
 
     it('throws on expired token', async () => {
-      const fetch = mockFetch([{
-        status: 200,
-        body: { error: 'expired_token' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: { error: 'expired_token' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, undefined, fetch);
 
       await expect(provider.pollDeviceFlow('dc_123')).rejects.toThrow('expired');
@@ -248,19 +266,23 @@ describe('GitHubAuthProvider', () => {
       const store = new MemoryTokenStore();
       await store.set('cept:github:token', validToken);
 
-      const fetch = mockFetch([{
-        status: 200,
-        body: [{
-          name: 'my-repo',
-          full_name: 'user/my-repo',
-          html_url: 'https://github.com/user/my-repo',
-          clone_url: 'https://github.com/user/my-repo.git',
-          ssh_url: 'git@github.com:user/my-repo.git',
-          private: false,
-          description: 'A test repo',
-          default_branch: 'main',
-        }],
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: [
+            {
+              name: 'my-repo',
+              full_name: 'user/my-repo',
+              html_url: 'https://github.com/user/my-repo',
+              clone_url: 'https://github.com/user/my-repo.git',
+              ssh_url: 'git@github.com:user/my-repo.git',
+              private: false,
+              description: 'A test repo',
+              default_branch: 'main',
+            },
+          ],
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, store, fetch);
 
       const repos = await provider.getRepos();
@@ -402,15 +424,17 @@ describe('GitHubAuthProvider', () => {
       const store = new MemoryTokenStore();
       await store.set('cept:github:token', validToken);
 
-      const fetch = mockFetch([{
-        status: 200,
-        body: {
-          login: 'octocat',
-          name: 'Octocat',
-          email: 'octo@github.com',
-          avatar_url: 'https://avatars.githubusercontent.com/u/1',
+      const fetch = mockFetch([
+        {
+          status: 200,
+          body: {
+            login: 'octocat',
+            name: 'Octocat',
+            email: 'octo@github.com',
+            avatar_url: 'https://avatars.githubusercontent.com/u/1',
+          },
         },
-      }]);
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, store, fetch);
 
       const user = await provider.getUser();
@@ -431,19 +455,21 @@ describe('GitHubAuthProvider', () => {
       const store = new MemoryTokenStore();
       await store.set('cept:github:token', validToken);
 
-      const fetch = mockFetch([{
-        status: 201,
-        body: {
-          name: 'new-repo',
-          full_name: 'user/new-repo',
-          html_url: 'https://github.com/user/new-repo',
-          clone_url: 'https://github.com/user/new-repo.git',
-          ssh_url: 'git@github.com:user/new-repo.git',
-          private: true,
-          description: 'Created by Cept',
-          default_branch: 'main',
+      const fetch = mockFetch([
+        {
+          status: 201,
+          body: {
+            name: 'new-repo',
+            full_name: 'user/new-repo',
+            html_url: 'https://github.com/user/new-repo',
+            clone_url: 'https://github.com/user/new-repo.git',
+            ssh_url: 'git@github.com:user/new-repo.git',
+            private: true,
+            description: 'Created by Cept',
+            default_branch: 'main',
+          },
         },
-      }]);
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, store, fetch);
 
       const repo = await provider.createRepo({
@@ -459,13 +485,17 @@ describe('GitHubAuthProvider', () => {
       const store = new MemoryTokenStore();
       await store.set('cept:github:token', validToken);
 
-      const fetch = mockFetch([{
-        status: 422,
-        body: { message: 'Repository creation failed. Name already exists.' },
-      }]);
+      const fetch = mockFetch([
+        {
+          status: 422,
+          body: { message: 'Repository creation failed. Name already exists.' },
+        },
+      ]);
       const provider = new GitHubAuthProvider(defaultConfig, store, fetch);
 
-      await expect(provider.createRepo({ name: 'existing' })).rejects.toThrow('Name already exists');
+      await expect(provider.createRepo({ name: 'existing' })).rejects.toThrow(
+        'Name already exists',
+      );
     });
   });
 });

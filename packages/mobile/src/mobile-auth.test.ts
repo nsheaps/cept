@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  MobileAuthAdapter,
-  generateState,
-  parseCallbackUrl,
-} from './mobile-auth.js';
+import { MobileAuthAdapter, generateState, parseCallbackUrl } from './mobile-auth.js';
 import type { DeepLinkHandler, CodeExchangeFn, MobileAuthEvent } from './mobile-auth.js';
 
 function createMockDeepLinkHandler(): DeepLinkHandler & {

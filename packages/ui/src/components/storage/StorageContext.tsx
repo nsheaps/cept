@@ -119,7 +119,10 @@ export async function loadPersistedState(backend: StorageBackend): Promise<Persi
  * Migrate pageContents from the PersistedState blob to individual page files.
  * After migration, removes pageContents from the state and re-saves the workspace file.
  */
-async function migratePageContentsToFiles(backend: StorageBackend, state: PersistedState): Promise<void> {
+async function migratePageContentsToFiles(
+  backend: StorageBackend,
+  state: PersistedState,
+): Promise<void> {
   if (!state.pageContents || Object.keys(state.pageContents).length === 0) return;
 
   // Write each page's content to its own file
@@ -188,7 +191,10 @@ export async function resetSettingsOnBackend(backend: StorageBackend): Promise<v
 }
 
 /** Read a single page's content from the backend */
-export async function readPageContent(backend: StorageBackend, pageId: string): Promise<string | null> {
+export async function readPageContent(
+  backend: StorageBackend,
+  pageId: string,
+): Promise<string | null> {
   // Try .md first, fall back to legacy .html
   const mdData = await backend.readFile(`${PAGES_DIR}/${pageId}.md`);
   if (mdData) return new TextDecoder().decode(mdData);
@@ -198,7 +204,11 @@ export async function readPageContent(backend: StorageBackend, pageId: string): 
 }
 
 /** Write a single page's content to the backend */
-export async function writePageContent(backend: StorageBackend, pageId: string, content: string): Promise<void> {
+export async function writePageContent(
+  backend: StorageBackend,
+  pageId: string,
+  content: string,
+): Promise<void> {
   await backend.writeFile(`${PAGES_DIR}/${pageId}.md`, new TextEncoder().encode(content));
   // Clean up legacy .html file if it exists
   try {
@@ -298,8 +308,16 @@ export async function deleteSpacePageContent(
   pageId: string,
 ): Promise<void> {
   const dir = spacePagesDir(spaceId);
-  try { await backend.deleteFile(`${dir}/${pageId}.md`); } catch { /* ignore */ }
-  try { await backend.deleteFile(`${dir}/${pageId}.html`); } catch { /* ignore */ }
+  try {
+    await backend.deleteFile(`${dir}/${pageId}.md`);
+  } catch {
+    /* ignore */
+  }
+  try {
+    await backend.deleteFile(`${dir}/${pageId}.html`);
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Clear all workspace data from the backend */
@@ -330,7 +348,16 @@ export function useWorkspacePersistence(backend: StorageBackend) {
     state: PersistedState | null;
     settings: CeptSettings;
     ready: boolean;
-  }>({ state: null, settings: { autoSave: true, showDemoContent: false, redirectToGitUrl: true, themeMode: 'system' }, ready: false });
+  }>({
+    state: null,
+    settings: {
+      autoSave: true,
+      showDemoContent: false,
+      redirectToGitUrl: true,
+      themeMode: 'system',
+    },
+    ready: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -352,7 +379,9 @@ export function useWorkspacePersistence(backend: StorageBackend) {
       }
     }
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [backend]);
 
   const save = useCallback(

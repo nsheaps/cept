@@ -21,13 +21,7 @@ export interface SyncConfig {
 }
 
 export type SyncState =
-  | 'idle'
-  | 'pulling'
-  | 'pushing'
-  | 'synced'
-  | 'conflict'
-  | 'error'
-  | 'offline';
+  'idle' | 'pulling' | 'pushing' | 'synced' | 'conflict' | 'error' | 'offline';
 
 export interface SyncStatus {
   state: SyncState;

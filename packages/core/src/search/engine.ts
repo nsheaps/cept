@@ -68,12 +68,7 @@ export class CeptSearchIndex implements SearchIndex {
   /** Inverted index: term -> set of document ids. */
   private invertedIndex = new Map<string, Set<string>>();
 
-  async indexPage(
-    pageId: string,
-    title: string,
-    content: string,
-    path: string,
-  ): Promise<void> {
+  async indexPage(pageId: string, title: string, content: string, path: string): Promise<void> {
     // Remove old entry first if re-indexing
     await this.removePage(pageId);
 
@@ -103,10 +98,7 @@ export class CeptSearchIndex implements SearchIndex {
     }
   }
 
-  async indexDatabase(
-    databaseId: string,
-    values: Record<string, string>,
-  ): Promise<void> {
+  async indexDatabase(databaseId: string, values: Record<string, string>): Promise<void> {
     await this.removePage(databaseId);
 
     const title = values['title'] ?? databaseId;

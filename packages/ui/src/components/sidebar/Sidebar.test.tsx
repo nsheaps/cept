@@ -130,9 +130,7 @@ describe('Sidebar', () => {
   });
 
   it('renders favorites section when favorites are provided', () => {
-    const favorites = [
-      { id: 'page-1', title: 'Getting Started', icon: '\u{1F680}' },
-    ];
+    const favorites = [{ id: 'page-1', title: 'Getting Started', icon: '\u{1F680}' }];
     render(<Sidebar pages={mockPages} favorites={favorites} />);
     expect(screen.getByTestId('favorites-section')).toBeDefined();
     expect(screen.getByText('Favorites')).toBeDefined();
@@ -145,9 +143,7 @@ describe('Sidebar', () => {
   });
 
   it('renders recent section when recent pages are provided', () => {
-    const recentPages = [
-      { id: 'page-3', title: 'Projects' },
-    ];
+    const recentPages = [{ id: 'page-3', title: 'Projects' }];
     render(<Sidebar pages={mockPages} recentPages={recentPages} />);
     expect(screen.getByTestId('recent-section')).toBeDefined();
     expect(screen.getByText('Recent')).toBeDefined();

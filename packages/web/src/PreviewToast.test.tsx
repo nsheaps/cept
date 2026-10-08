@@ -18,9 +18,7 @@ describe('PreviewToast', () => {
   });
 
   it('renders nothing when prNumber is empty', () => {
-    const { container } = render(
-      <PreviewToast prNumber="" repoUrl="" productionUrl="" />,
-    );
+    const { container } = render(<PreviewToast prNumber="" repoUrl="" productionUrl="" />);
     expect(container.querySelector('[data-testid="preview-toast"]')).toBeNull();
   });
 
@@ -28,9 +26,7 @@ describe('PreviewToast', () => {
     render(<PreviewToast {...defaultProps} />);
     const link = screen.getByText('PR #42');
     expect(link.tagName).toBe('A');
-    expect(link.getAttribute('href')).toBe(
-      'https://github.com/nsheaps/cept/pull/42',
-    );
+    expect(link.getAttribute('href')).toBe('https://github.com/nsheaps/cept/pull/42');
     expect(link.getAttribute('target')).toBe('_blank');
   });
 
@@ -38,9 +34,7 @@ describe('PreviewToast', () => {
     render(<PreviewToast {...defaultProps} />);
     const link = screen.getByText('View production');
     expect(link.tagName).toBe('A');
-    expect(link.getAttribute('href')).toBe(
-      'https://nsheaps.github.io/cept/app/',
-    );
+    expect(link.getAttribute('href')).toBe('https://nsheaps.github.io/cept/app/');
   });
 
   it('hides production link when productionUrl is empty', () => {
@@ -95,9 +89,7 @@ describe('PreviewToast', () => {
   });
 
   it('clears timeout on unmount', () => {
-    const { unmount } = render(
-      <PreviewToast {...defaultProps} dismissMs={5000} />,
-    );
+    const { unmount } = render(<PreviewToast {...defaultProps} dismissMs={5000} />);
     expect(screen.getByTestId('preview-toast')).toBeTruthy();
 
     unmount();

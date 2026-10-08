@@ -47,23 +47,30 @@ export function KnowledgeGraph({
     const g = svg.append('g');
 
     // Zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 4])
       .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         g.attr('transform', event.transform.toString());
       });
     svg.call(zoom);
 
-    const simulation = d3.forceSimulation(displayData.nodes as d3.SimulationNodeDatum[])
-      .force('link', d3.forceLink(displayData.links as d3.SimulationLinkDatum<d3.SimulationNodeDatum>[])
-        .id((d) => (d as GraphNode).id)
-        .distance(80))
+    const simulation = d3
+      .forceSimulation(displayData.nodes as d3.SimulationNodeDatum[])
+      .force(
+        'link',
+        d3
+          .forceLink(displayData.links as d3.SimulationLinkDatum<d3.SimulationNodeDatum>[])
+          .id((d) => (d as GraphNode).id)
+          .distance(80),
+      )
       .force('charge', d3.forceManyBody().strength(-200))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(20));
 
     // Links
-    const link = g.append('g')
+    const link = g
+      .append('g')
       .attr('class', 'cept-graph-links')
       .selectAll('line')
       .data(displayData.links)
@@ -71,13 +78,20 @@ export function KnowledgeGraph({
       .attr('class', 'cept-graph-link')
       .attr('stroke', (d: GraphLink) => {
         const isDark = document.documentElement.classList.contains('dark');
-        return d.type === 'parent' ? (isDark ? '#525252' : '#d1d5db') : (isDark ? '#60a5fa' : '#93c5fd');
+        return d.type === 'parent'
+          ? isDark
+            ? '#525252'
+            : '#d1d5db'
+          : isDark
+            ? '#60a5fa'
+            : '#93c5fd';
       })
       .attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', (d: GraphLink) => d.type === 'mention' ? '4,4' : 'none');
+      .attr('stroke-dasharray', (d: GraphLink) => (d.type === 'mention' ? '4,4' : 'none'));
 
     // Nodes
-    const node = g.append('g')
+    const node = g
+      .append('g')
       .attr('class', 'cept-graph-nodes')
       .selectAll<SVGGElement, GraphNode>('g')
       .data(displayData.nodes)
@@ -88,10 +102,9 @@ export function KnowledgeGraph({
         onNodeClick?.(d.id);
       });
 
-    node.append('circle')
-      .attr('r', (d: GraphNode) =>
-        options.focusNodeId === d.id ? 10 : 7,
-      )
+    node
+      .append('circle')
+      .attr('r', (d: GraphNode) => (options.focusNodeId === d.id ? 10 : 7))
       .attr('fill', (d: GraphNode) => {
         if (d.group && colorGroups[d.group]) return colorGroups[d.group];
         return colorGroups['default'] ?? '#6366f1';
@@ -100,7 +113,8 @@ export function KnowledgeGraph({
       .attr('stroke-width', 2);
 
     if (showLabels) {
-      node.append('text')
+      node
+        .append('text')
         .attr('dx', 12)
         .attr('dy', 4)
         .attr('font-size', '11px')
@@ -109,7 +123,8 @@ export function KnowledgeGraph({
     }
 
     // Drag behavior
-    const drag = d3.drag<SVGGElement, GraphNode>()
+    const drag = d3
+      .drag<SVGGElement, GraphNode>()
       .on('start', (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -129,10 +144,10 @@ export function KnowledgeGraph({
 
     simulation.on('tick', () => {
       link
-        .attr('x1', (d) => ((d.source as unknown as GraphNode).x ?? 0))
-        .attr('y1', (d) => ((d.source as unknown as GraphNode).y ?? 0))
-        .attr('x2', (d) => ((d.target as unknown as GraphNode).x ?? 0))
-        .attr('y2', (d) => ((d.target as unknown as GraphNode).y ?? 0));
+        .attr('x1', (d) => (d.source as unknown as GraphNode).x ?? 0)
+        .attr('y1', (d) => (d.source as unknown as GraphNode).y ?? 0)
+        .attr('x2', (d) => (d.target as unknown as GraphNode).x ?? 0)
+        .attr('y2', (d) => (d.target as unknown as GraphNode).y ?? 0);
 
       node.attr('transform', (d: GraphNode) => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
@@ -140,7 +155,16 @@ export function KnowledgeGraph({
     return () => {
       simulation.stop();
     };
-  }, [data, getDisplayData, width, height, showLabels, colorGroups, options.focusNodeId, onNodeClick]);
+  }, [
+    data,
+    getDisplayData,
+    width,
+    height,
+    showLabels,
+    colorGroups,
+    options.focusNodeId,
+    onNodeClick,
+  ]);
 
   return (
     <div className="cept-knowledge-graph" data-testid="knowledge-graph">

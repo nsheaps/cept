@@ -12,7 +12,12 @@
  * preserving wiki-links, tags, and front matter metadata.
  */
 
-import type { ImportedPage, ImportedAsset, ImportError, ProgressCallback } from './notion-importer.js';
+import type {
+  ImportedPage,
+  ImportedAsset,
+  ImportError,
+  ProgressCallback,
+} from './notion-importer.js';
 import { getMimeType } from './notion-importer.js';
 
 export interface ObsidianImportOptions {
@@ -69,8 +74,18 @@ const DEFAULT_OPTIONS: Required<ObsidianImportOptions> = {
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown']);
 const ATTACHMENT_EXTENSIONS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp',
-  '.pdf', '.mp3', '.mp4', '.wav', '.ogg',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.svg',
+  '.webp',
+  '.bmp',
+  '.pdf',
+  '.mp3',
+  '.mp4',
+  '.wav',
+  '.ogg',
 ]);
 
 function getExtension(path: string): string {
@@ -103,9 +118,11 @@ function shouldIgnore(path: string, ignorePaths: string[]): boolean {
   const normalized = normalizePath(path);
   return ignorePaths.some((pattern) => {
     const normalizedPattern = normalizePath(pattern);
-    return normalized === normalizedPattern ||
+    return (
+      normalized === normalizedPattern ||
       normalized.startsWith(normalizedPattern + '/') ||
-      normalized.split('/').includes(normalizedPattern);
+      normalized.split('/').includes(normalizedPattern)
+    );
   });
 }
 
@@ -152,10 +169,7 @@ export function extractTags(content: string): string[] {
  * Obsidian: [[Page Name]] or [[Page Name|Display Text]] or [[Page Name#Heading]]
  * Cept:     [[/target/Page Name]] or [[/target/Page Name|Display Text]]
  */
-export function convertObsidianLinks(
-  content: string,
-  pageMap: Map<string, string>,
-): string {
+export function convertObsidianLinks(content: string, pageMap: Map<string, string>): string {
   return content.replace(
     /\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g,
     (_match, pageName: string, heading: string | undefined, displayText: string | undefined) => {

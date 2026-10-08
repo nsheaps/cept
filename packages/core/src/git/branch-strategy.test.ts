@@ -81,7 +81,11 @@ describe('generateBranchName', () => {
   });
 
   it('uses custom prefix', () => {
-    const name = generateBranchName({ strategy: 'per-device', deviceId: 'abc', prefix: 'workspace/' });
+    const name = generateBranchName({
+      strategy: 'per-device',
+      deviceId: 'abc',
+      prefix: 'workspace/',
+    });
     expect(name).toBe('workspace/device-abc');
   });
 });

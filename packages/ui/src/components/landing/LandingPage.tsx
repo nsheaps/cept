@@ -64,16 +64,18 @@ export function LandingPage({ onStartWriting, onTryDemo, onOpenDocs }: LandingPa
       </div>
 
       {/* What is the demo? */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8" data-testid="demo-info">
+      <div
+        className="rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8"
+        data-testid="demo-info"
+      >
         <h2 className="text-lg font-semibold mb-2">What is the demo?</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-3">
-          The demo creates a pre-populated workspace with sample pages showing off
-          all of Cept&apos;s features. You can edit, delete, or add pages freely.
-          Everything is stored in your browser and never sent to a server.
+          The demo creates a pre-populated workspace with sample pages showing off all of
+          Cept&apos;s features. You can edit, delete, or add pages freely. Everything is stored in
+          your browser and never sent to a server.
         </p>
         <p className="text-gray-600 dark:text-gray-400">
-          You can reset the demo at any time from Settings, or clear all data
-          and start fresh.
+          You can reset the demo at any time from Settings, or clear all data and start fresh.
         </p>
       </div>
 
@@ -109,13 +111,19 @@ export function LandingPage({ onStartWriting, onTryDemo, onOpenDocs }: LandingPa
               IndexedDB — zero setup, works immediately, data stays on your device
             </span>
           </button>
-          <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed" disabled>
+          <button
+            className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
+            disabled
+          >
             <strong>Local folder</strong>
             <span className="block text-sm text-gray-500">
               Plain Markdown files on your filesystem — coming soon
             </span>
           </button>
-          <button className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed" disabled>
+          <button
+            className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
+            disabled
+          >
             <strong>Git repository</strong>
             <span className="block text-sm text-gray-500">
               Version history, sync, and collaboration via any Git host — coming soon
@@ -150,7 +158,17 @@ function FeatureCard({ title, description }: { title: string; description: strin
   );
 }
 
-function LinkCard({ title, description, onClick, testId }: { title: string; description: string; onClick: () => void; testId: string }) {
+function LinkCard({
+  title,
+  description,
+  onClick,
+  testId,
+}: {
+  title: string;
+  description: string;
+  onClick: () => void;
+  testId: string;
+}) {
   return (
     <button
       onClick={onClick}

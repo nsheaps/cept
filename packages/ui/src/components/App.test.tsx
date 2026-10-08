@@ -20,7 +20,13 @@ vi.mock('d3', () => {
   return {
     select: vi.fn(() => selection),
     zoom: vi.fn(() => ({ scaleExtent: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis() })),
-    forceSimulation: vi.fn(() => ({ force: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis(), alphaTarget: vi.fn().mockReturnThis(), restart: vi.fn(), stop: vi.fn() })),
+    forceSimulation: vi.fn(() => ({
+      force: vi.fn().mockReturnThis(),
+      on: vi.fn().mockReturnThis(),
+      alphaTarget: vi.fn().mockReturnThis(),
+      restart: vi.fn(),
+      stop: vi.fn(),
+    })),
     forceLink: vi.fn(() => ({ id: vi.fn().mockReturnThis(), distance: vi.fn().mockReturnThis() })),
     forceManyBody: vi.fn(() => ({ strength: vi.fn().mockReturnThis() })),
     forceCenter: vi.fn(),
@@ -124,7 +130,11 @@ describe('App', () => {
       // Sidebar should be closed by default on mobile
       expect(screen.queryByTestId('sidebar-backdrop')).toBeNull();
     } finally {
-      Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
+      Object.defineProperty(window, 'innerWidth', {
+        value: originalInnerWidth,
+        writable: true,
+        configurable: true,
+      });
     }
   });
 

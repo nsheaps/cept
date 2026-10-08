@@ -111,9 +111,7 @@ describe('CeptDatabaseEngine', () => {
     });
 
     it('should throw for non-existent database', async () => {
-      await expect(
-        engine.updateSchema('nonexistent', { title: 'x' }),
-      ).rejects.toThrow();
+      await expect(engine.updateSchema('nonexistent', { title: 'x' })).rejects.toThrow();
     });
   });
 
@@ -162,9 +160,7 @@ describe('CeptDatabaseEngine', () => {
     });
 
     it('should throw when updating non-existent row', async () => {
-      await expect(
-        engine.updateRow('test-db', 'nonexistent', { status: 'x' }),
-      ).rejects.toThrow();
+      await expect(engine.updateRow('test-db', 'nonexistent', { status: 'x' })).rejects.toThrow();
     });
   });
 

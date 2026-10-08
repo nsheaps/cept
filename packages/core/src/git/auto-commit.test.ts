@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  AutoCommitEngine,
-  generateCommitMessage,
-  matchesPattern,
-} from './auto-commit.js';
+import { AutoCommitEngine, generateCommitMessage, matchesPattern } from './auto-commit.js';
 import type { AutoCommitEvent } from './auto-commit.js';
 import type { GitStorageBackend } from '../storage/backend.js';
 
@@ -78,9 +74,7 @@ describe('generateCommitMessage', () => {
   });
 
   it('single add', () => {
-    const msg = generateCommitMessage([
-      { path: 'pages/hello.md', type: 'add', timestamp: 0 },
-    ]);
+    const msg = generateCommitMessage([{ path: 'pages/hello.md', type: 'add', timestamp: 0 }]);
     expect(msg).toBe('Add pages/hello.md');
   });
 
@@ -93,16 +87,12 @@ describe('generateCommitMessage', () => {
   });
 
   it('single modify', () => {
-    const msg = generateCommitMessage([
-      { path: 'pages/about.md', type: 'modify', timestamp: 0 },
-    ]);
+    const msg = generateCommitMessage([{ path: 'pages/about.md', type: 'modify', timestamp: 0 }]);
     expect(msg).toBe('Update pages/about.md');
   });
 
   it('single delete', () => {
-    const msg = generateCommitMessage([
-      { path: 'old/file.md', type: 'delete', timestamp: 0 },
-    ]);
+    const msg = generateCommitMessage([{ path: 'old/file.md', type: 'delete', timestamp: 0 }]);
     expect(msg).toBe('Delete old/file.md');
   });
 
@@ -244,10 +234,10 @@ describe('AutoCommitEngine', () => {
     engine.recordChange('pages/world.md', 'modify');
 
     await engine.flushNow();
-    expect(backend.commit).toHaveBeenCalledWith(
-      'Add pages/hello.md, Update pages/world.md',
-      ['pages/hello.md', 'pages/world.md'],
-    );
+    expect(backend.commit).toHaveBeenCalledWith('Add pages/hello.md, Update pages/world.md', [
+      'pages/hello.md',
+      'pages/world.md',
+    ]);
   });
 
   it('uses custom message generator', async () => {

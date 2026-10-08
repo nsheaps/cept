@@ -108,27 +108,28 @@ export function SearchPanel({ isOpen, onClose, onSearch, onResultSelect }: Searc
               No results for &ldquo;{query}&rdquo;
             </div>
           )}
-          {!loading && results.map((result, index) => (
-            <button
-              key={result.pageId}
-              className={`cept-search-result ${index === selectedIndex ? 'is-selected' : ''}`}
-              onClick={() => {
-                onResultSelect(result.pageId);
-                onClose();
-              }}
-              onMouseEnter={() => setSelectedIndex(index)}
-              data-testid={`search-result-${result.pageId}`}
-            >
-              <div className="cept-search-result-title">{result.title}</div>
-              {result.snippet && (
-                <div className="cept-search-result-snippet">{result.snippet}</div>
-              )}
-              <div className="cept-search-result-meta">
-                <span className="cept-search-result-type">{result.matchType}</span>
-                {result.path && <span className="cept-search-result-path">{result.path}</span>}
-              </div>
-            </button>
-          ))}
+          {!loading &&
+            results.map((result, index) => (
+              <button
+                key={result.pageId}
+                className={`cept-search-result ${index === selectedIndex ? 'is-selected' : ''}`}
+                onClick={() => {
+                  onResultSelect(result.pageId);
+                  onClose();
+                }}
+                onMouseEnter={() => setSelectedIndex(index)}
+                data-testid={`search-result-${result.pageId}`}
+              >
+                <div className="cept-search-result-title">{result.title}</div>
+                {result.snippet && (
+                  <div className="cept-search-result-snippet">{result.snippet}</div>
+                )}
+                <div className="cept-search-result-meta">
+                  <span className="cept-search-result-type">{result.matchType}</span>
+                  {result.path && <span className="cept-search-result-path">{result.path}</span>}
+                </div>
+              </button>
+            ))}
         </div>
       </div>
     </div>

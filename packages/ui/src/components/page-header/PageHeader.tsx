@@ -12,13 +12,7 @@ export interface PageHeaderProps {
   onToggleFavorite: (id: string) => void;
 }
 
-export function PageHeader({
-  pageId,
-  title,
-  icon,
-  cover,
-  onRename,
-}: PageHeaderProps) {
+export function PageHeader({ pageId, title, icon, cover, onRename }: PageHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,7 +79,14 @@ export function PageHeader({
               data-testid="page-title-save"
               title="Save"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="3,8 7,12 13,4" />
               </svg>
             </button>

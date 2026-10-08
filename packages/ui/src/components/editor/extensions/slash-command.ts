@@ -154,7 +154,10 @@ export const defaultSlashCommands: SlashCommandItem[] = [
     icon: '\u{1F5C2}',
     category: 'Tables',
     command: ({ editor, range }) => {
-      editor?.chain().focus().deleteRange(range)
+      editor
+        ?.chain()
+        .focus()
+        .deleteRange(range)
         .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
         .run();
     },
@@ -208,10 +211,7 @@ export const defaultSlashCommands: SlashCommandItem[] = [
   },
 ];
 
-export function filterSlashCommands(
-  items: SlashCommandItem[],
-  query: string,
-): SlashCommandItem[] {
+export function filterSlashCommands(items: SlashCommandItem[], query: string): SlashCommandItem[] {
   const q = query.toLowerCase();
   return items.filter(
     (item) =>
@@ -235,8 +235,7 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
       suggestion: {
         char: '/',
         pluginKey: slashCommandPluginKey,
-        items: ({ query }: { query: string }) =>
-          filterSlashCommands(defaultSlashCommands, query),
+        items: ({ query }: { query: string }) => filterSlashCommands(defaultSlashCommands, query),
         command: ({
           editor,
           range,

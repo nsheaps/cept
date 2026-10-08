@@ -33,9 +33,7 @@ export interface SyncTransport {
   onUsersChange(callback: (users: AwarenessUser[]) => void): () => void;
 }
 
-export {
-  CollaborationProvider,
-} from './collaboration-provider.js';
+export { CollaborationProvider } from './collaboration-provider.js';
 export type {
   CollaborationConfig,
   CollaborationState,
@@ -44,10 +42,7 @@ export type {
   DocumentState,
 } from './collaboration-provider.js';
 
-export {
-  DatabaseSyncAdapter,
-  generateChangeId,
-} from './database-sync.js';
+export { DatabaseSyncAdapter, generateChangeId } from './database-sync.js';
 export type {
   DatabaseChange,
   ApplyChangeCallback,

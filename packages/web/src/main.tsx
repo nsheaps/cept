@@ -29,9 +29,7 @@ function Root() {
     }
 
     // Register the service worker (import.meta.env.BASE_URL includes trailing slash)
-    void registerServiceWorker(
-      `${import.meta.env.BASE_URL}service-worker.js`,
-    );
+    void registerServiceWorker(`${import.meta.env.BASE_URL}service-worker.js`);
   }, []);
 
   return (
@@ -39,11 +37,7 @@ function Root() {
       <StorageProvider backend={backend}>
         <App />
       </StorageProvider>
-      <UpdateToast
-        version={__APP_VERSION__}
-        visible={showUpdateToast}
-        onDismiss={dismissToast}
-      />
+      <UpdateToast version={__APP_VERSION__} visible={showUpdateToast} onDismiss={dismissToast} />
       <PreviewToast
         prNumber={__PR_NUMBER__}
         repoUrl={__REPO_URL__}

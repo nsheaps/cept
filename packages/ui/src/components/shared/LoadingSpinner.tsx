@@ -52,7 +52,16 @@ export function LoadingSpinner({
           strokeLinecap="round"
         />
       </svg>
-      <span className="cept-sr-only" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+      <span
+        className="cept-sr-only"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+        }}
+      >
         {label}
       </span>
     </div>
@@ -92,15 +101,9 @@ export function EmptyState({
         color: 'var(--cept-text-secondary, #888)',
       }}
     >
-      {icon && (
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{icon}</div>
-      )}
-      <h3 style={{ margin: '0 0 0.5rem', color: 'var(--cept-text-primary, #333)' }}>
-        {title}
-      </h3>
-      {description && (
-        <p style={{ margin: '0 0 1rem', maxWidth: '300px' }}>{description}</p>
-      )}
+      {icon && <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{icon}</div>}
+      <h3 style={{ margin: '0 0 0.5rem', color: 'var(--cept-text-primary, #333)' }}>{title}</h3>
+      {description && <p style={{ margin: '0 0 1rem', maxWidth: '300px' }}>{description}</p>}
       {actionLabel && onAction && (
         <button
           type="button"

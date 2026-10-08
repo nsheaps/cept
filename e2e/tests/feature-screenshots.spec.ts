@@ -34,9 +34,9 @@ async function openDemoEditor(page: Page) {
 /** Navigate to a page in the sidebar by clicking its link. Returns true if successful. */
 async function navigateToPage(page: Page, linkText: string): Promise<boolean> {
   // Use exact match to avoid ambiguity with partial text matches
-  const link = page.getByRole('link', { name: linkText }).or(
-    page.locator(`[data-testid="sidebar"] >> text="${linkText}"`),
-  );
+  const link = page
+    .getByRole('link', { name: linkText })
+    .or(page.locator(`[data-testid="sidebar"] >> text="${linkText}"`));
   try {
     await link.first().waitFor({ state: 'visible', timeout: 3000 });
     await link.first().click();
@@ -60,7 +60,11 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('editor overview', async ({ page }) => {
-    await captureScreenshot(page, { name: 'editor-overview', category: 'features', fullPage: true });
+    await captureScreenshot(page, {
+      name: 'editor-overview',
+      category: 'features',
+      fullPage: true,
+    });
   });
 
   test('sidebar', async ({ page }) => {
@@ -98,7 +102,11 @@ test.describe('Feature Screenshots', () => {
         await firstSummary.click();
         await page.waitForTimeout(300);
       }
-      await captureScreenshot(page, { name: 'toggle-open', category: 'features', selector: '.cept-toggle' });
+      await captureScreenshot(page, {
+        name: 'toggle-open',
+        category: 'features',
+        selector: '.cept-toggle',
+      });
     }
   });
 
@@ -108,7 +116,11 @@ test.describe('Feature Screenshots', () => {
     const callout = page.locator('.cept-callout').first();
     try {
       if (await callout.isVisible()) {
-        await captureScreenshot(page, { name: 'callout', category: 'features', selector: '.cept-callout' });
+        await captureScreenshot(page, {
+          name: 'callout',
+          category: 'features',
+          selector: '.cept-callout',
+        });
       }
     } catch {
       // Element may detach during re-render, skip gracefully
@@ -123,7 +135,11 @@ test.describe('Feature Screenshots', () => {
     }
     const codeBlock = page.locator('.cept-code-block').first();
     if (await codeBlock.isVisible()) {
-      await captureScreenshot(page, { name: 'code-block', category: 'features', selector: '.cept-code-block' });
+      await captureScreenshot(page, {
+        name: 'code-block',
+        category: 'features',
+        selector: '.cept-code-block',
+      });
     }
   });
 
@@ -135,7 +151,11 @@ test.describe('Feature Screenshots', () => {
     }
     const table = page.locator('.cept-table').first();
     if (await table.isVisible()) {
-      await captureScreenshot(page, { name: 'table', category: 'features', selector: '.cept-table' });
+      await captureScreenshot(page, {
+        name: 'table',
+        category: 'features',
+        selector: '.cept-table',
+      });
     }
   });
 
@@ -149,7 +169,11 @@ test.describe('Feature Screenshots', () => {
       const taskList = page.locator('.cept-task-list').first();
       await taskList.waitFor({ state: 'visible', timeout: 3000 });
       await page.waitForTimeout(300);
-      await captureScreenshot(page, { name: 'task-list', category: 'features', selector: '.cept-task-list' });
+      await captureScreenshot(page, {
+        name: 'task-list',
+        category: 'features',
+        selector: '.cept-task-list',
+      });
     } catch {
       // Element may detach during page re-render, skip gracefully
     }
@@ -163,7 +187,11 @@ test.describe('Feature Screenshots', () => {
     }
     const blockquote = page.locator('.cept-blockquote').first();
     if (await blockquote.isVisible()) {
-      await captureScreenshot(page, { name: 'blockquote', category: 'features', selector: '.cept-blockquote' });
+      await captureScreenshot(page, {
+        name: 'blockquote',
+        category: 'features',
+        selector: '.cept-blockquote',
+      });
     }
   });
 
@@ -195,7 +223,11 @@ test.describe('Feature Screenshots', () => {
     await page.waitForTimeout(500);
     const slashMenu = page.locator('.cept-slash-menu');
     if (await slashMenu.isVisible()) {
-      await captureScreenshot(page, { name: 'slash-menu', category: 'features', selector: '.cept-slash-menu' });
+      await captureScreenshot(page, {
+        name: 'slash-menu',
+        category: 'features',
+        selector: '.cept-slash-menu',
+      });
     }
   });
 
@@ -206,7 +238,11 @@ test.describe('Feature Screenshots', () => {
       await page.waitForTimeout(500);
       const toolbar = page.locator('.cept-inline-toolbar');
       if (await toolbar.isVisible()) {
-        await captureScreenshot(page, { name: 'inline-toolbar', category: 'features', selector: '.cept-inline-toolbar' });
+        await captureScreenshot(page, {
+          name: 'inline-toolbar',
+          category: 'features',
+          selector: '.cept-inline-toolbar',
+        });
       }
     }
   });
@@ -216,7 +252,11 @@ test.describe('Feature Screenshots', () => {
     await page.waitForTimeout(300);
     const palette = page.locator('.cept-command-palette');
     if (await palette.isVisible()) {
-      await captureScreenshot(page, { name: 'command-palette', category: 'features', selector: '.cept-command-palette' });
+      await captureScreenshot(page, {
+        name: 'command-palette',
+        category: 'features',
+        selector: '.cept-command-palette',
+      });
       await page.keyboard.press('Escape');
     }
   });
@@ -256,6 +296,10 @@ test.describe('Feature Screenshots', () => {
       test.skip();
       return;
     }
-    await captureScreenshot(page, { name: 'getting-started', category: 'features', fullPage: true });
+    await captureScreenshot(page, {
+      name: 'getting-started',
+      category: 'features',
+      fullPage: true,
+    });
   });
 });

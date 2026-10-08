@@ -217,10 +217,7 @@ export class GitBackend implements GitStorageBackend {
       ok: result.ok ?? false,
       refs: result.refs
         ? Object.fromEntries(
-            Object.entries(result.refs).map(([k, v]) => [
-              k,
-              { ok: v.ok ?? false, error: v.error },
-            ]),
+            Object.entries(result.refs).map(([k, v]) => [k, { ok: v.ok ?? false, error: v.error }]),
           )
         : {},
     };
@@ -256,7 +253,10 @@ export class GitBackend implements GitStorageBackend {
    * Clone a remote repository into this backend's directory.
    * Should be called instead of `initialize()` when bootstrapping from a remote.
    */
-  async clone(url: string, options?: { ref?: string; depth?: number; singleBranch?: boolean }): Promise<void> {
+  async clone(
+    url: string,
+    options?: { ref?: string; depth?: number; singleBranch?: boolean },
+  ): Promise<void> {
     if (!this.http) throw new Error('GitBackend: http client required for clone');
     await this.underlying.initialize({ name: 'git-clone' });
     await git.clone({
@@ -551,7 +551,10 @@ function generateUnifiedHunks(oldText: string, newText: string): string[] {
     for (let idx = 0; idx < range.start; idx++) {
       if (diffOps[idx].type === 'remove') oldStart++;
       else if (diffOps[idx].type === 'add') newStart++;
-      else { oldStart++; newStart++; }
+      else {
+        oldStart++;
+        newStart++;
+      }
     }
 
     for (let idx = range.start; idx < range.end; idx++) {

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { matchesAny, PRECACHE_URLS, CACHE_NAME, STATIC_CACHE, DATA_CACHE } from './service-worker.js';
+import {
+  matchesAny,
+  PRECACHE_URLS,
+  CACHE_NAME,
+  STATIC_CACHE,
+  DATA_CACHE,
+} from './service-worker.js';
 
 describe('Service Worker utilities', () => {
   it('exports cache names', () => {

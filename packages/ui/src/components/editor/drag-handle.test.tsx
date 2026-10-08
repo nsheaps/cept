@@ -11,18 +11,14 @@ describe('Drag Handle', () => {
   });
 
   it('renders editor content alongside drag handle', () => {
-    render(
-      <CeptEditor content="<p>First block</p><p>Second block</p>" />,
-    );
+    render(<CeptEditor content="<p>First block</p><p>Second block</p>" />);
 
     expect(screen.getByText('First block')).toBeDefined();
     expect(screen.getByText('Second block')).toBeDefined();
   });
 
   it('does not render drag handle when editor is not editable', () => {
-    const { container } = render(
-      <CeptEditor content="<p>Read only</p>" editable={false} />,
-    );
+    const { container } = render(<CeptEditor content="<p>Read only</p>" editable={false} />);
 
     expect(screen.getByText('Read only')).toBeDefined();
     // The editor should still render without errors
@@ -31,9 +27,7 @@ describe('Drag Handle', () => {
 
   it('preserves block structure with drag handle enabled', () => {
     const { container } = render(
-      <CeptEditor
-        content="<h1>Title</h1><p>Paragraph</p><ul><li>Item</li></ul>"
-      />,
+      <CeptEditor content="<h1>Title</h1><p>Paragraph</p><ul><li>Item</li></ul>" />,
     );
 
     const editor = container.querySelector('.tiptap');

@@ -97,9 +97,7 @@ export function generateCommitMessage(changes: FileChange[]): string {
 
 function getShortPath(path: string): string {
   const parts = path.split('/');
-  return parts.length > 2
-    ? `${parts[parts.length - 2]}/${parts[parts.length - 1]}`
-    : path;
+  return parts.length > 2 ? `${parts[parts.length - 2]}/${parts[parts.length - 1]}` : path;
 }
 
 export class AutoCommitEngine {

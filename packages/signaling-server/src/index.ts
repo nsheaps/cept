@@ -7,12 +7,7 @@
  */
 
 export { RoomManager } from './room-manager.js';
-export type {
-  ClientConnection,
-  RoomEvent,
-  RoomEventType,
-  RoomListener,
-} from './room-manager.js';
+export type { ClientConnection, RoomEvent, RoomEventType, RoomListener } from './room-manager.js';
 
 export type {
   ClientMessage,
@@ -28,4 +23,3 @@ export type {
   SyncBroadcastMessage,
   ErrorMessage,
 } from './protocol.js';
-

@@ -36,8 +36,12 @@ describe('SearchContext', () => {
       };
       return (
         <>
-          <button data-testid="do-index" onClick={handleIndex}>Index</button>
-          <button data-testid="do-search" onClick={handleSearch}>Search</button>
+          <button data-testid="do-index" onClick={handleIndex}>
+            Index
+          </button>
+          <button data-testid="do-search" onClick={handleSearch}>
+            Search
+          </button>
           <div id="search-results" data-testid="search-results" />
         </>
       );

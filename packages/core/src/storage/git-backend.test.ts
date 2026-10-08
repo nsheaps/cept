@@ -331,9 +331,9 @@ describe('GitBackend', () => {
   describe('clone', () => {
     it('should throw without http client', async () => {
       // backend has no http client configured
-      await expect(
-        backend.clone('https://github.com/test/repo'),
-      ).rejects.toThrow('http client required');
+      await expect(backend.clone('https://github.com/test/repo')).rejects.toThrow(
+        'http client required',
+      );
     });
 
     it('should accept http and corsProxy options', () => {

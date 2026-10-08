@@ -963,11 +963,21 @@ export const DOCS_CONTENT: Record<string, string> = {
   'docs-icons': stripFrontMatter(MD_ICONS),
   'docs-roadmap': stripFrontMatter(MD_ROADMAP),
   // Folder pages — auto-generated index content for parent nodes
-  'docs-getting-started': stripFrontMatter(`# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`),
-  'docs-guides': stripFrontMatter(`# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Toggle Syntax** — Toggle block syntax and examples\n- **Markdown Extensions** — How Cept extends standard Markdown\n- **Platform Support** — Supported platforms and browsers`),
-  'docs-comparison': stripFrontMatter(`# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`),
-  'docs-migration': stripFrontMatter(`# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`),
-  'docs-reference': stripFrontMatter(`# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Icons Reference** — All icons used in the app\n- **Product Roadmap** — What's built and what's coming next`),
+  'docs-getting-started': stripFrontMatter(
+    `# Getting Started\n\n- **Introduction** — What is Cept and why use it\n- **Quick Start** — Get up and running in under a minute`,
+  ),
+  'docs-guides': stripFrontMatter(
+    `# Guides\n\n- **Features** — Complete feature reference with all block types\n- **Toggle Syntax** — Toggle block syntax and examples\n- **Markdown Extensions** — How Cept extends standard Markdown\n- **Platform Support** — Supported platforms and browsers`,
+  ),
+  'docs-comparison': stripFrontMatter(
+    `# Comparisons\n\n- **Cept vs Notion** — Feature comparison for Notion users\n- **Cept vs Obsidian** — Feature comparison for Obsidian users`,
+  ),
+  'docs-migration': stripFrontMatter(
+    `# Migration\n\n- **From Notion** — Import your Notion workspace\n- **From Obsidian** — Import your Obsidian vault`,
+  ),
+  'docs-reference': stripFrontMatter(
+    `# Reference\n\n- **Keyboard Shortcuts** — All keyboard shortcuts\n- **Icons Reference** — All icons used in the app\n- **Product Roadmap** — What's built and what's coming next`,
+  ),
 };
 
 /** Map of docs page IDs to their source file path in the GitHub repo */
@@ -988,7 +998,8 @@ export const DOCS_SOURCE_PATHS: Record<string, string> = {
   'docs-roadmap': 'docs/content/reference/roadmap.md',
 };
 
-const DOCS_BRANCH = typeof __HEAD_BRANCH__ !== 'undefined' && __HEAD_BRANCH__ ? __HEAD_BRANCH__ : 'main';
+const DOCS_BRANCH =
+  typeof __HEAD_BRANCH__ !== 'undefined' && __HEAD_BRANCH__ ? __HEAD_BRANCH__ : 'main';
 const GITHUB_BASE = `https://github.com/nsheaps/cept/blob/${DOCS_BRANCH}/`;
 
 export function getDocsSourceUrl(pageId: string): string | undefined {

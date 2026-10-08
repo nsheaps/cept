@@ -78,15 +78,18 @@ export function DatabaseSchemaEditor({
     setDragIndex(index);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (dragIndex === null || dragIndex === index) return;
-    const reordered = [...properties];
-    const [moved] = reordered.splice(dragIndex, 1);
-    reordered.splice(index, 0, moved);
-    onReorderProperties(reordered);
-    setDragIndex(index);
-  }, [dragIndex, properties, onReorderProperties]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      if (dragIndex === null || dragIndex === index) return;
+      const reordered = [...properties];
+      const [moved] = reordered.splice(dragIndex, 1);
+      reordered.splice(index, 0, moved);
+      onReorderProperties(reordered);
+      setDragIndex(index);
+    },
+    [dragIndex, properties, onReorderProperties],
+  );
 
   const handleDragEnd = useCallback(() => {
     setDragIndex(null);
@@ -136,7 +139,9 @@ export function DatabaseSchemaEditor({
                   data-testid="schema-edit-type"
                 >
                   {PROPERTY_TYPES.map((pt) => (
-                    <option key={pt.value} value={pt.value}>{pt.label}</option>
+                    <option key={pt.value} value={pt.value}>
+                      {pt.label}
+                    </option>
                   ))}
                 </select>
                 <button
@@ -159,11 +164,18 @@ export function DatabaseSchemaEditor({
                 <span className="cept-schema-drag-handle" data-testid={`schema-drag-${prop.name}`}>
                   {'\u2630'}
                 </span>
-                <span className="cept-schema-property-name" data-testid={`schema-name-${prop.name}`}>
+                <span
+                  className="cept-schema-property-name"
+                  data-testid={`schema-name-${prop.name}`}
+                >
                   {prop.name}
                 </span>
-                <span className="cept-schema-property-type" data-testid={`schema-type-${prop.name}`}>
-                  {PROPERTY_TYPES.find((pt) => pt.value === prop.definition.type)?.label ?? prop.definition.type}
+                <span
+                  className="cept-schema-property-type"
+                  data-testid={`schema-type-${prop.name}`}
+                >
+                  {PROPERTY_TYPES.find((pt) => pt.value === prop.definition.type)?.label ??
+                    prop.definition.type}
                 </span>
                 {prop.definition.type !== 'title' && (
                   <>
@@ -210,7 +222,9 @@ export function DatabaseSchemaEditor({
             data-testid="schema-new-type"
           >
             {PROPERTY_TYPES.map((pt) => (
-              <option key={pt.value} value={pt.value}>{pt.label}</option>
+              <option key={pt.value} value={pt.value}>
+                {pt.label}
+              </option>
             ))}
           </select>
           <button

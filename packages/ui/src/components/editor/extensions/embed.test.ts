@@ -54,9 +54,7 @@ describe('Embed helpers', () => {
     });
 
     it('returns original URL for generic provider', () => {
-      expect(toEmbedUrl('https://example.com/embed', 'generic')).toBe(
-        'https://example.com/embed',
-      );
+      expect(toEmbedUrl('https://example.com/embed', 'generic')).toBe('https://example.com/embed');
     });
   });
 });

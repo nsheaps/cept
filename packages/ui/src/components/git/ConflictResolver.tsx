@@ -12,11 +12,7 @@ interface ConflictResolution {
   content: string;
 }
 
-export function ConflictResolver({
-  conflicts,
-  onResolve,
-  onCancel,
-}: ConflictResolverProps) {
+export function ConflictResolver({ conflicts, onResolve, onCancel }: ConflictResolverProps) {
   const [resolutions, setResolutions] = useState<Map<string, ConflictResolution>>(new Map());
   const [activeConflict, setActiveConflict] = useState<number>(0);
 
@@ -178,7 +174,10 @@ export function ConflictResolver({
           )}
 
           {currentResolution && (
-            <div className="cept-conflict-resolution-status" data-testid="conflict-resolution-status">
+            <div
+              className="cept-conflict-resolution-status"
+              data-testid="conflict-resolution-status"
+            >
               Resolved: {currentResolution.strategy}
             </div>
           )}
@@ -187,11 +186,7 @@ export function ConflictResolver({
 
       <div className="cept-conflict-footer" data-testid="conflict-footer">
         {onCancel && (
-          <button
-            className="cept-conflict-cancel"
-            onClick={onCancel}
-            data-testid="conflict-cancel"
-          >
+          <button className="cept-conflict-cancel" onClick={onCancel} data-testid="conflict-cancel">
             Cancel
           </button>
         )}

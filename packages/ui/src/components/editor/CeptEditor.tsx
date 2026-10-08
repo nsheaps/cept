@@ -25,7 +25,11 @@ import { Bookmark } from './extensions/bookmark.js';
 import { Columns, Column } from './extensions/columns.js';
 import { MathBlock, InlineMath } from './extensions/math.js';
 import { Mermaid } from './extensions/mermaid.js';
-import { SlashCommand, defaultSlashCommands, filterSlashCommands } from './extensions/slash-command.js';
+import {
+  SlashCommand,
+  defaultSlashCommands,
+  filterSlashCommands,
+} from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import { InlineToolbar } from './InlineToolbar.js';
@@ -152,12 +156,20 @@ export function CeptEditor({
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
-        customNodes: ['callout', 'toggle', 'imageBlock', 'embed', 'bookmark', 'columns', 'mathBlock', 'mermaid'],
+        customNodes: [
+          'callout',
+          'toggle',
+          'imageBlock',
+          'embed',
+          'bookmark',
+          'columns',
+          'mathBlock',
+          'mermaid',
+        ],
       }),
       SlashCommand.configure({
         suggestion: {
-          items: ({ query }: { query: string }) =>
-            filterSlashCommands(defaultSlashCommands, query),
+          items: ({ query }: { query: string }) => filterSlashCommands(defaultSlashCommands, query),
           render: () => {
             let component: ReactRenderer<SlashCommandMenuRef> | null = null;
             let popup: TippyInstance[] | null = null;

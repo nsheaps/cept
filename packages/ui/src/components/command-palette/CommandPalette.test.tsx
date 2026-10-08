@@ -72,9 +72,7 @@ describe('CommandPalette', () => {
 
   it('executes command on Enter', () => {
     const action = vi.fn();
-    const items: CommandItem[] = [
-      { id: 'test', title: 'Test', category: 'Test', action },
-    ];
+    const items: CommandItem[] = [{ id: 'test', title: 'Test', category: 'Test', action }];
     const onClose = vi.fn();
     render(<CommandPalette isOpen={true} items={items} onClose={onClose} />);
 
@@ -85,9 +83,7 @@ describe('CommandPalette', () => {
 
   it('executes command on click', () => {
     const action = vi.fn();
-    const items: CommandItem[] = [
-      { id: 'test', title: 'Test', category: 'Test', action },
-    ];
+    const items: CommandItem[] = [{ id: 'test', title: 'Test', category: 'Test', action }];
     const onClose = vi.fn();
     render(<CommandPalette isOpen={true} items={items} onClose={onClose} />);
 

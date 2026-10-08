@@ -125,38 +125,32 @@ export function cleanNotionFilename(filename: string): string {
  * Convert Notion-style internal links to Cept wiki-links.
  * Notion exports links like: [Page Name](Page%20Name%20abc123.md)
  */
-export function convertNotionLinks(
-  content: string,
-  pathMap: Map<string, string>,
-): string {
+export function convertNotionLinks(content: string, pathMap: Map<string, string>): string {
   // Match markdown links: [text](url)
-  return content.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    (match, text: string, href: string) => {
-      // Skip external links
-      if (href.startsWith('http://') || href.startsWith('https://')) {
-        return match;
-      }
-
-      // Decode URL encoding
-      const decodedHref = decodeURIComponent(href);
-
-      // Look up the target path
-      const targetPath = pathMap.get(decodedHref);
-      if (targetPath) {
-        return `[[${targetPath}|${text}]]`;
-      }
-
-      // Try matching by cleaned filename
-      for (const [source, target] of pathMap) {
-        if (cleanNotionFilename(source) === cleanNotionFilename(decodedHref)) {
-          return `[[${target}|${text}]]`;
-        }
-      }
-
+  return content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text: string, href: string) => {
+    // Skip external links
+    if (href.startsWith('http://') || href.startsWith('https://')) {
       return match;
-    },
-  );
+    }
+
+    // Decode URL encoding
+    const decodedHref = decodeURIComponent(href);
+
+    // Look up the target path
+    const targetPath = pathMap.get(decodedHref);
+    if (targetPath) {
+      return `[[${targetPath}|${text}]]`;
+    }
+
+    // Try matching by cleaned filename
+    for (const [source, target] of pathMap) {
+      if (cleanNotionFilename(source) === cleanNotionFilename(decodedHref)) {
+        return `[[${target}|${text}]]`;
+      }
+    }
+
+    return match;
+  });
 }
 
 /**
@@ -304,8 +298,12 @@ export async function importNotionZip(
         const children = fileEntries
           .filter((e) => {
             const p = normalizePath(e.path);
-            return p !== normalizedPath && p.startsWith(dir + '/') && isMarkdown(p) &&
-              p.replace(dir + '/', '').split('/').length <= 2;
+            return (
+              p !== normalizedPath &&
+              p.startsWith(dir + '/') &&
+              isMarkdown(p) &&
+              p.replace(dir + '/', '').split('/').length <= 2
+            );
           })
           .map((e) => pathMap.get(e.path) ?? normalizePath(e.path));
 

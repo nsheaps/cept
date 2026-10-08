@@ -72,11 +72,7 @@ export class GitHubAuthProvider implements AuthProvider {
   private fetchFn: FetchFn;
   private cachedToken: AuthToken | null = null;
 
-  constructor(
-    config: GitHubOAuthConfig,
-    tokenStore?: TokenStore,
-    fetchFn?: FetchFn,
-  ) {
+  constructor(config: GitHubOAuthConfig, tokenStore?: TokenStore, fetchFn?: FetchFn) {
     this.config = {
       ...config,
       scopes: config.scopes ?? DEFAULT_SCOPES,
@@ -94,9 +90,7 @@ export class GitHubAuthProvider implements AuthProvider {
     if (token && !this.isExpired(token)) {
       return token;
     }
-    throw new Error(
-      'No valid token. Use exchangeCode() or startDeviceFlow() to authenticate.',
-    );
+    throw new Error('No valid token. Use exchangeCode() or startDeviceFlow() to authenticate.');
   }
 
   /**
@@ -179,9 +173,7 @@ export class GitHubAuthProvider implements AuthProvider {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       scopes: data.scope ? data.scope.split(',') : this.config.scopes,
-      expiresAt: data.expires_in
-        ? Date.now() + data.expires_in * 1000
-        : undefined,
+      expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
     };
 
     await this.saveToken(token);
@@ -290,9 +282,7 @@ export class GitHubAuthProvider implements AuthProvider {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       scopes: data.scope ? data.scope.split(',') : this.config.scopes,
-      expiresAt: data.expires_in
-        ? Date.now() + data.expires_in * 1000
-        : undefined,
+      expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
     };
 
     await this.saveToken(token);
@@ -400,7 +390,12 @@ export class GitHubAuthProvider implements AuthProvider {
   /**
    * Get the authenticated user's info.
    */
-  async getUser(): Promise<{ login: string; name: string | null; email: string | null; avatarUrl: string }> {
+  async getUser(): Promise<{
+    login: string;
+    name: string | null;
+    email: string | null;
+    avatarUrl: string;
+  }> {
     const token = await this.requireToken();
     const apiBase = this.config.apiBase ?? GITHUB_API_BASE;
 

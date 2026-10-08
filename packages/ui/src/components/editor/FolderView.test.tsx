@@ -64,9 +64,7 @@ describe('FolderView', () => {
   });
 
   it('shows "Untitled" for pages without title', () => {
-    const pages: PageTreeNode[] = [
-      { id: 'no-title', title: '', children: [] },
-    ];
+    const pages: PageTreeNode[] = [{ id: 'no-title', title: '', children: [] }];
     render(<FolderView children={pages} onPageSelect={() => {}} />);
     expect(screen.getByText('Untitled')).toBeTruthy();
   });

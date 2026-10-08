@@ -10,7 +10,7 @@ describe('CeptEditor — table blocks', () => {
 | --- | --- |
 | Alice | 30 |
 | Bob | 25 |`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -27,7 +27,7 @@ describe('CeptEditor — table blocks', () => {
         content={`| Header 1 | Header 2 |
 | --- | --- |
 | Cell 1 | Cell 2 |`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -44,7 +44,7 @@ describe('CeptEditor — table blocks', () => {
         content={`| Col A | Col B |
 | --- | --- |
 | Data A | Data B |`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -63,7 +63,7 @@ describe('CeptEditor — table blocks', () => {
 | 1 | Task A | Done |
 | 2 | Task B | In Progress |
 | 3 | Task C | Pending |`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -85,7 +85,7 @@ Here is the current task breakdown:
 | Design | Complete |
 
 More details below.`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -102,7 +102,7 @@ More details below.`}
         content={`| X | Y |
 | --- | --- |
 | 1 | 2 |`}
-      />
+      />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');

@@ -20,11 +20,7 @@ export interface SearchProviderProps {
  */
 export function SearchProvider({ children }: SearchProviderProps) {
   const index = useMemo(() => new CeptSearchIndex(), []);
-  return (
-    <SearchIndexContext.Provider value={index}>
-      {children}
-    </SearchIndexContext.Provider>
-  );
+  return <SearchIndexContext.Provider value={index}>{children}</SearchIndexContext.Provider>;
 }
 
 /**
@@ -42,10 +38,7 @@ export function useSearchIndex() {
     [index],
   );
 
-  const removePage = useCallback(
-    (pageId: string) => index.removePage(pageId),
-    [index],
-  );
+  const removePage = useCallback((pageId: string) => index.removePage(pageId), [index]);
 
   const search = useCallback(
     (query: string, options?: SearchOptions): Promise<SearchResult[]> =>

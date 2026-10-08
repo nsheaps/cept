@@ -118,7 +118,13 @@ describe('SpaceManager', () => {
 
   describe('createRemoteSpace', () => {
     it('creates a remote space with repo-path-based ID', async () => {
-      const space = await createRemoteSpace(backend, 'Docs', 'https://github.com/user/repo', 'main', 'docs/');
+      const space = await createRemoteSpace(
+        backend,
+        'Docs',
+        'https://github.com/user/repo',
+        'main',
+        'docs/',
+      );
       expect(space.id).toBe('github.com/user/repo@main/docs');
       expect(space.remoteUrl).toBe('https://github.com/user/repo');
       expect(space.branch).toBe('main');
@@ -129,7 +135,12 @@ describe('SpaceManager', () => {
 
     it('replaces existing space with same ID on re-clone', async () => {
       await createRemoteSpace(backend, 'Docs v1', 'https://github.com/user/repo', 'main');
-      const space2 = await createRemoteSpace(backend, 'Docs v2', 'https://github.com/user/repo', 'main');
+      const space2 = await createRemoteSpace(
+        backend,
+        'Docs v2',
+        'https://github.com/user/repo',
+        'main',
+      );
       const manifest = await loadSpaces(backend);
       const matching = manifest.spaces.filter((s) => s.id === space2.id);
       expect(matching.length).toBe(1);
@@ -139,19 +150,27 @@ describe('SpaceManager', () => {
 
   describe('generateRemoteSpaceId', () => {
     it('generates ID from URL and branch', () => {
-      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main')).toBe('github.com/nsheaps/cept@main');
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main')).toBe(
+        'github.com/nsheaps/cept@main',
+      );
     });
 
     it('generates ID with subpath', () => {
-      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main', 'docs/')).toBe('github.com/nsheaps/cept@main/docs');
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept', 'main', 'docs/')).toBe(
+        'github.com/nsheaps/cept@main/docs',
+      );
     });
 
     it('strips .git suffix', () => {
-      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept.git', 'main')).toBe('github.com/nsheaps/cept@main');
+      expect(generateRemoteSpaceId('https://github.com/nsheaps/cept.git', 'main')).toBe(
+        'github.com/nsheaps/cept@main',
+      );
     });
 
     it('handles URL without protocol', () => {
-      expect(generateRemoteSpaceId('github.com/nsheaps/cept', 'main')).toBe('github.com/nsheaps/cept@main');
+      expect(generateRemoteSpaceId('github.com/nsheaps/cept', 'main')).toBe(
+        'github.com/nsheaps/cept@main',
+      );
     });
   });
 
@@ -179,7 +198,12 @@ describe('SpaceManager', () => {
 
   describe('updateSpaceSyncTimestamp', () => {
     it('updates the lastSyncedAt timestamp', async () => {
-      const space = await createRemoteSpace(backend, 'Docs', 'https://github.com/user/repo', 'main');
+      const space = await createRemoteSpace(
+        backend,
+        'Docs',
+        'https://github.com/user/repo',
+        'main',
+      );
       const originalTimestamp = space.lastSyncedAt;
 
       // Small delay to ensure timestamp differs

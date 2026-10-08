@@ -63,7 +63,9 @@ describe('PropertyEditor', () => {
 
     it('shows checked state', () => {
       render(<PropertyEditor type="checkbox" value={true} onChange={() => {}} />);
-      expect((screen.getByTestId('prop-editor-checkbox-input') as HTMLInputElement).checked).toBe(true);
+      expect((screen.getByTestId('prop-editor-checkbox-input') as HTMLInputElement).checked).toBe(
+        true,
+      );
     });
 
     it('calls onChange on toggle', () => {
@@ -126,12 +128,16 @@ describe('PropertyEditor', () => {
 
   describe('readonly types', () => {
     it('renders created_time as readonly', () => {
-      render(<PropertyEditor type="created_time" value="2026-03-04T12:00:00Z" onChange={() => {}} />);
+      render(
+        <PropertyEditor type="created_time" value="2026-03-04T12:00:00Z" onChange={() => {}} />,
+      );
       expect(screen.getByTestId('prop-editor-readonly')).toBeDefined();
     });
 
     it('renders last_edited_time as readonly', () => {
-      render(<PropertyEditor type="last_edited_time" value="2026-03-04T12:00:00Z" onChange={() => {}} />);
+      render(
+        <PropertyEditor type="last_edited_time" value="2026-03-04T12:00:00Z" onChange={() => {}} />,
+      );
       expect(screen.getByTestId('prop-editor-readonly')).toBeDefined();
     });
 
@@ -168,7 +174,9 @@ describe('PropertyEditor', () => {
   describe('custom placeholder', () => {
     it('uses custom placeholder for text', () => {
       render(<PropertyEditor type="text" value="" onChange={() => {}} placeholder="Custom..." />);
-      expect((screen.getByTestId('prop-editor-text') as HTMLInputElement).placeholder).toBe('Custom...');
+      expect((screen.getByTestId('prop-editor-text') as HTMLInputElement).placeholder).toBe(
+        'Custom...',
+      );
     });
   });
 });

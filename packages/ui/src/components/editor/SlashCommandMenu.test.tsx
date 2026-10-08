@@ -78,9 +78,7 @@ describe('SlashCommandMenu', () => {
 
   it('highlights first item by default', () => {
     const command = vi.fn();
-    const { container } = render(
-      <SlashCommandMenu items={mockItems} command={command} />,
-    );
+    const { container } = render(<SlashCommandMenu items={mockItems} command={command} />);
 
     const selectedItem = container.querySelector('.cept-slash-menu-item.is-selected');
     expect(selectedItem).not.toBeNull();

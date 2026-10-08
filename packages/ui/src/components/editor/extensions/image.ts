@@ -64,8 +64,7 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
       },
       width: {
         default: null,
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-width') || null,
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-width') || null,
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-width': attributes.width as string,
         }),
@@ -97,9 +96,7 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
       class: 'cept-image-block',
     });
 
-    const imgStyle = width
-      ? `width: ${width}; max-width: 100%;`
-      : 'max-width: 100%;';
+    const imgStyle = width ? `width: ${width}; max-width: 100%;` : 'max-width: 100%;';
 
     const imgSpec = [
       'img',
@@ -126,10 +123,7 @@ export const ImageBlock = Node.create<ImageBlockOptions>({
   addStorage() {
     return {
       markdown: {
-        serialize(
-          state: Record<string, unknown>,
-          node: { attrs: { src: string; alt: string } },
-        ) {
+        serialize(state: Record<string, unknown>, node: { attrs: { src: string; alt: string } }) {
           const s = state as unknown as {
             write: (text: string) => void;
             ensureNewLine: () => void;

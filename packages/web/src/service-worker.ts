@@ -7,14 +7,24 @@
  */
 
 // Service worker type declarations (this file runs in SW context, not DOM)
-interface SWExtendableEvent extends Event { waitUntil(p: Promise<unknown>): void; }
-interface SWFetchEvent extends SWExtendableEvent { readonly request: Request; respondWith(r: Response | Promise<Response>): void; }
-interface SWMessageEvent extends SWExtendableEvent { readonly data: { type?: string } & Record<string, unknown>; }
+interface SWExtendableEvent extends Event {
+  waitUntil(p: Promise<unknown>): void;
+}
+interface SWFetchEvent extends SWExtendableEvent {
+  readonly request: Request;
+  respondWith(r: Response | Promise<Response>): void;
+}
+interface SWMessageEvent extends SWExtendableEvent {
+  readonly data: { type?: string } & Record<string, unknown>;
+}
 interface SWGlobalScope {
   readonly location: Location;
   readonly clients: { claim(): Promise<void> };
   skipWaiting(): Promise<void>;
-  addEventListener(type: 'install' | 'activate', listener: (event: SWExtendableEvent) => void): void;
+  addEventListener(
+    type: 'install' | 'activate',
+    listener: (event: SWExtendableEvent) => void,
+  ): void;
   addEventListener(type: 'fetch', listener: (event: SWFetchEvent) => void): void;
   addEventListener(type: 'message', listener: (event: SWMessageEvent) => void): void;
 }
@@ -47,23 +57,13 @@ const STATIC_CACHE = `${CACHE_PREFIX}cept-static-v1`;
 const DATA_CACHE = `${CACHE_PREFIX}cept-data-v1`;
 
 /** Static assets to precache on install */
-const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-];
+const PRECACHE_URLS = ['/', '/index.html', '/manifest.json'];
 
 /** URL patterns that should use cache-first strategy */
-const STATIC_PATTERNS = [
-  /\.(js|css|woff2?|png|jpg|svg|ico)$/,
-  /^\/assets\//,
-  /^\/icons\//,
-];
+const STATIC_PATTERNS = [/\.(js|css|woff2?|png|jpg|svg|ico)$/, /^\/assets\//, /^\/icons\//];
 
 /** URL patterns that should use network-first strategy */
-const NETWORK_FIRST_PATTERNS = [
-  /^\/api\//,
-];
+const NETWORK_FIRST_PATTERNS = [/^\/api\//];
 
 /** Check if a URL matches any of the given patterns */
 function matchesAny(url: string, patterns: RegExp[]): boolean {
@@ -72,11 +72,7 @@ function matchesAny(url: string, patterns: RegExp[]): boolean {
 
 /** Install event — precache static assets (do NOT auto-skipWaiting; let the client decide) */
 self.addEventListener('install', (event: SWExtendableEvent) => {
-  event.waitUntil(
-    caches
-      .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS)),
-  );
+  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
 });
 
 /** Activate event — clean up old caches */
@@ -163,9 +159,7 @@ self.addEventListener('message', (event: SWMessageEvent) => {
     self.skipWaiting();
   }
   if (event.data?.type === 'CLEAR_CACHE') {
-    event.waitUntil(
-      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))),
-    );
+    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
   }
 });
 

@@ -13,7 +13,12 @@ interface FileEntry extends DirEntry {
   stat?: FileStat | null;
 }
 
-export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose }: FileBrowserProps) {
+export function FileBrowser({
+  backend,
+  rootPath = '/',
+  onNavigateToPage,
+  onClose,
+}: FileBrowserProps) {
   const [currentPath, setCurrentPath] = useState(rootPath);
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,62 +28,68 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const loadDirectory = useCallback(async (path: string) => {
-    setLoading(true);
-    setError(null);
-    setSelectedFile(null);
-    setFileContent(null);
-    setConfirmDelete(null);
-    try {
-      const dirEntries = await backend.listDirectory(path);
-      const enriched: FileEntry[] = [];
-      for (const entry of dirEntries) {
-        const entryPath = path === '/' ? `/${entry.name}` : `${path}/${entry.name}`;
-        let stat: FileStat | null = null;
-        try {
-          stat = await backend.stat(entryPath);
-        } catch {
-          // stat may fail for some entries
+  const loadDirectory = useCallback(
+    async (path: string) => {
+      setLoading(true);
+      setError(null);
+      setSelectedFile(null);
+      setFileContent(null);
+      setConfirmDelete(null);
+      try {
+        const dirEntries = await backend.listDirectory(path);
+        const enriched: FileEntry[] = [];
+        for (const entry of dirEntries) {
+          const entryPath = path === '/' ? `/${entry.name}` : `${path}/${entry.name}`;
+          let stat: FileStat | null = null;
+          try {
+            stat = await backend.stat(entryPath);
+          } catch {
+            // stat may fail for some entries
+          }
+          enriched.push({ ...entry, path: entryPath, stat });
         }
-        enriched.push({ ...entry, path: entryPath, stat });
+        // Sort: directories first, then alphabetically
+        enriched.sort((a, b) => {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setEntries(enriched);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to list directory');
+        setEntries([]);
+      } finally {
+        setLoading(false);
       }
-      // Sort: directories first, then alphabetically
-      enriched.sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      });
-      setEntries(enriched);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to list directory');
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [backend]);
+    },
+    [backend],
+  );
 
   useEffect(() => {
     void loadDirectory(currentPath);
   }, [currentPath, loadDirectory]);
 
-  const handleNavigate = useCallback((entry: FileEntry) => {
-    if (entry.isDirectory) {
-      setCurrentPath(entry.path);
-    } else {
-      setSelectedFile(entry);
-      void backend.readFile(entry.path).then((data) => {
-        if (data) {
-          try {
-            setFileContent(new TextDecoder().decode(data));
-          } catch {
-            setFileContent('[Binary content]');
+  const handleNavigate = useCallback(
+    (entry: FileEntry) => {
+      if (entry.isDirectory) {
+        setCurrentPath(entry.path);
+      } else {
+        setSelectedFile(entry);
+        void backend.readFile(entry.path).then((data) => {
+          if (data) {
+            try {
+              setFileContent(new TextDecoder().decode(data));
+            } catch {
+              setFileContent('[Binary content]');
+            }
+          } else {
+            setFileContent(null);
           }
-        } else {
-          setFileContent(null);
-        }
-      });
-    }
-  }, [backend]);
+        });
+      }
+    },
+    [backend],
+  );
 
   const handleGoUp = useCallback(() => {
     if (currentPath === '/' || currentPath === '') return;
@@ -86,40 +97,55 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
     setCurrentPath(parent);
   }, [currentPath]);
 
-  const handleDelete = useCallback(async (entry: FileEntry) => {
-    try {
-      await backend.deleteFile(entry.path);
-      void loadDirectory(currentPath);
-      if (selectedFile?.path === entry.path) {
-        setSelectedFile(null);
-        setFileContent(null);
+  const handleDelete = useCallback(
+    async (entry: FileEntry) => {
+      try {
+        await backend.deleteFile(entry.path);
+        void loadDirectory(currentPath);
+        if (selectedFile?.path === entry.path) {
+          setSelectedFile(null);
+          setFileContent(null);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to delete');
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete');
-    }
-    setConfirmDelete(null);
-  }, [backend, currentPath, loadDirectory, selectedFile]);
+      setConfirmDelete(null);
+    },
+    [backend, currentPath, loadDirectory, selectedFile],
+  );
 
-  const handleJumpToPage = useCallback((entry: FileEntry) => {
-    // Extract page ID from path like "pages/my-page.md"
-    const match = entry.path.match(/\/pages\/(.+)\.(?:md|html)$/);
-    if (match && onNavigateToPage) {
-      onNavigateToPage(match[1]);
-      onClose();
-    }
-  }, [onNavigateToPage, onClose]);
+  const handleJumpToPage = useCallback(
+    (entry: FileEntry) => {
+      // Extract page ID from path like "pages/my-page.md"
+      const match = entry.path.match(/\/pages\/(.+)\.(?:md|html)$/);
+      if (match && onNavigateToPage) {
+        onNavigateToPage(match[1]);
+        onClose();
+      }
+    },
+    [onNavigateToPage, onClose],
+  );
 
-  const visibleEntries = showHidden
-    ? entries
-    : entries.filter((e) => !e.name.startsWith('.'));
+  const visibleEntries = showHidden ? entries : entries.filter((e) => !e.name.startsWith('.'));
 
   const pathSegments = currentPath === '/' ? [''] : currentPath.split('/');
 
   return (
     <div className="cept-fb" data-testid="file-browser">
       <div className="cept-fb-header">
-        <button className="cept-settings-back-btn" onClick={onClose} data-testid="file-browser-close">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+        <button
+          className="cept-settings-back-btn"
+          onClick={onClose}
+          data-testid="file-browser-close"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M10 4l-4 4 4 4" />
           </svg>
           Back
@@ -145,10 +171,7 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
               {isLast ? (
                 <span className="cept-fb-breadcrumb-current">{seg || 'root'}</span>
               ) : (
-                <button
-                  className="cept-fb-breadcrumb-link"
-                  onClick={() => setCurrentPath(path)}
-                >
+                <button className="cept-fb-breadcrumb-link" onClick={() => setCurrentPath(path)}>
                   {seg || 'root'}
                 </button>
               )}
@@ -158,7 +181,9 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
       </div>
 
       {error && (
-        <div className="cept-fb-error" data-testid="file-browser-error">{error}</div>
+        <div className="cept-fb-error" data-testid="file-browser-error">
+          {error}
+        </div>
       )}
 
       {loading ? (
@@ -168,7 +193,14 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
           {currentPath !== '/' && (
             <button className="cept-fb-entry" onClick={handleGoUp} data-testid="file-browser-go-up">
               <span className="cept-fb-entry-icon">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
                   <path d="M10 4l-4 4 4 4" />
                 </svg>
               </span>
@@ -179,18 +211,36 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
             <div className="cept-fb-empty">Empty directory</div>
           )}
           {visibleEntries.map((entry) => (
-            <div key={entry.path} className="cept-fb-entry-row" data-testid={`fb-entry-${entry.name}`}>
+            <div
+              key={entry.path}
+              className="cept-fb-entry-row"
+              data-testid={`fb-entry-${entry.name}`}
+            >
               <button
                 className={`cept-fb-entry ${selectedFile?.path === entry.path ? 'is-selected' : ''}`}
                 onClick={() => handleNavigate(entry)}
               >
                 <span className="cept-fb-entry-icon">
                   {entry.isDirectory ? (
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
                       <path d="M2 3h4l2 2h6v8H2z" />
                     </svg>
                   ) : (
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
                       <rect x="3" y="1" width="10" height="14" rx="1" />
                       <path d="M6 5h4M6 8h4M6 11h2" />
                     </svg>
@@ -202,27 +252,43 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
                 )}
               </button>
               <div className="cept-fb-entry-actions">
-                {!entry.isDirectory && entry.path.match(/\/pages\/.+\.(?:md|html)$/) && onNavigateToPage && (
-                  <button
-                    className="cept-fb-action-btn"
-                    onClick={() => handleJumpToPage(entry)}
-                    title="Open as page"
-                    data-testid={`fb-jump-${entry.name}`}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M5 3l6 5-6 5" />
-                    </svg>
-                  </button>
-                )}
-                {!entry.isDirectory && (
-                  confirmDelete === entry.path ? (
+                {!entry.isDirectory &&
+                  entry.path.match(/\/pages\/.+\.(?:md|html)$/) &&
+                  onNavigateToPage && (
+                    <button
+                      className="cept-fb-action-btn"
+                      onClick={() => handleJumpToPage(entry)}
+                      title="Open as page"
+                      data-testid={`fb-jump-${entry.name}`}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M5 3l6 5-6 5" />
+                      </svg>
+                    </button>
+                  )}
+                {!entry.isDirectory &&
+                  (confirmDelete === entry.path ? (
                     <button
                       className="cept-fb-action-btn cept-fb-action-btn--danger"
                       onClick={() => void handleDelete(entry)}
                       title="Confirm delete"
                       data-testid={`fb-confirm-delete-${entry.name}`}
                     >
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <polyline points="3,8 7,12 13,4" />
                       </svg>
                     </button>
@@ -233,12 +299,18 @@ export function FileBrowser({ backend, rootPath = '/', onNavigateToPage, onClose
                       title="Delete file"
                       data-testid={`fb-delete-${entry.name}`}
                     >
-                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
                         <path d="M4 4l8 8M12 4l-8 8" />
                       </svg>
                     </button>
-                  )
-                )}
+                  ))}
               </div>
             </div>
           ))}

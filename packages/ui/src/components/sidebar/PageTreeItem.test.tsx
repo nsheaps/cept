@@ -91,7 +91,11 @@ describe('PageTreeItem', () => {
     const onCtx = vi.fn();
     render(<PageTreeItem node={leaf} depth={0} onContextMenu={onCtx} />);
     fireEvent.contextMenu(screen.getByTestId('page-tree-button-leaf'));
-    expect(onCtx).toHaveBeenCalledWith('leaf', 'Leaf Page', expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
+    expect(onCtx).toHaveBeenCalledWith(
+      'leaf',
+      'Leaf Page',
+      expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+    );
   });
 
   it('indents based on depth', () => {
