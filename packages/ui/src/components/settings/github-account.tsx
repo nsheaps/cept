@@ -8,7 +8,15 @@
  * shown.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import type { PatAccount } from '@cept/core';
 
@@ -47,10 +55,14 @@ export function GitHubAccountProvider({
   const [status, setStatus] = useState<GitHubAccountStatus>(auth ? 'checking' : 'signed-out');
   const [account, setAccount] = useState<PatAccount | null>(null);
 
+  // One restore per auth: StrictMode runs the effect twice, and both runs share this check.
+  const restoring = useRef<{ auth: PatAuth; check: Promise<PatAccount | null> } | null>(null);
+
   useEffect(() => {
     if (!auth) return;
     let current = true;
-    auth.restore().then(
+    if (restoring.current?.auth !== auth) restoring.current = { auth, check: auth.restore() };
+    restoring.current.check.then(
       (restored) => {
         if (!current) return;
         setAccount(restored);

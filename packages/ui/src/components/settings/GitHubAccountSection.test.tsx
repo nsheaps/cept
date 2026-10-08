@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PatAuthProvider, PAT_STORE_KEY } from '@cept/core';
@@ -135,11 +136,50 @@ describe('GitHubAccountSection', () => {
     expect(await screen.findByTestId('github-sign-in')).toBeTruthy();
   });
 
-  it('says the git proxy can see the token', async () => {
+  it('says the git proxy can see the token, before and after sign-in', async () => {
     setup();
     expect((await screen.findByTestId('github-proxy-notice')).textContent).toContain(
       'which can see the token',
     );
+    await signIn(GOOD);
+    await screen.findByTestId('github-signed-in');
+    expect(screen.getByTestId('github-proxy-notice').textContent).toContain(
+      'which can see the token',
+    );
+  });
+
+  it('shows why sign-out failed and stays signed in', async () => {
+    const account = {
+      login: 'octocat',
+      name: null,
+      avatarUrl: '',
+      grants: { kind: 'classic' as const, scopes: [] },
+    };
+    renderSection({
+      signIn: vi.fn(),
+      restore: async () => account,
+      logout: () => Promise.reject(new Error('IndexedDB is unavailable.')),
+    });
+    fireEvent.click(await screen.findByTestId('github-sign-out'));
+
+    expect((await screen.findByTestId('github-error')).textContent).toBe(
+      'IndexedDB is unavailable.',
+    );
+    expect(screen.getByTestId('github-signed-in')).toBeTruthy();
+  });
+
+  it('checks the saved token once under StrictMode', async () => {
+    const restore = vi.fn(async () => null);
+    render(
+      <StrictMode>
+        <GitHubAccountProvider auth={{ signIn: vi.fn(), restore, logout: vi.fn() }}>
+          <GitHubAccountSection />
+        </GitHubAccountProvider>
+      </StrictMode>,
+    );
+
+    await screen.findByTestId('github-sign-in');
+    expect(restore).toHaveBeenCalledOnce();
   });
 });
 

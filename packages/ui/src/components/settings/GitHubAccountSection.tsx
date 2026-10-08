@@ -53,8 +53,11 @@ export function GitHubAccountSection() {
 
   const handleSignOut = async () => {
     setBusy(true);
+    setError(null);
     try {
       await github.signOut();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign out.');
     } finally {
       setBusy(false);
     }
@@ -150,16 +153,19 @@ export function GitHubAccountSection() {
               {busy ? 'Checking…' : 'Sign in'}
             </button>
           </div>
-          {error && (
-            <p className="cept-settings-github-error" role="alert" data-testid="github-error">
-              {error}
-            </p>
-          )}
-          <p className="cept-settings-toggle-desc" data-testid="github-proxy-notice">
-            In the browser, git traffic goes through the proxy at {gitCorsProxy()}, which can see
-            the token when Cept clones or syncs a repository.
-          </p>
         </form>
+      )}
+
+      {error && (
+        <p className="cept-settings-github-error" role="alert" data-testid="github-error">
+          {error}
+        </p>
+      )}
+      {status !== 'checking' && (
+        <p className="cept-settings-toggle-desc" data-testid="github-proxy-notice">
+          In the browser, git traffic goes through the proxy at {gitCorsProxy()}, which can see the
+          token when Cept clones or syncs a repository.
+        </p>
       )}
     </div>
   );
