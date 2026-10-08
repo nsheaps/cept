@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
+import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
 
 export type ThemeMode = 'dark' | 'system' | 'light';
 
@@ -396,7 +397,7 @@ export function SettingsModal({
             {activeTab === 'spaces' && removingSpace && (
               <RemoveSpaceConfirm
                 space={removingSpace}
-                isLast={spaces.filter((s) => s.id !== 'cept-docs').length <= 1}
+                isLast={spaces.filter((s) => s.id !== DOCS_SPACE_ID).length <= 1}
                 onCancel={() => setRemovingSpaceId(null)}
                 onConfirm={() => {
                   setRemovingSpaceId(null);
@@ -478,7 +479,7 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
+                          {space.remoteUrl && onRefreshSpace && space.id !== DOCS_SPACE_ID && (
                             <button
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
@@ -504,7 +505,7 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.id !== 'cept-docs' && (
+                          {space.id !== DOCS_SPACE_ID && (
                             <button
                               className="cept-settings-icon-btn cept-settings-icon-btn--danger"
                               onClick={() => setRemovingSpaceId(space.id)}
@@ -664,12 +665,12 @@ export function SettingsModal({
                 }
                 onDelete={() => setRemovingSpaceId(selectedSpace.id)}
                 onBrowseFiles={
-                  backend && selectedSpace.id !== 'cept-docs'
+                  backend && selectedSpace.id !== DOCS_SPACE_ID
                     ? () => setBrowsingSpaceId(selectedSpace.id)
                     : undefined
                 }
                 onRefresh={
-                  selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs'
+                  selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== DOCS_SPACE_ID
                     ? () => handleRefreshSpace(selectedSpace.id)
                     : undefined
                 }
@@ -1069,6 +1070,8 @@ function removalLabel(space: SpaceInfo): string {
       return 'Remove from Cept';
     case 'remote':
       return 'Remove from this device';
+    case 'memory':
+      return 'Discard this space';
     default:
       return 'Delete this space';
   }
@@ -1101,7 +1104,9 @@ function RemoveSpaceConfirm({
           ? `Remove "${space.name}" from Cept?`
           : space.kind === 'remote'
             ? `Remove "${space.name}" from this device?`
-            : `Delete "${space.name}"?`}
+            : space.kind === 'memory'
+              ? `Discard "${space.name}"?`
+              : `Delete "${space.name}"?`}
       </h3>
       <p className="cept-settings-wizard-desc" data-testid="space-remove-explanation">
         {explanation}

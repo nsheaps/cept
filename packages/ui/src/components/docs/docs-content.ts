@@ -3,6 +3,7 @@
 // This is a read-only Git-backed space. Branch is determined at build time via HEAD_BRANCH.
 
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
+import { DOCS_SPACE_ID } from './docs-space-id.js';
 
 export const DOCS_PAGES: PageTreeNode[] = [
   {
@@ -363,7 +364,7 @@ Choose **Space settings** (the gear) next to a space for its details.
 
 In a space's details, click its name, type the new one and choose **Save**. You can also click the space name at the top of the sidebar.
 
-A space kept as files has a \`space.cept.yaml\` file (see [Space configuration](../reference/space-config.md)). Renaming the space changes the \`name:\` line in that file and keeps everything else in it, comments included. If Cept cannot read the file, it does not rename the space and says why; fix the file and try again. A folder space needs its folder connected to be renamed.
+A space kept as files has a \`space.cept.yaml\` file (see [Space configuration](../reference/space-config.md)). Renaming the space changes the \`name:\` line in that file and keeps the rest of the file, comments included. A comment at the end of the \`name:\` line itself is dropped. If Cept cannot read the file, it does not rename the space and says why; fix the file and try again. A folder space needs its folder connected to be renamed.
 
 ### The slug
 
@@ -1053,7 +1054,7 @@ export function getDocsSourceUrl(pageId: string): string | undefined {
 }
 
 export const DOCS_SPACE_INFO = {
-  id: 'cept-docs',
+  id: DOCS_SPACE_ID,
   name: 'Cept Docs',
   source: 'Git (read-only)',
   remoteUrl: 'github.com/nsheaps/cept',

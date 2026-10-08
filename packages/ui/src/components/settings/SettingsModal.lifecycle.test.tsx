@@ -57,7 +57,7 @@ describe('SettingsModal space lifecycle (REQ-WS-024)', () => {
     fireEvent.click(screen.getByTestId('delete-space-work'));
     fireEvent.click(screen.getByTestId('space-remove-cancel'));
     expect(onDeleteSpace).not.toHaveBeenCalled();
-    expect(screen.getByTestId('settings-panel-spaces')).toBeDefined();
+    expect(screen.getByTestId('space-item-work')).toBeTruthy();
   });
 
   it('removes a folder space from Cept and says the folder is kept', () => {
@@ -90,6 +90,17 @@ describe('SettingsModal space lifecycle (REQ-WS-024)', () => {
     );
   });
 
+  it('discards a memory space', () => {
+    const temp: SpaceInfo = { ...app('mem', 'Scratch'), kind: 'memory' };
+    const { onDeleteSpace } = setup([app('default', 'My Space'), temp]);
+    fireEvent.click(screen.getByTestId('delete-space-mem'));
+    expect(screen.getByTestId('space-remove-title').textContent).toBe('Discard "Scratch"?');
+    expect(screen.getByTestId('space-remove-explanation').textContent).toMatch(/only in memory/);
+    expect(screen.getByTestId('space-remove-confirm-btn').textContent).toBe('Discard this space');
+    fireEvent.click(screen.getByTestId('space-remove-confirm-btn'));
+    expect(onDeleteSpace).toHaveBeenCalledWith('mem');
+  });
+
   it('says a new space takes the place of the last one, the default included', () => {
     const { onDeleteSpace } = setup([app('default', 'My Space')]);
     fireEvent.click(screen.getByTestId('delete-space-default'));
@@ -105,7 +116,8 @@ describe('SettingsModal space lifecycle (REQ-WS-024)', () => {
     expect(onDeleteSpace).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('space-remove-confirm-btn'));
     expect(onDeleteSpace).toHaveBeenCalledWith('work');
-    expect(screen.getByTestId('settings-panel-spaces')).toBeDefined();
+    expect(screen.queryByTestId('space-remove-confirm')).toBeNull();
+    expect(screen.getByTestId('create-space-btn')).toBeTruthy();
   });
 
   it('shows the stats of a space, and unknown ones as unknown', () => {

@@ -180,11 +180,12 @@ function canonical(value: unknown): string {
 
 /**
  * Change `name` and/or `slug` in the text of a `space.cept.yaml` (REQ-WS-024).
- * Each changed key's line is replaced in place, so comments, key order and
- * other keys stay as they were; a missing key is added at the end. When an
- * in-place edit cannot express the change (a multi-line value), the file is
- * written again from its parsed content, which drops its comments. The result
- * must be a valid space config.
+ * Each changed key's line is replaced in place, so comments on other lines,
+ * key order and other keys stay as they were; a missing key is added at the
+ * end. A comment at the end of a replaced line is dropped. When an in-place
+ * edit cannot express the change (a multi-line value), the file is written
+ * again from its parsed content, which drops its comments. The result must be
+ * a valid space config.
  */
 export function updateSpaceConfigText(
   text: string,
