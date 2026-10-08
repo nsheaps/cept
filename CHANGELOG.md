@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.0](https://github.com/nsheaps/cept/compare/v0.25.0...v0.26.0) (2026-10-08)
+
+### Features
+
+* **ui:** edit github spaces with auto-commit and sync ([#402](https://github.com/nsheaps/cept/issues/402)) ([63e2366](https://github.com/nsheaps/cept/commit/63e236642a15c0e5c0d53654973c0d07640c1736)), references [nsheaps/cept#401](https://github.com/nsheaps/cept/issues/401)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([d3a51d0](https://github.com/nsheaps/cept/commit/d3a51d0822b82dd3983e14dddd6eb99fa84888e7))
+
 ## [0.25.0](https://github.com/nsheaps/cept/compare/v0.24.0...v0.25.0) (2026-10-08)
 
 ### Features
