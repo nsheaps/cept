@@ -67,9 +67,9 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space           | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                   | MUST     | implemented | documented             | accurate      |
 | [REQ-WS-026](#req-ws-026--git-sync-conflict-resolution)                                     | Merge diverged changes; per-file conflict view; push to a new branch      | MUST     | stubbed     | undocumented           | n/a           |
-| [REQ-WS-027](#req-ws-027--git-sync-policy)                                                  | Commit author, messages, tracked branch, per-device settings, error types | MUST     | stubbed     | undocumented           | n/a           |
+| [REQ-WS-027](#req-ws-027--git-sync-policy)                                                  | Commit author, messages, tracked branch, per-device settings, error types | MUST     | partial     | undocumented           | n/a           |
 
-Status counts: 3 implemented, 6 partial, 6 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (27 requirements).
+Status counts: 3 implemented, 7 partial, 5 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (27 requirements).
 
 ## Architecture
 
@@ -873,11 +873,17 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 - A space cloned without a sign-in stays read-only and never commits.
 - Unit tests cover the author, the message template, branch selection, the settings file and error classification.
 
-**Current state: stubbed.** [auto-commit.ts](../../../packages/core/src/git/auto-commit.ts) (`AutoCommitEngine`, 5 s debounce, batch cap of 50, `generateCommitMessage`), [sync-engine.ts](../../../packages/core/src/git/sync-engine.ts) (`SyncEngine`, 30 s interval, auto push and pull, three retries) and [branch-strategy.ts](../../../packages/core/src/git/branch-strategy.ts) exist with unit tests. The author is not taken from the account, `branch:` is not read, there is no per-device settings file, and `SyncEngine` recognises network errors by searching the message text.
+**Current state: partial.** The policy is in `@cept/core` but nothing in the app runs sync yet (Phase 1 plan PR 36):
+
+- [sync-policy.ts](../../../packages/core/src/git/sync-policy.ts): `commitIdentityFor` (author from `GET /user`; `PatAccount` now carries the account `id`), `trackedBranch`, and the per-device settings in `.cept/sync.local.json` (`loadSyncSettings`, `saveSyncSettings`).
+- `GitBackend.ensureExcluded` adds that file to `.git/info/exclude`, and `AutoCommitEngine` skips it.
+- [auto-commit.ts](../../../packages/core/src/git/auto-commit.ts) `generateCommitMessage` writes the message template.
+- [sync-errors.ts](../../../packages/core/src/git/sync-errors.ts) `classifySyncError` classifies errors from isomorphic-git's `code` and `data`, HTTP statuses and push results. `SyncEngine` reports the result as `lastErrorKind`, retries only offline and server errors, and treats a thrown merge conflict as a conflict. `GitBackend.pull` reads conflicting files from the error instead of its message.
+- Tests: `sync-policy.test.ts`, `sync-errors.test.ts`, `auto-commit.test.ts`, `sync-engine.test.ts`, `git-backend.test.ts` and `pat.test.ts`.
 
 **Docs state: undocumented.**
 
-**Gap.** Everything in the acceptance criteria above beyond the existing debounce and interval defaults.
+**Gap.** Using the policy in the app: one sync owner per space, creating a declared branch on its first push, queuing offline commits, and showing each error kind to the user (PRs 36-38).
 
 **Related:** REQ-WS-014, REQ-WS-026, [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app), D-4, D-5, D-30, D-34, D-37.
 

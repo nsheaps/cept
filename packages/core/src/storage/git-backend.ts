@@ -31,6 +31,8 @@ import type {
   RemoteOperations,
   StorageBackend,
 } from './backend.js';
+import { classifySyncError, conflictPaths } from '../git/sync-errors.js';
+import { withExcludeLine } from '../git/sync-policy.js';
 
 const GIT_CAPABILITIES: BackendCapabilities = {
   history: true,
@@ -261,12 +263,46 @@ export class GitBackend implements GitStorageBackend {
       });
       return { ok: true, conflicts: [] };
     } catch (e) {
-      const error = e as Error;
-      if (error.message?.includes('conflict')) {
-        return { ok: false, conflicts: [error.message] };
+      if (classifySyncError(e) === 'conflict') {
+        return { ok: false, conflicts: conflictPaths(e) };
       }
       throw e;
     }
+  }
+
+  /**
+   * Add `pattern` to the repository's `.git/info/exclude`, so files that match
+   * it are never staged or committed (REQ-WS-027). Does nothing when the line
+   * is already there.
+   */
+  async ensureExcluded(pattern: string): Promise<void> {
+    const gitdir = `${this.dir.replace(/\/+$/, '')}/.git`;
+    const path = `${gitdir}/info/exclude`;
+    let text = '';
+    try {
+      text = String(await this.fsCall('readFile', path, 'utf8'));
+    } catch {
+      // No exclude file yet.
+    }
+    const next = withExcludeLine(text, pattern);
+    if (next === text) return;
+    try {
+      await this.fsCall('mkdir', `${gitdir}/info`);
+    } catch {
+      // Already there.
+    }
+    await this.fsCall('writeFile', path, next, 'utf8');
+  }
+
+  /** Call the injected fs, through its `promises` namespace or its callback API. */
+  private fsCall(name: 'readFile' | 'writeFile' | 'mkdir', ...args: unknown[]): Promise<unknown> {
+    const promises = this.fs.promises;
+    if (promises) return promises[name](...args);
+    return new Promise((resolve, reject) => {
+      this.fs[name](...args, (err: unknown, value: unknown) =>
+        err ? reject(err) : resolve(value),
+      );
+    });
   }
 
   /**

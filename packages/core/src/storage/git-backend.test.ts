@@ -123,6 +123,23 @@ describe('GitBackend', () => {
       expect(logs[0].message).toBe('commit all');
     });
 
+    it('keeps an excluded settings file out of commits (ensureExcluded)', async () => {
+      await backend.writeFile('first.md', new TextEncoder().encode('# First'));
+      const first = await backend.commit('first', ['first.md']);
+      await backend.ensureExcluded('.cept/sync.local.json');
+      await backend.ensureExcluded('.cept/sync.local.json');
+      await backend.writeFile('page.md', new TextEncoder().encode('# Page'));
+      await backend.writeFile('.cept/sync.local.json', new TextEncoder().encode('{}'));
+      const second = await backend.commit('commit all');
+
+      const exclude = String(await rawFs.promises!.readFile('/.git/info/exclude', 'utf8'));
+      expect(exclude.split('\n').filter((l) => l === '.cept/sync.local.json')).toHaveLength(1);
+      const diff = await backend.diff(first, second);
+      const paths = diff.files.map((f) => f.path);
+      expect(paths).toContain('page.md');
+      expect(paths).not.toContain('.cept/sync.local.json');
+    });
+
     it('should record author information', async () => {
       await backend.writeFile('test.txt', new TextEncoder().encode('data'));
       await backend.commit('authored commit', ['test.txt']);

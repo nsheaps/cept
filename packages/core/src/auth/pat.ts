@@ -32,6 +32,8 @@ export interface PatGrants {
 /** The GitHub account a token signs in as. */
 export interface PatAccount {
   login: string;
+  /** The numeric account id, for the commit noreply address (REQ-WS-027). */
+  id?: number;
   name: string | null;
   avatarUrl: string;
   grants: PatGrants;
@@ -72,6 +74,7 @@ export function redactTokens(text: string): string {
 
 interface GitHubUser {
   login: string;
+  id: number;
   name: string | null;
   avatar_url: string;
 }
@@ -203,6 +206,7 @@ export class PatAuthProvider implements AuthProvider {
     }
     return {
       login: user.login,
+      ...(typeof user.id === 'number' ? { id: user.id } : {}),
       name: user.name ?? null,
       avatarUrl: user.avatar_url ?? '',
       grants: grantsOf(accessToken, response.headers),

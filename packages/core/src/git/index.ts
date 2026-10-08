@@ -1,4 +1,9 @@
-export { AutoCommitEngine, generateCommitMessage, matchesPattern } from './auto-commit.js';
+export {
+  AutoCommitEngine,
+  commitPathName,
+  generateCommitMessage,
+  matchesPattern,
+} from './auto-commit.js';
 export type {
   AutoCommitConfig,
   FileChange,
@@ -36,3 +41,27 @@ export type {
   SyncEvent,
   SyncListener,
 } from './sync-engine.js';
+
+export {
+  SyncError,
+  classifyPushReason,
+  classifyPushReasons,
+  classifySyncError,
+  conflictPaths,
+  isRetryableSyncError,
+} from './sync-errors.js';
+export type { SyncErrorKind } from './sync-errors.js';
+
+export {
+  DEFAULT_SYNC_SETTINGS,
+  SYNC_SETTINGS_EXCLUDE,
+  SYNC_SETTINGS_PATH,
+  commitIdentityFor,
+  loadSyncSettings,
+  parseSyncSettings,
+  saveSyncSettings,
+  serializeSyncSettings,
+  trackedBranch,
+  withExcludeLine,
+} from './sync-policy.js';
+export type { CommitIdentity, GitHubUserIdentity, SyncSettings } from './sync-policy.js';
