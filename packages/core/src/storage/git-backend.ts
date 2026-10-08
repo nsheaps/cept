@@ -57,6 +57,15 @@ export interface GitAuth {
 export type GitHttp = HttpClient;
 
 /**
+ * The browser HTTP client for isomorphic-git (`isomorphic-git/http/web`, which
+ * uses `fetch`), loaded on first use so it stays out of the initial bundle.
+ */
+export async function createGitHttp(): Promise<GitHttp> {
+  const module = await import('isomorphic-git/http/web');
+  return module.default;
+}
+
+/**
  * Filesystem interface expected by isomorphic-git.
  * Any object implementing these methods can be injected (node:fs, lightning-fs, memfs, etc.).
  */

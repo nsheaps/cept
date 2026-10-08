@@ -63,7 +63,6 @@ import {
 import type { FolderContents, FolderSpaceChoice } from './storage/folder-open.js';
 import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
-import type { GitHttp } from '@cept/core';
 import {
   restoreRoute,
   peekRoute,
@@ -604,13 +603,9 @@ export function App() {
 
                 setCloneStatus({ active: true, message: `Cloning ${parsed.repo}...` });
                 try {
-                  const httpModule = await import('isomorphic-git/http/web');
-                  const gitHttp = httpModule.default as GitHttp;
-
                   const { pages: clonedPages, pageContents: clonedContents } =
                     await cloneRemoteRepo(
                       backend,
-                      gitHttp,
                       parsed.repo,
                       parsed.branch,
                       parsed.subPath || undefined,
@@ -702,14 +697,10 @@ export function App() {
       addToast(`Syncing ${spaceMeta.name}...`, 'info');
 
       try {
-        const httpModule = await import('isomorphic-git/http/web');
-        const gitHttp = httpModule.default as GitHttp;
-
         const oldPageIds = new Set(pages.map((p) => p.id));
 
         const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
           backend,
-          gitHttp,
           spaceMeta.remoteUrl!,
           spaceMeta.branch!,
           spaceMeta.subPath || undefined,
@@ -1571,17 +1562,6 @@ export function App() {
         return;
       }
 
-      // Dynamically import the browser HTTP client for isomorphic-git
-      let gitHttp: GitHttp;
-      try {
-        const httpModule = await import('isomorphic-git/http/web');
-        gitHttp = httpModule.default as GitHttp;
-      } catch {
-        // Fallback: create empty space if http module unavailable
-        handleCreateSpace(displayName);
-        return;
-      }
-
       setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
 
       try {
@@ -1592,7 +1572,6 @@ export function App() {
         // Clone the remote repo and extract pages
         const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
           backend,
-          gitHttp,
           config.url,
           config.branch || 'main',
           config.subPath.trim() || undefined,
@@ -1641,19 +1620,9 @@ export function App() {
       const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
       if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
 
-      // Dynamically import the browser HTTP client for isomorphic-git
-      let gitHttp: GitHttp;
-      try {
-        const httpModule = await import('isomorphic-git/http/web');
-        gitHttp = httpModule.default as GitHttp;
-      } catch {
-        return;
-      }
-
       // Clone fresh from remote
       const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
         backend,
-        gitHttp,
         spaceMeta.remoteUrl,
         spaceMeta.branch,
         spaceMeta.subPath,
