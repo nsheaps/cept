@@ -55,7 +55,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 | [REQ-ENG-015](#req-eng-015--github-pages-production-deployment-of-the-app)           | GitHub Pages deployment of the app (demo + read-only docs)         | MUST     | partial     | documented-differently | stale         |
 | [REQ-ENG-016](#req-eng-016--docs-site-built-and-deployed-as-a-static-site-by-ci)     | Docs site built by Cept's static render and deployed by CI         | MUST     | not-started | documented-differently | stale         |
 | [REQ-ENG-017](#req-eng-017--e2e-and-screenshot-automation-healthy-and-gating)        | E2E and screenshot automation healthy and gating                   | MUST     | partial     | documented-as-desired  | n/a           |
-| [REQ-ENG-018](#req-eng-018--security-scanning-in-ci)                                 | Security scanning in CI                                            | SHOULD   | not-started | undocumented           | n/a           |
+| [REQ-ENG-018](#req-eng-018--security-scanning-in-ci)                                 | Security scanning in CI                                            | SHOULD   | partial     | undocumented           | n/a           |
 | [REQ-ENG-019](#req-eng-019--git-workflow-matches-repo-rulesets)                      | Git workflow docs match repo rulesets                              | MUST     | divergent   | documented-differently | stale         |
 | [REQ-ENG-020](#req-eng-020--ci-checks-gate-merges-to-main)                           | CI checks gate merges to `main` (including Renovate automerge)     | MUST     | not-started | undocumented           | n/a           |
 
@@ -223,7 +223,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - `_typecheck`, `_security`, `_deploy-docs` and a PR-title workflow exist (see REQ-ENG-012, REQ-ENG-016 and REQ-ENG-018).
 - The workflow list in the specs matches `.github/workflows/`.
 
-**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [\_build.yml](../../../.github/workflows/_build.yml), [\_lint.yml](../../../.github/workflows/_lint.yml), [\_typecheck.yml](../../../.github/workflows/_typecheck.yml), [\_test-unit.yml](../../../.github/workflows/_test-unit.yml), [\_test-integration.yml](../../../.github/workflows/_test-integration.yml), [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml). Missing compared with qontacts: `_security`, `_deploy-docs`, `pr-title`.
+**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [\_build.yml](../../../.github/workflows/_build.yml), [\_lint.yml](../../../.github/workflows/_lint.yml), [\_typecheck.yml](../../../.github/workflows/_typecheck.yml), [\_test-unit.yml](../../../.github/workflows/_test-unit.yml), [\_test-integration.yml](../../../.github/workflows/_test-integration.yml), [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml). Also [\_security.yml](../../../.github/workflows/_security.yml). Missing compared with qontacts: `_deploy-docs`, `pr-title`.
 
 **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §3 (lines 131-136) and §9.2-9.5 list `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. None of these exist. The [README.md](../../../README.md) badge (line 8) points at the nonexistent `release-web.yml`.
 
@@ -501,7 +501,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - Exceptions require a reason and an expiry date.
 - The scanning tools are pinned in mise.
 
-**Current state:** not-started. There is no `_security.yml`, and no gitleaks or osv-scanner in `.mise.toml`. Reference: `/home/user/qontacts/.github/workflows/_security.yml`.
+**Current state:** partial. Secret and dependency scanning are implemented; licence policy checks are not. [\_security.yml](../../../.github/workflows/_security.yml) runs `mise run security` (gitleaks over git history and the working tree with [.gitleaks.toml](../../../.gitleaks.toml), osv-scanner on `bun.lock` with [osv-scanner.toml](../../../osv-scanner.toml)). It is called from [ci.yml](../../../.github/workflows/ci.yml) and gates `tag-release`; `mise run check` includes it. Both tools are pinned in [.mise.toml](../../../.mise.toml). Fixable findings are resolved with exact `overrides` in [package.json](../../../package.json); the rest are ignored with a reason and `ignoreUntil` expiry. [gates.integration.test.ts](../../../tools/security/gates.integration.test.ts) proves the gates fail on [tools/security-fixtures](../../../tools/security-fixtures/README.md). Reference: `/home/user/qontacts/.github/workflows/_security.yml`.
 
 **Docs state:** undocumented.
 

@@ -1,0 +1,16 @@
+# gitleaks configuration (`mise run security`; REQ-ENG-018, REQ-AUTH-018).
+# Uses the upstream default rules. Add an allowlist entry only for a reviewed
+# false positive, with a comment saying why; never to hide a real secret
+# (rotate it instead).
+title = "cept"
+
+[extend]
+useDefault = true
+
+# Deliberately fake credential used to prove the gitleaks gate fails. Excluded
+# by path (anchored at the repo root) so the real-tree scan stays green;
+# tools/security/gates.integration.test.ts scans a copy outside this path and
+# asserts the gate still fires.
+[[allowlists]]
+description = "Security gate fixtures (fake credentials)"
+paths = ['''^tools/security-fixtures/''']

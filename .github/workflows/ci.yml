@@ -32,11 +32,14 @@ jobs:
   build:
     uses: ./.github/workflows/_build.yml
 
+  security:
+    uses: ./.github/workflows/_security.yml
+
   screenshots:
     uses: ./.github/workflows/_update-screenshots.yml
 
   tag-release:
-    needs: [lint, typecheck, test-unit, test-integration, test-e2e, build, screenshots]
+    needs: [lint, typecheck, test-unit, test-integration, test-e2e, build, security, screenshots]
     if: github.event_name == 'push'
     uses: ./.github/workflows/_tag-release.yml
     with:

@@ -1,0 +1,30 @@
+name: Security
+
+# Secret scanning (gitleaks, whole git history plus the working tree) and
+# dependency vulnerabilities (osv-scanner on bun.lock). The logic lives in the
+# `security` mise task so it runs the same locally.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # gitleaks scans the whole history, so a secret that was committed
+          # and then deleted on the branch is still caught.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+
+      - name: Security scans
+        run: mise run security

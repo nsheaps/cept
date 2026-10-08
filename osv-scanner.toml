@@ -1,0 +1,167 @@
+# OSV-Scanner configuration (`mise run security`; REQ-ENG-018).
+# Every ignore needs a reason and an expiry (`ignoreUntil`) so it is
+# re-reviewed instead of living forever. Prefer upgrading or a package.json
+# `overrides` entry over an ignore; everything fixable that way already is.
+# Triaged 2026-10-08: the remaining findings are dev-tooling dependencies that
+# never ship in the app bundle, plus mermaid's nested katex (see its entry).
+# Overrides never force a version outside a dependent's declared semver range.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2027-01-08
+reason = "braces 3.0.3 stack exhaustion on deeply nested patterns; no fixed release exists (no fixed version in OSV). Dev-only: reached through micromatch -> fast-glob from @release-it/bumper, which only expands globs we write. Never shipped in the app."
+
+[[IgnoredVulns]]
+id = "GHSA-3v7f-55p6-f55p"
+ignoreUntil = 2027-01-08
+reason = "picomatch 2.3.1 glob matching issues (extglob ReDoS, POSIX class method injection). Dev-only: pinned ^2.3.1 by micromatch 4.0.8 (fast-glob, @release-it/bumper); a flat override to 2.3.2 is not possible because other packages need picomatch 4.x. Patterns come from our own release config. Never shipped in the app. Re-check when @release-it/bumper moves off fast-glob."
+
+[[IgnoredVulns]]
+id = "GHSA-c2c7-rcm5-vvqj"
+ignoreUntil = 2027-01-08
+reason = "picomatch 2.3.1 glob matching issues (extglob ReDoS, POSIX class method injection). Dev-only: pinned ^2.3.1 by micromatch 4.0.8 (fast-glob, @release-it/bumper); a flat override to 2.3.2 is not possible because other packages need picomatch 4.x. Patterns come from our own release config. Never shipped in the app. Re-check when @release-it/bumper moves off fast-glob."
+
+[[IgnoredVulns]]
+id = "GHSA-2gqq-gqf2-x968"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-2jfj-6hjv-fm6j"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-2mjp-6q6p-2qxm"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-35p6-xmwp-9g52"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-3wwx-pv8p-q78v"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-3xpg-4rpp-hhhm"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-4992-7rv2-5pvq"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-4cwx-7wf7-3272"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-8436-99hf-9mmv"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-8xcm-r25x-g524"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-f269-vfmq-vjvj"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-g8m3-5g58-fq7m"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-jr45-8vmc-qm54"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-m8rv-5g2x-5cg5"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-p88m-4jfj-68fv"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-phc3-fgpg-7m6h"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-pmjh-fq2x-6v4x"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-pr7r-676h-xcf6"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-r53p-7pc4-xj5r"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-rfgv-xxqx-mfg5"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-rx4f-c7p8-82vq"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-v3r7-h72x-cjcm"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-v9p9-hfj2-hcw8"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-vp8m-p9jh-q5pm"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-vrm6-8vpv-qv8q"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-vxpw-j846-p89q"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-w293-vg96-wgc3"
+ignoreUntil = 2027-01-08
+reason = "undici 7.22.0 (cheerio 1.2.0 via @release-it/bumper), 7.29.0 (pinned exactly by release-it 21.0.2) and 8.10.0 (jsdom 30.0.1, test DOM only). Dev-only: the HTTP client paths affected are never used against untrusted servers (release tooling talks to GitHub; jsdom tests load no remote content) and undici is not in any shipped bundle. A flat override cannot fix three majors at once. Re-check when release-it, cheerio or jsdom bump undici."
+
+[[IgnoredVulns]]
+id = "GHSA-238p-pmpm-9mq7"
+ignoreUntil = 2027-01-08
+reason = "katex 0.16.47 nested under mermaid (mermaid 11.17.2 and the latest 12.1.0 both require ^0.16.47); the fix is only in 0.18.2+, and forcing 0.18 on mermaid is outside its declared range and untested. Exploiting it needs a pre-existing prototype pollution elsewhere in the page. Cept's own katex dependency is 0.18.7 and not affected. Re-check when mermaid accepts katex 0.18."
+
+[[IgnoredVulns]]
+id = "GHSA-c475-qrg2-pj4r"
+ignoreUntil = 2027-01-08
+reason = "basic-ftp 5.3.1 quadratic Client.list() parsing; fixed only in 6.2.1, outside get-uri 8.0.1's ^5.3.1 range. Dev-only: get-uri is in the release tooling's proxy-agent chain and never opens FTP connections. Never shipped in the app. Re-check when get-uri accepts basic-ftp 6."
