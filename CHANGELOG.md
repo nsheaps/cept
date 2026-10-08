@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.0](https://github.com/nsheaps/cept/compare/v0.26.0...v0.27.0) (2026-10-08)
+
+### Features
+
+* **sync:** conflict view and push-to-new-branch fallback ([#403](https://github.com/nsheaps/cept/issues/403)) ([c5690bd](https://github.com/nsheaps/cept/commit/c5690bdbe1f1ab439c43d1757ce6509ac4d1334c))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([8bda521](https://github.com/nsheaps/cept/commit/8bda521eb722fdcf1d253058e869f3d6d0f42522))
+
 ## [0.26.0](https://github.com/nsheaps/cept/compare/v0.25.0...v0.26.0) (2026-10-08)
 
 ### Features
