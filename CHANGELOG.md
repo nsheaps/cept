@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/nsheaps/cept/compare/v0.23.0...v0.23.1) (2026-10-08)
+
+### Documentation
+
+* **requirements:** add git sync conflict resolution and sync policy ([687d0b4](https://github.com/nsheaps/cept/commit/687d0b4302c213ec6f1135f9b9a8aad886274779))
+* **screenshots:** update feature screenshots [skip ci] ([18c21f1](https://github.com/nsheaps/cept/commit/18c21f1a3cd6f93d42d3ea23c480634e121ee7b3))
+
 ## [0.23.0](https://github.com/nsheaps/cept/compare/v0.22.1...v0.23.0) (2026-10-08)
 
 ### Features
