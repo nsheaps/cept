@@ -34,3 +34,7 @@ Feature: Slash Command Menu
     And I press the down arrow 3 times
     And I press Enter
     Then the third item in the menu should be inserted
+
+  Scenario: No database blocks
+    When I type "/database"
+    Then the slash menu should show "No results"
