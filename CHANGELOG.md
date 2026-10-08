@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.32.0](https://github.com/nsheaps/cept/compare/v0.31.0...v0.32.0) (2026-10-08)
+
+### Features
+
+* **storage:** enable history for folders with .git ([#408](https://github.com/nsheaps/cept/issues/408)) ([dca7ba1](https://github.com/nsheaps/cept/commit/dca7ba11860021cd4fc9aa43f9a096f4748ad2ce))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([d52d271](https://github.com/nsheaps/cept/commit/d52d271de7743e64178f3041d0cde943cefde9f1))
+
 ## [0.31.0](https://github.com/nsheaps/cept/compare/v0.30.0...v0.31.0) (2026-10-08)
 
 ### Features
