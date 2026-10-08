@@ -71,8 +71,12 @@ export interface AutodiscoveryWarning {
 /** A space found by an earlier discovery that this one did not find again. */
 export interface LostSpace {
   space: RemoteSpace;
-  /** `access`: the repository is no longer readable. `removed`: it is, but the marker is gone. */
-  reason: 'access' | 'removed';
+  /**
+   * `access`: the repository is no longer readable. `removed`: it is, but the
+   * marker is gone. `excluded`: the repository is now a fork or archived, so
+   * discovery no longer looks in it.
+   */
+  reason: 'access' | 'removed' | 'excluded';
 }
 
 export interface AutodiscoveryResult {
@@ -81,7 +85,11 @@ export interface AutodiscoveryResult {
   /** Spaces from `previous` that are gone; flag them, do not delete local copies. */
   lost: LostSpace[];
   warnings: AutodiscoveryWarning[];
-  /** False when the rate limit stopped discovery before every repository was read. */
+  /**
+   * False when discovery stopped before trying every repository (the rate limit
+   * ran out). A repository that failed with another error counts as tried and
+   * is named in `warnings` (`access` or `http`).
+   */
   complete: boolean;
   /** The last rate-limit headers seen; `resetAt` is in milliseconds since the epoch. */
   rateLimit?: { remaining: number; resetAt: number | null };
@@ -172,6 +180,7 @@ type Got =
 export async function autodiscoverSpaces(
   options: AutodiscoveryOptions,
 ): Promise<AutodiscoveryResult> {
+  options.signal?.throwIfAborted();
   const fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis);
   const apiBase = (options.apiBase ?? DEFAULT_API_BASE).replace(/\/+$/, '');
   const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
@@ -203,6 +212,8 @@ export async function autodiscoverSpaces(
     try {
       response = await fetchFn(url, { method: 'GET', headers, signal: options.signal });
     } catch (err) {
+      // A cancelled discovery rejects; it does not carry on with failed requests.
+      if (options.signal?.aborted) throw options.signal.reason ?? err;
       const message = err instanceof Error ? err.message : String(err);
       return { ok: false, status: null, rateLimited: false, message: redactTokens(message) };
     }
@@ -211,9 +222,12 @@ export async function autodiscoverSpaces(
       return { ok: true, body: cached.body, next: cached.next ?? null };
     }
     if (!response.ok) {
+      // The primary limit (403 with nothing remaining), or a secondary limit (429, or 403 with Retry-After).
       const rateLimited =
         response.status === 429 ||
-        (response.status === 403 && response.headers.get('X-RateLimit-Remaining') === '0');
+        (response.status === 403 &&
+          (response.headers.get('X-RateLimit-Remaining') === '0' ||
+            response.headers.get('Retry-After') !== null));
       if (rateLimited) exhausted = true;
       return {
         ok: false,
@@ -387,6 +401,7 @@ export async function autodiscoverSpaces(
 
   async function worker(): Promise<void> {
     while (!stopped) {
+      options.signal?.throwIfAborted();
       if (exhausted) {
         stopped = true;
         break;
@@ -414,6 +429,8 @@ export async function autodiscoverSpaces(
     const status = statusByRepo.get(space.repo);
     if (status === undefined) {
       if (listed) lost.push({ space, reason: 'access' });
+    } else if (status === 'skipped') {
+      lost.push({ space, reason: 'excluded' });
     } else if (status === 'denied') {
       lost.push({ space, reason: 'access' });
     } else if (status === 'read' && !found.has(`${space.repo}\n${space.path}`)) {

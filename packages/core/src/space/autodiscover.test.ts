@@ -13,6 +13,8 @@ interface MockRepo {
   /** Path → file text. Omit for a repo whose tree request fails with `treeStatus`. */
   files?: Record<string, string>;
   treeStatus?: number;
+  /** Extra headers on the failed tree response. */
+  treeHeaders?: Record<string, string>;
   truncated?: boolean;
 }
 
@@ -86,7 +88,12 @@ function mockGitHub(
     if (tree) {
       const repo = repos.find((r) => r.full_name === tree[1]);
       if (!repo) return json({ message: 'Not Found' }, { status: 404 }, rate);
-      if (repo.treeStatus) return json({ message: 'nope' }, { status: repo.treeStatus }, rate);
+      if (repo.treeStatus)
+        return json(
+          { message: 'nope' },
+          { status: repo.treeStatus },
+          { ...rate, ...repo.treeHeaders },
+        );
       expect(decodeURIComponent(tree[2])).toBe(repo.default_branch ?? 'main');
       expect(url.searchParams.get('recursive')).toBe('1');
       const entries: { path: string; type: string; sha: string }[] = [];
@@ -328,6 +335,7 @@ describe('autodiscoverSpaces (REQ-WS-023)', () => {
     const gh = mockGitHub([
       { full_name: 'ann/kept', files: { 'space.cept.yaml': marker('K', 'k') } },
       { full_name: 'ann/locked', treeStatus: 404 },
+      { full_name: 'ann/shelved', archived: true, files: { 'space.cept.yaml': marker('S', 's') } },
     ]);
     const first: RemoteSpace = {
       repo: 'ann/gone',
@@ -345,16 +353,74 @@ describe('autodiscoverSpaces (REQ-WS-023)', () => {
     const locked = { ...first, repo: 'ann/locked', url: 'https://github.com/ann/locked' };
     const kept = { ...first, repo: 'ann/kept', url: 'https://github.com/ann/kept', path: '' };
     const removed = { ...first, repo: 'ann/kept', url: 'https://github.com/ann/kept', path: 'old' };
+    const shelved = {
+      ...first,
+      repo: 'ann/shelved',
+      url: 'https://github.com/ann/shelved',
+      path: '',
+    };
     const result = await autodiscoverSpaces({
       token: 't',
       fetch: gh.fetch,
-      previous: [first, locked, kept, removed],
+      previous: [first, locked, kept, removed, shelved],
     });
     expect(result.lost.map((l) => [l.space.repo, l.space.path, l.reason])).toEqual([
       ['ann/gone', 'notes', 'access'],
       ['ann/locked', 'notes', 'access'],
       ['ann/kept', 'old', 'removed'],
+      ['ann/shelved', '', 'excluded'],
     ]);
+  });
+
+  it('treats a secondary rate limit (403 with Retry-After) as the rate limit, not as denied access', async () => {
+    const files = { 'space.cept.yaml': marker('S', 's') };
+    const gh = mockGitHub([
+      { full_name: 'ann/a', files },
+      { full_name: 'ann/b', treeStatus: 403, treeHeaders: { 'Retry-After': '60' } },
+      { full_name: 'ann/c', files },
+    ]);
+    const result = await autodiscoverSpaces({ token: 't', fetch: gh.fetch, concurrency: 1 });
+    expect(result.complete).toBe(false);
+    expect(result.warnings.some((w) => w.kind === 'access')).toBe(false);
+    expect(result.warnings.some((w) => w.kind === 'rate-limited')).toBe(true);
+    expect(byKey(result.spaces)).toEqual(['ann/a:']);
+    expect(gh.calls.some((c) => c.url.includes('ann/c'))).toBe(false);
+  });
+
+  it('rejects when the signal aborts, without reading further repositories', async () => {
+    const repos: MockRepo[] = [];
+    for (let i = 0; i < 5; i++) {
+      repos.push({
+        full_name: `ann/r${i}`,
+        files: { 'space.cept.yaml': marker(`R${i}`, `r${i}`) },
+      });
+    }
+    const gh = mockGitHub(repos);
+    const controller = new AbortController();
+    const aborting: typeof globalThis.fetch = (input, init) => {
+      if (String(input).includes('ann/r1/git/trees')) controller.abort(new Error('cancelled'));
+      if (init?.signal?.aborted) return Promise.reject(init.signal.reason);
+      return gh.fetch(input, init);
+    };
+    await expect(
+      autodiscoverSpaces({
+        token: 't',
+        fetch: aborting,
+        concurrency: 1,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow('cancelled');
+    expect(gh.calls.some((c) => c.url.includes('ann/r2'))).toBe(false);
+  });
+
+  it('rejects at once with an already aborted signal', async () => {
+    const gh = mockGitHub([]);
+    const controller = new AbortController();
+    controller.abort(new Error('never mind'));
+    await expect(
+      autodiscoverSpaces({ token: 't', fetch: gh.fetch, signal: controller.signal }),
+    ).rejects.toThrow('never mind');
+    expect(gh.calls).toHaveLength(0);
   });
 
   it('rejects when GitHub refuses the token', async () => {
