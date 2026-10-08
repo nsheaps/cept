@@ -302,6 +302,10 @@ export interface OpenedSpace {
 export class SpaceManager {
   /** Backends of spaces that do not live in the app's backend, by space id. */
   private readonly bound = new Map<string, StorageBackend>();
+  /** Memory spaces: listed while this manager lives, never written to the manifest. */
+  private readonly session = new Map<string, SpaceMeta>();
+  /** The active space when it is a session space; the saved manifest keeps its own. */
+  private sessionActive: string | null = null;
 
   constructor(readonly backend: StorageBackend) {}
 
@@ -322,16 +326,30 @@ export class SpaceManager {
   }
 
   /**
-   * The manifest as this manager can serve it: memory spaces with no bound
-   * backend (one from before a reload, or another tab's) are left out, and
-   * the active space falls back to the first one left.
+   * The manifest as this manager can serve it: saved spaces that need a
+   * backend this manager does not have (a memory space from before a reload,
+   * or another tab's) are left out, this session's memory spaces are added,
+   * and the active space falls back to the first one left.
    */
   private visible(manifest: SpacesManifest): SpacesManifest {
-    const spaces = manifest.spaces.filter((s) => this.kindOf(s) === 'app' || this.bound.has(s.id));
-    if (spaces.length === manifest.spaces.length) return manifest;
-    const activeSpaceId = spaces.some((s) => s.id === manifest.activeSpaceId)
-      ? manifest.activeSpaceId
+    const saved = manifest.spaces.filter(
+      (s) => !this.session.has(s.id) && (this.kindOf(s) === 'app' || this.bound.has(s.id)),
+    );
+    const spaces = [...saved, ...this.session.values()];
+    const wanted = this.sessionActive ?? manifest.activeSpaceId;
+    const activeSpaceId = spaces.some((s) => s.id === wanted)
+      ? wanted
       : (spaces[0]?.id ?? DEFAULT_SPACE_ID);
+    return { activeSpaceId, spaces };
+  }
+
+  /** The manifest without this session's memory spaces, as it is written to disk. */
+  private async persistable(manifest: SpacesManifest): Promise<SpacesManifest> {
+    if (this.session.size === 0) return manifest;
+    const spaces = manifest.spaces.filter((s) => !this.session.has(s.id));
+    const activeSpaceId = this.session.has(manifest.activeSpaceId)
+      ? (await loadSpaces(this.backend)).activeSpaceId
+      : manifest.activeSpaceId;
     return { activeSpaceId, spaces };
   }
 
@@ -346,21 +364,40 @@ export class SpaceManager {
     return this.visible(await loadSpaces(this.backend));
   }
 
-  save(manifest: SpacesManifest): Promise<void> {
-    return saveSpaces(this.backend, manifest);
+  /** Save the manifest. This session's memory spaces are never written. */
+  async save(manifest: SpacesManifest): Promise<void> {
+    await saveSpaces(this.backend, await this.persistable(manifest));
   }
 
   /**
    * Create a space and make it active. By default it lives in the app's
-   * backend; pass `{ kind: 'memory', backend }` to hold it in `backend`.
+   * backend and is saved in the manifest.
+   *
+   * Pass `{ kind: 'memory', backend }` to hold it in `backend` for this
+   * session only: neither it nor its being active is written to the manifest,
+   * so the saved spaces and the saved active space stay as they were. With an
+   * `id`, an earlier memory space with that id is replaced, data and all.
    */
   async create(
     name: string,
     icon?: string,
-    options?: { kind: Exclude<SpaceBackendKind, 'app'>; backend: StorageBackend },
+    options?: { kind: 'memory'; backend: StorageBackend; id?: string },
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
-    const { space, manifest } = await addSpace(this.backend, name, icon, options?.kind);
-    if (options) this.bind(space.id, options.backend);
+    if (options) {
+      const space: SpaceMeta = {
+        id: options.id ?? `space-${crypto.randomUUID()}`,
+        name,
+        icon,
+        createdAt: new Date().toISOString(),
+        backend: options.kind,
+      };
+      this.session.set(space.id, space);
+      this.bind(space.id, options.backend);
+      this.sessionActive = space.id;
+      return { space, manifest: await this.load() };
+    }
+    const { space, manifest } = await addSpace(this.backend, name, icon);
+    this.sessionActive = null;
     return { space, manifest: this.visible(manifest) };
   }
 
@@ -371,6 +408,7 @@ export class SpaceManager {
     branch: string,
     subPath?: string,
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    this.sessionActive = null;
     const { space, manifest } = await addRemoteSpace(
       this.backend,
       name,
@@ -383,7 +421,13 @@ export class SpaceManager {
 
   /** Make `id` the active space. Throws if there is no such space. */
   async switch(id: string): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    const own = this.session.get(id);
+    if (own) {
+      this.sessionActive = id;
+      return { space: own, manifest: await this.load() };
+    }
     await this.requireVisible(id);
+    this.sessionActive = null;
     const manifest = this.visible(await switchSpace(this.backend, id));
     const space = manifest.spaces.find((s) => s.id === id);
     if (!space) throw new Error(`Space not found: ${id}`);
@@ -391,6 +435,11 @@ export class SpaceManager {
   }
 
   async rename(id: string, name: string): Promise<SpacesManifest> {
+    const own = this.session.get(id);
+    if (own) {
+      this.session.set(id, { ...own, name });
+      return this.load();
+    }
     await this.requireVisible(id);
     return this.visible(await renameSpace(this.backend, id, name));
   }
@@ -400,8 +449,12 @@ export class SpaceManager {
    * becomes active; the returned `active` is the space now active.
    */
   async delete(id: string): Promise<{ manifest: SpacesManifest; active: SpaceMeta }> {
-    const manifest = this.visible(await deleteSpace(this.backend, id));
+    const inSession = this.session.delete(id);
+    if (this.sessionActive === id) this.sessionActive = null;
     this.bound.delete(id);
+    const manifest = inSession
+      ? await this.load()
+      : this.visible(await deleteSpace(this.backend, id));
     const active =
       manifest.spaces.find((s) => s.id === manifest.activeSpaceId) ?? manifest.spaces[0];
     return { manifest, active };

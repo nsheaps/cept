@@ -4,6 +4,8 @@ declare const __PR_NUMBER__: string;
 declare const __REPO_URL__: string;
 declare const __PRODUCTION_URL__: string;
 declare const __IS_PREVIEW__: boolean;
+/** Build flag (VITE_DEMO_DEFAULT): open the demo on a fresh visit. */
+declare const __DEMO_DEFAULT__: boolean;
 declare const __HEAD_BRANCH__: string;
 
 // Vite's import.meta.env — BASE_URL is always available in Vite builds.

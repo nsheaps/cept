@@ -67,11 +67,11 @@ Implementation status values: implemented, partial, stubbed, not-started, diverg
 | [REQ-WEB-009](#req-web-009--installable-pwa-manifest)                               | Installable PWA manifest                           | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-WEB-010](#req-web-010--pwa-shares-local-daemon-when-present)                   | PWA shares local daemon when present               | MUST     | not-started | documented-differently | accurate      |
 | [REQ-WEB-011](#req-web-011--offline-editing-of-browser-space)                       | Offline editing of browser space                   | MUST     | partial     | documented-as-desired  | stale         |
-| [REQ-WEB-012](#req-web-012--demo-space-uses-in-memory-file-storage)                 | Demo space on in-memory storage                    | MUST     | divergent   | documented-differently | stale         |
-| [REQ-WEB-013](#req-web-013--demo-entry-points)                                      | Demo entry points (landing, URL, build flag)       | SHOULD   | partial     | documented-differently | stale         |
-| [REQ-WEB-014](#req-web-014--demo-reset)                                             | Demo reset                                         | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WEB-012](#req-web-012--demo-space-uses-in-memory-file-storage)                 | Demo space on in-memory storage                    | MUST     | implemented | documented-differently | stale         |
+| [REQ-WEB-013](#req-web-013--demo-entry-points)                                      | Demo entry points (landing, URL, build flag)       | SHOULD   | implemented | documented-differently | stale         |
+| [REQ-WEB-014](#req-web-014--demo-reset)                                             | Demo reset                                         | SHOULD   | implemented | documented-as-desired  | accurate      |
 | [REQ-WEB-015](#req-web-015--github-pages-deployment-of-just-the-app)                | GitHub Pages deployment of just the app            | MUST     | implemented | documented-as-desired  | stale         |
-| [REQ-WEB-016](#req-web-016--pages-deployment-configured-for-demo-space)             | Pages deployment opens the demo space              | MUST     | partial     | documented-differently | stale         |
+| [REQ-WEB-016](#req-web-016--pages-deployment-configured-for-demo-space)             | Pages deployment opens the demo space              | MUST     | implemented | documented-differently | stale         |
 | [REQ-WEB-017](#req-web-017--read-only-docs-in-the-pages-deployment)                 | Read-only docs in the Pages deployment             | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-WEB-018](#req-web-018--bundled-docs-generated-from-docscontent)                | Bundled docs generated from `docs/content`         | SHOULD   | not-started | undocumented           | n/a           |
 | [REQ-WEB-019](#req-web-019--pr-preview-deployments)                                 | PR preview deployments                             | SHOULD   | partial     | documented-as-desired  | stale         |
@@ -80,7 +80,7 @@ Implementation status values: implemented, partial, stubbed, not-started, diverg
 | [REQ-WEB-022](#req-web-022--automated-tests-for-swpwa-on-the-built-bundle)          | Automated SW/PWA tests on the built bundle         | MUST     | partial     | undocumented           | n/a           |
 | [REQ-WEB-023](#req-web-023--browser-only-local-folder-spaces)                       | Browser-only local folder spaces                   | SHOULD   | stubbed     | documented-differently | stale         |
 
-Rollup (23 requirements): 2 implemented, 15 partial, 1 stubbed, 3 not-started, 2 divergent.
+Rollup (23 requirements): 6 implemented, 12 partial, 1 stubbed, 3 not-started, 1 divergent.
 
 Verification note (adversarial pass, 2026-10-06): statuses were re-checked against the code at commit `050e03c` and against the live site. A requirement is marked implemented only when its behaviour is wired into the running app and its acceptance criteria hold; where the behaviour exists but tests or other acceptance criteria are missing, it is marked partial.
 
@@ -394,11 +394,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - Opening the demo creates no IndexedDB writes. A test verifies this by checking that `.cept/spaces.json` and the default space are unchanged.
 - Reloading the demo returns to the pristine sample content.
 
-**Current state:** divergent. `packages/core/src/storage` contains only `browser-fs`, `web-fs`, `local-fs` and `git-backend`. A `MemoryBackend` class does exist, but only as a test helper in [packages/ui/src/components/storage/test-helpers.ts](../../../packages/ui/src/components/storage/test-helpers.ts) (line 16); no production code uses it. [App.tsx](../../../packages/ui/src/components/App.tsx) (lines 261-283) writes the demo pages into the persisted IndexedDB default space and renames that space "Demo Space". `handleResetDemo` (lines 794-809) and `handleClearAllData` (lines 811-837) overwrite the default space.
+**Current state:** implemented (PR 18). The demo is a session-only memory space: `openDemoSpace` in [App.tsx](../../../packages/ui/src/components/App.tsx) creates it with `SpaceManager.create(..., { kind: 'memory', backend: new MemoryBackend(), id: 'demo' })`, using the `MemoryBackend` from `@cept/core`, which runs the shared conformance suite. Memory spaces are never written to `.cept/spaces.json`, and switching into one does not change the saved active space ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). App tests check that the demo, `?demo`, "Recreate demo space" and "Clear all data" leave `.cept/spaces.json` and the default space unchanged (or, for clear, empty), and the `?demo` e2e test checks that a reload starts fresh.
 
 **Docs state:** documented-differently, stale. SPECIFICATION 5.10.7 says the demo is a "BrowserFsBackend with sample content". [quick-start.md](../../content/getting-started/quick-start.md) (line 13) says that adding `?demo` lets you try it "without affecting your data". That is false.
 
-**Gap:** Promote the test `MemoryBackend` (or a new one) into `@cept/core` with conformance tests (see [03-spaces-and-storage.md](03-spaces-and-storage.md)), mount the demo on it, and stop writing to the default space.
+**Gap:** SPECIFICATION 5.10.7 still describes the demo as a `BrowserFsBackend`.
 
 ### REQ-WEB-013 — Demo entry points
 
@@ -413,11 +413,15 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - Loading `${BASE_URL}?demo` (or `/demo`) opens the in-memory demo. An e2e test covers it.
 - A `VITE_DEMO_DEFAULT` (or equivalent) build flag replaces hostname sniffing.
 
-**Current state:** partial. [LandingPage.tsx](../../../packages/ui/src/components/landing/LandingPage.tsx) (lines 36-40) has the "Try the demo" button (`data-testid="try-demo"`), wired to `handleResetDemo` in [App.tsx](../../../packages/ui/src/components/App.tsx) (line 1371) and covered by the "try demo enters demo mode with editor" test in [smoke.spec.ts](../../../e2e/tests/smoke.spec.ts) (line 35). [SettingsModal.tsx](../../../packages/ui/src/components/settings/SettingsModal.tsx) (lines 16-29) turns on `showDemoContent` by default when `hostname === 'nsheaps.github.io'`, which also applies to every PR preview. Neither `?demo` nor `CEPT_DEMO_MODE` is implemented, although TASKS T0.12 is checked.
+**Current state:** implemented (PR 18). Three entry points open the in-memory demo (REQ-WEB-012):
+
+- the landing page's "Try the demo" button (`data-testid="try-demo"`), covered by [smoke.spec.ts](../../../e2e/tests/smoke.spec.ts);
+- `?demo` in the URL, whatever is saved, covered by an App test and a smoke e2e test;
+- the `VITE_DEMO_DEFAULT=true` build flag, which turns on `showDemoContent` by default (`__DEMO_DEFAULT__` in [vite.config.ts](../../../packages/web/vite.config.ts)). Hostname sniffing is gone. `CEPT_DEMO_MODE` is not used.
 
 **Docs state:** documented-differently, stale. `?demo` is documented in quick-start.md, and `CEPT_DEMO_MODE` in SPECIFICATION 5.10.7 and 9.1.1.
 
-**Gap:** Implement the URL entry and the build flag, then fix the docs and the T0.12 checkbox.
+**Gap:** SPECIFICATION 5.10.7 and 9.1.1 still name `CEPT_DEMO_MODE`.
 
 ### REQ-WEB-014 — Demo reset
 
@@ -431,11 +435,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 
 - A Settings action resets the demo. With `MemoryBackend` this is equivalent to a reload, and it never touches other spaces.
 
-**Current state:** partial. `handleResetDemo` in [App.tsx](../../../packages/ui/src/components/App.tsx) (lines 794-809) is wired to the "Recreate Demo Space" action in Settings (`onRecreateDemoSpace`, line 1488) and to the landing page's "Try the demo" button (line 1371). The acceptance criterion "never touches other spaces" fails: reset overwrites the persisted `default` space, which may hold the user's own pages (the code comment says it "Always recreate[s]"). See REQ-WEB-012.
+**Current state:** implemented (PR 18). "Recreate demo space" in Settings and the landing page's "Try the demo" both call `handleResetDemo`, which replaces the demo memory space with a fresh one. Other spaces are not touched; an App test checks that `.cept/spaces.json` and the default space's files are unchanged.
 
 **Docs state:** documented-as-desired, accurate as to the action. [features.md](../../content/guides/features.md) (line 106) lists "recreate demo content" under Data & Cache, and the bundled quick-start in [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) (line 191) says "Go to Settings and click 'Recreate Demo Space' to start fresh". Neither warns that it overwrites the default space.
 
-**Gap:** Re-base reset on `MemoryBackend` so it cannot touch user data.
+**Gap:** None.
 
 ### REQ-WEB-015 — GitHub Pages deployment of just the app
 
@@ -470,11 +474,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - `cd.yml` and `preview-deploy.yml` set an explicit demo build flag. Hostname sniffing is removed.
 - A fresh visit to `/cept/app/` opens the in-memory demo (REQ-WEB-012).
 
-**Current state:** partial. The demo is chosen at runtime by checking `hostname === 'nsheaps.github.io'` in [SettingsModal.tsx](../../../packages/ui/src/components/settings/SettingsModal.tsx). Neither workflow passes a flag.
+**Current state:** implemented (PR 18). [cd.yml](../../../.github/workflows/cd.yml) and [preview-deploy.yml](../../../.github/workflows/preview-deploy.yml) build with `VITE_DEMO_DEFAULT: 'true'`, so a fresh visit opens the in-memory demo. [SettingsModal.tsx](../../../packages/ui/src/components/settings/SettingsModal.tsx) no longer checks the hostname.
 
 **Docs state:** documented-differently, stale. SPECIFICATION 9.1.1 shows `CEPT_DEMO_MODE: 'true'` in the preview workflow, but [preview-deploy.yml](../../../.github/workflows/preview-deploy.yml) does not set it.
 
-**Gap:** Add the build flag to both workflows. This depends on REQ-WEB-012.
+**Gap:** SPECIFICATION 9.1.1 still names `CEPT_DEMO_MODE`.
 
 ### REQ-WEB-017 — Read-only docs in the Pages deployment
 
