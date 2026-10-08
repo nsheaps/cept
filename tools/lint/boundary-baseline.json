@@ -1,0 +1,50 @@
+{
+  "$comment": "Known boundary violations from before PR 8 (D-23). Entries may only be removed: tools/lint/boundaries.integration.test.ts fails if one is added or no longer matches a real import.",
+  "entries": [
+    {
+      "file": "packages/core/src/storage/local-fs.ts",
+      "group": "platform",
+      "module": "node:fs/promises",
+      "removedBy": "PR 13"
+    },
+    {
+      "file": "packages/core/src/storage/local-fs.ts",
+      "group": "platform",
+      "module": "node:path",
+      "removedBy": "PR 13"
+    },
+    {
+      "file": "packages/core/src/storage/local-fs.ts",
+      "group": "platform",
+      "module": "node:fs",
+      "removedBy": "PR 13"
+    },
+    {
+      "file": "packages/ui/src/components/App.tsx",
+      "group": "isomorphic-git",
+      "module": "isomorphic-git/http/web",
+      "removedBy": "PR 28"
+    },
+    {
+      "file": "packages/ui/src/components/App.tsx",
+      "group": "concrete-backend",
+      "module": "@cept/core",
+      "name": "BrowserFsBackend",
+      "removedBy": "PR 28"
+    },
+    {
+      "file": "packages/ui/src/components/storage/git-space.ts",
+      "group": "concrete-backend",
+      "module": "@cept/core",
+      "name": "GitBackend",
+      "removedBy": "PR 28"
+    },
+    {
+      "file": "packages/ui/src/components/storage/git-space.ts",
+      "group": "concrete-backend",
+      "module": "@cept/core",
+      "name": "BrowserFsBackend",
+      "removedBy": "PR 28"
+    }
+  ]
+}

@@ -23,5 +23,11 @@
     "skipTargets": {
       "build": "Co-editing (and so the signaling server deployment) is later; only its unit tests run."
     }
+  },
+  "nx": {
+    "tags": [
+      "scope:server",
+      "platform:node"
+    ]
   }
 }

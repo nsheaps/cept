@@ -42,7 +42,7 @@ mise run check                  # Full local gate: pins, lint (incl. workflows),
 mise run lint:format            # prettier --check . (part of mise run lint)
 mise run format                 # prettier --write . (CI's format.yml pushes this as an autofix commit on PRs)
 mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps
-mise run check:targets          # every Nx project has build, typecheck, test:unit or a cept.skipTargets reason (part of lint)
+mise run check:targets          # every Nx project has build, typecheck, test:unit (or a skip reason) and one scope:/platform: tag (part of lint)
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)
 mise run ci:version-check       # Release-version outputs for the PR comment (writes $GITHUB_OUTPUT)
@@ -86,6 +86,8 @@ Every project defines `build`, `typecheck` and `test:unit`, or records why it ha
 9. Markdown files use HTML comments (`<!-- cept:block -->`) for extended blocks
 10. Database schemas are YAML files in `.cept/databases/`
 11. Opening a local folder MUST NOT modify existing files unless the user explicitly edits them in Cept
+
+Lint enforces rules 1, 3 and 5 and the project dependency directions. Every Nx project has one `scope:` and one `platform:` tag (`nx.tags` in `package.json`; `mise run check:targets` checks it); `@nx/enforce-module-boundaries` in [`eslint.config.js`](eslint.config.js) constrains imports by tag, and `cept/restricted-imports` ([`tools/lint/boundaries.js`](tools/lint/boundaries.js)) forbids platform modules in core and ui, concrete backends in ui and `isomorphic-git` outside `GitBackend`. Older violations are listed per import in [`tools/lint/boundary-baseline.json`](tools/lint/boundary-baseline.json), which may only shrink; `tools/lint/boundaries.integration.test.ts` proves the rules fail on [`tools/boundary-fixtures/`](tools/boundary-fixtures/) and that the baseline neither grows nor goes stale. Never add a baseline entry to get green; fix the import.
 
 ## Task Tracking
 

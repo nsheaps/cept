@@ -16,5 +16,11 @@
     "skipTargets": {
       "build": "Capacitor packaging is later (D-43); the app ships as the web build until then."
     }
+  },
+  "nx": {
+    "tags": [
+      "scope:app",
+      "platform:mobile"
+    ]
   }
 }

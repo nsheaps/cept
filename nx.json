@@ -15,7 +15,18 @@
       "cache": true
     },
     "lint": {
-      "cache": true
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/**/*",
+        "{workspaceRoot}/eslint.config.js",
+        "{workspaceRoot}/tools/lint/**/*",
+        "{workspaceRoot}/nx.json",
+        "{workspaceRoot}/project.json",
+        "{workspaceRoot}/packages/*/package.json",
+        "{workspaceRoot}/docs/package.json",
+        "{workspaceRoot}/e2e/package.json",
+        "{workspaceRoot}/bun.lock"
+      ]
     },
     "typecheck": {
       "cache": true

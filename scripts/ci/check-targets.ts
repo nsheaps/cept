@@ -11,6 +11,27 @@ export interface ProjectTargets {
   targets: string[];
   /** `cept.skipTargets` from the project's package.json: target name to the reason it is skipped. */
   skip: Record<string, string>;
+  /** Nx tags (`nx.tags` in package.json, `tags` in project.json). */
+  tags: string[];
+}
+
+/** Tag prefixes every project carries exactly once; `eslint.config.js` constrains dependencies by them. */
+export const REQUIRED_TAG_PREFIXES = ['scope:', 'platform:'] as const;
+
+/** Returns one problem per project that lacks, or repeats, a `scope:` or `platform:` tag. */
+export function findTagProblems(projects: ProjectTargets[]): string[] {
+  const problems: string[] = [];
+  for (const project of projects) {
+    for (const prefix of REQUIRED_TAG_PREFIXES) {
+      const tags = project.tags.filter((t) => t.startsWith(prefix));
+      if (tags.length !== 1) {
+        problems.push(
+          `${project.name}: needs exactly one "${prefix}" tag in nx.tags, has ${tags.length === 0 ? 'none' : tags.join(', ')}`,
+        );
+      }
+    }
+  }
+  return problems;
 }
 
 /**
@@ -58,7 +79,12 @@ function readSkip(root: string): Record<string, string> {
 }
 
 interface ProjectGraph {
-  graph: { nodes: Record<string, { data: { root: string; targets?: Record<string, unknown> } }> };
+  graph: {
+    nodes: Record<
+      string,
+      { data: { root: string; targets?: Record<string, unknown>; tags?: string[] } }
+    >;
+  };
 }
 
 /** Reads every project's targets from one `nx graph --file` export. */
@@ -72,6 +98,7 @@ export function loadProjects(): ProjectTargets[] {
       name,
       targets: Object.keys(data.targets ?? {}),
       skip: readSkip(data.root),
+      tags: data.tags ?? [],
     }));
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -79,11 +106,16 @@ export function loadProjects(): ProjectTargets[] {
 }
 
 if (import.meta.main) {
-  const problems = findTargetProblems(loadProjects());
+  const projects = loadProjects();
+  const problems = [...findTargetProblems(projects), ...findTagProblems(projects)];
   if (problems.length > 0) {
-    console.error(`Every Nx project needs ${REQUIRED_TARGETS.join(', ')} (or a skip reason):`);
+    console.error(
+      `Every Nx project needs ${REQUIRED_TARGETS.join(', ')} (or a skip reason) and one scope: and platform: tag:`,
+    );
     for (const problem of problems) console.error(`  ${problem}`);
     process.exit(1);
   }
-  console.log(`Every Nx project has ${REQUIRED_TARGETS.join(', ')} or a skip reason.`);
+  console.log(
+    `Every Nx project has ${REQUIRED_TARGETS.join(', ')} or a skip reason, and one scope: and platform: tag.`,
+  );
 }

@@ -58,13 +58,17 @@ cept/
 
 ## Architecture Rules
 
-These rules are enforced in code review and CI:
+The full list is in [CLAUDE.md](CLAUDE.md#architecture-rules-never-violate). Lint enforces the import rules; review enforces the rest:
 
-1. `@cept/ui` and `@cept/core` must **never** import platform-specific modules
-2. All persistence goes through the `StorageBackend` interface
-3. Git-specific UI is gated by `backend.capabilities` checks
-4. The app must boot to a fully functional state with `BrowserFsBackend` alone
-5. TypeScript strict mode everywhere — no `any`, no `@ts-ignore`
+1. `@cept/ui` and `@cept/core` must **never** import platform-specific modules (lint: `cept/restricted-imports`)
+2. `@cept/ui` uses the `StorageBackend` interface, never a concrete backend, and only `GitBackend` imports `isomorphic-git` (lint: `cept/restricted-imports`)
+3. Projects only import the projects their `scope:` and `platform:` tags allow (lint: `@nx/enforce-module-boundaries`)
+4. All persistence goes through the `StorageBackend` interface
+5. Git-specific UI is gated by `backend.capabilities` checks
+6. The app must boot to a fully functional state with `BrowserFsBackend` alone
+7. TypeScript strict mode everywhere — no `any`, no `@ts-ignore`
+
+Imports that broke these rules before lint checked them are listed in [`tools/lint/boundary-baseline.json`](tools/lint/boundary-baseline.json). The list may only shrink: remove an entry when you fix the import, and never add one.
 
 ## Making Changes
 
@@ -77,7 +81,7 @@ These rules are enforced in code review and CI:
 
 ### Packages and Nx Targets
 
-- Every Nx project has `build`, `typecheck` and `test:unit` targets. A project that genuinely has nothing to build or unit-test says why in its `package.json`: `"cept": {"skipTargets": {"build": "<reason>"}}`. `mise run lint` runs `mise run check:targets`, which fails otherwise.
+- Every Nx project has `build`, `typecheck` and `test:unit` targets. A project that genuinely has nothing to build or unit-test says why in its `package.json`: `"cept": {"skipTargets": {"build": "<reason>"}}`. Every project also has exactly one `scope:` and one `platform:` tag (`"nx": {"tags": [...]}`). `mise run lint` runs `mise run check:targets`, which fails otherwise.
 - Declare each runtime dependency in the package that imports it, with an exact version. The root `package.json` holds tooling only. `peerDependencies` are the exception: they state a compatible range (for example `"react": "^19.0.0"`), and the package also lists the exact version in `devDependencies` for its own tests.
 
 ### Testing Requirements

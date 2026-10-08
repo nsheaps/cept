@@ -39,7 +39,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 | ID                                                                                   | Requirement                                                        | Priority | Impl status | Docs status            | Docs accurate |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | -------- | ----------- | ---------------------- | ------------- |
 | [REQ-ENG-001](#req-eng-001--monorepo-orchestrated-by-nx)                             | Monorepo orchestrated by Nx with standard targets on every package | MUST     | implemented | documented             | current       |
-| [REQ-ENG-002](#req-eng-002--nx-project-tags-and-module-boundary-enforcement)         | Nx tags + enforce-module-boundaries lint                           | SHOULD   | not-started | documented-differently | stale         |
+| [REQ-ENG-002](#req-eng-002--nx-project-tags-and-module-boundary-enforcement)         | Nx tags + enforce-module-boundaries lint                           | SHOULD   | implemented | documented             | current       |
 | [REQ-ENG-003](#req-eng-003--mise-pins-all-tools-exactly)                             | mise pins all tools exactly                                        | MUST     | divergent   | documented-differently | stale         |
 | [REQ-ENG-004](#req-eng-004--mise-tasks-are-the-single-entry-point-for-ci-and-local)  | mise tasks are the single entry point for CI and local             | MUST     | not-started | undocumented           | n/a           |
 | [REQ-ENG-005](#req-eng-005--reusable-workflow-structure)                             | Reusable `_*.yml` workflow structure                               | SHOULD   | implemented | documented-differently | stale         |
@@ -145,7 +145,7 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 
 **Docs state:** documented, current ([CLAUDE.md](../../../CLAUDE.md) Key Commands, [CONTRIBUTING.md](../../../CONTRIBUTING.md)). [TASKS.md](../../../TASKS.md) T0.1 is now accurate.
 
-**Gap:** `nx graph` edges follow `package.json` workspace dependencies; tags and module boundaries are REQ-ENG-002.
+**Gap:** `nx graph` edges follow `package.json` workspace dependencies and imports; the tag and import rules on those edges are REQ-ENG-002.
 
 **Related PRs/issues:** PR 7 of the [Phase 1 plan](../phase-1-plan.md).
 
@@ -163,11 +163,19 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - [eslint.config.js](../../../eslint.config.js) loads `@nx/eslint-plugin` with `enforce-module-boundaries` configured for those tags.
 - A fixture or gate test shows that a forbidden import (for example `electron` from `@cept/core`) fails lint in CI.
 
-**Current state:** not-started. No `nx.tags` exist in any package manifest. `eslint.config.js` contains only typescript-eslint and eslint-config-prettier. Reference: `/home/user/qontacts/packages/core/package.json` tags, and the qontacts CLAUDE.md rules enforced by `tools/security/gates.integration.test.ts`.
+**Current state:** implemented.
 
-**Docs state:** documented-differently, stale. [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 59 claims the architecture rules "are enforced in code review and CI", but no CI rule enforces them.
+- Every Nx project (each package, docs, e2e and the root `cept-workspace`) has exactly one `scope:` and one `platform:` tag. `mise run check:targets` ([scripts/ci/check-targets.ts](../../../scripts/ci/check-targets.ts)) fails otherwise.
+- [eslint.config.js](../../../eslint.config.js) runs `@nx/enforce-module-boundaries` with `depConstraints` by tag (`scope:shared` → shared only; `scope:client` → shared and client; `scope:app` → shared and client; `scope:server` → shared and server; `scope:docs` → shared; `platform:none` → `platform:none`), which also rejects circular project imports.
+- Tags cannot express the import rules inside a project, so [tools/lint/boundaries.js](../../../tools/lint/boundaries.js) adds `cept/restricted-imports`: no platform modules (`node:*`, `fs`, `path`, `electron`, `electrobun`, `@capacitor/*`) in core or ui (rule 1), no concrete backend value imports in ui (rule 3), and no `isomorphic-git` outside `GitBackend` (rule 5). It checks static imports, `import()`, re-exports and `require()`.
+- Violations that predate the gate are listed one import at a time in [tools/lint/boundary-baseline.json](../../../tools/lint/boundary-baseline.json) (local-fs.ts until PR 13; App.tsx and git-space.ts until PR 28). A baselined file still fails on any new forbidden import.
+- [tools/lint/boundaries.integration.test.ts](../../../tools/lint/boundaries.integration.test.ts) lints each fixture in [tools/boundary-fixtures/](../../../tools/boundary-fixtures/) with the real config and asserts the expected rule fires (and that the clean fixture passes). It also fails if a baseline entry no longer matches a real import, or if the baseline gains an entry it did not have when the gate landed.
 
-**Gap:** Add tags, the boundary lint rule and a gate test. Until then, correct the CONTRIBUTING claim.
+**Docs state:** documented, current ([CLAUDE.md](../../../CLAUDE.md) Architecture Rules, [CONTRIBUTING.md](../../../CONTRIBUTING.md) Architecture Rules).
+
+**Gap:** Rules 2, 4, 6, 7 and 11 are still enforced in review only. The baseline empties in PRs 13 and 28.
+
+**Related PRs/issues:** PR 8 of the [Phase 1 plan](../phase-1-plan.md).
 
 ### REQ-ENG-003 — mise pins all tools exactly
 
