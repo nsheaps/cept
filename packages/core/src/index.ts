@@ -182,6 +182,14 @@ export {
 } from './git/index.js';
 export type { BranchStrategyType, BranchStrategyConfig, BranchInfo } from './git/index.js';
 export { parseConflictMarkers, threeWayMerge, autoResolve } from './git/index.js';
+export {
+  CONFLICT_MARKERS,
+  conflictCopyPath,
+  hasConflictMarkers,
+  mergeText,
+  planMerge,
+} from './git/index.js';
+export type { ConflictResolution, TextMergeResult } from './git/index.js';
 export type {
   MergeConflict,
   ResolutionStrategy,
@@ -192,6 +200,7 @@ export type {
 export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
 export type {
   GitSpaceLocalChanges,
+  GitSpaceNewBranchResult,
   GitSpaceSessionOptions,
   GitSpaceSyncResult,
 } from './git/index.js';
@@ -206,6 +215,7 @@ export {
   SYNC_SETTINGS_EXCLUDE,
   SYNC_SETTINGS_PATH,
   commitIdentityFor,
+  fallbackBranchName,
   loadSyncSettings,
   parseSyncSettings,
   saveSyncSettings,

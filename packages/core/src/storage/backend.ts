@@ -8,6 +8,8 @@
  * - GitBackend (extends StorageBackend + isomorphic-git)
  */
 
+import type { MergeConflict } from '../git/merge-engine.js';
+
 /** Unsubscribe function returned by watch() */
 export type Unsubscribe = () => void;
 
@@ -98,6 +100,8 @@ export interface MergeResult {
   ok: boolean;
   conflicts: string[];
   mergeCommit?: CommitHash;
+  /** Each conflicting file's versions, when the merge could read them (REQ-WS-026). */
+  details?: MergeConflict[];
 }
 
 /** Options for log queries */

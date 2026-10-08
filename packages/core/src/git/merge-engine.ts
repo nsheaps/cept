@@ -15,6 +15,10 @@ export interface MergeConflict {
   theirs: string | null;
   /** Common ancestor content (null if newly added) */
   base: string | null;
+  /** Both versions merged, with conflict markers around the overlapping parts (text files). */
+  merged?: string;
+  /** Whether the file is not text; it can only be kept from one side. */
+  binary?: boolean;
 }
 
 /** Resolution strategy for a conflict */

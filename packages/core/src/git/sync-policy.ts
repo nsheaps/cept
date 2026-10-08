@@ -46,6 +46,25 @@ export function trackedBranch(
   return declared ? declared : defaultBranch;
 }
 
+/**
+ * The branch a rejected push falls back to (REQ-WS-026):
+ * `cept/<login>/<YYYY-MM-DD>-<short sha>`, with the date in UTC. Characters a
+ * branch name may not hold are replaced with `-`.
+ */
+export function fallbackBranchName(login: string, date: Date, commit: string): string {
+  // git check-ref-format: no `..`, no component starting with `.` or ending
+  // in `.lock` or `.`; collapsing runs and trimming keeps the name valid.
+  const safe =
+    login
+      .replace(/[^A-Za-z0-9_.-]+/g, '-')
+      .replace(/\.{2,}/g, '.')
+      .replace(/-{2,}/g, '-')
+      .replace(/^[.-]+|[.-]+$/g, '')
+      .replace(/\.lock$/i, '')
+      .replace(/[.-]+$/, '') || 'cept';
+  return `cept/${safe}/${date.toISOString().slice(0, 10)}-${commit.slice(0, 7)}`;
+}
+
 /** Where a space keeps its per-device sync settings, relative to the space root. */
 export const SYNC_SETTINGS_PATH = '.cept/sync.local.json';
 

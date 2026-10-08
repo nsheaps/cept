@@ -103,6 +103,7 @@ const synced: SyncStatus = {
   lastErrorKind: null,
   pendingPush: false,
   conflicts: [],
+  conflictDetails: [],
 };
 
 /** A session whose syncs wait until the test settles them, one by one. */

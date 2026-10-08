@@ -6,7 +6,16 @@ import type { GitSyncStatus } from '../storage/useGitSpaceSync.js';
 const NOW = 1_700_000_000_000;
 
 function status(over: Partial<GitSyncStatus> = {}): GitSyncStatus {
-  return { state: 'synced', pending: 0, unpushed: 0, lastSyncTime: null, lastError: null, ...over };
+  return {
+    state: 'synced',
+    pending: 0,
+    unpushed: 0,
+    lastSyncTime: null,
+    lastError: null,
+    lastErrorKind: null,
+    conflicts: [],
+    ...over,
+  };
 }
 
 describe('formatLastSynced', () => {
@@ -76,6 +85,48 @@ describe('SyncIndicator', () => {
   it('disables "Sync now" while the session opens', () => {
     render(<SyncIndicator status={null} onSyncNow={() => undefined} now={NOW} />);
     expect((screen.getByTestId('sync-now') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('offers to resolve a conflict (REQ-WS-026)', () => {
+    const onResolve = vi.fn();
+    const { rerender } = render(
+      <SyncIndicator
+        status={status()}
+        onSyncNow={() => undefined}
+        onResolveConflicts={onResolve}
+      />,
+    );
+    expect(screen.queryByTestId('sync-resolve-conflicts')).toBeNull();
+    rerender(
+      <SyncIndicator
+        status={status({ state: 'conflict' })}
+        onSyncNow={() => undefined}
+        onResolveConflicts={onResolve}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('sync-resolve-conflicts'));
+    expect(onResolve).toHaveBeenCalledOnce();
+  });
+
+  it('offers to push to a new branch when the remote refused the push', () => {
+    const onPush = vi.fn();
+    const { rerender } = render(
+      <SyncIndicator
+        status={status({ state: 'error', lastErrorKind: 'auth' })}
+        onSyncNow={() => undefined}
+        onPushToNewBranch={onPush}
+      />,
+    );
+    expect(screen.queryByTestId('sync-push-new-branch')).toBeNull();
+    rerender(
+      <SyncIndicator
+        status={status({ state: 'error', lastErrorKind: 'protected-branch' })}
+        onSyncNow={() => undefined}
+        onPushToNewBranch={onPush}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('sync-push-new-branch'));
+    expect(onPush).toHaveBeenCalledOnce();
   });
 
   it('asks to sign in when the space is locked', () => {

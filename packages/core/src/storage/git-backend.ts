@@ -11,7 +11,7 @@
  */
 
 import git from 'isomorphic-git';
-import type { HttpClient } from 'isomorphic-git';
+import type { HttpClient, TreeObject } from 'isomorphic-git';
 import type {
   GitStorageBackend,
   BackendCapabilities,
@@ -31,7 +31,9 @@ import type {
   RemoteOperations,
   StorageBackend,
 } from './backend.js';
-import { classifySyncError, conflictPaths } from '../git/sync-errors.js';
+import { SyncError } from '../git/sync-errors.js';
+import { planMerge } from '../git/tree-merge.js';
+import type { ConflictResolution, MergedFile, TreeFile } from '../git/tree-merge.js';
 import { withExcludeLine } from '../git/sync-policy.js';
 
 const GIT_CAPABILITIES: BackendCapabilities = {
@@ -225,6 +227,9 @@ export class GitBackend implements GitStorageBackend {
   async push(branch?: string): Promise<PushResult> {
     if (!this.http) throw new Error('GitBackend: http client required for push');
     const ref = branch ?? (await this.branchCurrent());
+    // Nothing to send when origin's copy is already this commit: skip the
+    // round trip, which a protected branch would refuse even as a no-op.
+    if (await this.upToDateWithOrigin(ref)) return { ok: true, refs: {} };
     const result = await git.push({
       fs: this.fs,
       http: this.http,
@@ -243,29 +248,218 @@ export class GitBackend implements GitStorageBackend {
     };
   }
 
+  /**
+   * Fetch the branch from `origin` and merge it into the local one
+   * (`mergeRemote`). A conflict leaves everything as it was and comes back
+   * as `ok: false` with each file's versions in `details`.
+   */
   async pull(branch?: string): Promise<MergeResult> {
-    if (!this.http) throw new Error('GitBackend: http client required for pull');
     const ref = branch ?? (await this.branchCurrent());
+    await this.fetch(ref);
+    return this.mergeRemote({ branch: ref });
+  }
+
+  /**
+   * Merge `origin`'s copy of the branch, as last fetched, into the local
+   * branch and the working tree (REQ-WS-026): a fast-forward when the local
+   * branch has nothing of its own, otherwise a merge commit planned by
+   * `planMerge`, with `resolutions` applied to the conflicts the user has
+   * resolved. While a conflict remains nothing changes, and the result is
+   * `ok: false` with the conflicts in `details`.
+   */
+  async mergeRemote(
+    options: { branch?: string; resolutions?: readonly ConflictResolution[] } = {},
+  ): Promise<MergeResult> {
+    const ref = options.branch ?? (await this.branchCurrent());
+    const local = await git.resolveRef({ fs: this.fs, dir: this.dir, ref: `refs/heads/${ref}` });
+    let remote: string;
     try {
-      await git.pull({
+      remote = await git.resolveRef({
         fs: this.fs,
-        http: this.http,
         dir: this.dir,
-        ref,
-        corsProxy: this.corsProxy,
-        author: {
-          name: this.authorName,
-          email: this.authorEmail,
-        },
-        onAuth: this.auth ? () => this.getOnAuth() : undefined,
+        ref: `refs/remotes/origin/${ref}`,
       });
+    } catch {
+      // Nothing fetched for this branch yet: nothing to merge.
       return { ok: true, conflicts: [] };
-    } catch (e) {
-      if (classifySyncError(e) === 'conflict') {
-        return { ok: false, conflicts: conflictPaths(e) };
-      }
-      throw e;
     }
+    const descends = (oid: string, ancestor: string) =>
+      git.isDescendent({ fs: this.fs, dir: this.dir, oid, ancestor, depth: -1 });
+    if (local === remote || (await descends(local, remote))) return { ok: true, conflicts: [] };
+    if (await descends(remote, local)) {
+      await this.moveBranch(ref, local, remote);
+      return { ok: true, conflicts: [], mergeCommit: remote };
+    }
+
+    const [base] = await git.findMergeBase({ fs: this.fs, dir: this.dir, oids: [local, remote] });
+    if (typeof base !== 'string') {
+      throw new SyncError(
+        'conflict',
+        `The local branch "${ref}" and the remote one share no commit, so they cannot be merged.`,
+      );
+    }
+    const plan = await planMerge({
+      base: await this.flatTree(base),
+      mine: await this.flatTree(local),
+      theirs: await this.flatTree(remote),
+      read: async (oid) => (await git.readBlob({ fs: this.fs, dir: this.dir, oid })).blob,
+      resolutions: options.resolutions,
+      labels: { mine: local.slice(0, 7), theirs: remote.slice(0, 7) },
+    });
+    if (plan.conflicts.length > 0) {
+      return { ok: false, conflicts: plan.conflicts.map((c) => c.path), details: plan.conflicts };
+    }
+    const tree = await this.writeMergedTree(plan.files);
+    const commit = await git.commit({
+      fs: this.fs,
+      dir: this.dir,
+      message: `Merge remote-tracking branch 'origin/${ref}'`,
+      author: { name: this.authorName, email: this.authorEmail },
+      tree,
+      parent: [local, remote],
+      noUpdateBranch: true,
+    });
+    await this.moveBranch(ref, local, commit);
+    return { ok: true, conflicts: [], mergeCommit: commit };
+  }
+
+  /**
+   * Point branch `ref` at `to` and check it out. The checkout refuses to
+   * overwrite edits not committed yet; the branch then goes back to `from`.
+   */
+  private async moveBranch(ref: string, from: string, to: string): Promise<void> {
+    const write = (value: string) =>
+      git.writeRef({ fs: this.fs, dir: this.dir, ref: `refs/heads/${ref}`, value, force: true });
+    await write(to);
+    try {
+      await git.checkout({ fs: this.fs, dir: this.dir, ref });
+    } catch (err) {
+      await write(from);
+      throw err;
+    }
+  }
+
+  /** A commit's files by path, with their blob ids and modes. */
+  private async flatTree(commit: string): Promise<Map<string, TreeFile>> {
+    const files = new Map<string, TreeFile>();
+    await git.walk({
+      fs: this.fs,
+      dir: this.dir,
+      trees: [git.TREE({ ref: commit })],
+      map: async (filepath, [entry]) => {
+        if (!entry || filepath === '.') return true;
+        const type = await entry.type();
+        if (type === 'blob' || type === 'commit') {
+          files.set(filepath, {
+            oid: await entry.oid(),
+            mode: (await entry.mode()).toString(8),
+          });
+        }
+        return true;
+      },
+    });
+    return files;
+  }
+
+  /** Write a merge's files as trees; returns the root tree's id. */
+  private async writeMergedTree(files: ReadonlyMap<string, MergedFile>): Promise<string> {
+    interface Folder {
+      files: Map<string, TreeFile>;
+      folders: Map<string, Folder>;
+    }
+    const newFolder = (): Folder => ({ files: new Map(), folders: new Map() });
+    const root = newFolder();
+    const clash = (path: string) =>
+      new SyncError(
+        'conflict',
+        `"${path}" is a file on one side of the merge and a folder on the other.`,
+        [path],
+      );
+    for (const [path, file] of files) {
+      const oid =
+        'content' in file
+          ? await git.writeBlob({ fs: this.fs, dir: this.dir, blob: file.content })
+          : file.oid;
+      const parts = path.split('/');
+      const name = parts.pop()!;
+      let folder = root;
+      for (const part of parts) {
+        if (folder.files.has(part)) throw clash(path);
+        let next = folder.folders.get(part);
+        if (!next) {
+          next = newFolder();
+          folder.folders.set(part, next);
+        }
+        folder = next;
+      }
+      if (folder.folders.has(name)) throw clash(path);
+      folder.files.set(name, { oid, mode: file.mode });
+    }
+    const write = async (folder: Folder): Promise<string> => {
+      const tree: TreeObject = [];
+      for (const [path, file] of folder.files) {
+        tree.push({
+          mode: file.mode,
+          path,
+          oid: file.oid,
+          type: file.mode === '160000' ? 'commit' : 'blob',
+        });
+      }
+      for (const [path, sub] of folder.folders) {
+        tree.push({ mode: '040000', path, oid: await write(sub), type: 'tree' });
+      }
+      return git.writeTree({ fs: this.fs, dir: this.dir, tree });
+    };
+    return write(root);
+  }
+
+  /**
+   * Push the current branch to a different branch on `origin` (the fallback
+   * for a rejected push, REQ-WS-026). The local branch keeps tracking its own.
+   */
+  async pushTo(remoteBranch: string): Promise<PushResult> {
+    if (!this.http) throw new Error('GitBackend: http client required for push');
+    const ref = await this.branchCurrent();
+    const result = await git.push({
+      fs: this.fs,
+      http: this.http,
+      dir: this.dir,
+      ref,
+      remoteRef: remoteBranch,
+      corsProxy: this.corsProxy,
+      onAuth: this.auth ? () => this.getOnAuth() : undefined,
+    });
+    return {
+      ok: result.ok ?? false,
+      refs: Object.fromEntries(
+        Object.entries(result.refs ?? {}).map(([k, v]) => [
+          k,
+          { ok: v.ok ?? false, error: v.error },
+        ]),
+      ),
+    };
+  }
+
+  /**
+   * Move the local branch and the working tree to `origin`'s copy of it, as
+   * last fetched, dropping local commits. Only for commits already pushed
+   * elsewhere (`pushTo`).
+   */
+  async resetToRemote(branch?: string): Promise<void> {
+    const ref = branch ?? (await this.branchCurrent());
+    const remote = await git.resolveRef({
+      fs: this.fs,
+      dir: this.dir,
+      ref: `refs/remotes/origin/${ref}`,
+    });
+    await git.writeRef({
+      fs: this.fs,
+      dir: this.dir,
+      ref: `refs/heads/${ref}`,
+      value: remote,
+      force: true,
+    });
+    await git.checkout({ fs: this.fs, dir: this.dir, ref, force: true });
   }
 
   /**
@@ -397,6 +591,19 @@ export class GitBackend implements GitStorageBackend {
     });
     await git.checkout({ fs: this.fs, dir: this.dir, ref, force: true });
     return 'updated';
+  }
+
+  /** Whether `refs/heads/<ref>` and `origin`'s last-known copy of it are the same commit. */
+  private async upToDateWithOrigin(ref: string): Promise<boolean> {
+    try {
+      const [local, remote] = await Promise.all([
+        git.resolveRef({ fs: this.fs, dir: this.dir, ref: `refs/heads/${ref}` }),
+        git.resolveRef({ fs: this.fs, dir: this.dir, ref: `refs/remotes/origin/${ref}` }),
+      ]);
+      return local === remote;
+    } catch {
+      return false;
+    }
   }
 
   /**

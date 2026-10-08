@@ -131,7 +131,7 @@ Counts are requirements per area by implementation status (generated from the ar
 | ------------------------------------------------------- | -------------------------------------- | ------------ | ----------- | ------- | ------- | ----------- | --------- | -------- |
 | Browser component, service worker, PWA, demo, Pages app | [01](01-browser-app-and-pwa.md)        | 23           | 2           | 15      | 1       | 3           | 2         | 0        |
 | Static rendered component & docs site                   | [02](02-static-rendering.md)           | 18           | 0           | 6       | 0       | 9           | 3         | 0        |
-| Spaces & storage backends                               | [03](03-spaces-and-storage.md)         | 27           | 3           | 7       | 5       | 6           | 3         | 2        |
+| Spaces & storage backends                               | [03](03-spaces-and-storage.md)         | 27           | 3           | 8       | 4       | 6           | 3         | 2        |
 | Co-editing (P2P WebRTC)                                 | [04](04-collaboration.md)              | 13           | 0           | 1       | 4       | 6           | 2         | 0        |
 | CLI & sync daemon                                       | [05](05-cli-and-daemon.md)             | 14           | 0           | 0       | 3       | 11          | 0         | 0        |
 | VS Code extension                                       | [06](06-vscode-extension.md)           | 16           | 0           | 1       | 0       | 15          | 0         | 0        |
@@ -140,7 +140,7 @@ Counts are requirements per area by implementation status (generated from the ar
 | Remotes & auth                                          | [09](09-remotes-and-auth.md)           | 18           | 0           | 7       | 5       | 5           | 1         | 0        |
 | Monorepo, toolchain & CI/CD                             | [10](10-engineering-and-ci.md)         | 20           | 3           | 7       | 0       | 7           | 3         | 0        |
 | Notion parity and comment threads                       | [11](11-notion-parity-and-comments.md) | 17           | 0           | 4       | 3       | 10          | 0         | 0        |
-| **Total**                                               |                                        | **210**      | **8**       | **59**  | **32**  | **89**      | **20**    | **2**    |
+| **Total**                                               |                                        | **210**      | **8**       | **60**  | **31**  | **89**      | **20**    | **2**    |
 
 How each handler requirement maps to areas:
 
@@ -388,7 +388,7 @@ Every requirement, linked to its section in the area file. Priority, statuses an
 | [REQ-WS-023](03-spaces-and-storage.md#req-ws-023--space-autodiscovery-from-account-access)                           | Discover spaces in every repository the sign-in can read                     | MUST        | implemented    | documented             | accurate      |
 | [REQ-WS-024](03-spaces-and-storage.md#req-ws-024--space-lifecycle)                                                   | Create, rename, remove and delete spaces; stats for every space              | MUST        | partial        | documented             | accurate      |
 | [REQ-WS-025](03-spaces-and-storage.md#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                       | Legacy flat spaces are converted to folders, reversibly                      | MUST        | implemented    | documented             | accurate      |
-| [REQ-WS-026](03-spaces-and-storage.md#req-ws-026--git-sync-conflict-resolution)                                      | Merge diverged changes; per-file conflict view; push to a new branch         | MUST        | stubbed        | undocumented           | n/a           |
+| [REQ-WS-026](03-spaces-and-storage.md#req-ws-026--git-sync-conflict-resolution)                                      | Merge diverged changes; per-file conflict view; push to a new branch         | MUST        | partial        | documented             | n/a           |
 | [REQ-WS-027](03-spaces-and-storage.md#req-ws-027--git-sync-policy)                                                   | Commit author, messages, tracked branch, per-device settings, error types    | MUST        | partial        | undocumented           | n/a           |
 | [REQ-COL-001](04-collaboration.md#req-col-001--co-editing-available-for-shared-spaces)                               | Co-editing available for shared spaces                                       | MUST        | stubbed        | documented-differently | stale         |
 | [REQ-COL-002](04-collaboration.md#req-col-002--crdt-based-reconciliation-of-text-edits-yjs)                          | CRDT-based reconciliation of text edits (Yjs)                                | MUST        | not-started    | documented-as-desired  | stale         |

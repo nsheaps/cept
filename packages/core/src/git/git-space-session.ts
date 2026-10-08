@@ -29,7 +29,10 @@ import { AutoCommitEngine } from './auto-commit.js';
 import type { FileChange } from './auto-commit.js';
 import { SyncEngine } from './sync-engine.js';
 import type { SyncStatus } from './sync-engine.js';
-import { loadSyncSettings, SYNC_SETTINGS_EXCLUDE } from './sync-policy.js';
+import { SyncError, classifyPushReasons } from './sync-errors.js';
+import { fallbackBranchName, loadSyncSettings, SYNC_SETTINGS_EXCLUDE } from './sync-policy.js';
+import type { MergeConflict } from './merge-engine.js';
+import type { ConflictResolution } from './tree-merge.js';
 import type { CommitIdentity, SyncSettings } from './sync-policy.js';
 
 /** Clean path segments, without `.` or empty parts. */
@@ -117,6 +120,8 @@ export interface GitSpaceSessionOptions {
   auth?: GitAuth;
   /** Who commits are attributed to (`commitIdentityFor`). */
   identity: CommitIdentity;
+  /** The signed-in account's login, which names a fallback branch (`fallbackBranchName`). */
+  login?: string;
   /** Sync settings; read from the space's `.cept/sync.local.json` when absent. */
   settings?: SyncSettings;
 }
@@ -126,6 +131,14 @@ export interface GitSpaceSyncResult {
   status: SyncStatus;
   /** Whether the pull brought in commits, so the files on disk changed. */
   changed: boolean;
+}
+
+/** Where `pushToNewBranch` pushed the local work. */
+export interface GitSpaceNewBranchResult {
+  /** The branch created on the remote. */
+  branch: string;
+  /** The sync that followed, back on the tracked branch. */
+  sync: GitSpaceSyncResult;
 }
 
 /** Local work not on the remote yet. */
@@ -151,6 +164,7 @@ export class GitSpaceSession {
     readonly autoCommit: AutoCommitEngine,
     readonly sync: SyncEngine,
     readonly settings: SyncSettings,
+    private readonly login: string,
   ) {}
 
   static async open(options: GitSpaceSessionOptions): Promise<GitSpaceSession> {
@@ -182,7 +196,8 @@ export class GitSpaceSession {
       subPath,
       (path, type) => autoCommit.recordChange(path, type),
     );
-    return new GitSpaceSession(git, backend, autoCommit, sync, settings);
+    const login = options.login ?? options.identity.email.replace(/@.*$/, '').replace(/^\d+\+/, '');
+    return new GitSpaceSession(git, backend, autoCommit, sync, settings, login);
   }
 
   /**
@@ -215,6 +230,55 @@ export class GitSpaceSession {
       // runSync() commits what is pending; markDirty makes it push even when auto-push is off.
       this.sync.markDirty();
       return this.runSync();
+    });
+  }
+
+  /** The conflicts the last sync stopped on, with each file's versions (REQ-WS-026). */
+  conflicts(): MergeConflict[] {
+    return this.sync.getStatus().conflictDetails;
+  }
+
+  /**
+   * Finish the merge the last sync stopped on with the user's `resolutions`,
+   * then sync (pushing the merge). Conflicts without a resolution, or that
+   * came up since, are reported again by that sync.
+   */
+  resolveConflicts(resolutions: readonly ConflictResolution[]): Promise<GitSpaceSyncResult> {
+    return this.enqueue(async () => {
+      await this.autoCommit.flushNow();
+      const before = await this.git.head().catch(() => null);
+      const merge = await this.git.mergeRemote({ resolutions });
+      if (merge.ok) this.sync.resolveConflicts();
+      this.sync.markDirty();
+      const result = await this.runSync();
+      return { ...result, changed: result.changed || (merge.ok && before !== merge.mergeCommit) };
+    });
+  }
+
+  /**
+   * Push the local work to a new branch on the remote (`fallbackBranchName`),
+   * for when the tracked branch refuses it (protected) or it cannot be merged
+   * yet. The space keeps tracking its own branch: once the work is safe on the
+   * new branch, the local branch goes back to the remote's, and syncs again.
+   */
+  pushToNewBranch(now: Date = new Date()): Promise<GitSpaceNewBranchResult> {
+    return this.enqueue(async () => {
+      await this.autoCommit.flushNow();
+      const head = await this.git.head();
+      const branch = fallbackBranchName(this.login, now, head);
+      const pushed = await this.git.pushTo(branch);
+      if (!pushed.ok) {
+        const reasons = Object.values(pushed.refs).map((ref) => ref.error);
+        throw new SyncError(
+          classifyPushReasons(reasons),
+          `Could not push to the new branch "${branch}" (${reasons.filter(Boolean).join('; ') || 'rejected'}).`,
+        );
+      }
+      await this.git.fetch();
+      await this.git.resetToRemote();
+      this.sync.resolveConflicts();
+      const sync = await this.runSync();
+      return { branch, sync: { ...sync, changed: true } };
     });
   }
 
