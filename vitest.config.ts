@@ -42,6 +42,7 @@ export default defineConfig({
             'features/step-definitions/**/*.steps.ts',
             'tools/**/*.integration.test.ts',
             'scripts/**/*.integration.test.ts',
+            'packages/*/src/**/*.integration.test.ts',
           ],
           exclude: ['node_modules', 'dist', 'e2e'],
         },

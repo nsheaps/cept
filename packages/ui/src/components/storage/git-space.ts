@@ -2,11 +2,12 @@
  * git-space — Utilities for cloning a remote Git repository into a Cept space.
  *
  * Handles the full flow: clone → read files → build page tree → save as space.
- * Works in the browser via isomorphic-git + lightning-fs.
+ * The clone itself (transport, isomorphic-git, a throwaway clone directory)
+ * lives in `@cept/core`; this module turns the cloned Markdown into pages.
  */
 
-import { GitBackend } from '@cept/core';
-import type { GitHttp, GitFs, StorageBackend } from '@cept/core';
+import { withShallowClone } from '@cept/core';
+import type { GitFs, StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
 /**
@@ -44,9 +45,9 @@ export function normalizeRepoUrl(url: string): string {
 
 /**
  * Clone a remote Git repository and extract markdown files as Cept pages.
+ * The clone is shallow and is deleted once its pages are read.
  *
  * @param backend - A backend that can host the clone (see canHostGitClone)
- * @param http - The HTTP client (isomorphic-git/http/web for browsers)
  * @param url - Repository URL (e.g., "github.com/user/repo")
  * @param branch - Branch to clone (default: "main")
  * @param subPath - Optional sub-path to scope the space to (e.g., "docs/")
@@ -54,46 +55,28 @@ export function normalizeRepoUrl(url: string): string {
  */
 export async function cloneRemoteRepo(
   backend: GitCloneHost,
-  http: GitHttp,
   url: string,
   branch: string = 'main',
   subPath?: string,
   corsProxy?: string,
 ): Promise<ClonedSpaceData> {
-  const normalizedUrl = normalizeRepoUrl(url);
-
-  // Use a dedicated directory for the git clone within lightning-fs
-  const cloneDir = `/.cept/git-clones/${Date.now()}`;
-
-  // Create a GitBackend wrapping the same BrowserFsBackend
-  const gitBackend = new GitBackend({
-    underlying: backend,
-    dir: cloneDir,
-    fs: backend.getRawFs() as unknown as GitFs,
-    http,
-    corsProxy,
-  });
-
-  // Shallow clone for speed — we only need the latest snapshot
-  await gitBackend.clone(normalizedUrl, {
-    ref: branch,
-    depth: 1,
-    singleBranch: true,
-  });
-
-  // Read markdown files from the cloned repo
   const prefix = subPath ? subPath.replace(/^\//, '').replace(/\/$/, '') : '';
-  const scanDir = prefix ? `${cloneDir}/${prefix}` : cloneDir;
-  const pages: PageTreeNode[] = [];
-  const pageContents: Record<string, string> = {};
-
-  await walkMarkdownFiles(backend, scanDir, '', pages, pageContents);
-
-  // Clean up the clone directory (we've extracted the content)
-  // Leave it for now — could be used for future fetch/sync operations
-  // TODO: Consider keeping the clone for incremental updates
-
-  return { pages, pageContents };
+  return withShallowClone(
+    {
+      host: backend,
+      fs: backend.getRawFs() as GitFs,
+      url: normalizeRepoUrl(url),
+      ref: branch,
+      corsProxy,
+    },
+    async (cloneDir) => {
+      const pages: PageTreeNode[] = [];
+      const pageContents: Record<string, string> = {};
+      const scanDir = prefix ? `${cloneDir}/${prefix}` : cloneDir;
+      await walkMarkdownFiles(backend, scanDir, '', pages, pageContents);
+      return { pages, pageContents };
+    },
+  );
 }
 
 /**
@@ -135,13 +118,11 @@ async function walkMarkdownFiles(
     const fullPath = `${baseDir}/${filePath}`;
     const data = await backend.readFile(fullPath);
     if (data) {
+      // Keep the file as it is, front matter included (PR 46 parses it).
       const content = new TextDecoder().decode(data);
-      const strippedContent = stripYamlFrontMatter(content);
+      const headingTitle = extractTitleFromContent(content);
 
-      // Try to extract title from first heading
-      const headingTitle = extractTitleFromContent(strippedContent);
-
-      pageContents[pageId] = strippedContent;
+      pageContents[pageId] = content;
       pages.push({
         id: pageId,
         title: headingTitle ?? title,
@@ -176,9 +157,9 @@ async function walkMarkdownFiles(
   }
 }
 
-/** Strip YAML front matter from markdown content */
-function stripYamlFrontMatter(md: string): string {
-  return md.replace(/^---[\s\S]*?---\n*/m, '');
+/** Markdown without a leading YAML front matter block, so its `#` comments are not headings. */
+function withoutFrontMatter(md: string): string {
+  return md.replace(/^\uFEFF/, '').replace(/^---\r?\n[\s\S]*?\r?\n---[ \t]*(\r?\n|$)/, '');
 }
 
 /** Extract a human-readable title from a markdown filename */
@@ -190,6 +171,6 @@ function extractTitleFromFilename(filename: string): string {
 
 /** Extract title from the first H1 heading in markdown content */
 function extractTitleFromContent(content: string): string | undefined {
-  const match = content.match(/^#\s+(.+)$/m);
+  const match = withoutFrontMatter(content).match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : undefined;
 }

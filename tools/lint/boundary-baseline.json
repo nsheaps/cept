@@ -1,19 +1,4 @@
 {
   "$comment": "Known boundary violations from before PR 8. Each entry allows `count` (default 1) imports of that group, module and name in that file; one more fails lint. Entries and counts may only go down: tools/lint/boundaries.integration.test.ts fails if one grows or no longer matches the file's real imports.",
-  "entries": [
-    {
-      "file": "packages/ui/src/components/App.tsx",
-      "group": "isomorphic-git",
-      "module": "isomorphic-git/http/web",
-      "count": 4,
-      "removedBy": "PR 28"
-    },
-    {
-      "file": "packages/ui/src/components/storage/git-space.ts",
-      "group": "concrete-backend",
-      "module": "@cept/core",
-      "name": "GitBackend",
-      "removedBy": "PR 28"
-    }
-  ]
+  "entries": []
 }

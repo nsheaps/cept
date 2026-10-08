@@ -138,10 +138,10 @@ flowchart TB
     ONE --> SJ[".cept/spaces.json (flat list of spaces)"]
     ONE --> DEF["Default space: pages/page-TIMESTAMP.md + .cept/workspace-state.json (tree as JSON)"]
     ONE --> OTHER[".cept/spaces/ID/pages/... (other spaces)"]
-    ONE --> CL[".cept/git-clones/TIMESTAMP/ (shallow clone, never cleaned up)"]
+    ONE --> CL[".cept/git-clones/TIMESTAMP/ (shallow clone, deleted once read)"]
     CL -- "copy markdown, readOnly: true" --> OTHER
     APPX["App.tsx: re-clone on visit if last sync older than 5 min, via cors.isomorphic-git.org"] --> CL
-    GBC["git-space.ts: transient GitBackend, clone only (depth 1)"] --> CL
+    GBC["core withShallowClone: transient GitBackend, clone only (depth 1)"] --> CL
 
     subgraph Unwired["Exported but not instantiated or called by any client"]
         LFS["LocalFsBackend (Node fs)"]
@@ -378,8 +378,7 @@ branch: docs # optional (D-30)
 
 - The interface and `BackendCapabilities` exist in [packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) (lines ~47-88), but `type` is the closed union `'browser' | 'local' | 'git'` (~line 69).
 - `WebFsBackend` also reports `'local'` (web-fs.ts ~line 63).
-- The UI depends on a concrete class: `instanceof BrowserFsBackend` in App.tsx (~lines 342, 430, 956, 1041), and git-space.ts takes `BrowserFsBackend` and calls `getRawFs()`. This breaks CLAUDE.md rule 3.
-- App.tsx imports `isomorphic-git/http/web` dynamically (~lines 354, 456, 965, 1051). This breaks CLAUDE.md rule 5.
+- The UI no longer names a concrete backend or isomorphic-git (PR 28): App.tsx and git-space.ts gate cloning on `canHostGitClone` (a backend that exposes `getRawFs()`), and the clone, its HTTP client (`createGitHttp`) and the throwaway clone directory live in `withShallowClone` in [packages/core/src/storage/git-clone.ts](../../../packages/core/src/storage/git-clone.ts). `tools/lint/boundary-baseline.json` is empty, so lint enforces CLAUDE.md rules 3 and 5 in ui with no exceptions.
 
 **Docs state: documented-as-desired, stale.** SPECIFICATION.md §5.10.6 and [docs/specs/storage-backends.md](../storage-backends.md) FR-4/FR-5 describe the abstraction correctly but list only three types.
 
@@ -515,9 +514,9 @@ branch: docs # optional (D-30)
 
 - Route resolution (D-42, PR 22): a `/g/…/blob/<branch>/<path>` URL is matched against existing spaces of the same repository and branch by `resolveRoute` in [packages/ui/src/router.ts](../../../packages/ui/src/router.ts); the space with the longest matching sub-path opens and the rest of the path is the page, so no duplicate space is cloned. With no match, a trailing Markdown file is the page and the rest is the sub-path to clone. The URL format is documented in [space-config.md](../../content/reference/space-config.md#page-links).
 - `GitBackend` in [packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) implements clone, fetch, log, diff and branch, with tests.
-- In the app, `cloneRemoteRepo` in git-space.ts does a shallow `depth: 1` clone into lightning-fs, then copies the markdown into a `readOnly: true` space (`createRemoteSpace` in SpaceManager.ts).
+- In the app, `cloneRemoteRepo` in git-space.ts asks core's `withShallowClone` for a shallow `depth: 1` clone into lightning-fs, then copies the markdown, front matter included, into a `readOnly: true` space (`createRemoteSpace` in SpaceManager.ts). Page titles come from the first H1 after any front matter, else the filename.
 - App.tsx re-clones the active remote space whenever it is visited and the last sync is older than 5 minutes (a `useEffect` gated on `SYNC_INTERVAL_MS`, not a timer; ~lines 426-470), only on `BrowserFsBackend` (~line 430). All clones go through `https://cors.isomorphic-git.org` (~lines 363, 467, 987, 1064). Adding a remote space on any other backend silently creates an empty local space instead (~lines 955-960).
-- Each sync adds a new `/.cept/git-clones/<Date.now()>` directory with no cleanup (git-space.ts ~line 53 and its TODO).
+- Each clone or sync uses a new `/.cept/git-clones/<Date.now()>` directory and deletes it once the pages are read, whether or not the clone succeeded (PR 28). Cloning no longer calls `initialize()` on the host, which used to rewrite the root `.cept/config.yaml` to `name: "git-clone"` on every clone and refresh. Clone directories left by earlier versions are not swept.
 
 **Docs state: documented-as-desired, stale.**
 
@@ -816,7 +815,7 @@ branch: docs # optional (D-30)
 6. **Meaning of "locally (browser only)".** IndexedDB only, or does it also cover real folders through the File System Access API (REQ-WS-012)? _(Answered D-29: both are Phase 1 backends.)_
 7. **Backend list.** _(Partly answered D-26/D-29: Phase 1 = IndexedDB, desktop folder, File System Access, GitHub; Google Drive and SFTP are later; S3 and URL not addressed.)_ The owner listed local-app, local-browser, git, gdrive and sftp. The UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
 8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_ _(Answered D-37: in Phase 1 the app owns sync, with queued offline commits and push-on-reconnect; daemon is later.)_
-9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
+9. **Architecture rule violations.** _(Rules 3 and 5 fixed in ui by PR 28; lint enforces both with an empty baseline.)_ Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
 10. **Config schema shape.** _(Answered D-47: camelCase everywhere. `space.cept.yaml` and `.cept.yaml` use flat camelCase keys; SPECIFICATION.md Appendix F's snake_case is superseded.)_
 11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39).)_
 12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance? _(Answered in PR 15: a listing is one discovery over one backend, so slugs must be unique within one folder tree or repository. Uniqueness across repositories, for autodiscovery listings, is left to the space list that merges them.)_

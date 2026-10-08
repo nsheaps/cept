@@ -57,6 +57,15 @@ export interface GitAuth {
 export type GitHttp = HttpClient;
 
 /**
+ * The browser HTTP client for isomorphic-git (`isomorphic-git/http/web`, which
+ * uses `fetch`), loaded on first use so it stays out of the initial bundle.
+ */
+export async function createGitHttp(): Promise<GitHttp> {
+  const module = await import('isomorphic-git/http/web');
+  return module.default;
+}
+
+/**
  * Filesystem interface expected by isomorphic-git.
  * Any object implementing these methods can be injected (node:fs, lightning-fs, memfs, etc.).
  */
@@ -258,7 +267,8 @@ export class GitBackend implements GitStorageBackend {
     options?: { ref?: string; depth?: number; singleBranch?: boolean },
   ): Promise<void> {
     if (!this.http) throw new Error('GitBackend: http client required for clone');
-    await this.underlying.initialize({ name: 'git-clone' });
+    // isomorphic-git creates `dir`; the host's workspace (its config and
+    // pages) is not the clone's and must not be initialized over.
     await git.clone({
       fs: this.fs,
       http: this.http,
