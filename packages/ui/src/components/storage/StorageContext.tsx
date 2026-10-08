@@ -14,6 +14,7 @@ import type { SidebarPageRef } from '../sidebar/Sidebar.js';
 import { DEFAULT_SETTINGS } from '../settings/SettingsModal.js';
 import type { CeptSettings } from '../settings/SettingsModal.js';
 import { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
+import { BACKUP_DIR, KEEP_FLAT_FILE, MIGRATION_MAP_FILE } from './legacy-migration.js';
 
 /** Shape of the persisted workspace state stored via the backend */
 export interface PersistedState {
@@ -224,20 +225,24 @@ export async function deletePageContent(backend: StorageBackend, pageId: string)
 
 /** Clear all workspace data from the backend */
 export async function clearAllData(backend: StorageBackend): Promise<void> {
-  try {
-    await backend.deleteFile(WORKSPACE_FILE);
-  } catch {
-    // Ignore
-  }
-  try {
-    await backend.deleteFile(SETTINGS_FILE);
-  } catch {
-    // Ignore
-  }
-  try {
-    await backend.deleteFile(PAGES_DIR);
-  } catch {
-    // Ignore
+  // The default space lives at the root: in the folder layout its pages are
+  // every root entry but `.cept/`, which also holds the other spaces.
+  const rootEntries = await backend.listDirectory('/').catch(() => []);
+  const paths = [
+    ...rootEntries.filter((e) => e.name !== '.cept').map((e) => e.name),
+    WORKSPACE_FILE,
+    SETTINGS_FILE,
+    PAGES_DIR,
+    BACKUP_DIR,
+    MIGRATION_MAP_FILE,
+    KEEP_FLAT_FILE,
+  ];
+  for (const path of paths) {
+    try {
+      await backend.deleteFile(path);
+    } catch {
+      // Ignore
+    }
   }
 }
 

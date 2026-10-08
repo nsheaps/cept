@@ -36,6 +36,13 @@ import {
   writeFolderPage,
 } from './folder-space.js';
 import type { FolderChange } from './folder-space.js';
+import {
+  confirmFlatMigration,
+  hasMigrationBackup,
+  migrateFlatSpace,
+  undoFlatMigration,
+} from './legacy-migration.js';
+import { isRemoteSpaceId } from '../../router.js';
 
 /**
  * Where a space's data lives:
@@ -306,6 +313,10 @@ export interface OpenedSpace {
   snapshot: SpaceSnapshot | null;
   /** Content of the snapshot's selected page, when there is one. */
   selectedContent: string | null;
+  /** Whether this open converted the space from the flat layout to folders. */
+  converted?: boolean;
+  /** Whether a conversion's backup is still kept, waiting for the user to keep or undo it. */
+  backupKept?: boolean;
 }
 
 /**
@@ -530,7 +541,13 @@ export class SpaceManager {
    * entries for pages no longer on disk are dropped.
    */
   async open(id: string, fallbackName: string): Promise<OpenedSpace> {
-    const folder = await this.detectLayout(id);
+    let folder = await this.detectLayout(id);
+    let converted = false;
+    if (!folder && this.migrates(id)) {
+      converted = await migrateFlatSpace(this.store(id), fallbackName);
+      if (converted) folder = await this.detectLayout(id);
+    }
+    const backupKept = folder && (await hasMigrationBackup(this.store(id).backend));
     const state = await loadStoreState(this.stateStore(id));
     if (!state && !folder) return { snapshot: null, selectedContent: null };
     let snapshot: SpaceSnapshot = {
@@ -565,7 +582,42 @@ export class SpaceManager {
     const selectedContent = snapshot.selectedPageId
       ? await this.readPage(id, snapshot.selectedPageId)
       : null;
-    return { snapshot, selectedContent };
+    return { snapshot, selectedContent, converted, backupKept };
+  }
+
+  /**
+   * Whether a flat space is converted to folders when it opens: only spaces
+   * kept in the app's backend. Memory spaces end with the session, and remote
+   * spaces stay flat until syncing writes folders.
+   */
+  private migrates(id: string): boolean {
+    return !this.bound.has(id) && !this.session.has(id) && !isRemoteSpaceId(id);
+  }
+
+  /**
+   * Make an app space that holds nothing yet a folder space, so its first
+   * pages are written as files. Returns whether the space is a folder space.
+   */
+  async startFolder(id: string, name: string): Promise<boolean> {
+    if (await this.detectLayout(id)) return true;
+    if (!this.migrates(id) || (await loadStoreState(this.store(id)))) return false;
+    await initFolderSpace(this.store(id).backend, name);
+    this.layouts.set(id, true);
+    return true;
+  }
+
+  /** Keep a conversion: delete its backup (REQ-WS-025). */
+  async confirmConversion(id: string): Promise<void> {
+    await confirmFlatMigration(this.store(id).backend);
+  }
+
+  /**
+   * Undo a conversion: put the flat layout back from its backup. The space is
+   * then kept flat; changes made since the conversion are lost.
+   */
+  async undoConversion(id: string): Promise<void> {
+    await undoFlatMigration(this.store(id));
+    this.layouts.set(id, false);
   }
 
   readPage(id: string, pageId: string): Promise<string | null> {

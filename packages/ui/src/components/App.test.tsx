@@ -201,16 +201,13 @@ describe('App', () => {
     });
     vi.useRealTimers();
 
-    // The workspace-state should have the page tree
-    const stored = await backend.readFile('.cept/workspace-state.json');
-    expect(stored).not.toBeNull();
-    const parsed = JSON.parse(new TextDecoder().decode(stored!));
-    const pageId = parsed.pages[0].id as string;
-
-    // Page content should be in its own file
-    const pageContent = await backend.readText(`pages/${pageId}.md`);
-    expect(pageContent).not.toBeNull();
-    expect(pageContent).toContain('Start typing here');
+    // A new space starts as a folder space: the page is a Markdown file named
+    // from its title, and the state file keeps its icon.
+    expect(backend.hasFile('space.cept.yaml')).toBe(true);
+    expect(backend.readText('Welcome.md')).toContain('Start typing here');
+    const parsed = JSON.parse(backend.readText('.cept/workspace-state.json')!);
+    expect(parsed.pages[0]).toMatchObject({ id: 'Welcome.md', icon: '\u{1F44B}' });
+    expect(backend.hasFile('.cept/migration-backup/manifest.json')).toBe(false);
   });
 
   it('restores state from backend on reload (individual page files)', async () => {
@@ -244,14 +241,15 @@ describe('App', () => {
       expect(screen.getAllByText('Old Page').length).toBeGreaterThanOrEqual(1);
     });
 
-    // After migration, page content should be in individual file
-    const pageContent = await backend.readText('pages/old-page.md');
-    expect(pageContent).toBe('<p>Migrated content</p>');
+    // The space is converted to folders: the content lands in its own file
+    await waitFor(() => {
+      expect(backend.readText('Old Page.md')).toBe('<p>Migrated content</p>');
+    });
 
     // workspace-state.json should no longer contain pageContents
-    const state = await backend.readFile('.cept/workspace-state.json');
-    const parsed = JSON.parse(new TextDecoder().decode(state!));
+    const parsed = JSON.parse(backend.readText('.cept/workspace-state.json')!);
     expect(parsed.pageContents).toBeUndefined();
+    expect(parsed.selectedPageId).toBe('Old Page.md');
   });
 
   it('search opens and finds pages', async () => {
@@ -342,6 +340,10 @@ describe('App', () => {
 
     expect(backend.hasFile('pages/mine.md')).toBe(false);
     expect(backend.hasFile('pages/welcome.md')).toBe(false);
+    // The default space had been converted to folders on load; its files go too.
+    expect(backend.hasFile('Mine.md')).toBe(false);
+    expect(backend.hasFile('space.cept.yaml')).toBe(false);
+    expect(backend.hasFile('.cept/migration-backup/manifest.json')).toBe(false);
     expect(backend.hasFile('.cept/workspace-state.json')).toBe(false);
     const manifest = JSON.parse(backend.readText('.cept/spaces.json') ?? '{}') as {
       spaces: { id: string; name: string }[];
@@ -567,8 +569,83 @@ describe('App', () => {
     const stored = await backend.readFile('.cept/workspace-state.json');
     expect(stored).not.toBeNull();
 
-    // Page content should be migrated to individual file
-    const pageContent = await backend.readText('pages/legacy-page.md');
-    expect(pageContent).toBe('<p>Old data</p>');
+    // The space is converted to folders, keeping the content
+    await waitFor(() => {
+      expect(backend.readText('Legacy Page.md')).toBe('<p>Old data</p>');
+    });
+  });
+  describe('converting a legacy flat space (REQ-WS-025)', () => {
+    function seedFlatDefault(backend: MemoryBackend) {
+      seedWorkspace(backend, {
+        pages: [{ id: 'page-1', title: 'Notes', children: [] }],
+        favorites: [{ id: 'page-1', title: 'Notes' }],
+        recentPages: [],
+        selectedPageId: 'page-1',
+        spaceName: 'Mine',
+      });
+      seedPageContent(backend, 'page-1', '<p>Flat words</p>');
+    }
+
+    async function openSpaceDetails() {
+      fireEvent.click(screen.getByTestId('sidebar-app-menu-trigger'));
+      fireEvent.click(screen.getByTestId('sidebar-app-menu-settings'));
+      fireEvent.click(screen.getByTestId('settings-tab-spaces'));
+      fireEvent.click(screen.getByTestId('space-settings-default'));
+      await waitFor(() => expect(screen.getByTestId('space-migration')).toBeDefined());
+    }
+
+    it('converts the space on load, shows the same pages and says a backup is kept', async () => {
+      const backend = new MemoryBackend();
+      seedFlatDefault(backend);
+      renderApp(backend);
+
+      await waitFor(() => {
+        expect(screen.getByText(/now keeps its pages as files and folders/)).toBeDefined();
+      });
+      expect(screen.getAllByText('Notes').length).toBeGreaterThanOrEqual(1);
+      expect(backend.readText('Notes.md')).toBe('<p>Flat words</p>');
+      expect(backend.hasFile('pages/page-1.md')).toBe(false);
+      expect(backend.readText('.cept/migration-backup/pages/page-1.md')).toBe('<p>Flat words</p>');
+    });
+
+    it('keeps the conversion and deletes the backup when asked', async () => {
+      const backend = new MemoryBackend();
+      seedFlatDefault(backend);
+      renderApp(backend);
+      await waitFor(() => expect(backend.hasFile('Notes.md')).toBe(true));
+
+      await openSpaceDetails();
+      fireEvent.click(screen.getByTestId('space-migration-keep'));
+
+      await waitFor(() => {
+        expect(backend.hasFile('.cept/migration-backup/manifest.json')).toBe(false);
+      });
+      expect(backend.readText('Notes.md')).toBe('<p>Flat words</p>');
+      await waitFor(() => expect(screen.queryByTestId('space-migration')).toBeNull());
+    });
+
+    it('undoes the conversion and shows the flat space again', async () => {
+      const backend = new MemoryBackend();
+      seedFlatDefault(backend);
+      renderApp(backend);
+      await waitFor(() => expect(backend.hasFile('Notes.md')).toBe(true));
+
+      await openSpaceDetails();
+      fireEvent.click(screen.getByTestId('space-migration-undo'));
+
+      await waitFor(() => {
+        expect(screen.getByText(/back in its old layout/)).toBeDefined();
+      });
+      expect(backend.hasFile('Notes.md')).toBe(false);
+      expect(backend.hasFile('space.cept.yaml')).toBe(false);
+      expect(backend.readText('pages/page-1.md')).toBe('<p>Flat words</p>');
+      // A later save keeps the flat ids.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      });
+      const state = JSON.parse(backend.readText('.cept/workspace-state.json')!);
+      expect(state.pages[0].id).toBe('page-1');
+      expect(state.selectedPageId).toBe('page-1');
+    });
   });
 });

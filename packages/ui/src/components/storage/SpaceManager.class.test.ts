@@ -69,17 +69,19 @@ describe('SpaceManager class', () => {
   });
 
   it('flat layout: saves and reopens a space with its selected page content', async () => {
-    const space = await createSpace(backend, 'Work');
-    await spaces.saveState(space.id, snapshot('Work', ['a', 'b'], 'b'), {
+    // A space in its own backend stays flat; only app spaces are converted.
+    spaces.bind('own', new MemoryBackend());
+    await spaces.saveState('own', snapshot('Work', ['a', 'b'], 'b'), {
       a: '# A',
       b: '# B',
       c: '',
     });
-    const opened = await spaces.open(space.id, 'fallback');
+    const opened = await spaces.open('own', 'fallback');
     expect(opened.snapshot).toEqual(snapshot('Work', ['a', 'b'], 'b'));
     expect(opened.selectedContent).toBe('# B');
-    expect(await spaces.readPage(space.id, 'a')).toBe('# A');
-    expect(await spaces.readPage(space.id, 'c')).toBeNull();
+    expect(opened.converted).toBe(false);
+    expect(await spaces.readPage('own', 'a')).toBe('# A');
+    expect(await spaces.readPage('own', 'c')).toBeNull();
   });
 
   it('flat layout: opens a space that was never saved as null', async () => {
@@ -88,17 +90,59 @@ describe('SpaceManager class', () => {
   });
 
   it('flat layout: opens a saved space with no pages, keeping its name and sidebar lists', async () => {
-    const space = await createSpace(backend, 'Work');
+    spaces.bind('own', new MemoryBackend());
     const fav = { id: 'gone', title: 'Gone' };
-    await spaces.saveState(space.id, {
+    await spaces.saveState('own', {
       pages: [],
       favorites: [fav],
       recentPages: [fav],
       spaceName: 'Renamed',
     });
-    const { snapshot: opened } = await spaces.open(space.id, 'fallback');
+    const { snapshot: opened } = await spaces.open('own', 'fallback');
     expect(opened).toMatchObject({ pages: [], favorites: [fav], recentPages: [fav] });
     expect(opened?.spaceName).toBe('Renamed');
+  });
+
+  it('converts a flat app space to folders when it opens, keeping a backup until confirmed', async () => {
+    const space = await createSpace(backend, 'Work');
+    await spaces.saveState(space.id, snapshot('Work', ['a', 'b'], 'b'), { a: '# A', b: '# B' });
+
+    const opened = await spaces.open(space.id, 'fallback');
+    expect(opened).toMatchObject({ converted: true, backupKept: true, selectedContent: '# B' });
+    expect(opened.snapshot?.pages.map((p) => p.id)).toEqual(['a.md', 'b.md']);
+    expect(opened.snapshot?.selectedPageId).toBe('b.md');
+    expect(spaces.isFolder(space.id)).toBe(true);
+    expect(await spaces.readPage(space.id, 'a.md')).toBe('# A');
+
+    const again = await spaces.open(space.id, 'fallback');
+    expect(again).toMatchObject({ converted: false, backupKept: true });
+    await spaces.confirmConversion(space.id);
+    expect((await spaces.open(space.id, 'fallback')).backupKept).toBe(false);
+  });
+
+  it('undoes a conversion and keeps the space flat afterwards', async () => {
+    const space = await createSpace(backend, 'Work');
+    await spaces.saveState(space.id, snapshot('Work', ['a'], 'a'), { a: '# A' });
+    await spaces.open(space.id, 'fallback');
+
+    await spaces.undoConversion(space.id);
+    expect(spaces.isFolder(space.id)).toBe(false);
+    const opened = await spaces.open(space.id, 'fallback');
+    expect(opened).toMatchObject({ converted: false, backupKept: false });
+    expect(opened.snapshot).toEqual(snapshot('Work', ['a'], 'a'));
+    expect(opened.selectedContent).toBe('# A');
+  });
+
+  it('leaves remote and memory spaces flat', async () => {
+    const remote = 'github.com/o/r@main';
+    await spaces.saveState(remote, snapshot('R', ['a'], 'a'), { a: '# A' });
+    expect((await spaces.open(remote, 'R')).converted).toBe(false);
+    expect(spaces.isFolder(remote)).toBe(false);
+
+    const memory = new MemoryBackend();
+    const { space } = await spaces.create('Mem', undefined, { kind: 'memory', backend: memory });
+    await spaces.saveState(space.id, snapshot('Mem', ['a'], 'a'), { a: '# A' });
+    expect((await spaces.open(space.id, 'Mem')).converted).toBe(false);
   });
 
   it('flat layout: keeps each space’s pages apart, and the default space uses the root pages folder', async () => {
