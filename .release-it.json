@@ -28,6 +28,9 @@
           { "type": "docs", "section": "Documentation" },
           { "type": "test", "section": "Tests" },
           { "type": "ci", "section": "CI/CD" },
+          { "type": "build", "section": "Build System" },
+          { "type": "style", "section": "Styles" },
+          { "type": "revert", "section": "Reverts" },
           { "type": "chore", "section": "Chores" }
         ]
       },

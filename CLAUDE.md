@@ -43,6 +43,7 @@ mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no mul
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)
 mise run ci:version-check       # Release-version outputs for the PR comment (writes $GITHUB_OUTPUT)
+PR_TITLE="feat: x" mise run ci:pr-title  # Check a PR title is a Conventional Commit (types from .release-it.json)
 nx graph                        # Visualize project dependency graph
 nx affected -t test             # Test only affected packages
 nx affected -t build            # Build only affected packages

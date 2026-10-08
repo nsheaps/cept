@@ -223,7 +223,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - `_typecheck`, `_security`, `_deploy-docs` and a PR-title workflow exist (see REQ-ENG-012, REQ-ENG-016 and REQ-ENG-018).
 - The workflow list in the specs matches `.github/workflows/`.
 
-**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [\_build.yml](../../../.github/workflows/_build.yml), [\_lint.yml](../../../.github/workflows/_lint.yml), [\_typecheck.yml](../../../.github/workflows/_typecheck.yml), [\_test-unit.yml](../../../.github/workflows/_test-unit.yml), [\_test-integration.yml](../../../.github/workflows/_test-integration.yml), [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml). Also [\_security.yml](../../../.github/workflows/_security.yml). Missing compared with qontacts: `_deploy-docs`, `pr-title`.
+**Current state:** implemented (core structure). [ci.yml](../../../.github/workflows/ci.yml) calls [\_build.yml](../../../.github/workflows/_build.yml), [\_lint.yml](../../../.github/workflows/_lint.yml), [\_typecheck.yml](../../../.github/workflows/_typecheck.yml), [\_test-unit.yml](../../../.github/workflows/_test-unit.yml), [\_test-integration.yml](../../../.github/workflows/_test-integration.yml), [\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml), [\_update-screenshots.yml](../../../.github/workflows/_update-screenshots.yml) and [\_tag-release.yml](../../../.github/workflows/_tag-release.yml). Also [\_security.yml](../../../.github/workflows/_security.yml). [pr-title.yml](../../../.github/workflows/pr-title.yml) checks PR titles. Missing compared with qontacts: `_deploy-docs`.
 
 **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §3 (lines 131-136) and §9.2-9.5 list `release-desktop.yml`, `release-web.yml`, `release-mobile.yml` and `docs.yml`. None of these exist. The [README.md](../../../README.md) badge (line 8) points at the nonexistent `release-web.yml`.
 
@@ -373,14 +373,15 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) runs `bunx release-it` with the automation App token.
 - [cd.yml](../../../.github/workflows/cd.yml) creates the GitHub Release when the tag is created.
 - [pr-version-check.yml](../../../.github/workflows/pr-version-check.yml) posts the projected version. [release.yml](../../../.github/workflows/release.yml) is a manual dispatch.
-- Gaps: there is no PR-title workflow. There are two extra manual paths: the `workflow_dispatch` [release.yml](../../../.github/workflows/release.yml), and the legacy [scripts/bump-version.sh](../../../scripts/bump-version.sh), which rewrites every `package.json` version and then tells the user to commit, tag and `git push origin main --tags` by hand.
+- [pr-title.yml](../../../.github/workflows/pr-title.yml) runs `mise run ci:pr-title` ([scripts/ci/pr-title.ts](../../../scripts/ci/pr-title.ts)) on every PR open, edit and push. It fails unless the title is `type(scope)!: subject` with a type listed in `.release-it.json` (which now also lists `build`, `style` and `revert`), a lowercase scope, a non-empty subject and at most 100 characters.
+- Gaps: there are two extra manual paths: the `workflow_dispatch` [release.yml](../../../.github/workflows/release.yml), and the legacy [scripts/bump-version.sh](../../../scripts/bump-version.sh), which rewrites every `package.json` version and then tells the user to commit, tag and `git push origin main --tags` by hand.
 - `@release-it/bumper` bumps only the root `package.json` (`"out": []`), so every workspace package stays at `0.1.0` while the root is `0.7.31`.
 - Tagging `needs` e2e and screenshots. `main` is red: the GitHub Actions API shows the last green `ci.yml` push run on `main` on 2026-08-23, and every push since then (for example run 37399563318 on 2026-10-06, the merge of #351) has failed `test-e2e` and `screenshots`, so `tag-release` is skipped. The same jobs fail on https://github.com/nsheaps/cept/pull/283 and https://github.com/nsheaps/cept/pull/246.
 - This matches the latest tag, `v0.7.31`, and the last [CHANGELOG.md](../../../CHANGELOG.md) entry, v0.7.31 (2026-08-23).
 
 **Docs state:** undocumented. No cept doc describes the release-it/tag/CD flow. SPEC §9.2-9.4 describe workflows triggered by `release published` that do not exist. CONTRIBUTING has no PR-title guidance.
 
-**Gap:** Document the flow, add a PR-title check, retire `scripts/bump-version.sh` (and decide whether `release.yml` stays), decide whether workspace package versions follow the root, and unblock e2e (REQ-ENG-017).
+**Gap:** Document the flow, retire `scripts/bump-version.sh` (and decide whether `release.yml` stays), decide whether workspace package versions follow the root, and unblock e2e (REQ-ENG-017).
 
 ### REQ-ENG-013 — Dependency updates via Renovate
 
