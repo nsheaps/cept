@@ -4,6 +4,7 @@ import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { GitHubAccountSection } from './GitHubAccountSection.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
+import { remoteWebUrl } from '../storage/git-space.js';
 
 export type ThemeMode = 'dark' | 'system' | 'light';
 
@@ -82,6 +83,8 @@ export interface SpaceInfo {
 export interface SettingsModalProps {
   isOpen: boolean;
   initialTab?: 'about' | 'settings' | 'spaces';
+  /** Open the spaces tab on this space's details. */
+  initialSpaceId?: string;
   settings: CeptSettings;
   spaces: SpaceInfo[];
   activeSpaceId?: string;
@@ -110,6 +113,7 @@ export interface SettingsModalProps {
 export function SettingsModal({
   isOpen,
   initialTab = 'settings',
+  initialSpaceId,
   settings,
   spaces,
   activeSpaceId,
@@ -142,11 +146,11 @@ export function SettingsModal({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
-      setSelectedSpaceId(null);
+      setSelectedSpaceId(initialTab === 'spaces' ? (initialSpaceId ?? null) : null);
       setBrowsingSpaceId(null);
       setRemovingSpaceId(null);
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, initialSpaceId]);
 
   const handleRefreshSpace = useCallback(
     async (spaceId: string) => {
@@ -753,6 +757,9 @@ function SpaceDetails({
     if (slug && slug !== space.slug) onRename(space.name, slug);
     setEditingSlug(false);
   };
+  const remoteHref = space.remoteUrl
+    ? remoteWebUrl({ remoteUrl: space.remoteUrl, branch: space.branch, subPath: space.subPath })
+    : null;
 
   return (
     <div data-testid={`space-details-${space.id}`}>
@@ -892,6 +899,20 @@ function SpaceDetails({
             <span className="cept-settings-detail-value" data-testid="space-detail-remote">
               {space.remoteUrl}
             </span>
+          </div>
+        )}
+        {remoteHref && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">On the web</span>
+            <a
+              className="cept-settings-detail-value"
+              href={remoteHref}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="space-detail-remote-link"
+            >
+              Open on GitHub
+            </a>
           </div>
         )}
         {space.branch && (

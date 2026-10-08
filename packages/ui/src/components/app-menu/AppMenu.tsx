@@ -7,6 +7,12 @@ export interface AppMenuProps {
   onRename?: (id: string) => void;
   onDuplicate?: (id: string) => void;
   onDelete?: (id: string) => void;
+  /** The page on the space's remote (GitHub), when the space has one. */
+  remoteLink?: { href: string; label: string };
+  /** Fetch the space's remote, shown for remote spaces. */
+  onRefreshSpace?: () => void;
+  /** Open the current space's settings. */
+  onOpenSpaceSettings?: () => void;
 }
 
 export function AppMenu({
@@ -16,6 +22,9 @@ export function AppMenu({
   onRename,
   onDuplicate,
   onDelete,
+  remoteLink,
+  onRefreshSpace,
+  onOpenSpaceSettings,
 }: AppMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -110,6 +119,77 @@ export function AppMenu({
             </svg>
             Duplicate
           </button>
+          {(remoteLink || onRefreshSpace || onOpenSpaceSettings) && (
+            <div className="cept-app-menu-divider" />
+          )}
+          {remoteLink && (
+            <a
+              className="cept-app-menu-item"
+              href={remoteLink.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setOpen(false)}
+              data-testid="page-menu-view-remote"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M9 2h5v5M14 2L7 9M12 9v4a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h4" />
+              </svg>
+              {remoteLink.label}
+            </a>
+          )}
+          {onRefreshSpace && (
+            <button
+              className="cept-app-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onRefreshSpace();
+              }}
+              data-testid="page-menu-refresh-space"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M14 2v4h-4M2 14v-4h4" />
+                <path d="M13.46 5.54A6 6 0 002.54 10.46M2.54 10.46A6 6 0 0013.46 5.54" />
+              </svg>
+              Refresh from remote
+            </button>
+          )}
+          {onOpenSpaceSettings && (
+            <button
+              className="cept-app-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onOpenSpaceSettings();
+              }}
+              data-testid="page-menu-space-settings"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <circle cx="8" cy="8" r="2.5" />
+                <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" />
+              </svg>
+              Space settings
+            </button>
+          )}
           <div className="cept-app-menu-divider" />
           <button
             className="cept-app-menu-item cept-app-menu-item--danger"

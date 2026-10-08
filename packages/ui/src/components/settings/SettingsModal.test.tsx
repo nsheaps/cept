@@ -277,4 +277,62 @@ describe('SettingsModal', () => {
     fireEvent.click(screen.getByTestId('settings-modal'));
     expect(onClose).toHaveBeenCalled();
   });
+  it("opens on a space's details with initialSpaceId and links a GitHub remote", () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
+      {
+        id: 'remote',
+        name: 'Notes',
+        source: 'GitHub',
+        pageCount: 2,
+        contentSize: 10,
+        remoteUrl: 'github.com/o/r',
+        branch: 'main',
+        subPath: 'docs',
+      },
+    ];
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        initialTab="spaces"
+        initialSpaceId="remote"
+      />,
+    );
+    expect(screen.getByTestId('space-details-remote')).toBeDefined();
+    const link = screen.getByTestId('space-detail-remote-link');
+    expect(link.getAttribute('href')).toBe('https://github.com/o/r/tree/main/docs');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('shows no web link for a remote outside github.com', () => {
+    const spaces: SpaceInfo[] = [
+      {
+        id: 'remote',
+        name: 'Notes',
+        source: 'Git',
+        pageCount: 2,
+        contentSize: 10,
+        remoteUrl: 'gitlab.com/o/r',
+      },
+    ];
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        initialTab="spaces"
+        initialSpaceId="remote"
+      />,
+    );
+    expect(screen.getByTestId('space-detail-remote')).toBeDefined();
+    expect(screen.queryByTestId('space-detail-remote-link')).toBeNull();
+  });
+
+  it('ignores initialSpaceId outside the spaces tab', () => {
+    const spaces: SpaceInfo[] = [
+      { id: 'remote', name: 'Notes', source: 'GitHub', pageCount: 2, contentSize: 10 },
+    ];
+    render(<SettingsModal {...defaultProps} spaces={spaces} initialSpaceId="remote" />);
+    expect(screen.queryByTestId('space-details-remote')).toBeNull();
+  });
 });
