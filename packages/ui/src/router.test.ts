@@ -509,6 +509,35 @@ describe('git page paths and resolveRoute (base=/)', () => {
     'github.com/nsheaps/cept@dev/docs',
   ];
 
+  it('reads a repository or owner named blob', () => {
+    expect(parseRoute('/g/github.com/user/blob/blob/main/file.md')).toEqual({
+      space: 'user',
+      spaceId: 'github.com/user/blob@main',
+      pageId: 'file.md',
+    });
+    expect(parseRoute('/g/github.com/blob/repo/blob/main/docs/a.md')).toEqual({
+      space: 'user',
+      spaceId: 'github.com/blob/repo@main/docs',
+      pageId: 'a.md',
+    });
+  });
+
+  it('keeps a local page in a folder named blob', () => {
+    expect(parseRoute('/s/space-1/blob/notes.md')).toEqual({
+      space: 'user',
+      spaceId: 'space-1',
+      pageId: 'blob/notes.md',
+    });
+  });
+
+  it('treats a .markdown file as the page', () => {
+    expect(parseRoute('/g/github.com/nsheaps/cept/blob/main/docs/Notes.markdown')).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: 'Notes.markdown',
+    });
+  });
+
   it('treats a path without a Markdown file as the space subpath', () => {
     expect(parseRoute('/g/github.com/nsheaps/cept/blob/main/docs/guides')).toEqual({
       space: 'user',

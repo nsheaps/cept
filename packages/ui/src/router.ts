@@ -164,7 +164,8 @@ function isPageFile(segment: string): boolean {
  * → { spaceId: "github.com/nsheaps/cept@main/docs", pageId: "intro.md" }
  */
 function parseGitSpaceUrl(segments: string[]): AppRoute {
-  const blobIdx = segments.indexOf('blob');
+  // The repository is at least host/owner/repo, so a `blob` before that is part of its name.
+  const blobIdx = segments.indexOf('blob', 3);
   if (blobIdx < 1 || blobIdx + 1 >= segments.length) {
     return { ...DEFAULT_ROUTE, notFound: true };
   }
@@ -254,8 +255,9 @@ export function parseRoute(pathname?: string): AppRoute {
   if (segments[0] === 's' && segments.length >= 2) {
     const spaceSegments = segments.slice(1);
 
-    // Check for git-style URL (contains 'blob' segment) — legacy /s/ git URLs
-    if (spaceSegments.includes('blob')) {
+    // Legacy /s/ git URLs start with a host and have a `blob` after host/owner/repo;
+    // a local page path may hold a folder named `blob` too.
+    if (spaceSegments[0].includes('.') && spaceSegments.indexOf('blob', 3) >= 0) {
       return parseGitSpaceUrl(spaceSegments);
     }
 

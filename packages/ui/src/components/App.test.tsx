@@ -642,6 +642,23 @@ describe('App', () => {
       await waitFor(() => expect(window.location.pathname).toBe('/s/default/Ideas.md'));
       expect(screen.queryByTestId('not-found')).toBeNull();
     });
+
+    it('opens a default-space link while another space is active', async () => {
+      const backend = seedFolderSpace();
+      seedWorkspace(backend, {
+        pages: [{ id: 'page-2', title: 'Ideas', children: [] }],
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'page-2',
+        spaceName: 'My Space',
+      });
+      seedPageContent(backend, 'page-2', '<p>Ideas words</p>');
+      visit('/s/default/page-2');
+      renderApp(backend);
+
+      await waitFor(() => expect(window.location.pathname).toBe('/s/default/Ideas.md'));
+      expect(screen.queryByTestId('not-found')).toBeNull();
+    });
   });
 
   it('migrates from legacy localStorage on first load', async () => {

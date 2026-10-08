@@ -23,4 +23,19 @@ test.describe('Deep links', () => {
     await expect(page.getByTestId('not-found')).toHaveCount(0);
     await expect(page.locator('.cept-editor')).toBeVisible();
   });
+
+  // GitHub Pages sends an unknown path to 404.html, which reloads the app with
+  // the path in `?route=`; the app must restore it as if it had been opened.
+  test('a link that comes through the 404 redirect opens its page, or not-found', async ({
+    page,
+  }) => {
+    await page.goto('/?route=%2Fs%2Fdemo%2Ffeatures');
+    await expect(page.getByTestId('breadcrumbs')).toContainText('Features', { timeout: 10000 });
+    await expect(page).toHaveURL(/\/s\/demo\/features$/);
+
+    await page.goto('/?route=%2Fs%2Fdemo%2Fno-such-page.md');
+    await expect(page.getByTestId('not-found')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('not-found-path')).toHaveText('/s/demo/no-such-page.md');
+    await expect(page).toHaveURL(/\/s\/demo\/no-such-page\.md$/);
+  });
 });
