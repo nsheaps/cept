@@ -2,24 +2,6 @@
   "$comment": "Known boundary violations from before PR 8. Each entry allows `count` (default 1) imports of that group, module and name in that file; one more fails lint. Entries and counts may only go down: tools/lint/boundaries.integration.test.ts fails if one grows or no longer matches the file's real imports.",
   "entries": [
     {
-      "file": "packages/core/src/storage/local-fs.ts",
-      "group": "platform",
-      "module": "node:fs/promises",
-      "removedBy": "PR 13"
-    },
-    {
-      "file": "packages/core/src/storage/local-fs.ts",
-      "group": "platform",
-      "module": "node:path",
-      "removedBy": "PR 13"
-    },
-    {
-      "file": "packages/core/src/storage/local-fs.ts",
-      "group": "platform",
-      "module": "node:fs",
-      "removedBy": "PR 13"
-    },
-    {
       "file": "packages/ui/src/components/App.tsx",
       "group": "isomorphic-git",
       "module": "isomorphic-git/http/web",

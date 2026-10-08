@@ -1,7 +1,7 @@
 /**
  * GitBackend — StorageBackend implementation wrapping isomorphic-git.
  *
- * Wraps an underlying filesystem backend (BrowserFsBackend or LocalFsBackend)
+ * Wraps an underlying filesystem backend (BrowserFsBackend, or LocalFsBackend from @cept/desktop)
  * and adds Git operations: commit, push, pull, log, diff, branch, remote.
  * This is the ONLY module that imports isomorphic-git directly.
  *

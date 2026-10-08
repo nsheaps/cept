@@ -29,3 +29,5 @@ export type {
   AutoUpdaterConfig,
   FetchFunction,
 } from './auto-updater.js';
+
+export { LocalFsBackend } from './local-fs.js';
