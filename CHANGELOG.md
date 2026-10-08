@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.15.0](https://github.com/nsheaps/cept/compare/v0.14.0...v0.15.0) (2026-10-08)
+
+### Features
+
+* **ui:** path-based routes and not-found page ([#385](https://github.com/nsheaps/cept/issues/385)) ([0eb267d](https://github.com/nsheaps/cept/commit/0eb267d9e15646b349669820533c616c4405b917))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([cebb4a3](https://github.com/nsheaps/cept/commit/cebb4a3c155327b10a6ce71d6ecd083b23716d53))
+
 ## [0.14.0](https://github.com/nsheaps/cept/compare/v0.13.0...v0.14.0) (2026-10-08)
 
 ### Features
