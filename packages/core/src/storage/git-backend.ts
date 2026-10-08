@@ -500,8 +500,10 @@ export class GitBackend implements GitStorageBackend {
     try {
       await this.fsCall('lstat', this.pushQueueMarker);
       return true;
-    } catch {
-      return false;
+    } catch (e) {
+      // Only a missing marker means nothing is queued; other fs errors are real.
+      if ((e as { code?: unknown } | null)?.code === 'ENOENT') return false;
+      throw e;
     }
   }
 

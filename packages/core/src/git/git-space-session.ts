@@ -200,8 +200,9 @@ export class GitSpaceSession {
     );
     const login = options.login ?? options.identity.email.replace(/@.*$/, '').replace(/^\d+\+/, '');
     const session = new GitSpaceSession(git, backend, autoCommit, sync, settings, login);
-    // A push asked for before a reload (or while offline) is still owed.
-    if (await git.pushQueued()) {
+    // A push asked for before a reload (or while offline) is still owed. If the
+    // marker cannot be read, assume it is: an extra push is harmless, a lost one is not.
+    if (await git.pushQueued().catch(() => true)) {
       session.pushQueued = true;
       sync.markDirty();
     }

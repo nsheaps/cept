@@ -140,6 +140,33 @@ describe('GitBackend', () => {
       expect(paths).not.toContain('.cept/sync.local.json');
     });
 
+    it('keeps a queued push in .git until it is marked sent', async () => {
+      await backend.initialize({ name: 'Queue' });
+      expect(await backend.pushQueued()).toBe(false);
+      await backend.setPushQueued(true);
+      expect(await backend.pushQueued()).toBe(true);
+      await backend.setPushQueued(false);
+      await backend.setPushQueued(false);
+      expect(await backend.pushQueued()).toBe(false);
+    });
+
+    it('reports an fs error reading the push queue instead of calling it empty', async () => {
+      const failing = new GitBackend({
+        underlying,
+        dir,
+        fs: {
+          ...rawFs,
+          promises: {
+            ...rawFs.promises!,
+            lstat: () => Promise.reject(Object.assign(new Error('boom'), { code: 'EIO' })),
+          },
+        },
+        authorName: 'Test User',
+        authorEmail: 'test@example.com',
+      });
+      await expect(failing.pushQueued()).rejects.toThrow('boom');
+    });
+
     it('should record author information', async () => {
       await backend.writeFile('test.txt', new TextEncoder().encode('data'));
       await backend.commit('authored commit', ['test.txt']);
