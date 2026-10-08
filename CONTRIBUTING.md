@@ -78,7 +78,7 @@ These rules are enforced in code review and CI:
 ### Packages and Nx Targets
 
 - Every Nx project has `build`, `typecheck` and `test:unit` targets. A project that genuinely has nothing to build or unit-test says why in its `package.json`: `"cept": {"skipTargets": {"build": "<reason>"}}`. `mise run lint` runs `mise run check:targets`, which fails otherwise.
-- Declare each runtime dependency in the package that imports it, with an exact version. The root `package.json` holds tooling only.
+- Declare each runtime dependency in the package that imports it, with an exact version. The root `package.json` holds tooling only. `peerDependencies` are the exception: they state a compatible range (for example `"react": "^19.0.0"`), and the package also lists the exact version in `devDependencies` for its own tests.
 
 ### Testing Requirements
 
