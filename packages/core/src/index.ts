@@ -62,12 +62,20 @@ export type {
   TokenStore,
   DeviceFlowVerification,
   FetchFn,
+  PatAccount,
+  PatAuthConfig,
+  PatAuthFailure,
+  PatGrants,
 } from './auth/index.js';
 export {
   GitHubAuthProvider,
   MemoryTokenStore,
   AuthPendingError,
   AuthSlowDownError,
+  PatAuthProvider,
+  PatAuthError,
+  PAT_STORE_KEY,
+  redactTokens,
 } from './auth/index.js';
 
 // Models

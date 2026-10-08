@@ -41,14 +41,14 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-002](#req-auth-002--github-sign-in-via-a-github-app)                                 | GitHub sign-in via a GitHub App (user-to-server)                 | MUST     | divergent   | documented-differently | stale         |
 | [REQ-AUTH-003](#req-auth-003--browser-token-exchange-without-a-client-secret)                  | Browser code exchange with PKCE and a relay, no client secret    | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-004](#req-auth-004--github-device-flow-for-headless-clients)                         | GitHub device flow for the CLI and daemon                        | MUST     | partial     | undocumented           | n/a           |
-| [REQ-AUTH-005](#req-auth-005--github-personal-access-token-entry)                              | GitHub personal access token entry                               | MUST     | stubbed     | documented-differently | stale         |
+| [REQ-AUTH-005](#req-auth-005--github-personal-access-token-entry)                              | GitHub personal access token entry                               | MUST     | partial     | documented-differently | stale         |
 | [REQ-AUTH-006](#req-auth-006--google-sign-in-for-google-drive-remotes)                         | Google login app for Google Drive remotes                        | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-007](#req-auth-007--sftp-remote-credentials)                                         | SFTP remote credentials (password or key)                        | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-008](#req-auth-008--cloudflare-oauth-and-cors-proxy-provisioned-through-nsheaps-iac) | Cloudflare OAuth and CORS proxy Worker via nsheaps/iac           | MUST     | stubbed     | undocumented           | n/a           |
 | [REQ-AUTH-009](#req-auth-009--configurable-first-party-proxy-instead-of-a-public-cors-proxy)   | Configurable first-party proxy, no third-party proxy             | MUST     | partial     | undocumented           | n/a           |
 | [REQ-AUTH-010](#req-auth-010--authenticated-git-transport)                                     | Authenticated Git clone, fetch, pull and push                    | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-AUTH-011](#req-auth-011--anonymous-read-only-access-to-public-remotes)                    | Anonymous read-only access to public remotes                     | SHOULD   | partial     | documented-as-desired  | stale         |
-| [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                | MUST     | stubbed     | documented-as-desired  | accurate      |
+| [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-AUTH-013](#req-auth-013--account-and-sign-in-ui)                                          | Sign-in, account display and sign-out UI                         | MUST     | stubbed     | documented-differently | stale         |
 | [REQ-AUTH-014](#req-auth-014--repo-listing-and-creation-after-sign-in)                         | Repo listing and creation after sign-in                          | SHOULD   | stubbed     | documented-as-desired  | accurate      |
 | [REQ-AUTH-015](#req-auth-015--automatic-token-refresh)                                         | Automatic refresh of expiring tokens                             | MUST     | not-started | undocumented           | n/a           |
@@ -254,7 +254,7 @@ flowchart LR
 - Clone, pull and push of a private repo succeed with only a PAT configured.
 - The user can remove the PAT.
 
-**Current state:** stubbed. `setToken()` ([packages/core/src/auth/github.ts](../../../packages/core/src/auth/github.ts) line 305) accepts a PAT, and `GitBackend` accepts `auth` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) lines 214, 243, 271, 287). No UI collects a PAT: [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) has only URL, branch and sub-path fields, and [App.tsx](../../../packages/ui/src/components/App.tsx) never passes `auth`.
+**Current state:** partial. [packages/core/src/auth/pat.ts](../../../packages/core/src/auth/pat.ts) adds `PatAuthProvider`: `signIn()` checks the token with `GET /user` before saving it, reports what it grants (classic scopes from `X-OAuth-Scopes`, fine-grained tokens, expiry from `GitHub-Authentication-Token-Expiration`), `restore()` re-checks a saved token and drops it on a 401, and `logout()` deletes it. Errors carry only a reason and status, and `redactTokens()` strips anything token-shaped; a unit test asserts no token reaches an error or the console. No UI collects a PAT yet (plan PR 30): [AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx) has only URL, branch and sub-path fields, and [App.tsx](../../../packages/ui/src/components/App.tsx) never passes `auth`.
 
 **Docs state:** documented-differently, stale. [docs/content/reference/roadmap.md](../../content/reference/roadmap.md) line 92 lists "Auth provider (GitHub OAuth, token) | Planned". [docs/content/getting-started/quick-start.md](../../content/getting-started/quick-start.md) line 63 tells users to "Authenticate with GitHub", which they cannot do today.
 
@@ -421,7 +421,7 @@ flowchart LR
 - On web, tokens are encrypted at rest with a non-extractable WebCrypto key.
 - The daemon credential file uses mode 0600 or the OS keychain.
 
-**Current state:** stubbed. Only `MemoryTokenStore` exists ([packages/core/src/auth/github.ts](../../../packages/core/src/auth/github.ts) line 51; tokens are lost on reload). The `TokenStore` interface exists. There are no keychain or secure-storage implementations in `packages/desktop` or `packages/mobile`.
+**Current state:** partial. Web: [packages/web/src/token-store.ts](../../../packages/web/src/token-store.ts) `EncryptedTokenStore` keeps tokens in IndexedDB (`cept-auth`), sealed with AES-GCM under a non-extractable WebCrypto key held in the same database; a token sealed under a lost key is dropped. Unit tests cover the round trip, deletion, ciphertext-only storage and the lost-key case. Desktop (keychain) and mobile stores do not exist yet; `MemoryTokenStore` ([packages/core/src/auth/github.ts](../../../packages/core/src/auth/github.ts)) remains the in-memory default.
 
 **Docs state:** documented-as-desired, accurate as a requirement. SPECIFICATION §7.1 says "Token stored securely (OS keychain on desktop, secure storage on mobile, encrypted in IndexedDB on web)".
 
