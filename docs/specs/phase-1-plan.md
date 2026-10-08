@@ -518,6 +518,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: the harness itself, with expected failures listed.
 - Accept: suite runs in CI; the expected-failure list is the M3 burn-down.
 - Risk: expected-failure markers must be removed as PRs fix them, never added.
+- Note (PR 45): the corpus is 20 fixtures in `packages/core/src/markdown/__fixtures__/round-trip/`, run by `round-trip.test.ts`; all 20 start as expected failures in `expected-failures.json`. Every one fails at least because `serialize` always writes regenerated front matter (PR 46). The other losses: callouts, columns, toggles, footnotes, unknown HTML and `cept:comment` markers are dropped; nested list items are dropped; `...`-closed front matter is not recognised; and `_x_`, `~~~`, autolinks, table padding and `\,` in math are normalised. The fixtures are excluded from Prettier so they stay byte for byte.
 
 **PR 46 — `feat(core): preserve front matter byte-for-byte`**
 
