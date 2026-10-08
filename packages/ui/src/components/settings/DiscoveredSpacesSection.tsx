@@ -122,7 +122,7 @@ export function DiscoveredSpacesSection({
                         className="cept-settings-github-error"
                         data-testid={`discovered-errors-${id}`}
                       >
-                        {space.errors.join(' ')}
+                        {space.errors.join(' · ')}
                       </span>
                     )}
                   </div>

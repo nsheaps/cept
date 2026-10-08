@@ -9,7 +9,7 @@
  * to them is lost. Signing out forgets every kept list.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { autodiscoverSpaces, MemoryEtagCache } from '@cept/core';
 import type {
   AutodiscoveryOptions,
@@ -148,9 +148,12 @@ export function useDiscoveredSpaces(
   const discoverRef = useRef(discover);
   discoverRef.current = discover;
 
-  // Signing out forgets the kept lists: they name the account's repositories.
+  // Signing out forgets the kept lists (they name the account's repositories)
+  // and the ETags.
   useEffect(() => {
-    if (status === 'signed-out') clearDiscoveries();
+    if (status !== 'signed-out') return;
+    clearDiscoveries();
+    etagCaches.clear();
   }, [status]);
 
   useEffect(() => {
@@ -191,10 +194,12 @@ export function useDiscoveredSpaces(
   }, [login, gitAuth, runs]);
 
   const refresh = useCallback(() => setRuns((n) => n + 1), []);
+  // Read once per account, not on every render, until the effect catches up.
+  const keptForLogin = useMemo(() => (login ? loadDiscovery(login) : null), [login]);
 
   if (!login) return null;
   // Until the effect for a new account runs, show nothing from another account.
   if (state.login !== login)
-    return { status: 'running', snapshot: loadDiscovery(login), error: null, refresh };
+    return { status: 'running', snapshot: keptForLogin, error: null, refresh };
   return { status: state.status, snapshot: state.snapshot, error: state.error, refresh };
 }

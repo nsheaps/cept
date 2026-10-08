@@ -1654,11 +1654,17 @@ export function App() {
           await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
           setCloneStatus({ active: false });
         } else {
-          await spaces.saveState(
-            newSpace.id,
-            clonedSnapshot(clonedPages, displayName),
-            clonedContents,
-          );
+          try {
+            await spaces.saveState(
+              newSpace.id,
+              clonedSnapshot(clonedPages, displayName),
+              clonedContents,
+            );
+          } catch (err) {
+            // Take the empty space back out rather than leave it pinned.
+            setSpacesManifest((await spaces.delete(newSpace.id)).manifest);
+            throw err;
+          }
           addToast(`"${displayName}" is pinned to your spaces.`, 'success');
         }
       } catch (err) {
