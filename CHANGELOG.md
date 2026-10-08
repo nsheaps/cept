@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.23.0](https://github.com/nsheaps/cept/compare/v0.22.1...v0.23.0) (2026-10-08)
+
+### Features
+
+* **core:** discover spaces from repos the pat can reach ([#398](https://github.com/nsheaps/cept/issues/398)) ([6de9680](https://github.com/nsheaps/cept/commit/6de96808a7e8a2c14cae06af7a0c7c52d4f3ed84))
+
 ## [0.22.1](https://github.com/nsheaps/cept/compare/v0.22.0...v0.22.1) (2026-10-08)
 
 ### Documentation
