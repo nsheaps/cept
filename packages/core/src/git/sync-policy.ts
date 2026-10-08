@@ -49,8 +49,13 @@ export function trackedBranch(
 /** Where a space keeps its per-device sync settings, relative to the space root. */
 export const SYNC_SETTINGS_PATH = '.cept/sync.local.json';
 
-/** The `.git/info/exclude` line that keeps every space's settings file out of commits. */
-export const SYNC_SETTINGS_EXCLUDE = '.cept/sync.local.json';
+/**
+ * The `.git/info/exclude` line that keeps every space's settings file out of
+ * commits. Exclude lines follow gitignore rules, where a pattern with a `/` in
+ * the middle matches only from the repository root. The leading `**` segment
+ * makes it match in spaces kept in sub-folders too.
+ */
+export const SYNC_SETTINGS_EXCLUDE = '**/.cept/sync.local.json';
 
 /** Sync settings that differ per device and are never committed. */
 export interface SyncSettings {

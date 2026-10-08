@@ -188,7 +188,8 @@ export type {
   MergeAttemptResult,
   AutoMergeConfig,
 } from './git/index.js';
-export { SyncEngine } from './git/index.js';
+export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
+export type { GitSpaceSessionOptions, GitSpaceSyncResult } from './git/index.js';
 export {
   SyncError,
   classifyPushReason,

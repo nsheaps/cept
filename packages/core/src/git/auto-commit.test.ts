@@ -338,4 +338,50 @@ describe('AutoCommitEngine', () => {
     vi.advanceTimersByTime(200);
     expect(backend.commit).not.toHaveBeenCalled();
   });
+  it('keeps changes until flushNow when autoFlush is off', async () => {
+    const engine = new AutoCommitEngine(backend, {
+      debounceMs: 100,
+      maxBatchSize: 2,
+      autoFlush: false,
+    });
+    engine.recordChange('a.md', 'add');
+    engine.recordChange('b.md', 'add');
+    engine.recordChange('c.md', 'add');
+    await vi.runAllTimersAsync();
+    expect(backend.commit).not.toHaveBeenCalled();
+    expect(engine.getPendingChanges()).toHaveLength(3);
+
+    await engine.flushNow();
+    expect(backend.commit).toHaveBeenCalledOnce();
+  });
+
+  it('runs flushes one at a time', async () => {
+    let release = () => {};
+    const order: string[] = [];
+    vi.mocked(backend.commit)
+      .mockImplementationOnce(async () => {
+        order.push('first start');
+        await new Promise<void>((resolve) => (release = resolve));
+        order.push('first end');
+        return 'one';
+      })
+      .mockImplementationOnce(async () => {
+        order.push('second');
+        return 'two';
+      });
+    const engine = new AutoCommitEngine(backend, { debounceMs: 10000 });
+
+    engine.recordChange('a.md', 'add');
+    const first = engine.flushNow();
+    await vi.waitFor(() => expect(order).toEqual(['first start']));
+    engine.recordChange('b.md', 'add');
+    const second = engine.flushNow();
+    await Promise.resolve();
+    expect(order).toEqual(['first start']);
+
+    release();
+    expect(await first).toBe('one');
+    expect(await second).toBe('two');
+    expect(order).toEqual(['first start', 'first end', 'second']);
+  });
 });
