@@ -279,36 +279,48 @@ rulesets:
   # This is commented because not every repo has a lint workflow but they should
   # When this is copied, so is the comment, and they can then uncomment as needed.
   # In the long term, we should try to keep build/test/format/lint consistent between all repos
-  # - name: require-checks
-  #   target: branch
-  #   enforcement: active
-  #   conditions:
-  #     ref_name:
-  #       include: ["~DEFAULT_BRANCH"]
-  #       exclude: []
-  #   bypass_actors:
-  #     # Repo admins can bypass (always = prompts at push/merge time, not silent exempt).
-  #     # Repos can add more actors (other teams, integrations).
-  #     - actor_id: 5
-  #       actor_type: RepositoryRole   # 1=read 2=triage 3=write 4=maintain 5=admin
-  #       bypass_mode: always
-  #     # automation-nsheaps GitHub App — actor_id is substituted from 2549081
-
-  #     # by sync-org-settings when this template is rendered to org-settings.yaml.
-  #     - actor_id: 2549081
-
-  #       actor_type: Integration
-  #       bypass_mode: always
-  #   rules:
-  #     - type: required_status_checks
-  #       parameters:
-  #         strict_required_status_checks_policy: false
-  #         required_status_checks:
-  #           # Org-wide: a workflow named `lint` must pass. Repos that don't
-  #           # have one yet should add .github/workflows/lint.yaml (or sync the
-  #           # canonical one in). Repos add more entries below for their own CI.
-  #           - context: lint
-  #             integration_id: 15368   # github-actions[bot]
+  # Enabled in cept (plan PR 11): every CI job from ci.yml plus the PR title
+  # check. scripts/ci/check-required-checks.ts (mise run lint:workflows) fails
+  # when a CI job is not required or a required check is reported by no job.
+  # The automation App is exempt so release-it, screenshot and format commits
+  # still land; Renovate is NOT exempt, so its automerge waits for green CI.
+  - name: require-checks
+    target: branch
+    enforcement: active
+    conditions:
+      ref_name:
+        include: ["~DEFAULT_BRANCH"]
+        exclude: []
+    bypass_actors:
+      # Repo admins can bypass (always = prompts at push/merge time, not silent exempt).
+      - actor_id: 5
+        actor_type: RepositoryRole   # 1=read 2=triage 3=write 4=maintain 5=admin
+        bypass_mode: always
+      # automation-nsheaps GitHub App (release-it, screenshot and format pushes).
+      - actor_id: 2549081
+        actor_type: Integration
+        bypass_mode: exempt
+    rules:
+      - type: required_status_checks
+        parameters:
+          strict_required_status_checks_policy: false
+          required_status_checks:
+            - context: lint / Lint
+              integration_id: 15368   # github-actions[bot]
+            - context: typecheck / Typecheck
+              integration_id: 15368   # github-actions[bot]
+            - context: test-unit / Unit Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: test-integration / Integration Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: test-e2e / E2E Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: build / Build
+              integration_id: 15368   # github-actions[bot]
+            - context: security / Security
+              integration_id: 15368   # github-actions[bot]
+            - context: Conventional Commit title
+              integration_id: 15368   # github-actions[bot]
 
   # ---- 5. Review required — 1 reviewer from CODEOWNERS (disabled by default) ----
   # NOTE: shipped DISABLED. Repos with a meaningful CODEOWNERS file flip to

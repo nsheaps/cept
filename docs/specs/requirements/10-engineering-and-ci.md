@@ -57,7 +57,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 | [REQ-ENG-017](#req-eng-017--e2e-and-screenshot-automation-healthy-and-gating)        | E2E and screenshot automation healthy and gating                   | MUST     | partial     | documented-as-desired  | n/a           |
 | [REQ-ENG-018](#req-eng-018--security-scanning-in-ci)                                 | Security scanning in CI                                            | SHOULD   | partial     | undocumented           | n/a           |
 | [REQ-ENG-019](#req-eng-019--git-workflow-matches-repo-rulesets)                      | Git workflow docs match repo rulesets                              | MUST     | divergent   | documented-differently | stale         |
-| [REQ-ENG-020](#req-eng-020--ci-checks-gate-merges-to-main)                           | CI checks gate merges to `main` (including Renovate automerge)     | MUST     | not-started | undocumented           | n/a           |
+| [REQ-ENG-020](#req-eng-020--ci-checks-gate-merges-to-main)                           | CI checks gate merges to `main` (including Renovate automerge)     | MUST     | implemented | documented             | current       |
 
 Status vocabulary:
 
@@ -107,7 +107,7 @@ flowchart TD
   pr --> preview["preview-deploy.yml: npx vite build -> gh-pages /cept/pr-N/"]
   pr --> vcheck["pr-version-check.yml"]
   lint & unit & integ & e2e & shots & build --> tag["_tag-release (main only; skipped while e2e is red, no tag since v0.7.31)"]
-  pr -.->|"no required status checks: Renovate automerges red PRs"| mainBranch["main branch"]
+  pr -.->|"require-checks: merges only when every CI check is green"| mainBranch["main branch"]
   tag --> cd["cd.yml on tag create"]
   cd --> rel["GitHub Release"]
   cd --> app["deploy-web: gh-pages /cept/app/"]
@@ -562,11 +562,11 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - A PR with a failing required check cannot be merged, by a human or by Renovate automerge.
 - `main` CI is green, and stays green across Renovate merges.
 
-**Current state:** not-started. The `require-checks` ruleset template, with its `required_status_checks` rule, is commented out in [.github/settings.yml](../../../.github/settings.yml) (lines 282-311), and only `protect-default-branch` and `require-pr` (zero approvals) are active. As a result, Renovate automerged #347-#351 on 2026-10-05/06 with `test-e2e` and `screenshots` failing, and `main` has had no green `ci.yml` push run since 2026-08-23 (GitHub Actions API: 62 failed, 27 cancelled and 11 successful in the latest 100 `main` push runs).
+**Current state:** implemented (plan PR 11). The `require-checks` ruleset in [.github/settings.yml](../../../.github/settings.yml) is active and requires `lint / Lint`, `typecheck / Typecheck`, `test-unit / Unit Tests`, `test-integration / Integration Tests`, `test-e2e / E2E Tests`, `build / Build`, `security / Security` and `Conventional Commit title` (all from github-actions, integration 15368; not strict, so a PR need not be up to date with `main`). Repo admins bypass with a prompt; the automation App is exempt so release-it, screenshot and format commits still land; Renovate is not exempt. [scripts/ci/check-required-checks.ts](../../../scripts/ci/check-required-checks.ts), run by `mise run lint:workflows`, derives the check names from every `ci.yml` job (except those listed with a reason in `OPTIONAL_CI_JOBS`), the called workflows and `pr-title.yml`, and fails when a CI job is not required, a required check is reported by no job, or the ruleset is not `enforcement: active`. `apply-repo-settings.yaml` applies the ruleset on the push to `main`. Before this, the ruleset was commented out, Renovate automerged #347-#351 on 2026-10-05/06 with `test-e2e` and `screenshots` failing, and `main` had no green `ci.yml` push run from 2026-08-23. `screenshots / Capture Screenshots` is not required: it only regenerates images and its result does not decide whether code is correct. `tag-release` runs only on pushes to `main`.
 
 **Docs state:** undocumented. [SPECIFICATION.md](../../SPECIFICATION.md) §9.0 says Renovate PRs "go through the full CI pipeline", but it does not say that CI must pass before they merge.
 
-**Gap:** Uncomment and populate `require-checks`. The template allows this per repo; confirm that `nsheaps/.github` sync preserves it. Then fix e2e (REQ-ENG-017), and document the merge gate in CONTRIBUTING.md.
+**Gap:** Confirm on the next `nsheaps/.github` sync that the repo's `require-checks` ruleset survives the merge (the merger keeps repo edits and the org template has the ruleset commented out, so it should). The merge gate is documented in CONTRIBUTING.md.
 
 ## 5. Conflicts and open questions
 
