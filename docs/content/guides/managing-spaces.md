@@ -79,6 +79,18 @@ A space you added while signed in, whose folder holds a `space.cept.yaml` (or `s
 - When the sync brings in changes, the page tree updates, and the page you are on reloads unless you are typing in it.
 - When you sign out, the space becomes read-only until you sign in again. Changes already on this device are kept.
 
+### When a sync meets a conflict
+
+When you and someone else changed the same space, Cept merges the changes on its own wherever they do not overlap: different parts of a page, or different front matter keys (even on the same page). What is left is a conflict: the same lines or the same key changed both here and on GitHub, a file added on both sides, a file deleted on one side and changed on the other, or a binary file (such as an image) changed on both sides.
+
+- The header then shows **Conflict**. Your changes stay on this device and nothing is pushed until every conflict is resolved; you can keep editing other pages.
+- Choose **Resolve conflicts** to see each file with your version and the one on GitHub. Pick **Keep mine**, **Keep theirs** or **Edit merged**. Edit merged starts from both versions with conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) around what differs; remove them before applying. For a file deleted on one side, pick **Keep the file** or **Delete it**.
+- When you keep one version, the other is saved next to the file as `Name (their version abc1234).md` (or `my version`), so nothing is lost. Choose **Apply and sync** to commit the merge and push it.
+
+### When GitHub refuses the push
+
+If the branch is protected, or the push is refused for another reason, the header shows **Sync failed** with **Push to a new branch**. Cept then pushes your changes to a new branch named `cept/<your login>/<date>-<commit>`, and the space goes back to following its own branch (without those changes) so you can open a pull request on GitHub. The conflict view offers the same, to set your changes aside instead of resolving them.
+
 ### Starting a space in a repository
 
 Signed in, choose **Start a space in a GitHub repository** in Settings > Spaces. Pick one of your repositories (or create a new one), name the space and, if you want, a folder. Cept writes `space.cept.yaml` in that folder, commits and pushes it, and opens the space. If the folder is already a space, Cept opens it as it is.

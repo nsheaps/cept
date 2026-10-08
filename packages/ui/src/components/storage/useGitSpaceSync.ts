@@ -12,10 +12,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+  ConflictResolution,
   GitSpaceLocalChanges,
+  GitSpaceNewBranchResult,
   GitSpaceSession,
   GitSpaceSyncResult,
+  MergeConflict,
   StorageBackend,
+  SyncErrorKind,
   SyncState,
 } from '@cept/core';
 
@@ -28,6 +32,8 @@ export interface SpaceSyncSession {
   stop(): void;
   dispose(): Promise<void>;
   localChanges(): Promise<GitSpaceLocalChanges>;
+  resolveConflicts(resolutions: readonly ConflictResolution[]): Promise<GitSpaceSyncResult>;
+  pushToNewBranch(): Promise<GitSpaceNewBranchResult>;
   readonly sync: Pick<GitSpaceSession['sync'], 'getStatus' | 'on' | 'reportOnline'>;
   readonly autoCommit: Pick<GitSpaceSession['autoCommit'], 'on'>;
 }
@@ -44,6 +50,25 @@ export interface GitSyncStatus {
   /** When the last sync went through (ms since epoch), or null. */
   lastSyncTime: number | null;
   lastError: string | null;
+  lastErrorKind: SyncErrorKind | null;
+  /** The files the last sync stopped on (REQ-WS-026). */
+  conflicts: MergeConflict[];
+}
+
+/**
+ * Whether to offer "push to a new branch": the sync stopped on a conflict, or
+ * the remote refused the push (a protected branch, a rule, or a branch that
+ * moved and cannot be merged).
+ */
+export function canPushToNewBranch(status: GitSyncStatus | null): boolean {
+  if (!status) return false;
+  if (status.state === 'conflict') return true;
+  return (
+    status.state === 'error' &&
+    (status.lastErrorKind === 'protected-branch' ||
+      status.lastErrorKind === 'rejected' ||
+      status.lastErrorKind === 'not-fast-forward')
+  );
 }
 
 /** The indicator's state for a sync engine state. */
@@ -107,6 +132,10 @@ export interface GitSpaceSync {
   syncing: boolean;
   /** Commit what is pending, pull, then push; null without a session. */
   syncNow(): Promise<GitSpaceSyncResult | null>;
+  /** Finish the stopped merge with the user's resolutions, then sync; null without a session. */
+  resolveConflicts(resolutions: readonly ConflictResolution[]): Promise<GitSpaceSyncResult | null>;
+  /** Push the local work to a new branch and follow the tracked one again; null without a session. */
+  pushToNewBranch(): Promise<GitSpaceNewBranchResult | null>;
   /** Close the session now (waiting for a running sync and committing what is pending). */
   close(): Promise<void>;
 }
@@ -143,6 +172,8 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
         unpushed: changes.unpushed,
         lastSyncTime: engine.lastSyncTime,
         lastError: engine.lastError,
+        lastErrorKind: engine.lastErrorKind,
+        conflicts: engine.conflictDetails,
       });
     };
 
@@ -213,18 +244,52 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
     };
   }, [sessionKey]);
 
-  const syncNow = useCallback(async () => {
-    const s = sessionRef.current;
-    if (!s) return null;
-    setSyncing(true);
-    try {
-      const result = await s.pushNow();
-      if (sessionRef.current === s) latest.current.onSynced(result, true);
-      return result;
-    } finally {
-      if (sessionRef.current === s) setSyncing(false);
-    }
-  }, []);
+  /** Run a manual action on the open session, reporting its sync as manual. */
+  const manual = useCallback(
+    async <T>(
+      run: (s: SpaceSyncSession) => Promise<T>,
+      syncOf: (result: T) => GitSpaceSyncResult,
+    ): Promise<T | null> => {
+      const s = sessionRef.current;
+      if (!s) return null;
+      setSyncing(true);
+      try {
+        const result = await run(s);
+        if (sessionRef.current === s) latest.current.onSynced(syncOf(result), true);
+        return result;
+      } finally {
+        if (sessionRef.current === s) setSyncing(false);
+      }
+    },
+    [],
+  );
+
+  const syncNow = useCallback(
+    () =>
+      manual(
+        (s) => s.pushNow(),
+        (r) => r,
+      ),
+    [manual],
+  );
+
+  const resolveConflicts = useCallback(
+    (resolutions: readonly ConflictResolution[]) =>
+      manual(
+        (s) => s.resolveConflicts(resolutions),
+        (r) => r,
+      ),
+    [manual],
+  );
+
+  const pushToNewBranch = useCallback(
+    () =>
+      manual(
+        (s) => s.pushToNewBranch(),
+        (r) => r.sync,
+      ),
+    [manual],
+  );
 
   const close = useCallback(async () => {
     const closing = closeRef.current;
@@ -232,5 +297,5 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
     await closingRef.current;
   }, []);
 
-  return { session, status, syncing, syncNow, close };
+  return { session, status, syncing, syncNow, resolveConflicts, pushToNewBranch, close };
 }

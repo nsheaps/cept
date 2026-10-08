@@ -66,7 +66,7 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                  | MUST     | implemented | documented             | accurate      |
 | [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space           | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                   | MUST     | implemented | documented             | accurate      |
-| [REQ-WS-026](#req-ws-026--git-sync-conflict-resolution)                                     | Merge diverged changes; per-file conflict view; push to a new branch      | MUST     | stubbed     | undocumented           | n/a           |
+| [REQ-WS-026](#req-ws-026--git-sync-conflict-resolution)                                     | Merge diverged changes; per-file conflict view; push to a new branch      | MUST     | partial     | documented             | n/a           |
 | [REQ-WS-027](#req-ws-027--git-sync-policy)                                                  | Commit author, messages, tracked branch, per-device settings, error types | MUST     | partial     | undocumented           | n/a           |
 
 Status counts: 3 implemented, 7 partial, 5 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (27 requirements).
@@ -846,11 +846,17 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 - A rejected push (protected branch, or a branch that moved and cannot be merged) offers "push to a new branch" named `cept/<login>/<date>-<short-sha>`; the space keeps tracking its own branch.
 - Integration tests run against a local bare repo with diverging commits, and against a push rejected as protected.
 
-**Current state: stubbed.** [packages/core/src/git/merge-engine.ts](../../../packages/core/src/git/merge-engine.ts) has `threeWayMerge`, conflict markers and the ours/theirs/merge/manual strategies, with unit tests. Nothing in the app calls it, there is no conflict view, and front matter and comments are merged as plain text.
+**Current state: partial.** Sync merges with Cept's own three-way merge (Phase 1 plan PR 37):
 
-**Docs state: undocumented.**
+- [packages/core/src/git/text-merge.ts](../../../packages/core/src/git/text-merge.ts) merges text line by line (diff3) and pages' front matter key by key; overlapping hunks come back with conflict markers.
+- [packages/core/src/git/tree-merge.ts](../../../packages/core/src/git/tree-merge.ts) plans the merge of two commits file by file: a file changed on one side takes that side; one changed on both merges as text; overlapping edits, add/add, delete/modify and binary files are conflicts. A resolution takes mine, theirs or merged content; keeping one side writes the other next to the file as `Name (their version <sha>).md` or `Name (my version <sha>).md`. Merged content that still holds conflict markers is refused.
+- `GitBackend.pull` fetches and merges with that plan (fast-forwarding when it can), and on a conflict leaves the branch and the working files untouched and reports each file's versions; `SyncEngine` holds the push until `GitSpaceSession.resolveConflicts` finishes the merge commit. `GitSpaceSession.pushToNewBranch` pushes the local work to `cept/<login>/<date>-<short-sha>` (`fallbackBranchName`) and resets the space to its tracked branch.
+- In the app, the sync indicator offers **Resolve conflicts** on a conflict and **Push to a new branch** when the remote refused the push; the conflict view ([ConflictResolver.tsx](../../../packages/ui/src/components/git/ConflictResolver.tsx)) offers Keep mine / Keep theirs / Edit merged per file (Keep the file / Delete it for a file deleted on one side; no editing for binary files) and the same fallback.
+- Integration tests run against local bare repos: auto-merge of front matter and body, a held conflict resolved each way with its copy, delete/modify, and a protected branch refusing the push.
 
-**Gap.** Key-wise front matter merge, the conflict view, conflict copies, holding the push while conflicts remain, and the push-to-a-new-branch fallback.
+**Docs state: documented** in [Managing spaces](../../content/guides/managing-spaces.md#when-a-sync-meets-a-conflict).
+
+**Gap.** Block-aware Markdown merging (waits for the M3 pipeline; the body merges line by line until then) and merging `cept:comment` blocks by id (PR 64). Choosing an edited merge, or deleting a file, keeps no copy (both versions stay in the history). Pushing to a new branch while offline fails with the push error rather than queuing.
 
 **Related:** REQ-WS-014, REQ-WS-027, D-30, D-37.
 
@@ -892,7 +898,7 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 
 **Docs state: undocumented.**
 
-**Gap.** One sync owner per space across tabs (PR 38; until then only the visible tab syncs automatically), creating a declared branch on its first push, a persistent offline commit queue (PR 39), a conflict view (PR 37), and a message per error kind (the indicator shows the state and the error text). Spaces cloned without a sign-in are still editable as a local copy in the app's storage, as before; they never commit.
+**Gap.** One sync owner per space across tabs (PR 38; until then only the visible tab syncs automatically), creating a declared branch on its first push, a persistent offline commit queue (PR 39), and a message per error kind (the indicator shows the state and the error text). Spaces cloned without a sign-in are still editable as a local copy in the app's storage, as before; they never commit.
 
 **Related:** REQ-WS-014, REQ-WS-026, [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app), D-4, D-5, D-30, D-34, D-37.
 

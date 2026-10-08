@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import type { GitSpaceSyncResult, SyncStatus } from '@cept/core';
 import { MemoryBackend } from './test-helpers.js';
 import {
+  canPushToNewBranch,
   syncStateOf,
   useGitSpaceSync,
   type Foreground,
@@ -18,6 +19,7 @@ const idle: SyncStatus = {
   lastErrorKind: null,
   pendingPush: false,
   conflicts: [],
+  conflictDetails: [],
 };
 
 const synced: GitSpaceSyncResult = {
@@ -40,6 +42,8 @@ function fakeSession(name = 's') {
     stop: vi.fn(),
     dispose: vi.fn(async () => undefined),
     localChanges: vi.fn(async () => ({ pending: 2, unpushed: 1 })),
+    resolveConflicts: vi.fn(async () => synced),
+    pushToNewBranch: vi.fn(async () => ({ branch: 'cept/octo/2026-10-08-abc1234', sync: synced })),
     sync: {
       getStatus: () => status,
       on: (fn: () => void) => {
@@ -109,6 +113,26 @@ describe('syncStateOf', () => {
   });
 });
 
+describe('canPushToNewBranch', () => {
+  const status = {
+    state: 'error' as const,
+    pending: 0,
+    unpushed: 1,
+    lastSyncTime: null,
+    lastError: 'refused',
+    lastErrorKind: 'protected-branch' as const,
+    conflicts: [],
+  };
+  it('is offered on a conflict or a refused push, not on other failures', () => {
+    expect(canPushToNewBranch(null)).toBe(false);
+    expect(canPushToNewBranch(status)).toBe(true);
+    expect(canPushToNewBranch({ ...status, lastErrorKind: 'rejected' })).toBe(true);
+    expect(canPushToNewBranch({ ...status, state: 'conflict', lastErrorKind: null })).toBe(true);
+    expect(canPushToNewBranch({ ...status, lastErrorKind: 'auth' })).toBe(false);
+    expect(canPushToNewBranch({ ...status, state: 'synced', lastErrorKind: null })).toBe(false);
+  });
+});
+
 describe('useGitSpaceSync', () => {
   it('opens no session without a key', () => {
     const open = vi.fn(async () => fakeSession().session);
@@ -134,6 +158,8 @@ describe('useGitSpaceSync', () => {
         unpushed: 1,
         lastSyncTime: null,
         lastError: null,
+        lastErrorKind: null,
+        conflicts: [],
       }),
     );
     expect(f.session.start).toHaveBeenCalledTimes(1);
@@ -183,6 +209,43 @@ describe('useGitSpaceSync', () => {
     expect(got).toBe(synced);
     expect(f.session.pushNow).toHaveBeenCalledTimes(1);
     expect(onSynced).toHaveBeenCalledWith(synced, true);
+    expect(result.current.syncing).toBe(false);
+  });
+
+  it('reports the conflicts the last sync stopped on', async () => {
+    const f = fakeSession();
+    const { result } = renderHook(() =>
+      useGitSpaceSync(options({ open: async () => f.session, foreground: fakeForeground().fg })),
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    const conflict = { path: 'a.md', type: 'content' as const, ours: 'x', theirs: 'y', base: 'z' };
+    act(() => f.setStatus({ state: 'conflict', conflictDetails: [conflict] }));
+    await waitFor(() => expect(result.current.status?.conflicts).toEqual([conflict]));
+    expect(result.current.status?.state).toBe('conflict');
+  });
+
+  it('resolves conflicts and pushes to a new branch as manual syncs', async () => {
+    const f = fakeSession();
+    const onSynced = vi.fn();
+    const { result } = renderHook(() =>
+      useGitSpaceSync(
+        options({ open: async () => f.session, onSynced, foreground: fakeForeground().fg }),
+      ),
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    const resolutions = [{ path: 'a.md', choice: 'mine' as const }];
+    await act(async () => {
+      await result.current.resolveConflicts(resolutions);
+    });
+    expect(f.session.resolveConflicts).toHaveBeenCalledWith(resolutions);
+    expect(onSynced).toHaveBeenLastCalledWith(synced, true);
+
+    let branch: string | undefined;
+    await act(async () => {
+      branch = (await result.current.pushToNewBranch())?.branch;
+    });
+    expect(branch).toBe('cept/octo/2026-10-08-abc1234');
+    expect(onSynced).toHaveBeenLastCalledWith(synced, true);
     expect(result.current.syncing).toBe(false);
   });
 

@@ -321,3 +321,127 @@
 .dark .cept-repo-picker-checkbox-label {
   color: #d4d4d8;
 }
+
+/* ===== Conflict Resolver (REQ-WS-026) ===== */
+.cept-conflict-resolver {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.cept-conflict-header,
+.cept-conflict-nav,
+.cept-conflict-actions,
+.cept-conflict-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cept-conflict-header {
+  justify-content: space-between;
+}
+
+.cept-conflict-footer {
+  justify-content: flex-end;
+}
+
+.cept-conflict-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.cept-conflict-type,
+.cept-conflict-count,
+.cept-conflict-resolution-status,
+.cept-conflict-empty {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.cept-conflict-diff {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.cept-conflict-side-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cept-conflict-content,
+.cept-conflict-editor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cept-conflict-editor {
+  width: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+}
+
+.cept-conflict-btn,
+.cept-conflict-nav-btn,
+.cept-conflict-cancel,
+.cept-conflict-apply {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cept-conflict-btn.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.cept-conflict-apply {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.cept-conflict-btn:disabled,
+.cept-conflict-nav-btn:disabled,
+.cept-conflict-cancel:disabled,
+.cept-conflict-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cept-conflict-warning {
+  color: #b45309;
+  font-size: 13px;
+}
+
+.dark .cept-conflict-content,
+.dark .cept-conflict-editor {
+  border-color: #374151;
+}
+
+.dark .cept-conflict-btn.is-selected {
+  background: #1e3a8a;
+}
+
+.dark .cept-conflict-warning {
+  color: #fbbf24;
+}

@@ -5,7 +5,7 @@
  * come back into the session on the next sync.
  */
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -312,5 +312,181 @@ describe('GitSpaceSession', () => {
 
     expect(status.state).toBe('synced');
     expect(git(bare, 'show', 'main:docs/space.cept.yaml')).toBe('version: 1\nname: Docs');
+  });
+});
+
+/** Push a change to `file` (relative to the repository root) from the other working copy. */
+function pushFromElsewhere(work: string, file: string, content: string | null): void {
+  if (content === null) git(work, 'rm', '-q', file);
+  else writeFileSync(path.join(work, file), content);
+  commitAll(work, `elsewhere: ${file}`);
+  git(work, 'push', '-q', 'origin', 'main');
+}
+
+/** Refuse pushes to `main` the way branch protection does; other branches go through. */
+function protectMain(bare: string): void {
+  const hook = path.join(bare, 'hooks', 'pre-receive');
+  writeFileSync(
+    hook,
+    [
+      '#!/bin/sh',
+      'while read old new ref; do',
+      '  if [ "$ref" = "refs/heads/main" ]; then',
+      '    echo "GH006: Protected branch update failed for refs/heads/main." >&2',
+      '    exit 1',
+      '  fi',
+      'done',
+      '',
+    ].join('\n'),
+  );
+  chmodSync(hook, 0o755);
+}
+
+describe('GitSpaceSession conflicts (REQ-WS-026)', () => {
+  const page = (front: string[], body: string) => ['---', ...front, '---', body].join('\n');
+
+  it('merges front matter key by key and the body line by line, with a merge commit', async () => {
+    const { work, bare } = makeRepo('fm');
+    writeFileSync(path.join(work, 'plan.md'), page(['title: Plan'], 'one\ntwo\nthree\n'));
+    commitAll(work, 'plan');
+    git(work, 'push', '-q', 'origin', 'main');
+    const { session } = await openSession('fm');
+
+    pushFromElsewhere(work, 'plan.md', page(['title: Plan', 'owner: sam'], 'one\ntwo\nTHREE\n'));
+    await session.backend.writeFile(
+      'plan.md',
+      encode(page(['title: Plan', 'status: done'], 'ONE\ntwo\nthree\n')),
+    );
+    const { status, changed } = await session.syncNow();
+    await session.dispose();
+
+    expect(status.state).toBe('synced');
+    expect(changed).toBe(true);
+    const merged = page(['title: Plan', 'status: done', 'owner: sam'], 'ONE\ntwo\nTHREE\n');
+    expect(decode(await session.backend.readFile('plan.md'))).toBe(merged);
+    expect(git(bare, 'show', 'main:plan.md')).toBe(merged.trimEnd());
+    expect(git(bare, 'log', '-1', '--format=%P', 'main').split(' ')).toHaveLength(2);
+  });
+
+  it('holds the push on overlapping edits until they are resolved, keeping both versions', async () => {
+    const { work, bare } = makeRepo('overlap');
+    const { session } = await openSession('overlap');
+
+    pushFromElsewhere(work, 'README.md', '# Theirs\n');
+    const remoteMain = git(bare, 'rev-parse', 'main');
+    await session.backend.writeFile('README.md', encode('# Mine\n'));
+    const first = await session.syncNow();
+
+    expect(first.status.state).toBe('conflict');
+    expect(first.changed).toBe(false);
+    expect(session.conflicts()).toEqual([
+      {
+        path: 'README.md',
+        type: 'content',
+        ours: '# Mine\n',
+        theirs: '# Theirs\n',
+        base: '# Hello\n',
+        merged: '<<<<<<< mine\n# Mine\n=======\n# Theirs\n>>>>>>> theirs\n',
+      },
+    ]);
+    // Nothing was pushed, and the working tree still holds my version.
+    expect(git(bare, 'rev-parse', 'main')).toBe(remoteMain);
+    expect(decode(await session.backend.readFile('README.md'))).toBe('# Mine\n');
+
+    // Editing other pages carries on, but nothing is pushed while the conflict remains.
+    await session.backend.writeFile('docs/guide.md', encode('# Guide, edited\n'));
+    expect((await session.syncNow()).status.state).toBe('conflict');
+    expect(git(bare, 'rev-parse', 'main')).toBe(remoteMain);
+
+    const resolved = await session.resolveConflicts([{ path: 'README.md', choice: 'mine' }]);
+    await session.dispose();
+
+    expect(resolved.status.state).toBe('synced');
+    expect(resolved.changed).toBe(true);
+    expect(session.conflicts()).toEqual([]);
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Mine');
+    expect(git(bare, 'show', 'main:docs/guide.md')).toBe('# Guide, edited');
+    const copy = `README (their version ${remoteMain.slice(0, 7)}).md`;
+    expect(git(bare, 'show', `main:${copy}`)).toBe('# Theirs');
+    expect(decode(await session.backend.readFile(copy))).toBe('# Theirs\n');
+  });
+
+  it('commits an edited merge, never one that still holds conflict markers', async () => {
+    const { work, bare } = makeRepo('edited');
+    const { session } = await openSession('edited');
+    pushFromElsewhere(work, 'README.md', '# Theirs\n');
+    await session.backend.writeFile('README.md', encode('# Mine\n'));
+    await session.syncNow();
+
+    const marked = await session.resolveConflicts([
+      { path: 'README.md', choice: 'merged', content: session.conflicts()[0]!.merged! },
+    ]);
+    expect(marked.status.state).toBe('conflict');
+
+    const resolved = await session.resolveConflicts([
+      { path: 'README.md', choice: 'merged', content: '# Mine and theirs\n' },
+    ]);
+    await session.dispose();
+    expect(resolved.status.state).toBe('synced');
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Mine and theirs');
+    expect(git(bare, 'ls-tree', '-r', '--name-only', 'main')).not.toContain('version');
+  });
+
+  it('keeps a file changed here and deleted there until the user decides', async () => {
+    const { work, bare } = makeRepo('delmod');
+    const { session } = await openSession('delmod');
+    pushFromElsewhere(work, 'docs/guide.md', null);
+    await session.backend.writeFile('docs/guide.md', encode('# Guide, kept\n'));
+
+    const first = await session.syncNow();
+    expect(first.status.state).toBe('conflict');
+    expect(session.conflicts()).toMatchObject([
+      { path: 'docs/guide.md', type: 'delete-modify', ours: '# Guide, kept\n', theirs: null },
+    ]);
+
+    await session.resolveConflicts([{ path: 'docs/guide.md', choice: 'mine' }]);
+    await session.dispose();
+    expect(git(bare, 'show', 'main:docs/guide.md')).toBe('# Guide, kept');
+  });
+
+  it('pushes to a new branch when the tracked one refuses the push, then follows it again', async () => {
+    const { bare } = makeRepo('protected');
+    protectMain(bare);
+    const remoteMain = git(bare, 'rev-parse', 'main');
+    const { session } = await openSession('protected');
+
+    await session.backend.writeFile('README.md', encode('# Proposed\n'));
+    const refused = await session.syncNow();
+    expect(refused.status).toMatchObject({ state: 'error', lastErrorKind: 'rejected' });
+    expect(git(bare, 'rev-parse', 'main')).toBe(remoteMain);
+
+    const head = await session.git.head();
+    const { branch, sync } = await session.pushToNewBranch(new Date('2026-10-08T12:00:00Z'));
+    await session.dispose();
+
+    expect(branch).toBe(`cept/octo/2026-10-08-${head.slice(0, 7)}`);
+    expect(git(bare, 'show', `${branch}:README.md`)).toBe('# Proposed');
+    expect(git(bare, 'rev-parse', 'main')).toBe(remoteMain);
+    // The space follows main again, without the work now on the new branch.
+    expect(sync.status.state).toBe('synced');
+    expect(await session.git.head()).toBe(remoteMain);
+    expect(decode(await session.backend.readFile('README.md'))).toBe('# Hello\n');
+  });
+
+  it('pushes unmerged work to a new branch instead of resolving the conflict', async () => {
+    const { work, bare } = makeRepo('detour');
+    const { session } = await openSession('detour');
+    pushFromElsewhere(work, 'README.md', '# Theirs\n');
+    await session.backend.writeFile('README.md', encode('# Mine\n'));
+    expect((await session.syncNow()).status.state).toBe('conflict');
+
+    const { branch, sync } = await session.pushToNewBranch(new Date('2026-10-08T12:00:00Z'));
+    await session.dispose();
+
+    expect(git(bare, 'show', `${branch}:README.md`)).toBe('# Mine');
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Theirs');
+    expect(sync.status.state).toBe('synced');
+    expect(session.conflicts()).toEqual([]);
+    expect(decode(await session.backend.readFile('README.md'))).toBe('# Theirs\n');
   });
 });

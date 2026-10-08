@@ -196,6 +196,8 @@ export interface GitSpaceSessionRequest {
   auth?: GitAuth;
   /** Who commits are attributed to (`commitIdentityFor` of the signed-in account). */
   identity: CommitIdentity;
+  /** The signed-in login, which names a "push to a new branch" fallback branch. */
+  login?: string;
   corsProxy?: string;
   /** HTTP client; the browser client when omitted. */
   http?: GitHttp;
@@ -215,6 +217,7 @@ export async function openGitSpaceSession(
     corsProxy: request.corsProxy,
     auth: request.auth,
     identity: request.identity,
+    login: request.login,
   });
 }
 

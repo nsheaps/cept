@@ -2,13 +2,16 @@
  * SyncIndicator — the sync state of the active GitHub space (REQ-WS-027):
  * idle, syncing, synced, offline, conflict or error, how many local changes
  * have not reached GitHub yet, when it last synced, and a "Sync now" action
- * (commit what is pending, pull, then push).
+ * (commit what is pending, pull, then push). A sync stopped on a conflict
+ * offers "Resolve conflicts" (REQ-WS-026); a push the remote refused offers
+ * "Push to a new branch".
  *
  * Shown for a space by its state (writable GitHub space), never by backend
  * type. `locked` is a writable space with no editing session, for example
  * while signed out: it can be read but not edited until the user signs in.
  */
 
+import { canPushToNewBranch } from '../storage/useGitSpaceSync.js';
 import type { GitSyncState, GitSyncStatus } from '../storage/useGitSpaceSync.js';
 
 export interface SyncIndicatorProps {
@@ -21,6 +24,10 @@ export interface SyncIndicatorProps {
   onSyncNow: () => void;
   /** Open the GitHub sign-in (shown when `locked`). */
   onSignIn?: () => void;
+  /** Open the conflict view (shown on a conflict). */
+  onResolveConflicts?: () => void;
+  /** Push the local work to a new branch (shown when the remote refused the push). */
+  onPushToNewBranch?: () => void;
   /** The current time, for "last synced" (tests pass a fixed one). */
   now?: number;
 }
@@ -60,6 +67,8 @@ export function SyncIndicator({
   syncing = false,
   onSyncNow,
   onSignIn,
+  onResolveConflicts,
+  onPushToNewBranch,
   now = Date.now(),
 }: SyncIndicatorProps) {
   if (locked) {
@@ -115,6 +124,24 @@ export function SyncIndicator({
           {formatLastSynced(status.lastSyncTime, now)}
         </span>
       ) : null}
+      {state === 'conflict' && onResolveConflicts && (
+        <button
+          className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 underline"
+          onClick={onResolveConflicts}
+          data-testid="sync-resolve-conflicts"
+        >
+          Resolve conflicts
+        </button>
+      )}
+      {state === 'error' && onPushToNewBranch && canPushToNewBranch(status) && (
+        <button
+          className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 underline"
+          onClick={onPushToNewBranch}
+          data-testid="sync-push-new-branch"
+        >
+          Push to a new branch
+        </button>
+      )}
       <button
         className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
         onClick={onSyncNow}

@@ -453,6 +453,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: integration test with a diverging bare repo and a protected-branch rejection.
 - Accept: tests green; nothing lost in either case.
 - Risk: block-aware Markdown merge needs the M3 pipeline; until then merge is line-based and overlapping edits go to the conflict view.
+- Deviation (PR 37): the merge is Cept's own (`text-merge.ts`, `tree-merge.ts`), not isomorphic-git's `merge` and not the `merge-engine` strategies: isomorphic-git's merge driver sees only file names, throws on add/add, and leaves no usable conflict state, so `GitBackend` plans the merge on flattened trees and writes the merge commit itself. `ConflictResolver` was reworked to Keep mine / Keep theirs / Edit merged (Keep the file / Delete it for delete/modify) and emits `ConflictResolution`s. A copy is kept only when one side is chosen over the other; an edited merge or a deletion keeps none (both versions stay in history). A push with nothing new no longer contacts the remote, so a protected branch does not refuse a no-op. Left out: an App-level test with a live session (covered by the component, hook and bare-repo integration tests).
 
 **PR 38 — `feat(web): elect one sync leader per origin`**
 

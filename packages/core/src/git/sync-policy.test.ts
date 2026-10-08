@@ -5,6 +5,7 @@ import {
   DEFAULT_SYNC_SETTINGS,
   SYNC_SETTINGS_PATH,
   commitIdentityFor,
+  fallbackBranchName,
   loadSyncSettings,
   parseSyncSettings,
   saveSyncSettings,
@@ -84,5 +85,20 @@ describe('withExcludeLine', () => {
     expect(withExcludeLine('# comment', 'x')).toBe('# comment\nx\n');
     const once = withExcludeLine('a\n', 'x');
     expect(withExcludeLine(once, 'x')).toBe(once);
+  });
+});
+
+describe('fallbackBranchName (REQ-WS-026)', () => {
+  it('names the branch after the login, the UTC date and the short commit id', () => {
+    const date = new Date('2026-10-08T23:30:00Z');
+    expect(fallbackBranchName('octo', date, '0123456789abcdef')).toBe(
+      'cept/octo/2026-10-08-0123456',
+    );
+  });
+
+  it('replaces characters a branch name may not hold', () => {
+    const date = new Date('2026-01-02T00:00:00Z');
+    expect(fallbackBranchName('a b~c', date, 'abcdef1234')).toBe('cept/a-b-c/2026-01-02-abcdef1');
+    expect(fallbackBranchName('..', date, 'abcdef1234')).toBe('cept/cept/2026-01-02-abcdef1');
   });
 });

@@ -32,6 +32,26 @@ export type {
   AutoMergeConfig,
 } from './merge-engine.js';
 
+export {
+  CONFLICT_MARKERS,
+  hasConflictMarkers,
+  isPagePath,
+  mergeFrontMatter,
+  mergeLines,
+  mergeText,
+} from './text-merge.js';
+export type { TextMergeResult } from './text-merge.js';
+
+export { conflictCopyPath, planMerge } from './tree-merge.js';
+export type {
+  ConflictResolution,
+  FlatTree,
+  MergedFile,
+  MergePlan,
+  MergePlanInput,
+  TreeFile,
+} from './tree-merge.js';
+
 export { SyncEngine } from './sync-engine.js';
 export type {
   SyncConfig,
@@ -57,6 +77,7 @@ export {
   SYNC_SETTINGS_EXCLUDE,
   SYNC_SETTINGS_PATH,
   commitIdentityFor,
+  fallbackBranchName,
   loadSyncSettings,
   parseSyncSettings,
   saveSyncSettings,
@@ -69,6 +90,7 @@ export type { CommitIdentity, GitHubUserIdentity, SyncSettings } from './sync-po
 export { GitSpaceSession, RecordingBackend } from './git-space-session.js';
 export type {
   GitSpaceLocalChanges,
+  GitSpaceNewBranchResult,
   GitSpaceSessionOptions,
   GitSpaceSyncResult,
 } from './git-space-session.js';

@@ -54,6 +54,7 @@ import {
   reconnectFolder,
 } from '@cept/core';
 import type {
+  ConflictResolution,
   GitSpaceSyncResult,
   ImportedPage,
   PageContent,
@@ -91,6 +92,7 @@ import {
 } from './storage/git-space.js';
 import { useGitSpaceSync } from './storage/useGitSpaceSync.js';
 import { SyncIndicator } from './git/SyncIndicator.js';
+import { ConflictResolver } from './git/ConflictResolver.js';
 import { StartRepoSpaceDialog } from './git/StartRepoSpaceDialog.js';
 import type { StartRepoSpaceRequest } from './git/StartRepoSpaceDialog.js';
 import { useGitHubAccount } from './settings/github-account.js';
@@ -1001,6 +1003,7 @@ export function App() {
         subPath: meta.subPath,
         auth: await gitAuth?.(),
         identity: commitIdentityFor(signedInAccount),
+        login: signedInAccount.login,
         corsProxy: gitCorsProxy(),
       });
     },
@@ -1030,7 +1033,14 @@ export function App() {
     },
   });
 
-  const { syncNow: gitSyncNow, close: closeGitSession } = gitSync;
+  const {
+    syncNow: gitSyncNow,
+    resolveConflicts: gitResolveConflicts,
+    pushToNewBranch: gitPushToNewBranch,
+    close: closeGitSession,
+  } = gitSync;
+  /** The conflict view (REQ-WS-026) is open. */
+  const [conflictViewOpen, setConflictViewOpen] = useState(false);
 
   /** "Sync now": commit what is pending, pull, then push. */
   const handleSyncNow = useCallback(async () => {
@@ -1040,6 +1050,37 @@ export function App() {
       addToast(`Sync failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   }, [gitSyncNow, addToast]);
+
+  /** Finish the stopped merge with the user's choices, then sync. */
+  const handleResolveConflicts = useCallback(
+    async (resolutions: ConflictResolution[]) => {
+      try {
+        const result = await gitResolveConflicts(resolutions);
+        if (result && result.status.state !== 'conflict') setConflictViewOpen(false);
+      } catch (err) {
+        addToast(`Sync failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      }
+    },
+    [gitResolveConflicts, addToast],
+  );
+
+  /** Push the local work to a new branch, for a refused push or an unmerged conflict. */
+  const handlePushToNewBranch = useCallback(async () => {
+    try {
+      const result = await gitPushToNewBranch();
+      if (!result) return;
+      setConflictViewOpen(false);
+      addToast(
+        `Your changes are on the new branch "${result.branch}" on GitHub. This space keeps following its own branch.`,
+        'success',
+      );
+    } catch (err) {
+      addToast(
+        `Could not push to a new branch: ${err instanceof Error ? err.message : String(err)}`,
+        'error',
+      );
+    }
+  }, [gitPushToNewBranch, addToast]);
 
   /** Tell the user why the open space cannot be edited. */
   const explainLocked = useCallback(() => {
@@ -2374,6 +2415,8 @@ export function App() {
             syncing={gitSync.syncing}
             onSyncNow={() => void handleSyncNow()}
             onSignIn={() => handleOpenSettings('settings')}
+            onResolveConflicts={() => setConflictViewOpen(true)}
+            onPushToNewBranch={() => void handlePushToNewBranch()}
           />
         )}
         <AppMenu
@@ -2847,6 +2890,37 @@ export function App() {
             : undefined
         }
       />
+      {conflictViewOpen && gitSync.status && (
+        <div
+          className="cept-wizard-overlay"
+          onClick={() => setConflictViewOpen(false)}
+          data-testid="conflict-dialog"
+        >
+          <div
+            className="cept-wizard-dialog"
+            role="dialog"
+            aria-labelledby="conflict-dialog-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cept-wizard-header">
+              <h2 id="conflict-dialog-title">Resolve sync conflicts</h2>
+            </div>
+            <div className="cept-wizard-content">
+              <p className="cept-wizard-desc">
+                These files changed here and on GitHub in the same place. Nothing is pushed until
+                each one is resolved; you can keep editing other pages meanwhile.
+              </p>
+              <ConflictResolver
+                conflicts={gitSync.status.conflicts}
+                busy={gitSync.syncing}
+                onResolve={(resolutions) => void handleResolveConflicts(resolutions)}
+                onPushToNewBranch={() => void handlePushToNewBranch()}
+                onCancel={() => setConflictViewOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {startRepoSpaceOpen && githubAccount?.listRepos && (
         <StartRepoSpaceDialog
           user={signedInAccount}

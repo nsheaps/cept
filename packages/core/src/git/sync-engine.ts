@@ -14,6 +14,7 @@ import {
   isRetryableSyncError,
 } from './sync-errors.js';
 import type { SyncErrorKind } from './sync-errors.js';
+import type { MergeConflict } from './merge-engine.js';
 
 export interface SyncConfig {
   /** Sync interval in milliseconds. Default: 30000 (30s) */
@@ -40,6 +41,8 @@ export interface SyncStatus {
   lastErrorKind: SyncErrorKind | null;
   pendingPush: boolean;
   conflicts: string[];
+  /** Each conflicting file's versions, when the merge reported them (REQ-WS-026). */
+  conflictDetails: MergeConflict[];
 }
 
 export type SyncEventType =
@@ -79,6 +82,7 @@ export class SyncEngine {
   private _lastErrorKind: SyncErrorKind | null = null;
   private _pendingPush = false;
   private _conflicts: string[] = [];
+  private _conflictDetails: MergeConflict[] = [];
   private _syncing = false;
 
   constructor(backend: GitStorageBackend, config?: SyncConfig) {
@@ -126,6 +130,7 @@ export class SyncEngine {
 
         if (!mergeResult.ok) {
           this._conflicts = mergeResult.conflicts;
+          this._conflictDetails = mergeResult.details ?? [];
           this.setState('conflict');
           this.emit({ type: 'conflict', conflicts: mergeResult.conflicts, mergeResult });
           this._syncing = false;
@@ -152,6 +157,7 @@ export class SyncEngine {
       this._lastError = null;
       this._lastErrorKind = null;
       this._conflicts = [];
+      this._conflictDetails = [];
       this.setState('synced');
       this.emit({ type: 'sync-complete' });
     } catch (e) {
@@ -165,6 +171,7 @@ export class SyncEngine {
         this.emit({ type: 'offline', error, errorKind: kind });
       } else if (kind === 'conflict') {
         this._conflicts = conflictPaths(e);
+        this._conflictDetails = [];
         this.setState('conflict');
         this.emit({ type: 'conflict', conflicts: [...this._conflicts], error, errorKind: kind });
       } else {
@@ -194,6 +201,7 @@ export class SyncEngine {
   /** Resolve conflicts (called after user resolves manually) */
   resolveConflicts(): void {
     this._conflicts = [];
+    this._conflictDetails = [];
     if (this._state === 'conflict') {
       this.setState('idle');
     }
@@ -209,6 +217,7 @@ export class SyncEngine {
       lastErrorKind: this._lastErrorKind,
       pendingPush: this._pendingPush,
       conflicts: [...this._conflicts],
+      conflictDetails: [...this._conflictDetails],
     };
   }
 
