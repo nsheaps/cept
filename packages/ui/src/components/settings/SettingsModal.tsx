@@ -111,6 +111,8 @@ export interface SettingsModalProps {
   onOpenAddSpaceWizard?: () => void;
   /** Start a space in a GitHub repository (shown when signed in to GitHub). */
   onStartRepoSpace?: () => void;
+  /** Publish a space on this device to a new GitHub repository (shown when signed in to GitHub). */
+  onPublishSpace?: (id: string) => void;
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
@@ -144,6 +146,7 @@ export function SettingsModal({
   onRecreateDemoSpace,
   onOpenAddSpaceWizard,
   onStartRepoSpace,
+  onPublishSpace,
   onImportNotion,
   onImportObsidian,
   onExport,
@@ -720,6 +723,11 @@ export function SettingsModal({
                     : undefined
                 }
                 isRefreshing={refreshingSpaceId === selectedSpace.id}
+                onPublish={
+                  onPublishSpace && canPublish(selectedSpace)
+                    ? () => onPublishSpace(selectedSpace.id)
+                    : undefined
+                }
               />
             )}
 
@@ -764,6 +772,19 @@ export function SettingsModal({
   );
 }
 
+/**
+ * Whether a space can be published to a new GitHub repository: one kept on
+ * this device (in the app or a connected folder), not the docs space.
+ */
+export function canPublish(space: SpaceInfo): boolean {
+  const kind = space.kind ?? 'app';
+  return (
+    !space.remoteUrl &&
+    space.id !== DOCS_SPACE_ID &&
+    (kind === 'app' || (kind === 'folder' && space.pageCount !== null))
+  );
+}
+
 function SpaceDetails({
   space,
   onBack,
@@ -774,6 +795,7 @@ function SpaceDetails({
   isRefreshing,
   onKeepConversion,
   onUndoConversion,
+  onPublish,
 }: {
   space: SpaceInfo;
   onBack: () => void;
@@ -784,6 +806,7 @@ function SpaceDetails({
   onBrowseFiles?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onPublish?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
@@ -1063,6 +1086,18 @@ function SpaceDetails({
               <path d="M13.46 5.54A6 6 0 002.54 10.46M2.54 10.46A6 6 0 0013.46 5.54" />
             </svg>
             {isRefreshing ? 'Syncing from remote...' : 'Refresh from remote'}
+          </button>
+        </>
+      )}
+      {onPublish && (
+        <>
+          <div className="cept-settings-section-divider" />
+          <button
+            className="cept-settings-action-btn"
+            onClick={onPublish}
+            data-testid="space-details-publish"
+          >
+            Publish to a new GitHub repository
           </button>
         </>
       )}
