@@ -266,7 +266,7 @@ describe('App', () => {
     expect(screen.getByTestId('command-palette')).toBeDefined();
   });
 
-  it('unimplemented storage options are disabled on landing page', async () => {
+  it('storage options the host cannot offer are disabled on landing page', async () => {
     renderApp();
     await waitFor(() => {
       expect(screen.getByTestId('landing-page')).toBeDefined();

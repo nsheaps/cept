@@ -300,3 +300,13 @@ export {
   NEW_FOLDER_PAGE,
 } from './space/index.js';
 export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './space/index.js';
+
+// Space discovery (find every space.cept.yaml below a folder, read-only)
+export { discoverSpaces, walkSpaces } from './space/index.js';
+export type {
+  DiscoveredSpace,
+  DiscoverOptions,
+  DiscoveryResult,
+  DiscoveryEvent,
+  NestedMarker,
+} from './space/index.js';

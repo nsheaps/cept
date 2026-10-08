@@ -9,9 +9,16 @@ export interface LandingPageProps {
   onStartWriting: () => void;
   onTryDemo: () => void;
   onOpenDocs: () => void;
+  /** Open a folder on this device as a space; omitted where the browser cannot (REQ-WS-012). */
+  onOpenFolder?: () => void;
 }
 
-export function LandingPage({ onStartWriting, onTryDemo, onOpenDocs }: LandingPageProps) {
+export function LandingPage({
+  onStartWriting,
+  onTryDemo,
+  onOpenDocs,
+  onOpenFolder,
+}: LandingPageProps) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12" data-testid="landing-page">
       {/* Hero */}
@@ -111,15 +118,30 @@ export function LandingPage({ onStartWriting, onTryDemo, onOpenDocs }: LandingPa
               IndexedDB — zero setup, works immediately, data stays on your device
             </span>
           </button>
-          <button
-            className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <strong>Local folder</strong>
-            <span className="block text-sm text-gray-500">
-              Plain Markdown files on your filesystem — coming soon
-            </span>
-          </button>
+          {onOpenFolder ? (
+            <button
+              onClick={onOpenFolder}
+              className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
+              data-testid="landing-open-folder"
+            >
+              <strong>Local folder</strong>
+              <span className="block text-sm text-gray-500">
+                Open a folder of plain Markdown files on this device
+              </span>
+            </button>
+          ) : (
+            <button
+              className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
+              disabled
+              data-testid="landing-open-folder"
+            >
+              <strong>Local folder</strong>
+              <span className="block text-sm text-gray-500">
+                Plain Markdown files on your filesystem — needs a browser that can open folders,
+                such as Chrome or Edge on a computer
+              </span>
+            </button>
+          )}
           <button
             className="block w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
             disabled

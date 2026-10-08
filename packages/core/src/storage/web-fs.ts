@@ -237,19 +237,21 @@ Welcome to your new workspace.
 }
 
 /**
- * Prompt the user to select a folder using the File System Access API.
- * Returns null if the user cancels or the API is not available.
+ * Prompt the user to select a folder using the File System Access API, with
+ * read-write access. Call it from a click. Returns null if the user cancels
+ * or the API is not available; other failures (a blocked folder) throw.
  */
-export async function pickDirectory(): Promise<FileSystemDirectoryHandle | null> {
-  if (typeof window === 'undefined' || !('showDirectoryPicker' in window)) {
-    return null;
-  }
+export async function pickDirectory(
+  scope: { showDirectoryPicker?: unknown } = globalThis as { showDirectoryPicker?: unknown },
+): Promise<FileSystemDirectoryHandle | null> {
+  const pick = scope.showDirectoryPicker;
+  if (typeof pick !== 'function') return null;
   try {
-    return await (
-      window as unknown as { showDirectoryPicker(): Promise<FileSystemDirectoryHandle> }
-    ).showDirectoryPicker();
-  } catch {
-    return null; // User cancelled
+    // Ask for write access up front, so editing a page does not prompt again.
+    return (await pick.call(scope, { mode: 'readwrite' })) as FileSystemDirectoryHandle;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return null; // cancelled
+    throw err;
   }
 }
 
