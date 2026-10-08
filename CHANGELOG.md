@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.28.0](https://github.com/nsheaps/cept/compare/v0.27.0...v0.28.0) (2026-10-08)
+
+### Features
+
+* **web:** elect one sync leader per space across tabs ([#404](https://github.com/nsheaps/cept/issues/404)) ([5a2b66d](https://github.com/nsheaps/cept/commit/5a2b66d1b3c2e0b49e83d2133d736cebee47a3d8))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([992cf71](https://github.com/nsheaps/cept/commit/992cf714021dfe1c361f68b688eb84e7f084d636))
+
 ## [0.27.0](https://github.com/nsheaps/cept/compare/v0.26.0...v0.27.0) (2026-10-08)
 
 ### Features
