@@ -8,6 +8,9 @@ osv-scanner = "2.6.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 
+# Nx-backed tasks set NX_DAEMON=false: `check` runs them in parallel, and the
+# Nx daemon races on its project graph then.
+#
 # Tasks wrap the root package.json scripts, which stay the inner commands.
 # CI calls these tasks so a contributor can reproduce any job locally.
 [tasks.install]
@@ -21,7 +24,6 @@ run = "bun scripts/ci/check-pins.ts .mise.toml"
 [tasks.lint]
 description = "Lint every project"
 run = "bun run lint"
-# check runs Nx tasks in parallel; the Nx daemon races on its project graph then.
 env = { NX_DAEMON = "false" }
 
 [tasks.format]
