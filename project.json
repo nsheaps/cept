@@ -13,10 +13,7 @@
       "inputs": [
         "sharedGlobals",
         "{workspaceRoot}/scripts/**/*",
-        "{workspaceRoot}/vitest.config.ts",
-        "{workspaceRoot}/.mise.toml",
-        "{workspaceRoot}/.release-it.json",
-        "{workspaceRoot}/bun.lock"
+        "{workspaceRoot}/.release-it.json"
       ]
     },
     "test:integration": {
@@ -33,9 +30,7 @@
         "{workspaceRoot}/tools/lint/**/*.js",
         "{workspaceRoot}/features/**/*.ts",
         "{workspaceRoot}/*.config.ts",
-        "{workspaceRoot}/tsconfig.scripts.json",
-        "{workspaceRoot}/tsconfig.base.json",
-        "{workspaceRoot}/bun.lock"
+        "{workspaceRoot}/tsconfig.scripts.json"
       ]
     }
   }
