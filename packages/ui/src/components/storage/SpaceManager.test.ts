@@ -8,11 +8,10 @@ import {
   deleteSpace,
   renameSpace,
   updateSpaceSyncTimestamp,
-  spaceWorkspaceFile,
-  spacePagesDir,
   generateRemoteSpaceId,
   parseRemoteSpaceId,
 } from './SpaceManager.js';
+import { spaceWorkspaceFile, spacePagesDir } from './space-paths.js';
 
 describe('SpaceManager', () => {
   let backend: MemoryBackend;

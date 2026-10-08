@@ -84,9 +84,23 @@ describe('SpaceManager class', () => {
     expect(await spaces.readPage(space.id, 'c')).toBeNull();
   });
 
-  it('opens a space with no saved pages as empty', async () => {
+  it('opens a space that was never saved as null', async () => {
     const { space } = await spaces.create('Empty');
     expect(await spaces.open(space.id, 'Empty')).toEqual({ snapshot: null, selectedContent: null });
+  });
+
+  it('opens a saved space with no pages, keeping its name and sidebar lists', async () => {
+    const { space } = await spaces.create('Work');
+    const fav = { id: 'gone', title: 'Gone' };
+    await spaces.saveState(space.id, {
+      pages: [],
+      favorites: [fav],
+      recentPages: [fav],
+      spaceName: 'Renamed',
+    });
+    const { snapshot: opened } = await spaces.open(space.id, 'fallback');
+    expect(opened).toMatchObject({ pages: [], favorites: [fav], recentPages: [fav] });
+    expect(opened?.spaceName).toBe('Renamed');
   });
 
   it('keeps each space’s pages apart, and the default space uses the root pages folder', async () => {

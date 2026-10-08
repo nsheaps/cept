@@ -210,13 +210,12 @@ export function App() {
       setSpaceLoadError(undefined);
       try {
         const { snapshot, selectedContent } = await spaces.open(spaceId, name);
-        if (snapshot) {
-          const selected = snapshot.selectedPageId;
-          applySpace(snapshot, selected ? { [selected]: selectedContent ?? '' } : {});
-          return;
-        }
-        applySpace(emptySnapshot(name));
-        if (isRemoteSpaceId(spaceId)) {
+        const selected = snapshot?.selectedPageId;
+        applySpace(
+          snapshot ?? emptySnapshot(name),
+          selected ? { [selected]: selectedContent ?? '' } : {},
+        );
+        if (!snapshot?.pages.length && isRemoteSpaceId(spaceId)) {
           // Remote space with no persisted content
           setSpaceLoadError(
             `Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`,

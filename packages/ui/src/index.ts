@@ -145,10 +145,9 @@ export {
   switchSpace,
   deleteSpace,
   renameSpace,
-  spaceWorkspaceFile,
-  spacePagesDir,
   SpaceManager,
 } from './components/storage/SpaceManager.js';
+export { spaceWorkspaceFile, spacePagesDir } from './components/storage/space-paths.js';
 export type {
   SpaceMeta,
   SpacesManifest,

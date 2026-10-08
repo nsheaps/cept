@@ -19,8 +19,6 @@ import {
   deleteSpacePageContent,
 } from './StorageContext.js';
 
-export { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
-
 export interface SpaceMeta {
   id: string;
   name: string;
@@ -90,6 +88,15 @@ export async function createSpace(
   name: string,
   icon?: string,
 ): Promise<SpaceMeta> {
+  return (await addSpace(backend, name, icon)).space;
+}
+
+/** Create a new space, make it active, and return it with the saved manifest. */
+async function addSpace(
+  backend: StorageBackend,
+  name: string,
+  icon?: string,
+): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const newSpace: SpaceMeta = {
     id: `space-${Date.now()}`,
@@ -100,7 +107,7 @@ export async function createSpace(
   manifest.spaces.push(newSpace);
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
-  return newSpace;
+  return { space: newSpace, manifest };
 }
 
 /**
@@ -151,6 +158,17 @@ export async function createRemoteSpace(
   branch: string,
   subPath?: string,
 ): Promise<SpaceMeta> {
+  return (await addRemoteSpace(backend, name, remoteUrl, branch, subPath)).space;
+}
+
+/** Add (or replace) a remote space, make it active, and return it with the saved manifest. */
+async function addRemoteSpace(
+  backend: StorageBackend,
+  name: string,
+  remoteUrl: string,
+  branch: string,
+  subPath?: string,
+): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
   const newSpace: SpaceMeta = {
@@ -172,33 +190,41 @@ export async function createRemoteSpace(
   }
   manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
-  return newSpace;
+  return { space: newSpace, manifest };
 }
 
 /** Update the lastSyncedAt timestamp for a space. */
 export async function updateSpaceSyncTimestamp(
   backend: StorageBackend,
   spaceId: string,
-): Promise<void> {
+): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
   const space = manifest.spaces.find((s) => s.id === spaceId);
   if (!space) throw new Error(`Space not found: ${spaceId}`);
   space.lastSyncedAt = new Date().toISOString();
   await saveSpaces(backend, manifest);
+  return manifest;
 }
 
 /** Switch the active space. */
-export async function switchSpace(backend: StorageBackend, spaceId: string): Promise<void> {
+export async function switchSpace(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
   if (!manifest.spaces.find((s) => s.id === spaceId)) {
     throw new Error(`Space not found: ${spaceId}`);
   }
   manifest.activeSpaceId = spaceId;
   await saveSpaces(backend, manifest);
+  return manifest;
 }
 
 /** Delete a space by id. Cannot delete the last space. */
-export async function deleteSpace(backend: StorageBackend, spaceId: string): Promise<void> {
+export async function deleteSpace(
+  backend: StorageBackend,
+  spaceId: string,
+): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
   if (manifest.spaces.length <= 1) {
     throw new Error('Cannot delete the last space');
@@ -219,6 +245,7 @@ export async function deleteSpace(backend: StorageBackend, spaceId: string): Pro
     manifest.activeSpaceId = manifest.spaces[0].id;
   }
   await saveSpaces(backend, manifest);
+  return manifest;
 }
 
 /** Rename a space. */
@@ -226,12 +253,13 @@ export async function renameSpace(
   backend: StorageBackend,
   spaceId: string,
   name: string,
-): Promise<void> {
+): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
   const space = manifest.spaces.find((s) => s.id === spaceId);
   if (!space) throw new Error(`Space not found: ${spaceId}`);
   space.name = name;
   await saveSpaces(backend, manifest);
+  return manifest;
 }
 
 /** The part of a space's state that is saved per space (page tree, sidebar lists). */
@@ -245,7 +273,7 @@ export interface SpaceSnapshot {
 
 /** What {@link SpaceManager.open} found for a space. */
 export interface OpenedSpace {
-  /** The saved snapshot, or `null` when the space has no saved pages yet. */
+  /** The saved snapshot (possibly with no pages), or `null` when the space has never been saved. */
   snapshot: SpaceSnapshot | null;
   /** Content of the snapshot's selected page, when there is one. */
   selectedContent: string | null;
@@ -274,8 +302,7 @@ export class SpaceManager {
     name: string,
     icon?: string,
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
-    const space = await createSpace(this.backend, name, icon);
-    return { space, manifest: await this.load() };
+    return addSpace(this.backend, name, icon);
   }
 
   /** Add (or replace) a space linked to a remote repository and make it active. */
@@ -285,22 +312,19 @@ export class SpaceManager {
     branch: string,
     subPath?: string,
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
-    const space = await createRemoteSpace(this.backend, name, remoteUrl, branch, subPath);
-    return { space, manifest: await this.load() };
+    return addRemoteSpace(this.backend, name, remoteUrl, branch, subPath);
   }
 
   /** Make `id` the active space. Throws if there is no such space. */
   async switch(id: string): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
-    await switchSpace(this.backend, id);
-    const manifest = await this.load();
+    const manifest = await switchSpace(this.backend, id);
     const space = manifest.spaces.find((s) => s.id === id);
     if (!space) throw new Error(`Space not found: ${id}`);
     return { space, manifest };
   }
 
   async rename(id: string, name: string): Promise<SpacesManifest> {
-    await renameSpace(this.backend, id, name);
-    return this.load();
+    return renameSpace(this.backend, id, name);
   }
 
   /**
@@ -308,8 +332,7 @@ export class SpaceManager {
    * becomes active; the returned `active` is the space now active.
    */
   async delete(id: string): Promise<{ manifest: SpacesManifest; active: SpaceMeta }> {
-    await deleteSpace(this.backend, id);
-    const manifest = await this.load();
+    const manifest = await deleteSpace(this.backend, id);
     const active =
       manifest.spaces.find((s) => s.id === manifest.activeSpaceId) ?? manifest.spaces[0];
     return { manifest, active };
@@ -317,8 +340,7 @@ export class SpaceManager {
 
   /** Record a successful sync from the remote. */
   async markSynced(id: string): Promise<SpacesManifest> {
-    await updateSpaceSyncTimestamp(this.backend, id);
-    return this.load();
+    return updateSpaceSyncTimestamp(this.backend, id);
   }
 
   /** Save a space's snapshot and any page contents held in memory. */
@@ -338,7 +360,7 @@ export class SpaceManager {
   /** Read a space's saved snapshot and the content of its selected page. */
   async open(id: string, fallbackName: string): Promise<OpenedSpace> {
     const state = await loadSpaceState(this.backend, id);
-    if (!state || state.pages.length === 0) return { snapshot: null, selectedContent: null };
+    if (!state) return { snapshot: null, selectedContent: null };
     const snapshot: SpaceSnapshot = {
       pages: state.pages,
       favorites: state.favorites ?? [],
