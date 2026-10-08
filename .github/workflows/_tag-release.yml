@@ -41,7 +41,7 @@ jobs:
         uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: mise run install
 
       - name: Download updated screenshots
         if: inputs.screenshots-changed
@@ -52,36 +52,18 @@ jobs:
 
       - name: Commit updated screenshots
         if: inputs.screenshots-changed
-        run: |
-          git add docs/screenshots/
-          if ! git diff --cached --quiet; then
-            git commit -m "docs(screenshots): update feature screenshots [skip ci]"
-          fi
+        run: scripts/ci/commit-screenshots.sh
 
       - name: Configure git
-        run: |
-          git branch --set-upstream-to=origin/main main 2>/dev/null || true
+        run: scripts/ci/set-upstream.sh main main
 
       - name: Determine version bump
         id: version
-        run: |
-          set +e
-          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null)
-          EXIT_CODE=$?
-          set -e
-
-          if [ $EXIT_CODE -ne 0 ] || [ -z "$NEXT_VERSION" ]; then
-            echo "No version bump needed (exit code: $EXIT_CODE)"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "Next version: $NEXT_VERSION"
-            echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
+        run: scripts/ci/tag-release-version.sh
 
       - name: Tag release
         if: steps.version.outputs.skip != 'true'
-        run: bun run release:ci -- --verbose
+        run: mise run release:ci -- --verbose
         env:
           GITHUB_TOKEN: ${{ steps.auth.outputs.token }}
 

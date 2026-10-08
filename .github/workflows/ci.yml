@@ -17,6 +17,9 @@ jobs:
   lint:
     uses: ./.github/workflows/_lint.yml
 
+  typecheck:
+    uses: ./.github/workflows/_typecheck.yml
+
   test-unit:
     uses: ./.github/workflows/_test-unit.yml
 
@@ -33,7 +36,7 @@ jobs:
     uses: ./.github/workflows/_update-screenshots.yml
 
   tag-release:
-    needs: [lint, test-unit, test-integration, test-e2e, build, screenshots]
+    needs: [lint, typecheck, test-unit, test-integration, test-e2e, build, screenshots]
     if: github.event_name == 'push'
     uses: ./.github/workflows/_tag-release.yml
     with:

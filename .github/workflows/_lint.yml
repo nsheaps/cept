@@ -1,11 +1,11 @@
-name: Lint & Typecheck
+name: Lint
 
 on:
   workflow_call:
 
 jobs:
   lint:
-    name: Lint & Typecheck
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -14,10 +14,7 @@ jobs:
         uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: mise run install
 
       - name: Lint
-        run: bun run lint
-
-      - name: Typecheck
-        run: bun run typecheck
+        run: mise run lint

@@ -28,17 +28,7 @@ jobs:
 
       - name: Extract changelog for this version
         id: changelog
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          NOTES=$(sed -n "/^## \\[${VERSION}\\]/,/^## \\[/p" CHANGELOG.md 2>/dev/null | head -n -1 | tail -n +2)
-
-          if [ -z "$NOTES" ]; then
-            echo "No changelog entry found for ${VERSION}, using auto-generated notes"
-            echo "auto=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "auto=false" >> "$GITHUB_OUTPUT"
-            echo "$NOTES" > /tmp/release-notes.md
-          fi
+        run: scripts/ci/extract-changelog.sh
 
       - name: Create release (from changelog)
         if: steps.changelog.outputs.auto != 'true'
@@ -72,30 +62,17 @@ jobs:
       - uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: mise run install
 
       - name: Build web
-        run: bun run build
+        run: mise run build
         env:
           NODE_ENV: production
           VITE_BASE_PATH: /cept/app/
           COMMIT_SHA: ${{ github.sha }}
 
       - name: Deploy to GitHub Pages
-        run: |
-          git fetch origin gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
-
-          rm -rf app
-          mkdir -p app
-          cp -r packages/web/dist/* app/
-
-          git show origin/main:.github/pages/404.html > 404.html
-          git show origin/main:.github/pages/index.html > index.html
-
-          git add app/ 404.html index.html
-          git commit -m "Deploy production app (${GITHUB_REF_NAME})" --allow-empty
-          git push origin gh-pages
+        run: scripts/ci/deploy-prod-pages.sh
 
   build-macos:
     name: Build macOS
@@ -104,8 +81,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: mise run install
+      - run: mise run build
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v7
@@ -121,8 +98,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: mise run install
+      - run: mise run build
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v7
@@ -138,8 +115,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: mise run install
+      - run: mise run build
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v7
@@ -155,11 +132,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: mise run install
+      - run: mise run build
 
       - name: Sync Capacitor iOS
-        run: cd packages/mobile && npx cap sync ios
+        run: scripts/ci/cap-sync.sh ios
         continue-on-error: true
 
       - name: Upload iOS artifact
@@ -182,11 +159,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: mise run install
+      - run: mise run build
 
       - name: Sync Capacitor Android
-        run: cd packages/mobile && npx cap sync android
+        run: scripts/ci/cap-sync.sh android
         continue-on-error: true
 
       - name: Upload Android artifact
@@ -210,7 +187,4 @@ jobs:
       - name: Upload assets to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if ls dist/*.dmg dist/*.exe dist/*.AppImage 2>/dev/null; then
-            gh release upload "$GITHUB_REF_NAME" dist/*.dmg dist/*.exe dist/*.AppImage --clobber 2>/dev/null || true
-          fi
+        run: scripts/ci/upload-release-assets.sh

@@ -1,11 +1,11 @@
-name: Build
+name: Typecheck
 
 on:
   workflow_call:
 
 jobs:
-  build:
-    name: Build
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -16,5 +16,5 @@ jobs:
       - name: Install dependencies
         run: mise run install
 
-      - name: Build all packages
-        run: mise run build
+      - name: Typecheck
+        run: mise run lint

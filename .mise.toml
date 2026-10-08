@@ -21,8 +21,17 @@ run = "bun install --frozen-lockfile"
 description = "Fail if any mise tool is not pinned to an exact version"
 run = "bun scripts/ci/check-pins.ts .mise.toml"
 
+[tasks."lint:workflows"]
+description = "actionlint (with shellcheck), shellcheck on scripts/ci, and no multi-command run steps"
+run = [
+  "actionlint",
+  "shellcheck scripts/ci/*.sh",
+  "bun scripts/ci/no-inline-logic.ts .github/workflows",
+]
+
 [tasks.lint]
-description = "Lint every project"
+description = "Lint every project and the workflows"
+depends = ["lint:workflows"]
 run = "bun run lint"
 env = { NX_DAEMON = "false" }
 
@@ -51,6 +60,44 @@ run = "bun run test:e2e"
 description = "Build every project"
 run = "bun run build"
 env = { NX_DAEMON = "false" }
+
+[tasks."build:web"]
+description = "Build only the web app (the PR preview; honours VITE_* env)"
+run = "bunx vite build"
+dir = "packages/web"
+
+[tasks."release:ci"]
+description = "Cut a release with release-it (CI mode); pass flags after --"
+run = "bunx release-it --ci"
+
+[tasks."ci:version-check"]
+description = "Write the PR release-version outputs to $GITHUB_OUTPUT"
+run = "bun scripts/ci/version-check.ts"
+
+[tasks."ci:playwright-version"]
+description = "Print version=<installed Playwright version> for $GITHUB_OUTPUT"
+run = "bun scripts/ci/playwright-version.ts"
+
+[tasks."ci:playwright-provision"]
+description = "Copy Playwright browsers out of the official image (needs PLAYWRIGHT_VERSION)"
+run = "scripts/ci/provision-playwright.sh"
+
+[tasks."ci:playwright-deps"]
+description = "Install the system libraries Chromium needs (apt only, no download)"
+run = "bunx playwright install-deps chromium"
+
+[tasks."screenshots:capture"]
+description = "Regenerate the feature screenshots in docs/screenshots/features"
+run = [
+  "mkdir -p ../docs/screenshots/features",
+  "bunx playwright test tests/feature-screenshots.spec.ts",
+]
+dir = "e2e"
+env = { CI = "true" }
+
+[tasks."screenshots:compare"]
+description = "Restore pixel-identical screenshots and report changed=true|false"
+run = "scripts/ci/compare-screenshots.sh"
 
 [tasks.check]
 description = "The full local gate: pins, lint, typecheck, unit and integration tests, build"

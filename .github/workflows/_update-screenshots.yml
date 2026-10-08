@@ -20,13 +20,13 @@ jobs:
         uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: mise run install
 
       - name: Resolve Playwright version
         id: pw
         # Single source of truth: the installed @playwright/test, so the browser
         # cache key and image can't drift from the runtime when Renovate bumps it.
-        run: echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
+        run: mise run -q ci:playwright-version >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
@@ -37,65 +37,22 @@ jobs:
 
       - name: Provision Playwright browsers from official image
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        # Playwright's browser CDN (storage.googleapis.com /
-        # playwright.download.prss.microsoft.com) stalls intermittently from this CI,
-        # hanging `playwright install` for the full job timeout. Instead, copy the
-        # browsers out of Playwright's official image (version-matched to
-        # the installed @playwright/test), which avoids the CDN entirely.
-        run: |
-          set -euo pipefail
-          img=mcr.microsoft.com/playwright:v${{ steps.pw.outputs.version }}-noble
-          docker pull "$img"
-          cid=$(docker create "$img")
-          mkdir -p ~/.cache/ms-playwright
-          docker cp "$cid:/ms-playwright/." ~/.cache/ms-playwright/
-          docker rm "$cid" >/dev/null
-          ls -1 ~/.cache/ms-playwright
+        # Copies browsers from Playwright's official image instead of its CDN, which
+        # stalls intermittently from CI (see scripts/ci/provision-playwright.sh).
+        run: mise run ci:playwright-provision
+        env:
+          PLAYWRIGHT_VERSION: ${{ steps.pw.outputs.version }}
 
       - name: Install Playwright system dependencies
         # apt-only (no browser download); installs the few libs the runner lacks.
-        run: bunx playwright install-deps chromium
-
-      - name: Create screenshots directory
-        run: mkdir -p docs/screenshots/features
+        run: mise run ci:playwright-deps
 
       - name: Capture screenshots
-        run: bunx playwright test tests/feature-screenshots.spec.ts
-        working-directory: e2e
-        env:
-          CI: true
+        run: mise run screenshots:capture
 
       - name: Compare screenshots pixel-by-pixel
         id: compare
-        run: |
-          # Install ImageMagick for pixel-level comparison
-          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick > /dev/null 2>&1
-
-          CHANGED=false
-          for new_file in docs/screenshots/features/*.png; do
-            [ -f "$new_file" ] || continue
-
-            # If file is new (not tracked), it's a real change
-            if ! git show HEAD:"$new_file" > /tmp/old_screenshot.png 2>/dev/null; then
-              echo "NEW: $new_file"
-              CHANGED=true
-              continue
-            fi
-
-            # Compare pixels only (AE = Absolute Error pixel count)
-            DIFF=$(compare -metric AE "$new_file" /tmp/old_screenshot.png /dev/null 2>&1 || true)
-
-            if [ "$DIFF" = "0" ]; then
-              # Pixels identical — restore original to avoid metadata-only diff
-              echo "UNCHANGED (metadata only): $new_file"
-              git checkout HEAD -- "$new_file"
-            else
-              echo "CHANGED ($DIFF pixels differ): $new_file"
-              CHANGED=true
-            fi
-          done
-
-          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+        run: mise run screenshots:compare
 
       - name: Upload changed screenshots
         if: steps.compare.outputs.changed == 'true'
