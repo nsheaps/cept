@@ -41,7 +41,7 @@ bun run validate                # lint + typecheck + test (full gate)
 mise run check                  # Full local gate: pins, lint (incl. workflows), typecheck, unit + integration tests, build, security
 mise run lint:format            # prettier --check . (part of mise run lint)
 mise run format                 # prettier --write . (CI's format.yml pushes this as an autofix commit on PRs)
-mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps + no fake-green release steps
+mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps + no fake-green release steps + every CI job a required check
 mise run check:targets          # every Nx project has build, typecheck, test:unit (or a skip reason) and one scope:/platform: tag (part of lint)
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)
@@ -54,7 +54,7 @@ nx affected -t build            # Build only affected packages
 
 ## CI Conventions
 
-Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`). A job never reports success for something it did not build: `scripts/ci/no-fake-green.ts` fails on `if-no-files-found: warn`, `continue-on-error: true`, `cap sync` and swallowed release uploads; unbuilt work is a job that emits `::warning::`. On pull requests the lint, typecheck, unit, integration, e2e and build jobs set `NX_BASE` to the PR base, and their mise tasks (via `scripts/ci/nx-targets.ts`) run `nx affected`; on `main` and locally they run every project. Root config files are the `sharedGlobals` input in `nx.json`, so changing one runs everything; add a new root config file there.
+Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`). A job never reports success for something it did not build: `scripts/ci/no-fake-green.ts` fails on `if-no-files-found: warn`, `continue-on-error: true`, `cap sync` and swallowed release uploads; unbuilt work is a job that emits `::warning::`. Every CI job is a required check in the `require-checks` ruleset of `.github/settings.yml`; add, rename or remove a job there in the same PR (`scripts/ci/check-required-checks.ts` enforces it). On pull requests the lint, typecheck, unit, integration, e2e and build jobs set `NX_BASE` to the PR base, and their mise tasks (via `scripts/ci/nx-targets.ts`) run `nx affected`; on `main` and locally they run every project. Root config files are the `sharedGlobals` input in `nx.json`, so changing one runs everything; add a new root config file there.
 
 ## Nx Targets
 

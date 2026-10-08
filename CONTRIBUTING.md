@@ -90,6 +90,10 @@ Imports that broke these rules before lint checked them are listed in [`tools/li
 - Every new UI component gets component tests
 - Run `bun run validate` before submitting
 
+### Required Checks
+
+A pull request merges into `main` only when every CI check passes: lint, typecheck, unit, integration, e2e, build, security and the PR title. The `require-checks` ruleset in [`.github/settings.yml`](.github/settings.yml) enforces this for people and for Renovate automerge alike. Adding, renaming or removing a CI job means updating that list in the same PR; `mise run lint:workflows` (via `scripts/ci/check-required-checks.ts`) fails until they match.
+
 ### Commit Messages and PR Titles
 
 Pull requests are squash-merged, so the PR title becomes the commit on `main`, and release-it reads it to choose the next version. The `PR Title` check fails unless the title is a [Conventional Commit](https://www.conventionalcommits.org/):
