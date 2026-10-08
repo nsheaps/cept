@@ -42,6 +42,8 @@ const http: GitHttp = {
         CONTENT_LENGTH: String(input.length),
       },
     });
+    // git http-backend may exit before reading the body (e.g. a missing repository).
+    child.stdin.on('error', () => undefined);
     child.stdin.end(input);
     const out: Buffer[] = [];
     for await (const chunk of child.stdout) out.push(chunk as Buffer);
