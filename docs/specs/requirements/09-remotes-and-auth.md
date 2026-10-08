@@ -556,7 +556,7 @@ flowchart LR
 - Any client secret exists only in Worker secrets, if one is needed at all.
 - A secret scanner runs in CI, and a test asserts that browser builds reject `clientSecret`.
 
-**Current state:** partial. No secrets or client IDs are committed, but `GitHubOAuthConfig.clientSecret` is optional and is forwarded in `exchangeCode` ([github.ts](../../../packages/core/src/auth/github.ts) lines 18, 137-138). There is no client ID config, and no secret scanner (gitleaks, trufflehog or similar) runs in any `.github/workflows/*` file.
+**Current state:** partial. No secrets or client IDs are committed, but `GitHubOAuthConfig.clientSecret` is optional and is forwarded in `exchangeCode` ([github.ts](../../../packages/core/src/auth/github.ts) lines 18, 137-138). There is no client ID config, and the secret scanner now runs: [\_security.yml](../../../.github/workflows/_security.yml) runs gitleaks over git history and the working tree on every PR and `main` (see REQ-ENG-018). The test that browser builds reject `clientSecret` is still missing.
 
 **Docs state:** documented-as-desired, accurate. The only source is a code-review checklist item in SPECIFICATION line 2191 ("No secrets in code? OAuth tokens handled securely?").
 

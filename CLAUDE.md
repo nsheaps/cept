@@ -22,7 +22,8 @@ Cept is a Notion clone with multiple storage backends: browser (IndexedDB), loca
 
 ```bash
 mise install                    # Install all tool versions (pinned exactly in .mise.toml)
-mise run check                  # Full local gate: pins, lint, typecheck, unit + integration, build
+mise run check                  # Full local gate: pins, lint, typecheck, unit + integration, build, security
+mise run security               # gitleaks (history + tree) and osv-scanner (bun.lock); needs network for api.osv.dev
 mise run <task>                 # install, lint, format, typecheck, test:unit, test:integration, test:e2e, build, check:pins
 bun install                     # Install dependencies
 bun run dev                     # Dev mode (all packages)
@@ -37,7 +38,7 @@ bun run test:e2e:screenshots    # E2E with screenshot capture
 bun run lint                    # ESLint + Prettier
 bun run typecheck               # tsc --noEmit
 bun run validate                # lint + typecheck + test (full gate)
-mise run check                  # Full local gate: pins, lint (incl. workflows), typecheck, unit + integration tests, build
+mise run check                  # Full local gate: pins, lint (incl. workflows), typecheck, unit + integration tests, build, security
 mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)

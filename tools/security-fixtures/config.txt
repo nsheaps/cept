@@ -1,0 +1,2 @@
+# Fake credential for the gitleaks gate test. Not a real secret.
+api_key = "k3Jd9sLq2VxP7mRt5Zw8Yb1NcHf4GuAe"

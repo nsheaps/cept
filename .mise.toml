@@ -99,6 +99,14 @@ env = { CI = "true" }
 description = "Restore pixel-identical screenshots and report changed=true|false"
 run = "scripts/ci/compare-screenshots.sh"
 
+[tasks.security]
+description = "Secret scan (gitleaks: history and working tree) and dependency vulnerabilities (osv-scanner on bun.lock)"
+run = [
+  "gitleaks git --config .gitleaks.toml --no-banner --redact --log-opts=HEAD .",
+  "gitleaks dir --config .gitleaks.toml --no-banner --redact .",
+  "osv-scanner scan source --config osv-scanner.toml --lockfile bun.lock",
+]
+
 [tasks.check]
-description = "The full local gate: pins, lint, typecheck, unit and integration tests, build"
-depends = ["check:pins", "lint", "typecheck", "test:unit", "test:integration", "build"]
+description = "The full local gate: pins, lint, typecheck, unit and integration tests, build, security"
+depends = ["check:pins", "lint", "typecheck", "test:unit", "test:integration", "build", "security"]
