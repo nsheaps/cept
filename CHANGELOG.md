@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.25.0](https://github.com/nsheaps/cept/compare/v0.24.0...v0.25.0) (2026-10-08)
+
+### Features
+
+* **core:** git space session with auto-commit and sync ([#401](https://github.com/nsheaps/cept/issues/401)) ([f710b2d](https://github.com/nsheaps/cept/commit/f710b2dc32d1eff7e5abceeb498acf62eefa4115))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([0639823](https://github.com/nsheaps/cept/commit/06398230293cb85c9334b8900e0ba92f1640575d))
+
 ## [0.24.0](https://github.com/nsheaps/cept/compare/v0.23.1...v0.24.0) (2026-10-08)
 
 ### Features
