@@ -33,6 +33,12 @@ NFR-2: LocalFsBackend must detect external file changes via watch()
 
 See `packages/core/src/storage/backend.ts` for the full TypeScript interface.
 
+`MemoryBackend` (`packages/core/src/storage/memory.ts`) is an in-memory implementation for tests and ephemeral workspaces. Directories are implicit (a directory exists while a file lives under it), and `watch()` reports changes made through the same instance.
+
+### Behavioural contract
+
+`packages/core/src/storage/conformance.ts` is the executable specification every backend must pass (memory, browser-fs, web-fs, local-fs and the git working tree; run from `conformance.test.ts`). It fixes: missing file reads return `null`; writes round-trip bytes and create parent directories; `listDirectory` returns direct children only and `[]` for a missing directory; `stat` returns `null` for a missing path; `deleteFile` on a directory deletes everything under it (recursive) and on a missing path is a no-op; and `watch()` delivers create/modify/delete events for changes at or under the watched path (events carry workspace-relative paths with a leading `/`). `WebFsBackend` cannot watch (the File System Access API has no change notifications) and is checked only for a callable unsubscribe. Whether an emptied parent directory survives is deliberately unspecified.
+
 ## Dependencies
 
 - Depends on: lightning-fs (browser), isomorphic-git (git)

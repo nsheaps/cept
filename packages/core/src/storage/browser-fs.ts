@@ -238,20 +238,18 @@ Welcome to your new workspace.
 
   private emitEvent(path: string, type: FsEvent['type']): void {
     const normalized = this.normalizePath(path);
-    // Notify watchers on the exact path
-    const exact = this.watchers.get(normalized);
-    if (exact) {
-      for (const cb of exact) {
-        cb({ type, path: normalized });
+    // Notify watchers on the exact path and on every ancestor directory
+    // (including the root), so watching a directory sees nested changes.
+    let current = normalized;
+    for (;;) {
+      const callbacks = this.watchers.get(current);
+      if (callbacks) {
+        for (const cb of [...callbacks]) {
+          cb({ type, path: normalized });
+        }
       }
-    }
-    // Notify watchers on parent directories
-    const parentPath = normalized.substring(0, normalized.lastIndexOf('/')) || '/';
-    const parent = this.watchers.get(parentPath);
-    if (parent) {
-      for (const cb of parent) {
-        cb({ type, path: normalized });
-      }
+      if (current === '/') break;
+      current = current.substring(0, current.lastIndexOf('/')) || '/';
     }
   }
 }

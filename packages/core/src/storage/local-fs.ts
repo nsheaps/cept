@@ -27,13 +27,29 @@ const LOCAL_CAPABILITIES: BackendCapabilities = {
   watchForExternalChanges: true,
 };
 
+interface WatchListener {
+  path: string;
+  callback: (event: FsEvent) => void;
+}
+
+/** Workspace-relative path with a leading "/" and "/" separators, no trailing slash. */
+function toWorkspacePath(p: string): string {
+  const posix = p.split(path.sep).join('/');
+  const withSlash = posix.startsWith('/') ? posix : `/${posix}`;
+  return withSlash.length > 1 ? withSlash.replace(/\/+$/, '') : withSlash;
+}
+
+function isAtOrUnder(eventPath: string, watched: string): boolean {
+  return watched === '/' || eventPath === watched || eventPath.startsWith(`${watched}/`);
+}
+
 export class LocalFsBackend implements StorageBackend {
   readonly type = 'local' as const;
   readonly capabilities: BackendCapabilities = LOCAL_CAPABILITIES;
 
   private rootDir: string;
-  private watchers: Map<string, FSWatcher> = new Map();
-  private callbacks: Map<string, Set<(event: FsEvent) => void>> = new Map();
+  private rootWatcher: FSWatcher | null = null;
+  private listeners = new Set<WatchListener>();
 
   constructor(rootDir: string) {
     this.rootDir = path.resolve(rootDir);
@@ -92,46 +108,27 @@ export class LocalFsBackend implements StorageBackend {
   }
 
   watch(watchPath: string, callback: (event: FsEvent) => void): Unsubscribe {
-    const resolved = this.resolve(watchPath);
+    // One recursive watcher on the workspace root serves every subscription, so
+    // watching a path that does not exist yet still works once it is created.
+    // Events carry workspace-relative paths with a leading "/", like the other
+    // backends, and are delivered for any change at or under the watched path.
+    const listener: WatchListener = { path: toWorkspacePath(watchPath), callback };
+    this.listeners.add(listener);
 
-    let callbackSet = this.callbacks.get(resolved);
-    if (!callbackSet) {
-      callbackSet = new Set();
-      this.callbacks.set(resolved, callbackSet);
-    }
-    callbackSet.add(callback);
-
-    // Set up fs.watch if not already watching this path
-    if (!this.watchers.has(resolved)) {
+    if (!this.rootWatcher) {
       try {
-        const watcher = fsWatch(resolved, { recursive: true }, (eventType, filename) => {
+        this.rootWatcher = fsWatch(this.rootDir, { recursive: true }, (eventType, filename) => {
           if (!filename) return;
-          const cbs = this.callbacks.get(resolved);
-          if (!cbs) return;
-          const fsEvent: FsEvent = {
-            type: eventType === 'rename' ? 'create' : 'modify',
-            path: filename,
-          };
-          for (const cb of cbs) {
-            cb(fsEvent);
-          }
+          void this.dispatch(eventType, toWorkspacePath(filename.toString()));
         });
-        this.watchers.set(resolved, watcher);
       } catch {
-        // Path doesn't exist yet — watch will start on next call
+        // Root does not exist — nothing to watch
       }
     }
 
     return () => {
-      callbackSet.delete(callback);
-      if (callbackSet.size === 0) {
-        this.callbacks.delete(resolved);
-        const watcher = this.watchers.get(resolved);
-        if (watcher) {
-          watcher.close();
-          this.watchers.delete(resolved);
-        }
-      }
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) this.stopWatching();
     };
   }
 
@@ -186,11 +183,26 @@ Welcome to your new workspace.
   }
 
   async close(): Promise<void> {
-    for (const watcher of this.watchers.values()) {
-      watcher.close();
+    this.listeners.clear();
+    this.stopWatching();
+  }
+
+  private stopWatching(): void {
+    this.rootWatcher?.close();
+    this.rootWatcher = null;
+  }
+
+  /** Turn a raw fs.watch notification into create/modify/delete for matching listeners. */
+  private async dispatch(eventType: string, eventPath: string): Promise<void> {
+    const matching = [...this.listeners].filter((l) => isAtOrUnder(eventPath, l.path));
+    if (matching.length === 0) return;
+    let type: FsEvent['type'] = 'modify';
+    if (eventType === 'rename') {
+      type = (await this.exists(eventPath)) ? 'create' : 'delete';
     }
-    this.watchers.clear();
-    this.callbacks.clear();
+    for (const l of matching) {
+      l.callback({ type, path: eventPath });
+    }
   }
 
   /** Resolve a workspace-relative path to an absolute path */
