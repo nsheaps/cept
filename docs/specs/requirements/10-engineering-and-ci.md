@@ -43,7 +43,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 | [REQ-ENG-003](#req-eng-003--mise-pins-all-tools-exactly)                             | mise pins all tools exactly                                        | MUST     | divergent   | documented-differently | stale         |
 | [REQ-ENG-004](#req-eng-004--mise-tasks-are-the-single-entry-point-for-ci-and-local)  | mise tasks are the single entry point for CI and local             | MUST     | not-started | undocumented           | n/a           |
 | [REQ-ENG-005](#req-eng-005--reusable-workflow-structure)                             | Reusable `_*.yml` workflow structure                               | SHOULD   | implemented | documented-differently | stale         |
-| [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci)                        | Automated formatting fixes committed by CI                         | MUST     | not-started | documented-differently | stale         |
+| [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci)                        | Automated formatting fixes committed by CI                         | MUST     | partial     | documented             | current       |
 | [REQ-ENG-007](#req-eng-007--lint-covers-every-auto-checkable-file-type)              | Lint covers every auto-checkable file type                         | SHOULD   | partial     | undocumented           | n/a           |
 | [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | not-started | documented-as-desired  | stale         |
 | [REQ-ENG-009](#req-eng-009--typecheck-and-build-per-project)                         | Typecheck and build per project with real artifacts                | MUST     | partial     | documented-differently | stale         |
@@ -113,10 +113,10 @@ flowchart TD
   cd --> app["deploy-web: gh-pages /cept/app/"]
   cd --> nat["build-macos/windows/linux/ios/android: no artifacts produced"]
   nodocs["No docs workflow: docs ship only bundled in the app"]
-  noprettier["No Prettier run, no autofix, no nx affected, no mise tasks, no security scan"]
+  noaffected["No nx affected, no mise tasks, no security scan"]
 ```
 
-Material differences: no format autofix, no affected scoping, no mise task layer, no security or PR-title workflow, no docs-site pipeline, no required status checks (so red PRs merge and `main` has been red since 2026-08-23), and native build jobs that pass without producing anything.
+Material differences: no affected scoping, no mise task layer, no security or PR-title workflow, no docs-site pipeline, no required status checks (so red PRs merge and `main` has been red since 2026-08-23), and native build jobs that pass without producing anything.
 
 ## 4. Requirements
 
@@ -244,11 +244,11 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 - Fork PRs, where the token cannot push, fail with a clear message instead of a silent pass.
 - Autofix never runs on `main` directly and never adds `[skip ci]`.
 
-**Current state:** not-started. Prettier is a devDependency in [package.json](../../../package.json) and is configured by [.prettierrc](../../../.prettierrc), but no script or workflow ever runs it (only `eslint-config-prettier` is loaded, which disables conflicting ESLint rules and formats nothing). Package lint scripts are `eslint src/`. No workflow commits fixes to PR branches. The only automated commit is the screenshot update in [\_tag-release.yml](../../../.github/workflows/_tag-release.yml) (lines 46-59, `main` only, with a `[skip ci]` message). The org pattern exists in `/home/user/ai-mktpl/.github/workflows/ci.yaml` and `/home/user/agents/.github/workflows/test.yaml`.
+**Current state:** partial. `mise run format` runs `prettier --write .`; `mise run lint` depends on `lint:format` (`prettier --check .`), so the lint job fails on unformatted files. [.prettierignore](../../../.prettierignore) excludes the generated changelog, files synced from other repos, the bundled docs space (Cept-flavoured toggle syntax) and two specs with nested fences. [format.yml](../../../.github/workflows/format.yml) runs `mise run format` on same-repo PRs with the automation App token ([checkout-as-app](https://github.com/nsheaps/github-actions)) and pushes a `style: apply prettier formatting` commit through [commit-format-fixes.sh](../../../scripts/ci/commit-format-fixes.sh); because the push uses the App token, CI re-runs on the new commit, and no `[skip ci]` is added. Fork PRs get a `::warning` telling the author to run `mise run format`, and their lint job still fails. `eslint --fix` is not part of `format` yet.
 
-**Docs state:** documented-differently, stale. [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36 and [CLAUDE.md](../../../CLAUDE.md) say `bun run lint  # ESLint + Prettier`. SPEC §9.1 says the same. Prettier is never run.
+**Docs state:** documented, current. [CONTRIBUTING.md](../../../CONTRIBUTING.md) and [CLAUDE.md](../../../CLAUDE.md) describe `mise run lint` / `mise run format`. SPEC §9.1 still says `bun run lint  # ESLint + Prettier`; `bun run lint` runs ESLint only.
 
-**Gap:** Add the format/check tasks and the PR autofix job, and fix the docs claim.
+**Gap:** Add `eslint --fix` to `mise run format` once ESLint covers the whole repo (REQ-ENG-007).
 
 ### REQ-ENG-007 — Lint covers every auto-checkable file type
 
@@ -554,7 +554,7 @@ Material differences: no format autofix, no affected scoping, no mise task layer
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **Git workflow — Decided (D-21).** **Decided (D-21):** Docs-only changes are pushed directly to `main` without review; functional changes (code, CI) go through small, reviewable PRs. `require-1-review` remains disabled. See REQ-ENG-019.
-2. **Lint = ESLint + Prettier.** CLAUDE.md, CONTRIBUTING.md (line 36) and SPEC §9.1 make this claim, but nothing runs Prettier. Is Prettier the formatter of record (REQ-ENG-006), or should another formatter (for example Biome) be adopted?
+2. **Lint = ESLint + Prettier — Decided (plan PR 6).** Prettier is the formatter of record: `mise run lint` checks it and `format.yml` autofixes PRs (REQ-ENG-006).
 3. **Affected testing.** `nx affected -t test` is advertised, but only core and ui have test targets and CI never uses affected. Accept the per-project Vitest split that REQ-ENG-008 requires?
 4. **Desktop shell — Decided (D-17).** **Decided (D-17):** Electrobun on all desktop OSes (macOS, Windows, Linux); Electron removed from scope; mobile shells use Capacitor (iOS, Android), later (D-43), and every shell is a thin wrapper around the web view. See [REQ-APP-007](07-native-apps.md#req-app-007--desktop-shell-runtime-selection-bunts-where-possible).
 5. **Docs site generator. Deferred to Phase 2 (D-26).** SPEC §9.5, CLAUDE.md and TASKS.md T9.1 claim VitePress/Starlight. The handler requires Cept's own render command (REQ-ENG-016). Confirm that VitePress/Starlight is dropped.
@@ -575,7 +575,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 | [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.1.1                                                       | Placeholder preview steps, `nx run web:build`, `CEPT_DEMO_MODE`, `checkout@v4`                   | `npx vite build`, `VITE_IS_PREVIEW`, gh-pages subdirectory                                                     |
 | [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.6                                                         | `.mise.toml` bun 1.x / node 22.x                                                                 | `bun = "1"`, `node = "24"` (and both should be exact)                                                          |
 | [docs/SPECIFICATION.md](../../SPECIFICATION.md) around line 1731; [CLAUDE.md](../../../CLAUDE.md) Repository | Commit directly to `main`, no PRs                                                                | PR-required rulesets are active                                                                                |
-| [CLAUDE.md](../../../CLAUDE.md) Key Commands; [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36            | `bun run lint  # ESLint + Prettier`                                                              | Prettier is not run                                                                                            |
+| [CLAUDE.md](../../../CLAUDE.md) Key Commands; [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36            | `bun run lint  # ESLint + Prettier`                                                              | Fixed (plan PR 6): both now say `mise run lint` checks Prettier                                                |
 | [CLAUDE.md](../../../CLAUDE.md) Key Commands                                                                 | `nx affected -t test` / `-t build` presented as working                                          | Most packages have no test or build target                                                                     |
 | [CLAUDE.md](../../../CLAUDE.md) package table                                                                | `@cept/docs` is a "Starlight/VitePress documentation site"                                       | `docs/package.json` targets are `echo` placeholders                                                            |
 | [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 59                                                          | Architecture rules "enforced in code review and CI"                                              | No CI enforcement exists                                                                                       |

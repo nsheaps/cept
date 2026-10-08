@@ -1,0 +1,53 @@
+name: Format
+
+# Applies Prettier to same-repo PRs and pushes the fixes as a commit. Lint
+# (`mise run lint:format`) is the gate; this job only saves a round trip.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: format-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autofix:
+    name: Prettier autofix
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The automation App token, not GITHUB_TOKEN: pushes made with
+      # GITHUB_TOKEN do not start workflows, so the fix commit would get no CI.
+      - name: Checkout the PR branch as the automation App
+        uses: nsheaps/github-actions/.github/actions/checkout-as-app@1e129396b6f0b39257efac9a255010fe64a68ef8 # main
+        with:
+          app-id: ${{ secrets.AUTOMATION_GITHUB_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_GITHUB_APP_PRIVATE_KEY }}
+          ref: ${{ github.head_ref }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v4
+
+      - name: Install dependencies
+        run: mise run install
+
+      - name: Apply Prettier
+        run: mise run format
+
+      - name: Commit and push fixes
+        run: scripts/ci/commit-format-fixes.sh "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+
+  fork:
+    name: Prettier autofix (fork)
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Explain why there is no autofix
+        run: echo "::warning title=Format autofix::Fork PRs cannot receive autofix commits. Run 'mise run format' locally and push the result."

@@ -35,10 +35,12 @@ bun run test:unit               # Unit tests only
 bun run test:integration        # Integration tests only
 bun run test:e2e                # Playwright E2E tests
 bun run test:e2e:screenshots    # E2E with screenshot capture
-bun run lint                    # ESLint + Prettier
+bun run lint                    # ESLint (per package)
 bun run typecheck               # tsc --noEmit
 bun run validate                # lint + typecheck + test (full gate)
 mise run check                  # Full local gate: pins, lint (incl. workflows), typecheck, unit + integration tests, build, security
+mise run lint:format            # prettier --check . (part of mise run lint)
+mise run format                 # prettier --write . (CI's format.yml pushes this as an autofix commit on PRs)
 mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)

@@ -29,9 +29,13 @@ run = [
   "bun scripts/ci/no-inline-logic.ts .github/workflows",
 ]
 
+[tasks."lint:format"]
+description = "Fail if any file is not Prettier-formatted (fix with `mise run format`)"
+run = "bunx prettier --check ."
+
 [tasks.lint]
-description = "Lint every project and the workflows"
-depends = ["lint:workflows"]
+description = "Lint every project, the workflows and formatting"
+depends = ["lint:workflows", "lint:format"]
 run = "bun run lint"
 env = { NX_DAEMON = "false" }
 
