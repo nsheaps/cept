@@ -200,13 +200,13 @@ export type {
 } from './git/index.js';
 export {
   listPageHistory,
+  openLocalRepository,
   PAGE_HISTORY_PAGE_SIZE,
   pageVersionContent,
   pageVersionDiff,
+  readOnlyGitFs,
 } from './git/index.js';
-export type { PageHistory } from './git/index.js';
-export { openLocalRepository, readOnlyGitFs } from './git/index.js';
-export type { LocalRepository } from './git/index.js';
+export type { LocalRepository, PageHistory } from './git/index.js';
 export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
 export type {
   GitSpaceLocalChanges,

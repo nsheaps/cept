@@ -2268,20 +2268,23 @@ export function App() {
   const handleOpenHistory = useCallback(async () => {
     const pageId = selectedPageId;
     if (!pageId || !activeSpaceMeta) return;
+    // A folder's own repository, or the space's clone on a host that keeps one.
     const local = localRepo ? historyFolder : undefined;
-    if (!local && !canHostGitClone(backend)) return;
-    const title = flattenPages(pagesRef.current).find((p) => p.id === pageId)?.title ?? pageId;
-    setHistoryView({ pageId, title, source: null });
-    try {
-      const source = local
-        ? await localPageHistorySource(local, activeSpaceMeta, pageId)
-        : canHostGitClone(backend)
-          ? await pageHistorySource(backend, activeSpaceMeta, pageId, {
+    const findSource = local
+      ? () => localPageHistorySource(local, activeSpaceMeta, pageId)
+      : canHostGitClone(backend)
+        ? async () =>
+            pageHistorySource(backend, activeSpaceMeta, pageId, {
               sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
               auth: await gitAuth?.(),
               corsProxy: gitCorsProxy(),
             })
-          : null;
+        : null;
+    if (!findSource) return;
+    const title = flattenPages(pagesRef.current).find((p) => p.id === pageId)?.title ?? pageId;
+    setHistoryView({ pageId, title, source: null });
+    try {
+      const source = await findSource();
       if (!source) {
         setHistoryView(null);
         addToast('This page has no file of its own, so it has no history.', 'info');

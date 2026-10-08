@@ -129,7 +129,7 @@ export function PageHistoryDialog({
         </button>
       ) : source?.canFetchOlder === false ? (
         <p className="cept-history-note" data-testid="history-truncated">
-          Older versions are not in this folder's repository (it is a shallow clone).
+          Older versions are not in this folder's repository (it has a shallow history).
         </p>
       ) : (
         <>
