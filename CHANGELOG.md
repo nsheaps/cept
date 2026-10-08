@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.20.0](https://github.com/nsheaps/cept/compare/v0.19.2...v0.20.0) (2026-10-08)
+
+### Features
+
+* **auth:** pat provider and encrypted web token store ([#394](https://github.com/nsheaps/cept/issues/394)) ([617923c](https://github.com/nsheaps/cept/commit/617923c5f951b2923dc09f49f439347ff42d7c5b))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([64f174c](https://github.com/nsheaps/cept/commit/64f174cc2f53992006951c18113fc72343e049b0))
+
 ## [0.19.2](https://github.com/nsheaps/cept/compare/v0.19.1...v0.19.2) (2026-10-08)
 
 ### Documentation
