@@ -194,6 +194,64 @@ describe('useGitSpaceSync', () => {
     expect(f.session.start).toHaveBeenCalledTimes(1);
   });
 
+  it('makes a foreground per session, shares syncs with other tabs and leaves on close', async () => {
+    const f = fakeSession();
+    const fg = fakeForeground(true);
+    let peerSynced: (() => void) | undefined;
+    const tab = {
+      ...fg.fg,
+      dispose: vi.fn(),
+      announceSynced: vi.fn(),
+      onPeerSynced: (listener: () => void) => {
+        peerSynced = listener;
+        return () => (peerSynced = undefined);
+      },
+    };
+    const make = vi.fn(() => tab);
+    const { result, rerender } = renderHook(
+      (key: string | null) =>
+        useGitSpaceSync(
+          options({ sessionKey: key, open: async () => f.session, foreground: make }),
+        ),
+      { initialProps: 'space|me' as string | null },
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    expect(make).toHaveBeenCalledWith('space|me');
+
+    act(() => f.tick(synced));
+    expect(tab.announceSynced).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await result.current.syncNow();
+    });
+    expect(tab.announceSynced).toHaveBeenCalledTimes(2);
+
+    // Another tab synced: the status is read again.
+    const reads = f.session.localChanges.mock.calls.length;
+    act(() => peerSynced?.());
+    await waitFor(() => expect(f.session.localChanges.mock.calls.length).toBe(reads + 1));
+
+    rerender(null);
+    await waitFor(() => expect(f.session.dispose).toHaveBeenCalled());
+    expect(tab.dispose).toHaveBeenCalledTimes(1);
+    expect(peerSynced).toBeUndefined();
+  });
+
+  it('keeps a shared foreground when the session closes', async () => {
+    const f = fakeSession();
+    const shared = { ...fakeForeground(true).fg, dispose: vi.fn() };
+    const { result, rerender } = renderHook(
+      (key: string | null) =>
+        useGitSpaceSync(
+          options({ sessionKey: key, open: async () => f.session, foreground: shared }),
+        ),
+      { initialProps: 'space|me' as string | null },
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    rerender(null);
+    await waitFor(() => expect(f.session.dispose).toHaveBeenCalled());
+    expect(shared.dispose).not.toHaveBeenCalled();
+  });
+
   it('syncs now (commit, pull, push) even in the background', async () => {
     const f = fakeSession();
     const fg = fakeForeground(false);

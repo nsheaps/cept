@@ -461,6 +461,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: unit test with a mock `navigator.locks`; Playwright two-tab test that only one tab pushes.
 - Accept: tests green.
 - Risk: leader handover on tab close; test it explicitly.
+- Deviation (PR 38): one leader per space (the lock is named after the session key), not per origin, so tabs on different spaces each sync their own. No SharedWorker: the session, its lightning-fs clone and the editor's bound backend live in the page, so the leader is always a tab; the browser's lock queue does the handover. The BroadcastChannel only carries "a sync settled" so followers refresh their indicator; followers do not reload the open page on the leader's pulls. Without Web Locks the visible-tab rule from PR 36b applies.
 
 **PR 39 — `feat(sync): persistent commit queue and push on reconnect`**
 

@@ -74,7 +74,7 @@ Each space keeps its copy of the repository on this device. Refreshing it, or op
 A space you added while signed in, whose folder holds a `space.cept.yaml` (or `space.cept.yml`), is editable. Spaces added without signing in, and folders without that file, are read-only.
 
 - Your edits are saved on this device and committed to the repository a few seconds after you stop typing, as your GitHub account (with its private `users.noreply.github.com` address). Deleting a page deletes its file in a commit.
-- While the tab is in view, Cept syncs about every 30 seconds: it gets what changed on GitHub, then sends your commits. A tab in the background does not sync on its own.
+- Cept syncs about every 30 seconds: it gets what changed on GitHub, then sends your commits. With the same space open in several tabs, only one of them syncs on its own; when you close it, another tab takes over. The other tabs' sync status refreshes when the syncing tab finishes.
 - The header shows whether the space is synced, syncing, offline, in conflict or failed to sync, how many changes are not on GitHub yet, and when it last synced. Choose **Sync now** to sync at once, in any tab. Refreshing the space also syncs it, and never throws away your changes.
 - When the sync brings in changes, the page tree updates, and the page you are on reloads unless you are typing in it.
 - When you sign out, the space becomes read-only until you sign in again. Changes already on this device are kept.
