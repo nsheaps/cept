@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.11.1](https://github.com/nsheaps/cept/compare/v0.11.0...v0.11.1) (2026-10-08)
+
+### Bug Fixes
+
+* **demo:** run the demo on the memory backend ([#381](https://github.com/nsheaps/cept/issues/381)) ([1f3423f](https://github.com/nsheaps/cept/commit/1f3423f7594298e85f13ec83926a7664f918a3af))
+
 ## [0.11.0](https://github.com/nsheaps/cept/compare/v0.10.1...v0.11.0) (2026-10-08)
 
 ### Features
