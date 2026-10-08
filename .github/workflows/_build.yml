@@ -7,8 +7,15 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      # Pull requests run only the Nx projects the change affects (scripts/ci/nx-targets.ts);
+      # pushes to main leave NX_BASE empty and run everything.
+      NX_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # nx affected needs the base commit to diff against.
+          fetch-depth: 0
 
       - name: Install mise
         uses: jdx/mise-action@v4

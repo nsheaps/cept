@@ -5,11 +5,13 @@
     "description": "Repo-level code outside the packages: scripts/ci, tools/ and the features/ integration suite."
   },
   "tags": ["scope:tooling", "platform:node"],
+  "implicitDependencies": ["@cept/*"],
   "targets": {
     "test:unit": {
       "command": "vitest run --project unit scripts/",
       "cache": true,
       "inputs": [
+        "sharedGlobals",
         "{workspaceRoot}/scripts/**/*",
         "{workspaceRoot}/vitest.config.ts",
         "{workspaceRoot}/.mise.toml",
@@ -25,6 +27,7 @@
       "command": "tsc --noEmit -p tsconfig.scripts.json",
       "cache": true,
       "inputs": [
+        "sharedGlobals",
         "{workspaceRoot}/scripts/**/*.ts",
         "{workspaceRoot}/tools/**/*.ts",
         "{workspaceRoot}/tools/lint/**/*.js",

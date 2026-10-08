@@ -18,6 +18,9 @@
     "tags": [
       "scope:test",
       "platform:node"
+    ],
+    "implicitDependencies": [
+      "@cept/web"
     ]
   }
 }
