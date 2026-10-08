@@ -9,6 +9,7 @@ import { BrowserFsBackend } from './browser-fs.js';
 import { WebFsBackend } from './web-fs.js';
 import { createMockRoot } from './web-fs.testing.js';
 import { GitBackend } from './git-backend.js';
+import { ScopedBackend } from './scoped.js';
 import type { GitFs } from './git-backend.js';
 
 describeStorageBackendConformance('MemoryBackend', () => ({ backend: new MemoryBackend() }), {
@@ -38,5 +39,11 @@ describeStorageBackendConformance(
     });
     return { backend, cleanup: () => backend.close() };
   },
+  { watch: true },
+);
+
+describeStorageBackendConformance(
+  'ScopedBackend (over MemoryBackend)',
+  () => ({ backend: new ScopedBackend(new MemoryBackend(), '.cept/spaces/s1') }),
   { watch: true },
 );

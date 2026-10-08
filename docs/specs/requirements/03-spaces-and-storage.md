@@ -172,7 +172,7 @@ flowchart TB
 
 - Pages are written flat as `pages/<pageId>.md` with ids like `page-${Date.now()}` ([packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) around lines 614 and 782, and `writePageContent` in [packages/ui/src/components/storage/StorageContext.tsx](../../../packages/ui/src/components/storage/StorageContext.tsx)).
 - The hierarchy lives as JSON in `.cept/workspace-state.json` (`PersistedState` in StorageContext.tsx).
-- Non-default spaces live under `.cept/spaces/<id>/pages` (`spacePagesDir` in [packages/ui/src/components/storage/SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)).
+- Non-default spaces in the app's backend live under `.cept/spaces/<id>/pages` (`appSpaceStore` in [packages/ui/src/components/storage/space-store.ts](../../../packages/ui/src/components/storage/space-store.ts)).
 - Only remote git spaces map folders to the tree (`walkMarkdownFiles` in [packages/ui/src/components/storage/git-space.ts](../../../packages/ui/src/components/storage/git-space.ts)), and then only as a read-only snapshot copied into IndexedDB. PR #67 (closed, D-42; not merged to `main`) switched remote-space page ids to real file paths and added README/index-as-folder-page handling and a NotFound page, for remote spaces only; those ideas are rebuilt for all backends in Phase 1, not carried over as code.
 - TASKS P2.4b ("Folder pages — directory listing of child pages") is checked, but local pages are still written flat; the checkbox overstates what shipped.
 
@@ -338,15 +338,18 @@ branch: docs # optional (D-30)
 - An E2E test opens an IndexedDB space and a second space on a different backend in the same session.
 - `@cept/ui` contains no `instanceof <ConcreteBackend>` checks.
 
-**Current state: divergent.**
+**Current state: partial (PR 17).**
 
-- The app has one global backend: `new BrowserFsBackend(...)` at [packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 15.
-- Every space, cloned git spaces included, is stored inside that single IndexedDB database. git-space.ts clones into `/.cept/git-clones/<ts>` on the same backend.
-- App.tsx checks `backend instanceof BrowserFsBackend` (~lines 342 and 956), and git spaces fall back to an empty local space on any other backend.
+- Each space is read and written through a backend of its own. `SpaceManager.store(id)` returns it (see [space-store.ts](../../../packages/ui/src/components/storage/space-store.ts)):
+  - A space bound with `SpaceManager.bind` or created with `{ kind: 'memory', backend }` uses that backend. Its `.cept/workspace-state.json` and `pages/` sit at the backend's root.
+  - Spaces in the app's backend keep their existing paths, so stored data still loads. The default space is the backend root. Every other space is a `ScopedBackend` (in `@cept/core`) over `.cept/spaces/<id>/`.
+- `SpaceMeta.backend` records where a space lives: `app` (the default) or `memory`. After a reload, memory spaces with no bound backend are left out of the manifest.
+- The app still creates one root backend: `new BrowserFsBackend(...)` in [packages/web/src/main.tsx](../../../packages/web/src/main.tsx). Cloned git spaces are still copied into it through `/.cept/git-clones/<ts>`.
+- `@cept/ui` has no `instanceof` backend checks. Git cloning is gated on `canHostGitClone` in git-space.ts: the backend must expose a raw filesystem for isomorphic-git.
 
 **Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "Every workspace is backed by a StorageBackend. The user chooses their backend when creating or opening a workspace", which implies one backend per space. The app does not behave this way.
 
-**Gap.** Registry plus factories, and removal of the concrete-class checks.
+**Gap.** A backend factory keyed by type id plus config, folder- and remote-backed space kinds, and the E2E test with two backends in one session.
 
 **Related:** [#40](https://github.com/nsheaps/cept/issues/40), [#45](https://github.com/nsheaps/cept/issues/45).
 

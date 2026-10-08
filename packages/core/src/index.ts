@@ -35,6 +35,7 @@ export type {
 } from './storage/index.js';
 export { BrowserFsBackend } from './storage/index.js';
 export { MemoryBackend } from './storage/index.js';
+export { ScopedBackend } from './storage/index.js';
 export { GitBackend } from './storage/index.js';
 export type { GitAuth, GitHttp, GitFs } from './storage/index.js';
 

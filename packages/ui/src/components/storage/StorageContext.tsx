@@ -14,6 +14,14 @@ import type { SidebarPageRef } from '../sidebar/Sidebar.js';
 import { DEFAULT_SETTINGS } from '../settings/SettingsModal.js';
 import type { CeptSettings } from '../settings/SettingsModal.js';
 import { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
+import {
+  appSpaceStore,
+  deleteStorePage,
+  loadStoreState,
+  readStorePage,
+  saveStoreState,
+  writeStorePage,
+} from './space-store.js';
 
 /** Shape of the persisted workspace state stored via the backend */
 export interface PersistedState {
@@ -222,92 +230,49 @@ export async function deletePageContent(backend: StorageBackend, pageId: string)
   }
 }
 
-/** Save workspace state for a specific space */
+/** Save workspace state for a space kept in the app's backend */
 export async function saveSpaceState(
   backend: StorageBackend,
   spaceId: string,
   state: PersistedState,
 ): Promise<void> {
-  await backend.writeFile(spaceWorkspaceFile(spaceId), encode(state));
+  await saveStoreState(appSpaceStore(backend, spaceId), state);
 }
 
-/** Load workspace state for a specific space */
+/** Load workspace state for a space kept in the app's backend */
 export async function loadSpaceState(
   backend: StorageBackend,
   spaceId: string,
 ): Promise<PersistedState | null> {
-  const data = await backend.readFile(spaceWorkspaceFile(spaceId));
-  if (!data) return null;
-  const state = decode<PersistedState>(data);
-  if (state) {
-    await migrateSpacePageContentsToFiles(backend, spaceId, state);
-  }
-  return state;
+  return loadStoreState(appSpaceStore(backend, spaceId));
 }
 
-/** Migrate pageContents to individual files for a specific space */
-async function migrateSpacePageContentsToFiles(
-  backend: StorageBackend,
-  spaceId: string,
-  state: PersistedState,
-): Promise<void> {
-  if (!state.pageContents || Object.keys(state.pageContents).length === 0) return;
-  const dir = spacePagesDir(spaceId);
-  const writes = Object.entries(state.pageContents).map(([pageId, content]) =>
-    backend.writeFile(`${dir}/${pageId}.md`, new TextEncoder().encode(content)),
-  );
-  await Promise.all(writes);
-  delete state.pageContents;
-  await backend.writeFile(spaceWorkspaceFile(spaceId), encode(state));
-}
-
-/** Read page content for a specific space */
+/** Read page content for a space kept in the app's backend */
 export async function readSpacePageContent(
   backend: StorageBackend,
   spaceId: string,
   pageId: string,
 ): Promise<string | null> {
-  const dir = spacePagesDir(spaceId);
-  const mdData = await backend.readFile(`${dir}/${pageId}.md`);
-  if (mdData) return new TextDecoder().decode(mdData);
-  const htmlData = await backend.readFile(`${dir}/${pageId}.html`);
-  if (htmlData) return new TextDecoder().decode(htmlData);
-  return null;
+  return readStorePage(appSpaceStore(backend, spaceId), pageId);
 }
 
-/** Write page content for a specific space */
+/** Write page content for a space kept in the app's backend */
 export async function writeSpacePageContent(
   backend: StorageBackend,
   spaceId: string,
   pageId: string,
   content: string,
 ): Promise<void> {
-  const dir = spacePagesDir(spaceId);
-  await backend.writeFile(`${dir}/${pageId}.md`, new TextEncoder().encode(content));
-  try {
-    await backend.deleteFile(`${dir}/${pageId}.html`);
-  } catch {
-    // Ignore — legacy file may not exist
-  }
+  await writeStorePage(appSpaceStore(backend, spaceId), pageId, content);
 }
 
-/** Delete page content for a specific space */
+/** Delete page content for a space kept in the app's backend */
 export async function deleteSpacePageContent(
   backend: StorageBackend,
   spaceId: string,
   pageId: string,
 ): Promise<void> {
-  const dir = spacePagesDir(spaceId);
-  try {
-    await backend.deleteFile(`${dir}/${pageId}.md`);
-  } catch {
-    /* ignore */
-  }
-  try {
-    await backend.deleteFile(`${dir}/${pageId}.html`);
-  } catch {
-    /* ignore */
-  }
+  await deleteStorePage(appSpaceStore(backend, spaceId), pageId);
 }
 
 /** Clear all workspace data from the backend */
