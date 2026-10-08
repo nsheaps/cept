@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.46](https://github.com/nsheaps/cept/compare/v0.7.45...v0.7.46) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([99b130f](https://github.com/nsheaps/cept/commit/99b130fc68da16d1874745af464081d886d66bb9))
+
+### CI/CD
+
+* scope pr tests to nx affected projects ([#371](https://github.com/nsheaps/cept/issues/371)) ([6b709e4](https://github.com/nsheaps/cept/commit/6b709e474cfc81c77cc64f2894131b2d8e9110a1))
+
 ## [0.7.45](https://github.com/nsheaps/cept/compare/v0.7.44...v0.7.45) (2026-10-08)
 
 ### Documentation
