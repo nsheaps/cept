@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.44](https://github.com/nsheaps/cept/compare/v0.7.43...v0.7.44) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([5e212d4](https://github.com/nsheaps/cept/commit/5e212d4a1f23c521617203e0af38d5b46b7421c5))
+
+### Build System
+
+* **nx:** add build and test targets to every package ([#369](https://github.com/nsheaps/cept/issues/369)) ([48e2763](https://github.com/nsheaps/cept/commit/48e276324834f372c3770b9eb0b4c6c621852c36))
+
 ## [0.7.43](https://github.com/nsheaps/cept/compare/v0.7.42...v0.7.43) (2026-10-08)
 
 ### Documentation
