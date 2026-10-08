@@ -122,6 +122,7 @@ describe('commitPathName', () => {
     expect(commitPathName('workspace/pages/deep/nested/file.md')).toBe('file');
     expect(commitPathName('index.md')).toBe('index');
     expect(commitPathName('assets/logo.png')).toBe('logo.png');
+    expect(commitPathName('notes/.md')).toBe('.md');
   });
 });
 

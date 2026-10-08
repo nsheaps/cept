@@ -264,8 +264,7 @@ export class GitBackend implements GitStorageBackend {
       return { ok: true, conflicts: [] };
     } catch (e) {
       if (classifySyncError(e) === 'conflict') {
-        const paths = conflictPaths(e);
-        return { ok: false, conflicts: paths.length > 0 ? paths : [(e as Error).message] };
+        return { ok: false, conflicts: conflictPaths(e) };
       }
       throw e;
     }

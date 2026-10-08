@@ -68,7 +68,8 @@ export function commitPathName(path: string): string {
   const parts = path.split('/').filter(Boolean);
   const file = parts.at(-1) ?? path;
   if (file === 'index.md' && parts.length > 1) return parts[parts.length - 2];
-  return file.endsWith('.md') ? file.slice(0, -3) : file;
+  const name = file.endsWith('.md') ? file.slice(0, -3) : file;
+  return name || file;
 }
 
 const VERBS: Record<FileChange['type'], string> = {
