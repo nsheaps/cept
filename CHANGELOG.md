@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.21.0](https://github.com/nsheaps/cept/compare/v0.20.0...v0.21.0) (2026-10-08)
+
+### Features
+
+* **ui:** pat sign-in, account and sign-out ui ([#395](https://github.com/nsheaps/cept/issues/395)) ([b71281e](https://github.com/nsheaps/cept/commit/b71281ec0b1be24da54924ad3f026dd91ea144da)), references [#394](https://github.com/nsheaps/cept/issues/394)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([bb3ad3f](https://github.com/nsheaps/cept/commit/bb3ad3fb5ebe9dbad069b51a0e725372af60b96d))
+
 ## [0.20.0](https://github.com/nsheaps/cept/compare/v0.19.2...v0.20.0) (2026-10-08)
 
 ### Features
