@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.0](https://github.com/nsheaps/cept/compare/v0.16.0...v0.17.0) (2026-10-08)
+
+### Features
+
+* **web:** persist and restore file system access handles ([#388](https://github.com/nsheaps/cept/issues/388)) ([97562a7](https://github.com/nsheaps/cept/commit/97562a726904fd5716a05101662558484cef7115))
+
 ## [0.16.0](https://github.com/nsheaps/cept/compare/v0.15.1...v0.16.0) (2026-10-08)
 
 ### Features
