@@ -74,6 +74,10 @@ run = "bunx release-it --ci"
 description = "Write the PR release-version outputs to $GITHUB_OUTPUT"
 run = "bun scripts/ci/version-check.ts"
 
+[tasks."ci:pr-title"]
+description = "Check that PR_TITLE is a Conventional Commit using a .release-it.json type"
+run = "bun scripts/ci/pr-title.ts"
+
 [tasks."ci:playwright-version"]
 description = "Print version=<installed Playwright version> for $GITHUB_OUTPUT"
 run = "bun scripts/ci/playwright-version.ts"

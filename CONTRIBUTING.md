@@ -79,12 +79,18 @@ These rules are enforced in code review and CI:
 - Every new UI component gets component tests
 - Run `bun run validate` before submitting
 
-### Commit Messages
+### Commit Messages and PR Titles
 
-Write clear, concise commit messages that explain **why** the change was made:
+Pull requests are squash-merged, so the PR title becomes the commit on `main`, and release-it reads it to choose the next version. The `PR Title` check fails unless the title is a [Conventional Commit](https://www.conventionalcommits.org/):
+
+- Format: `type(scope): subject`. The scope is optional and lowercase; add `!` after the type or scope for a breaking change. At most 100 characters.
+- Types are the ones listed in [`.release-it.json`](.release-it.json): `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `style`, `revert`, `chore`.
+- Check a title locally with `PR_TITLE="fix(editor): keep the caret after paste" mise run ci:pr-title`.
+
+Use the commit body to explain **why** the change was made:
 
 ```
-Add offline queue replay with batched execution
+feat(sync): replay the offline queue in batches
 
 The offline queue now replays queued operations in configurable
 batches with delays between batches to avoid overwhelming the
