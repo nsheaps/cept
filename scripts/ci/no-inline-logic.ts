@@ -24,6 +24,11 @@ function stripExpressions(text: string): string {
   return text.replace(/\$\{\{.*?\}\}/g, 'EXPR');
 }
 
+/** Removes quoted arguments, whose `;`, `&&` and `||` are not shell operators. */
+function stripQuoted(text: string): string {
+  return text.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/g, 'STR');
+}
+
 function isComment(line: string): boolean {
   return line.trim().startsWith('#');
 }
@@ -55,7 +60,7 @@ export function findInlineLogic(yaml: string): Violation[] {
       if (commands > 1) {
         violations.push({ line: i + 1, reason: `run block has ${commands} commands` });
       }
-    } else if (/&&|\|\||;/.test(stripExpressions(value.replace(/^(['"])(.*)\1$/, '$2')))) {
+    } else if (/&&|\|\||;/.test(stripQuoted(stripExpressions(value)))) {
       violations.push({ line: i + 1, reason: 'run line chains commands' });
     }
   }

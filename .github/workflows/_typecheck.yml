@@ -17,4 +17,4 @@ jobs:
         run: mise run install
 
       - name: Typecheck
-        run: mise run lint
+        run: mise run typecheck

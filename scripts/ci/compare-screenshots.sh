@@ -4,8 +4,10 @@
 # Output: changed=true|false in $GITHUB_OUTPUT (stdout when unset).
 set -euo pipefail
 
-sudo apt-get update -qq
-sudo apt-get install -y -qq imagemagick >/dev/null
+if ! command -v compare >/dev/null; then
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq imagemagick >/dev/null
+fi
 
 old=$(mktemp --suffix=.png)
 trap 'rm -f "$old"' EXIT

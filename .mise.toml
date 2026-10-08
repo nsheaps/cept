@@ -89,7 +89,7 @@ run = "bunx playwright install-deps chromium"
 [tasks."screenshots:capture"]
 description = "Regenerate the feature screenshots in docs/screenshots/features"
 run = [
-  "mkdir -p ../docs/screenshots/features",
+  "mkdir -p {{config_root}}/docs/screenshots/features",
   "bunx playwright test tests/feature-screenshots.spec.ts",
 ]
 dir = "e2e"

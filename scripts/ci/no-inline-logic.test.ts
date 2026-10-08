@@ -29,6 +29,12 @@ describe('findInlineLogic', () => {
     expect(findInlineLogic(step('run: a; b'))).toHaveLength(1);
   });
 
+  it('ignores separators inside quoted arguments', () => {
+    expect(findInlineLogic(step('run: echo "hi;bye"'))).toEqual([]);
+    expect(findInlineLogic(step("run: echo 'a && b' --flag"))).toEqual([]);
+    expect(findInlineLogic(step('run: echo "a;b"; c'))).toHaveLength(1);
+  });
+
   it('stops a block at the next key', () => {
     const yaml = step('run: |\n          one\n        env:\n          A: b\n');
     expect(findInlineLogic(yaml)).toEqual([]);
