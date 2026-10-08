@@ -9,6 +9,10 @@ import type { Page } from '@playwright/test';
 const GOOD = 'github_pat_e2eGoodToken_0123456789';
 
 async function mockGitHub(page: Page) {
+  // Signing in looks for spaces in the account's repositories; this account has none.
+  await page.route('https://api.github.com/user/repos**', (route) =>
+    route.fulfill({ status: 200, json: [], headers: { 'Access-Control-Allow-Origin': '*' } }),
+  );
   await page.route('https://api.github.com/user', async (route) => {
     const auth = route.request().headers()['authorization'];
     if (auth !== `Bearer ${GOOD}`) {

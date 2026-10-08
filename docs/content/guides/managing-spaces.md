@@ -50,6 +50,21 @@ In the browser, git traffic goes through a proxy, which can see the token when C
 
 Once signed in, adding a GitHub repository as a space uses the token, so private repositories you can read open like public ones. The token is only ever sent to github.com. If GitHub refuses access (the token was revoked, or cannot read that repository), Cept says so and asks you to sign in again here; it does not keep retrying.
 
+### Spaces discovered on GitHub
+
+Once you are signed in, Cept looks for spaces in every repository your token can read and lists them under **Discovered on GitHub** in **Settings > Spaces**. A space is any folder with a `space.cept.yaml` (or `space.cept.yml`) on the repository's default branch; a space that names another `branch:` in that file opens on that branch. Forks and archived repositories are not searched.
+
+Nothing is downloaded until you choose a space:
+
+- **Open** downloads the space and switches to it.
+- **Pin** downloads it and adds it to your spaces without leaving the one you are in.
+
+Spaces already on this device are not listed again. A space whose `space.cept.yaml` has a problem (for example, no slug) is shown with the reason and cannot be opened until it is fixed.
+
+Cept looks again each time you sign in or start Cept with a saved token, and when you choose **Look again**. Until a new look finishes, the list from last time is shown. GitHub limits how many requests a token can make each hour; on a very large account Cept may stop before checking every repository and says so. Repositories it could not read are listed under the notes at the bottom.
+
+If a space on this device can no longer be found (the token lost access, the space was removed, or the repository was archived), it is listed under **No longer found on GitHub**. The copy on this device is kept. Signing out forgets the list.
+
 Each space keeps its copy of the repository on this device. Refreshing it, or opening it more than 5 minutes after the last sync, downloads only what changed on GitHub.
 
 ## Working in a repository space

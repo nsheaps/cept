@@ -233,7 +233,8 @@ export async function autodiscoverSpaces(
         ok: false,
         status: response.status,
         rateLimited,
-        message: `GitHub answered ${response.status} for ${url}`,
+        // No URL: an `apiBase` with userinfo would put credentials in the warning.
+        message: `GitHub answered ${response.status}`,
       };
     }
     const body: unknown = await response.json();

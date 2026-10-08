@@ -425,7 +425,7 @@ Each entry gives: **Changes** (packages and files), **Red** (the failing test wr
 
 **PR 34 — `feat(ui): list discovered spaces and open or pin them`**
 
-- Changes: a "Discovered" list using PR 33; open or pin clones via PR 31; wires the existing `RepoPicker`.
+- Changes: a "Discovered" list using PR 33; open or pin clones via PR 31. Deviation: the existing `RepoPicker` is not wired here, because picking a repository without a space (or creating one) writes a marker; it moves to PR 36.
 - Red: component test that discovered spaces are listed and not cloned until opened.
 - Accept: tests green; e2e with mocked API.
 - Risk: none notable.
@@ -439,7 +439,7 @@ Each entry gives: **Changes** (packages and files), **Red** (the failing test wr
 
 **PR 36 — `feat(ui): edit github spaces with auto-commit and sync`**
 
-- Changes: instantiate `GitBackend`, `AutoCommitEngine` and `SyncEngine` for PAT-backed spaces; remove `readOnly: true` for them (`SpaceManager.ts:147`); sync status indicator; manual push and pull; GitHub space delete as a commit.
+- Changes: instantiate `GitBackend`, `AutoCommitEngine` and `SyncEngine` for PAT-backed spaces; remove `readOnly: true` for them (`SpaceManager.ts:147`); sync status indicator; manual push and pull; GitHub space delete as a commit; wires the existing `RepoPicker` (moved from PR 34) to start a space in a repository without one.
 - Red: integration test with a local bare repo: edit, commit, push, and a second clone pulls the change.
 - Accept: tests green; anonymous clones stay read-only.
 - Risk: lightning-fs under concurrent tabs; until PR 38, auto-push runs only in the focused tab.

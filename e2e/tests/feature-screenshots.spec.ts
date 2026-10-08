@@ -277,6 +277,10 @@ test.describe('Feature Screenshots', () => {
   });
 
   test('github account', async ({ page }) => {
+    // Signing in looks for spaces in the account's repositories; this account has none.
+    await page.route('https://api.github.com/user/repos**', (route) =>
+      route.fulfill({ status: 200, json: [] }),
+    );
     await page.route('https://api.github.com/user', (route) =>
       route.fulfill({
         status: 200,

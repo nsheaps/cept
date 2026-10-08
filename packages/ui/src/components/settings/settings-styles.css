@@ -1577,3 +1577,23 @@
   font-size: 0.8125rem;
   color: #dc2626;
 }
+
+/* Discovered on GitHub (Settings > Spaces) */
+.cept-settings-discovered-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.cept-settings-discovered-header .cept-settings-section-title {
+  margin-bottom: 0;
+}
+.cept-settings-discovered-notes {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+.dark .cept-settings-discovered-notes {
+  color: #a1a1aa;
+}

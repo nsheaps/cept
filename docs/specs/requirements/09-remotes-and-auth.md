@@ -50,7 +50,7 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-011](#req-auth-011--anonymous-read-only-access-to-public-remotes)                    | Anonymous read-only access to public remotes                     | SHOULD   | partial     | documented-as-desired  | stale         |
 | [REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)                    | Secure, persistent token storage on each platform                | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-AUTH-013](#req-auth-013--account-and-sign-in-ui)                                          | Sign-in, account display and sign-out UI                         | MUST     | partial     | documented-differently | stale         |
-| [REQ-AUTH-014](#req-auth-014--repo-listing-and-creation-after-sign-in)                         | Repo listing and creation after sign-in                          | SHOULD   | stubbed     | documented-as-desired  | accurate      |
+| [REQ-AUTH-014](#req-auth-014--repo-listing-and-creation-after-sign-in)                         | Repo listing and creation after sign-in                          | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-AUTH-015](#req-auth-015--automatic-token-refresh)                                         | Automatic refresh of expiring tokens                             | MUST     | not-started | undocumented           | n/a           |
 | [REQ-AUTH-016](#req-auth-016--native-oauth-for-packaged-apps)                                  | Native OAuth via system browser and redirect for packaged apps   | MUST     | stubbed     | documented-differently | stale         |
 | [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon)                     | Shared credentials through the local daemon                      | SHOULD   | not-started | undocumented           | n/a           |
@@ -466,11 +466,11 @@ flowchart LR
 - "Create repo" creates a repo and initializes the space (`space.cept.yaml`, see [03](03-spaces-and-storage.md)).
 - Component and e2e tests cover both paths.
 
-**Current state:** stubbed. `getRepos()` and `createRepo()` exist and are tested ([github.ts](../../../packages/core/src/auth/github.ts), [github.test.ts](../../../packages/core/src/auth/github.test.ts)). `RepoPicker` is not used. [TASKS.md](../../../TASKS.md) marks T5.2 done (line 98), but P5.2 is unchecked (line 206).
+**Current state:** partial. After a PAT sign-in, Settings > Spaces lists the spaces in every repository the token reads (`GET /user/repos`, REQ-WS-023) and opens or pins them (Phase 1 plan PR 34). Picking a repository that has no space yet, and creating a repository, are not wired: `getRepos()` and `createRepo()` exist and are tested ([github.ts](../../../packages/core/src/auth/github.ts), [github.test.ts](../../../packages/core/src/auth/github.test.ts)), and `RepoPicker` is not used. [TASKS.md](../../../TASKS.md) marks T5.2 done (line 98), but P5.2 is unchecked (line 206).
 
 **Docs state:** documented-as-desired, accurate (§7.2).
 
-**Gap:** Wire it (P5.2) and switch listing to the GitHub App installation endpoints.
+**Gap:** A space in a repository without one, and a new repository, need GitHub write support, so `RepoPicker` is wired with it (Phase 1 plan PR 36). Listing through the GitHub App installation endpoints is Phase 2.
 
 **Related PRs/issues:** none identified.
 

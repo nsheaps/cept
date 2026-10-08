@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import type { Page, Route } from '@playwright/test';
-import { execFileSync, spawnSync } from 'node:child_process';
+import type { Page } from '@playwright/test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { PROXY, git, serveGit } from './git-http.js';
 
 /**
  * REQ-WS-013: a link to a file in a GitHub repository opens it in a remote
@@ -13,22 +13,7 @@ import path from 'node:path';
  * `git http-backend` behind the CORS proxy URL the app uses.
  */
 
-const PROXY = 'https://cors.isomorphic-git.org';
 const REPO_PATH = '/github.com/e2e/notes';
-
-function git(cwd: string, ...args: string[]): void {
-  execFileSync('git', args, {
-    cwd,
-    stdio: 'ignore',
-    env: {
-      ...process.env,
-      GIT_AUTHOR_NAME: 'E2E',
-      GIT_AUTHOR_EMAIL: 'e2e@example.com',
-      GIT_COMMITTER_NAME: 'E2E',
-      GIT_COMMITTER_EMAIL: 'e2e@example.com',
-    },
-  });
-}
 
 /** A bare repository `notes` under `root`, and a work tree that pushes to it. */
 function createRepo(root: string): string {
@@ -44,58 +29,6 @@ function createRepo(root: string): string {
   git(work, 'remote', 'add', 'origin', path.join(root, 'notes'));
   git(work, 'push', '-q', 'origin', 'main');
   return work;
-}
-
-/** Answer a proxied smart-HTTP request from `git http-backend`. */
-async function serveGit(route: Route, root: string): Promise<void> {
-  const request = route.request();
-  const url = new URL(request.url());
-  if (request.method() === 'OPTIONS') {
-    await route.fulfill({ status: 204, headers: corsHeaders() });
-    return;
-  }
-  if (!url.pathname.startsWith(`${REPO_PATH}/`) && !url.pathname.startsWith(`${REPO_PATH}.git/`)) {
-    await route.fulfill({ status: 404, headers: corsHeaders(), body: 'not found' });
-    return;
-  }
-  const rest = url.pathname.slice(REPO_PATH.length).replace(/^\.git/, '');
-  const result = spawnSync('git', ['http-backend'], {
-    input: request.postDataBuffer() ?? Buffer.alloc(0),
-    maxBuffer: 64 * 1024 * 1024,
-    env: {
-      ...process.env,
-      GIT_PROJECT_ROOT: root,
-      GIT_HTTP_EXPORT_ALL: '1',
-      PATH_INFO: `/notes${rest}`,
-      QUERY_STRING: url.search.replace(/^\?/, ''),
-      REQUEST_METHOD: request.method(),
-      CONTENT_TYPE: request.headers()['content-type'] ?? '',
-    },
-  });
-  const out = result.stdout;
-  const split = out.indexOf('\r\n\r\n');
-  const head = out.subarray(0, split).toString('utf8');
-  const body = out.subarray(split + 4);
-  const headers: Record<string, string> = corsHeaders();
-  let status = 200;
-  for (const line of head.split('\r\n')) {
-    const colon = line.indexOf(':');
-    if (colon < 0) continue;
-    const name = line.slice(0, colon).trim();
-    const value = line.slice(colon + 1).trim();
-    if (name.toLowerCase() === 'status') status = Number.parseInt(value, 10);
-    else headers[name] = value;
-  }
-  await route.fulfill({ status, headers, body });
-}
-
-function corsHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Expose-Headers': '*',
-  };
 }
 
 async function openPageMenu(page: Page): Promise<void> {
@@ -116,7 +49,7 @@ test.describe('Remote spaces', () => {
   });
 
   test('opens repository links in one space, links to GitHub and refreshes', async ({ page }) => {
-    await page.route(`${PROXY}/**`, (route) => serveGit(route, root));
+    await page.route(`${PROXY}/**`, (route) => serveGit(route, root, REPO_PATH, 'notes'));
 
     // A link to a file at the repository root makes a space for the repository.
     await page.goto('/g/github.com/e2e/notes/blob/main/README.md');

@@ -47,7 +47,7 @@ import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { applyMoves, CeptSearchIndex, MemoryBackend, reconnectFolder } from '@cept/core';
-import type { ImportedPage, PageContent, StorageBackend } from '@cept/core';
+import type { ImportedPage, PageContent, RemoteSpace, StorageBackend } from '@cept/core';
 import { generateRemoteSpaceId, parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpaceStats, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
@@ -69,6 +69,7 @@ import {
   remoteWebUrl,
 } from './storage/git-space.js';
 import { useGitHubAccount } from './settings/github-account.js';
+import { useDiscoveredSpaces } from './settings/discovered-spaces.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
 import {
   restoreRoute,
@@ -219,6 +220,8 @@ export function App() {
   } = useSpaces(backend);
   // The GitHub sign-in, for cloning private repositories (null without a host sign-in).
   const gitAuth = useGitHubAccount()?.gitAuth;
+  // Spaces in the signed-in account's repositories (null when not signed in).
+  const discovered = useDiscoveredSpaces();
   const [cloneStatus, setCloneStatus] = useState<{
     active: boolean;
     message?: string;
@@ -1578,9 +1581,13 @@ export function App() {
     pushRoute({ space: 'docs', pageId: 'docs-index' });
   }, []);
 
-  /** Handle "Add Space" from the remote repo form in the wizard. */
-  const handleAddRemoteRepo = useCallback(
-    async (config: RemoteSpaceConfig) => {
+  /**
+   * Clone a remote repository (or a space in it) and add it as a space. With
+   * `activate`, switch to it; otherwise only add it (a pinned discovered space).
+   * `name` overrides the name built from the URL.
+   */
+  const addRemoteSpace = useCallback(
+    async (config: RemoteSpaceConfig, options: { activate: boolean; name?: string }) => {
       // Build a human-readable name from the repo URL
       const normalizedUrl = config.url
         .replace(/^https?:\/\/(www\.)?/, '')
@@ -1590,21 +1597,28 @@ export function App() {
       const name = config.subPath.trim()
         ? `${repoName}/${config.subPath.trim().replace(/\/$/, '')}`
         : repoName;
-      const displayName = `${name} (${config.branch || 'main'})`;
+      const displayName = options.name ?? `${name} (${config.branch || 'main'})`;
 
       // Cloning needs a backend that can hand isomorphic-git a raw filesystem
       if (!canHostGitClone(backend)) {
+        if (!options.activate) {
+          addToast(`"${displayName}" cannot be downloaded in this storage.`, 'error');
+          return;
+        }
         // Fall back to creating an empty space for non-browser backends
         handleCreateSpace(displayName);
         return;
       }
 
-      setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
+      if (options.activate)
+        setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
 
       try {
         // Save current space state before switching
-        saveActiveSpace();
-        setActiveSpace('user');
+        if (options.activate) {
+          saveActiveSpace();
+          setActiveSpace('user');
+        }
 
         // Clone the remote repo and extract pages
         const branch = config.branch || 'main';
@@ -1630,29 +1644,71 @@ export function App() {
           branch,
           subPath,
           access,
+          { activate: options.activate },
         );
         setSpacesManifest(manifest);
-        setUserSpaceId(newSpace.id);
 
-        // Show the cloned pages and persist them to the space's storage
-        await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
-
-        setCloneStatus({ active: false });
+        if (options.activate) {
+          setUserSpaceId(newSpace.id);
+          // Show the cloned pages and persist them to the space's storage
+          await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
+          setCloneStatus({ active: false });
+        } else {
+          try {
+            await spaces.saveState(
+              newSpace.id,
+              clonedSnapshot(clonedPages, displayName),
+              clonedContents,
+            );
+          } catch (err) {
+            // Take the empty space back out rather than leave it pinned.
+            setSpacesManifest((await spaces.delete(newSpace.id)).manifest);
+            throw err;
+          }
+          addToast(`"${displayName}" is pinned to your spaces.`, 'success');
+        }
       } catch (err) {
-        setCloneStatus({ active: false, error: cloneErrorMessage(err, 'Clone failed') });
         console.error('Failed to clone remote repo:', err);
+        if (options.activate) {
+          setCloneStatus({ active: false, error: cloneErrorMessage(err, 'Clone failed') });
+        } else {
+          addToast(
+            `Could not pin "${displayName}": ${cloneErrorMessage(err, 'Clone failed')}`,
+            'error',
+          );
+        }
       }
     },
     [
       backend,
       spaces,
       gitAuth,
+      addToast,
       handleCreateSpace,
       saveActiveSpace,
       setSpacesManifest,
       setUserSpaceId,
       applyClonedSpace,
     ],
+  );
+
+  /** Handle "Add Space" from the remote repo form in the wizard. */
+  const handleAddRemoteRepo = useCallback(
+    (config: RemoteSpaceConfig) => addRemoteSpace(config, { activate: true }),
+    [addRemoteSpace],
+  );
+
+  /** Open (clone and switch to) or pin (clone and add) a space discovered on GitHub. */
+  const handleDiscoveredSpace = useCallback(
+    (space: RemoteSpace, activate: boolean) => {
+      const config: RemoteSpaceConfig = {
+        url: space.url,
+        branch: space.branch,
+        subPath: space.path,
+      };
+      return addRemoteSpace(config, { activate, name: space.name });
+    },
+    [addRemoteSpace],
   );
 
   /** Refresh a git space by fetching from the remote into its kept clone. */
@@ -2384,6 +2440,12 @@ export function App() {
           handlePageSelect(pageId);
         }}
         onRefreshSpace={handleRefreshSpace}
+        discovered={discovered}
+        onOpenDiscovered={(space) => {
+          setSettingsOpen(false);
+          void handleDiscoveredSpace(space, true);
+        }}
+        onPinDiscovered={(space) => void handleDiscoveredSpace(space, false)}
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
