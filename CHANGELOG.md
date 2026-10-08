@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.38](https://github.com/nsheaps/cept/compare/v0.7.37...v0.7.38) (2026-10-08)
+
+### Documentation
+
+* **plan:** ground rules follow the D-48 merge policy ([af4a159](https://github.com/nsheaps/cept/commit/af4a159deea7e1df3b90737f8f511be71c4e3ca4))
+
 ## [0.7.37](https://github.com/nsheaps/cept/compare/v0.7.36...v0.7.37) (2026-10-07)
 
 ### Documentation
