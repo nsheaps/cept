@@ -34,3 +34,16 @@ export type {
   DiscoveryEvent,
   DiscoveryResult,
 } from './discover.js';
+export {
+  readSpaceTree,
+  findPage,
+  readPageText,
+  writePageText,
+  createPage,
+  movePage,
+  applyMoves,
+  isPageFile,
+  pickFolderPage,
+  NEW_FOLDER_PAGE,
+} from './tree.js';
+export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './tree.js';
