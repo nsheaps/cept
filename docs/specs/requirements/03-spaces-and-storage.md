@@ -170,6 +170,7 @@ flowchart TB
 
 **Current state: divergent.**
 
+- `@cept/core` can now read and write a space as a folder tree (`readSpaceTree`, `createPage`, `movePage` and `writePageText` in [packages/core/src/space/tree.ts](../../../packages/core/src/space/tree.ts), Phase 1 plan PR 19). Page ids are paths; `index.md` wins over `README.md` as the folder page, and the loser stays a child page; `ignore:` and nested-space markers are applied. Tests round-trip a fixture folder byte for byte on `MemoryBackend` and `BrowserFsBackend`. The app does not use it yet (PR 20), so the points below still describe what users get.
 - Pages are written flat as `pages/<pageId>.md` with ids like `page-${Date.now()}` ([packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx) around lines 614 and 782, and `writePageContent` in [packages/ui/src/components/storage/StorageContext.tsx](../../../packages/ui/src/components/storage/StorageContext.tsx)).
 - The hierarchy lives as JSON in `.cept/workspace-state.json` (`PersistedState` in StorageContext.tsx).
 - Non-default spaces in the app's backend live under `.cept/spaces/<id>/pages` (`appSpaceStore` in [packages/ui/src/components/storage/space-store.ts](../../../packages/ui/src/components/storage/space-store.ts)).

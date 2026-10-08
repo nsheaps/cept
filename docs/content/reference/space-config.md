@@ -74,3 +74,15 @@ Cept merges the `.cept.yaml` files from the space root down to the folder in que
 - **`ignore`:** patterns are not replaced. Each folder's patterns apply to its own subtree, relative to that folder. Where several folders match a path, the deepest one decides, so a child can re-include (`!name`) something a parent hid.
 
 Example: the root has `ignore: ['*.tmp']` and `team/docs/.cept.yaml` has `ignore: ['!keep.tmp']`. Then `a.tmp` and `team/x.tmp` are hidden, but `team/docs/keep.tmp` is visible.
+
+## How folders become pages
+
+A space is a folder, and Cept reads its page tree straight from the files in it.
+
+- **Pages are Markdown files.** Every `.md` or `.markdown` file is a page. Other files (images, attachments) are not pages and are never changed by Cept.
+- **Folders are pages too.** A folder holding pages is a page with those pages inside it. Its own content comes from `index.md`, or `README.md` if there is no `index.md` (names are matched without regard to case). If a folder has both, `index.md` is the folder page and `README.md` is shown as an ordinary page inside it. A folder with neither shows a list of its pages.
+- **Left out of the tree:** paths hidden by default or by `ignore:` (see above), folders that hold no pages at any depth, and folders with their own `space.cept.yaml`, which are separate spaces.
+- **Page addresses are paths.** A page is identified by its path from the space root, such as `guides/setup.md`, or `guides` for a folder page. Renaming or moving a page renames or moves its file, so its address changes with it.
+- **Order:** pages are sorted by name, with numbers compared by value (`2-basics` before `10-advanced`).
+
+When you add a page inside a page that is a single file, such as `guides/setup.md`, Cept turns it into a folder page: the file moves to `guides/setup/index.md` and the new page goes next to it. A new folder page gets an `index.md`.

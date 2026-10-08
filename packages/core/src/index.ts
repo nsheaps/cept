@@ -276,3 +276,18 @@ export type {
   MergedFolderConfig,
   IgnoreMatcher,
 } from './space/index.js';
+
+// Space folder tree (pages as files, path-based ids)
+export {
+  readSpaceTree,
+  findPage,
+  readPageText,
+  writePageText,
+  createPage,
+  movePage,
+  applyMoves,
+  isPageFile,
+  pickFolderPage,
+  NEW_FOLDER_PAGE,
+} from './space/index.js';
+export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './space/index.js';
