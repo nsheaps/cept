@@ -227,12 +227,13 @@ function normalize(path: string): string {
   return collapsed.length > 1 ? collapsed.replace(/\/$/, '') : collapsed;
 }
 
-/** True if `path` is strictly inside directory `dir`. */
+/** The parent directory of `path` ("/" for a top-level path). */
 function parentOf(path: string): string {
   const slash = path.lastIndexOf('/');
   return slash <= 0 ? '/' : path.slice(0, slash);
 }
 
+/** True if `path` is strictly inside directory `dir`. */
 function isUnder(path: string, dir: string): boolean {
   return dir === '/' ? path !== '/' : path.startsWith(`${dir}/`);
 }
