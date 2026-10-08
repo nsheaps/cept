@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -19,6 +19,7 @@ describe('findFakeGreen', () => {
 
   it('flags a step whose failure is ignored', () => {
     expect(findFakeGreen('        continue-on-error: true')).toHaveLength(1);
+    expect(findFakeGreen('        continue-on-error: ${{ matrix.allow-fail }}')).toHaveLength(1);
     expect(findFakeGreen('        continue-on-error: false')).toEqual([]);
   });
 
@@ -53,5 +54,14 @@ describe('no-fake-green CLI', () => {
 
     writeFileSync(path.join(dir, 'cd.yml'), 'jobs:\n  a:\n    runs-on: ubuntu-latest\n');
     expect(run().status).toBe(0);
+  });
+
+  it('scans subdirectories too', () => {
+    mkdirSync(path.join(dir, 'release'), { recursive: true });
+    writeFileSync(path.join(dir, 'release', 'upload.sh'), 'gh release upload v1 a.dmg || true\n');
+    const bad = run();
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain(path.join('release', 'upload.sh') + ':1');
+    rmSync(path.join(dir, 'release'), { recursive: true });
   });
 });

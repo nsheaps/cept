@@ -76,14 +76,15 @@ jobs:
 
   # Native packaging is not built yet. These jobs stand in for it so a release
   # says so instead of reporting success for artifacts nobody built: desktop
-  # packages land in plan PRs 78 and 79, mobile packages later (D-43).
+  # packages are Phase 1 milestone M5 work (D-28), mobile packages come later
+  # (D-43). The jobs that build them replace these placeholders.
   desktop-packages:
     name: Desktop packages (not built yet)
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - name: Report that desktop packages are not built
-        run: echo "::warning title=No desktop packages::desktop packaging (macOS, Windows, Linux) lands in PRs 78 and 79; this release has no desktop assets"
+        run: echo "::warning title=No desktop packages::desktop packaging (macOS, Windows, Linux) is not built yet (D-28); this release has no desktop assets"
 
   mobile-packages:
     name: Mobile packages (not built yet)

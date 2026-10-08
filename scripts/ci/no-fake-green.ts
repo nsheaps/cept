@@ -18,7 +18,8 @@ const RULES: readonly { pattern: RegExp; reason: string }[] = [
     reason: 'if-no-files-found must be error; a missing artifact has to fail the job',
   },
   {
-    pattern: /^\s*continue-on-error:\s*['"]?true\b/,
+    // Anything but a literal false, so `${{ matrix.allow-fail }}` cannot slip through.
+    pattern: /^\s*continue-on-error:\s*(?!['"]?false\b)\S/,
     reason: 'continue-on-error hides a failed step; fix the step or remove it',
   },
   {
@@ -47,13 +48,13 @@ export function findFakeGreen(text: string): Violation[] {
   return violations;
 }
 
-/** Workflow files and CI scripts under `dirs`, as repo-relative paths. */
-function filesIn(dirs: readonly string[]): string[] {
+/** Workflow files and CI scripts anywhere under `dirs`, as repo-relative paths. */
+export function filesIn(dirs: readonly string[]): string[] {
   return dirs.flatMap((dir) =>
-    readdirSync(dir)
-      .filter((f) => /\.(ya?ml|sh)$/.test(f))
-      .sort()
-      .map((f) => path.join(dir, f)),
+    readdirSync(dir, { recursive: true, withFileTypes: true })
+      .filter((e) => e.isFile() && /\.(ya?ml|sh)$/.test(e.name))
+      .map((e) => path.join(e.parentPath, e.name))
+      .sort(),
   );
 }
 
