@@ -194,6 +194,37 @@ describe('writable GitHub spaces (REQ-WS-027)', () => {
     await expect(startSpaceInRepo(host, request)).resolves.toEqual({ created: false });
   });
 
+  it('pushes the commit of a start whose push failed when it is started again', async () => {
+    const bare = makeRepo('retry', { 'README.md': '# Retry\n' });
+    const url = 'https://github.com/octo/retry';
+    const host = newHost();
+    const request = {
+      spaceId: generateRemoteSpaceId(url, 'main'),
+      url,
+      branch: 'main',
+      name: 'Retry',
+      auth,
+      identity,
+    };
+    const offline: GitHttp = {
+      request: (r) =>
+        r.url.includes('git-receive-pack')
+          ? Promise.reject(new Error('network down'))
+          : http.request(r),
+    };
+
+    await expect(startSpaceInRepo(host, { ...request, http: offline })).rejects.toThrow(
+      /could not be pushed/,
+    );
+    expect(() => git(bare, 'show', 'main:space.cept.yaml')).toThrow();
+
+    await expect(startSpaceInRepo(host, { ...request, http })).resolves.toEqual({
+      created: true,
+    });
+    expect(git(bare, 'show', 'main:space.cept.yaml')).toContain('Retry');
+    expect(await unpushedCommitsOf(host, request.spaceId)).toBe(0);
+  });
+
   it('will not start a space without the sign-in', async () => {
     makeRepo('nosignin', { 'README.md': '# x\n' });
     const url = 'https://github.com/octo/nosignin';

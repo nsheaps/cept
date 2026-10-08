@@ -93,8 +93,8 @@ export interface UseGitSpaceSyncOptions {
   onClosed: (key: string) => void | Promise<void>;
   /** A sync settled; `manual` for "Sync now". */
   onSynced: (result: GitSpaceSyncResult, manual: boolean) => void;
-  /** The session could not be opened. */
-  onError?: (err: unknown) => void;
+  /** The session could not be opened, or `onClosed` failed while it was closing. */
+  onError?: (err: unknown, phase: 'open' | 'close') => void;
   foreground?: Foreground;
 }
 
@@ -160,9 +160,11 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
         setStatus(null);
         setSyncing(false);
       }
-      await Promise.resolve()
-        .then(() => latest.current.onClosed(key))
-        .catch(() => undefined);
+      try {
+        await latest.current.onClosed(key);
+      } catch (err) {
+        latest.current.onError?.(err, 'close');
+      }
       await s.dispose().catch(() => undefined);
     };
 
@@ -172,7 +174,7 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       try {
         s = await latest.current.open(key);
       } catch (err) {
-        if (!cancelled) latest.current.onError?.(err);
+        if (!cancelled) latest.current.onError?.(err, 'open');
         return;
       }
       if (cancelled) {

@@ -289,6 +289,30 @@ describe('useGitSpaceSync', () => {
     expect(f.listeners.size).toBe(0);
   });
 
+  it('reports onClosed failing, and still disposes the session', async () => {
+    const f = fakeSession();
+    const onError = vi.fn();
+    const err = new Error('save failed');
+    const { result } = renderHook(() =>
+      useGitSpaceSync(
+        options({
+          open: async () => f.session,
+          onClosed: async () => {
+            throw err;
+          },
+          onError,
+          foreground: fakeForeground().fg,
+        }),
+      ),
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    await act(async () => {
+      await result.current.close();
+    });
+    expect(onError).toHaveBeenCalledWith(err, 'close');
+    expect(f.session.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it('disposes the session on unmount', async () => {
     const f = fakeSession();
     const { result, unmount } = renderHook(() =>
@@ -312,7 +336,7 @@ describe('useGitSpaceSync', () => {
         }),
       ),
     );
-    await waitFor(() => expect(onError).toHaveBeenCalledWith(err));
+    await waitFor(() => expect(onError).toHaveBeenCalledWith(err, 'open'));
   });
 
   it('disposes a session that finished opening after its key went away', async () => {

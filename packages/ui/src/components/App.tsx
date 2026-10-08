@@ -1012,7 +1012,7 @@ export function App() {
     onClosed: async (key) => {
       const spaceId = spaceIdOfSessionKey(key);
       setGitSessionSpaceId((prev) => (prev === spaceId ? null : prev));
-      // Writes started before the session closes still go through it, so they are committed.
+      // Saves started before the close finish writing through the bound session, so dispose() commits them.
       await spaceSaveRef.current;
       await persistSaveRef.current;
       spaces.unbind(spaceId);
@@ -1020,9 +1020,11 @@ export function App() {
     onSynced: (result, manual) => {
       if (gitSessionKey) void handleGitSynced(spaceIdOfSessionKey(gitSessionKey), result, manual);
     },
-    onError: (err) => {
+    onError: (err, phase) => {
       addToast(
-        `"${userSpaceMeta?.name ?? 'This space'}" cannot be edited now: ${cloneErrorMessage(err, 'its copy on this device could not be opened')}`,
+        phase === 'close'
+          ? `Some edits may not have been saved before the GitHub space closed: ${err instanceof Error ? err.message : String(err)}`
+          : `"${userSpaceMeta?.name ?? 'This space'}" cannot be edited now: ${cloneErrorMessage(err, 'its copy on this device could not be opened')}`,
         'error',
       );
     },

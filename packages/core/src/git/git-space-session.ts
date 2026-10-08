@@ -211,8 +211,8 @@ export class GitSpaceSession {
 
   /** Commit what is pending, pull, then push even when auto-push is off. */
   pushNow(): Promise<GitSpaceSyncResult> {
-    return this.enqueue(async () => {
-      await this.autoCommit.flushNow();
+    return this.enqueue(() => {
+      // runSync() commits what is pending; markDirty makes it push even when auto-push is off.
       this.sync.markDirty();
       return this.runSync();
     });
@@ -221,7 +221,9 @@ export class GitSpaceSession {
   /**
    * Sync now, and again `intervalMs` after each sync settles, calling
    * `onSynced` after each one. The next sync is scheduled only once the
-   * current one is done, so a slow sync never piles up behind another.
+   * current one is done, so a slow sync never piles up behind another. The
+   * first sync runs at once on purpose: opening a space (or coming back to
+   * it) pulls what changed meanwhile.
    */
   start(onSynced?: (result: GitSpaceSyncResult) => void): void {
     this.stop();

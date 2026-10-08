@@ -241,7 +241,7 @@ export interface StartRepoSpaceRequest extends GitSpaceSessionRequest {
  * GitHub sign-in, write `space.cept.yaml` there through an editing session (so
  * it is committed), and push. When the folder already holds a space, nothing
  * is written. Rejects when the push does not go through, leaving the commit in
- * the clone for the next sync.
+ * the clone; starting again pushes that commit instead of skipping it.
  */
 export async function startSpaceInRepo(
   host: GitCloneHost,
@@ -254,21 +254,28 @@ export async function startSpaceInRepo(
       'Starting a space in a repository needs the GitHub sign-in and a github.com repository.',
     );
   }
-  await syncRemoteClone({
-    host,
-    fs: host.getRawFs() as GitFs,
-    dir: remoteCloneDir(request.spaceId),
-    url,
-    ref: request.branch,
-    corsProxy: request.corsProxy,
-    auth: request.auth,
-    http: request.http,
-  });
-  if (await hasCloneMarker(host, request.spaceId, request.subPath)) return { created: false };
+  // Commits of an earlier start whose push failed are pushed by the session,
+  // which pulls first; refreshing the clone would take them for a rewrite.
+  const unpushed = await unpushedCommitsOf(host, request.spaceId);
+  if (unpushed === 0) {
+    await syncRemoteClone({
+      host,
+      fs: host.getRawFs() as GitFs,
+      dir: remoteCloneDir(request.spaceId),
+      url,
+      ref: request.branch,
+      corsProxy: request.corsProxy,
+      auth: request.auth,
+      http: request.http,
+    });
+  }
+  const marked = await hasCloneMarker(host, request.spaceId, request.subPath);
+  // A folder that is already a space is opened as it is.
+  if (marked && unpushed === 0) return { created: false };
   const session = await openGitSpaceSession(host, request);
   let result: GitSpaceSyncResult;
   try {
-    await initFolderSpace(session.backend, request.name);
+    if (!marked) await initFolderSpace(session.backend, request.name);
     result = await session.pushNow();
   } finally {
     await session.dispose();

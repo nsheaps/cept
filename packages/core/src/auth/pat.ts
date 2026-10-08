@@ -170,7 +170,7 @@ export class PatAuthProvider implements AuthProvider {
       method: 'POST',
       body: JSON.stringify({
         name: options.name,
-        description: options.description ?? '',
+        ...(options.description ? { description: options.description } : {}),
         private: options.private ?? true,
         auto_init: true,
       }),

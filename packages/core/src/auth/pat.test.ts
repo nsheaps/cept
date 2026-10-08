@@ -330,6 +330,9 @@ describe('PatAuthProvider after sign-in', () => {
     expect(failure).toBeInstanceOf(PatAuthError);
     expect((failure as PatAuthError).status).toBe(422);
     expect(surfaces(failure)).not.toContain('classicSecret');
+    // No description was asked for, so none is sent.
+    const [, init] = fetch.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).not.toHaveProperty('description');
   });
 
   it('signs out by deleting the stored token', async () => {
