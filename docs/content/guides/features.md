@@ -44,7 +44,6 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 |-------|---------------|-------------|
 | Math Equation | `/math` | LaTeX math rendering (block and inline) |
 | Mermaid Diagram | `/mermaid` | Flowcharts, sequence diagrams, and more |
-| Inline Database | `/database` | Embedded database view |
 
 ### Toggle Demo
 

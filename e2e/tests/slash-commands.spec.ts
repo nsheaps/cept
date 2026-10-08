@@ -147,6 +147,13 @@ test.describe('Slash Commands', () => {
     await captureScreenshot(page, { name: 'slash-menu-open', category: 'slash-commands' });
   });
 
+  test('offers no database block (D-36)', async ({ page }) => {
+    await typeSlashCommand(page, 'database');
+    const menu = page.getByTestId('slash-command-menu');
+    await expect(menu).toContainText('No results');
+    await expect(menu.locator('.cept-slash-menu-item')).toHaveCount(0);
+  });
+
   test('heading 1', async ({ page }) => {
     // "large" uniquely matches Heading 1 via description "Large heading"
     await typeSlashCommand(page, 'large');

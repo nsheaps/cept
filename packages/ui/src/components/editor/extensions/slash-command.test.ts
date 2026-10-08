@@ -22,6 +22,14 @@ describe('Slash Command', () => {
       expect(titles).toContain('Table');
     });
 
+    it('offers no database block (D-36: databases are deferred)', () => {
+      for (const cmd of defaultSlashCommands) {
+        const text = [cmd.title, cmd.description, cmd.category].join(' ');
+        expect(text).not.toMatch(/database/i);
+      }
+      expect(filterSlashCommands(defaultSlashCommands, 'database')).toEqual([]);
+    });
+
     it('has categories for all items', () => {
       for (const cmd of defaultSlashCommands) {
         expect(cmd.category).toBeTruthy();
