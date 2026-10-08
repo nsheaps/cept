@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.30.0](https://github.com/nsheaps/cept/compare/v0.29.0...v0.30.0) (2026-10-08)
+
+### Features
+
+* **web:** request persistent storage and warn on low quota ([#406](https://github.com/nsheaps/cept/issues/406)) ([1858c25](https://github.com/nsheaps/cept/commit/1858c25c7584d5ee43d93ce94f516b8e88dedd01))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([9a6d47b](https://github.com/nsheaps/cept/commit/9a6d47b5888695a8bab9cb8c6312064f43cb908a))
+
 ## [0.29.0](https://github.com/nsheaps/cept/compare/v0.28.0...v0.29.0) (2026-10-08)
 
 ### Features
