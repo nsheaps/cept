@@ -112,8 +112,12 @@ test.describe('Responsive: Settings Modal', () => {
     await page.keyboard.press('Control+k');
     await expect(page.getByTestId('command-palette')).toBeVisible();
 
-    // Look for a settings or gear button in sidebar instead
+    // Look for a settings or gear button in sidebar instead. The palette
+    // focuses its input on the next animation frame and only the input
+    // handles Escape, so wait for focus before closing it.
+    await expect(page.getByTestId('command-input')).toBeFocused();
     await page.keyboard.press('Escape');
+    await expect(page.getByTestId('command-palette-overlay')).toBeHidden();
 
     // Try clicking the app menu trigger in sidebar if visible
     const appMenuTrigger = page.locator('[data-testid="sidebar-app-menu-trigger"]');
