@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { StorageBackend } from '@cept/core';
+import type { RemoteSpace, StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { GitHubAccountSection } from './GitHubAccountSection.js';
+import { DiscoveredSpacesSection } from './DiscoveredSpacesSection.js';
+import type { DiscoveredSpacesState } from './discovered-spaces.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
 import { remoteWebUrl } from '../storage/git-space.js';
 
@@ -108,6 +110,12 @@ export interface SettingsModalProps {
   backend?: StorageBackend;
   onNavigateToPage?: (pageId: string) => void;
   onRefreshSpace?: (id: string) => Promise<void>;
+  /** Spaces found in the signed-in account's repositories; null or absent when not signed in. */
+  discovered?: DiscoveredSpacesState | null;
+  /** Clone a discovered space, add it and switch to it. */
+  onOpenDiscovered?: (space: RemoteSpace) => void;
+  /** Clone a discovered space and add it without switching. */
+  onPinDiscovered?: (space: RemoteSpace) => void;
 }
 
 export function SettingsModal({
@@ -134,6 +142,9 @@ export function SettingsModal({
   backend,
   onNavigateToPage,
   onRefreshSpace,
+  discovered,
+  onOpenDiscovered,
+  onPinDiscovered,
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
@@ -572,6 +583,15 @@ export function SettingsModal({
                   </svg>
                   Create new space
                 </button>
+
+                {discovered && (
+                  <DiscoveredSpacesSection
+                    discovered={discovered}
+                    addedSpaceIds={new Set(spaces.map((s) => s.id))}
+                    onOpen={onOpenDiscovered}
+                    onPin={onPinDiscovered}
+                  />
+                )}
 
                 {(onImportNotion || onImportObsidian || onExport) && (
                   <>

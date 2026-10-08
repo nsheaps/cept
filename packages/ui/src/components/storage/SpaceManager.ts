@@ -221,7 +221,10 @@ export async function createRemoteSpace(
   return (await addRemoteSpace(backend, name, remoteUrl, branch, subPath, access)).space;
 }
 
-/** Add (or replace) a remote space, make it active, and return it with the saved manifest. */
+/**
+ * Add (or replace) a remote space, make it active unless `activate` is false,
+ * and return it with the saved manifest.
+ */
 async function addRemoteSpace(
   backend: StorageBackend,
   name: string,
@@ -229,6 +232,7 @@ async function addRemoteSpace(
   branch: string,
   subPath?: string,
   access?: RemoteAccess,
+  activate = true,
 ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
@@ -250,7 +254,7 @@ async function addRemoteSpace(
   } else {
     manifest.spaces.push(newSpace);
   }
-  manifest.activeSpaceId = newSpace.id;
+  if (activate) manifest.activeSpaceId = newSpace.id;
   await saveSpaces(backend, manifest);
   return { space: newSpace, manifest };
 }
@@ -540,15 +544,17 @@ export class SpaceManager {
     return { space, manifest: this.visible(manifest) };
   }
 
-  /** Add (or replace) a space linked to a remote repository and make it active. */
+  /** Add (or replace) a space linked to a remote repository; it becomes active unless `activate` is false. */
   async createRemote(
     name: string,
     remoteUrl: string,
     branch: string,
     subPath?: string,
     access?: RemoteAccess,
+    options: { activate?: boolean } = {},
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
-    this.sessionActive = null;
+    const activate = options.activate ?? true;
+    if (activate) this.sessionActive = null;
     const { space, manifest } = await addRemoteSpace(
       this.backend,
       name,
@@ -556,6 +562,7 @@ export class SpaceManager {
       branch,
       subPath,
       access,
+      activate,
     );
     return { space, manifest: this.visible(manifest) };
   }

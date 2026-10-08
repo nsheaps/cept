@@ -207,6 +207,21 @@ describe('SpaceManager class', () => {
     expect((await spaces.pageTree(space.id)).map((p) => p.id)).toEqual(['Plans', 'Untitled.md']);
   });
 
+  it('adds a remote space without switching to it when asked not to (a pinned space)', async () => {
+    const { space: local } = await spaces.create('Local');
+    const { space: pinned, manifest } = await spaces.createRemote(
+      'Pinned',
+      'https://github.com/a/b',
+      'main',
+      'docs',
+      'token',
+      { activate: false },
+    );
+    expect(manifest.activeSpaceId).toBe(local.id);
+    expect(manifest.spaces.map((s) => s.id)).toContain(pinned.id);
+    expect((await spaces.load()).activeSpaceId).toBe(local.id);
+  });
+
   it('records a sync time', async () => {
     const { space } = await spaces.createRemote('Repo', 'https://github.com/a/b', 'main');
     const before = space.lastSyncedAt;

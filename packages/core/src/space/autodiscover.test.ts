@@ -187,6 +187,18 @@ describe('autodiscoverSpaces (REQ-WS-023)', () => {
     expect(result.complete).toBe(true);
   });
 
+  it('keeps the request URL, and any credentials in it, out of http warnings', async () => {
+    const gh = mockGitHub([{ full_name: 'org/flaky', treeStatus: 502 }]);
+    const result = await autodiscoverSpaces({
+      token: 't',
+      fetch: gh.fetch,
+      apiBase: 'https://user:hunter2@api.github.com',
+    });
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatchObject({ kind: 'http', repo: 'org/flaky' });
+    expect(result.warnings[0]?.message).toBe('org/flaky: GitHub answered 502; skipped');
+  });
+
   it('reports a marker inside a space as nested, not as a space (D-3)', async () => {
     const gh = mockGitHub([
       {
