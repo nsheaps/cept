@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { BrowserFsBackend } from '../storage/browser-fs.js';
 import { GitBackend } from '../storage/git-backend.js';
 import type { GitFs } from '../storage/git-backend.js';
+import type { CommitInfo } from '../storage/backend.js';
 import { listPageHistory, pageVersionContent, pageVersionDiff } from './page-history.js';
 
 const encode = (text: string) => new TextEncoder().encode(text);
@@ -90,5 +91,49 @@ describe('page history', () => {
 
   it('reports no shallow boundary for a full repository', async () => {
     expect(await git.shallowCommits()).toEqual(new Set());
+  });
+});
+
+describe('page history in a shallow clone', () => {
+  const commit = (hash: string, parent: string[]): CommitInfo => ({
+    hash,
+    message: hash,
+    author: { name: 'Test', email: 'test@example.com', timestamp: 0 },
+    parent,
+  });
+
+  /** A clone whose log of the page ends at `oldest`, reading the page's parent through `readParent`. */
+  function shallowClone(
+    oldest: CommitInfo,
+    shallow: string[],
+    readParent: () => Promise<string | null>,
+  ): GitBackend {
+    return {
+      log: async () => [commit('head', [oldest.hash]), oldest],
+      shallowCommits: async () => new Set(shallow),
+      readFileAt: readParent,
+    } as unknown as GitBackend;
+  }
+
+  it('is truncated when the oldest version is a boundary commit', async () => {
+    const git = shallowClone(commit('edge', ['gone']), ['edge'], async () => 'x');
+    expect((await listPageHistory(git, 'a.md')).truncated).toBe(true);
+  });
+
+  it('is truncated when the page existed before the oldest version and the boundary did not change it', async () => {
+    const git = shallowClone(commit('older', ['mid']), ['edge'], async () => 'older text');
+    expect((await listPageHistory(git, 'a.md')).truncated).toBe(true);
+  });
+
+  it('is truncated when the parent of the oldest version is not downloaded', async () => {
+    const git = shallowClone(commit('older', ['gone']), ['edge'], () =>
+      Promise.reject(new Error('missing')),
+    );
+    expect((await listPageHistory(git, 'a.md')).truncated).toBe(true);
+  });
+
+  it('is complete when the oldest version created the page', async () => {
+    const git = shallowClone(commit('created', ['mid']), ['edge'], async () => null);
+    expect((await listPageHistory(git, 'a.md')).truncated).toBe(false);
   });
 });

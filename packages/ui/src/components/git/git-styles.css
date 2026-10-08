@@ -536,6 +536,25 @@
   gap: 4px;
 }
 
+.cept-history-action-btn {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #37352f;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cept-history-action-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.cept-history-action-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .cept-history-diff-file-header {
   display: flex;
   gap: 8px;
@@ -591,4 +610,23 @@
 .dark .cept-history-diff-hunk {
   background: #262626;
   color: #e3e3e3;
+}
+
+.dark .cept-history-commit-meta,
+.dark .cept-history-loading,
+.dark .cept-history-empty,
+.dark .cept-history-diff-loading,
+.dark .cept-history-diff-empty,
+.dark .cept-history-note {
+  color: #a1a1aa;
+}
+
+.dark .cept-history-action-btn {
+  border-color: #404040;
+  background: #333;
+  color: #e3e3e3;
+}
+
+.dark .cept-history-action-btn:hover:not(:disabled) {
+  background: #404040;
 }

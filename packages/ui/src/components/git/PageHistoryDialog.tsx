@@ -119,7 +119,7 @@ export function PageHistoryDialog({
     <div className="cept-history-more">
       {history.more ? (
         <button
-          className="cept-wizard-cancel-btn"
+          className="cept-history-action-btn"
           onClick={() => setLimit((n) => n + PAGE_HISTORY_PAGE_SIZE)}
           disabled={busy}
           data-testid="history-show-more"
@@ -132,7 +132,7 @@ export function PageHistoryDialog({
             Older versions are not downloaded to this device yet.
           </p>
           <button
-            className="cept-wizard-cancel-btn"
+            className="cept-history-action-btn"
             onClick={() => void handleFetchOlder()}
             disabled={busy}
             data-testid="history-fetch-older"
@@ -145,7 +145,12 @@ export function PageHistoryDialog({
   );
 
   return (
-    <div className="cept-wizard-overlay" onClick={onClose} data-testid="page-history-dialog">
+    <div
+      className="cept-wizard-overlay"
+      // Clicking outside does not close the dialog while a restore or download runs.
+      onClick={busy ? undefined : onClose}
+      data-testid="page-history-dialog"
+    >
       <div
         className="cept-wizard-dialog cept-history-dialog"
         role="dialog"

@@ -27,8 +27,35 @@ export async function listPageHistory(
   const found = await git.log(path, { limit: limit + 1 });
   const commits = found.slice(0, limit);
   const more = found.length > limit;
-  const shallow = more ? new Set<string>() : await git.shallowCommits();
-  return { commits, more, truncated: commits.some((commit) => shallow.has(commit.hash)) };
+  return { commits, more, truncated: !more && (await endsAtShallowBoundary(git, path, commits)) };
+}
+
+/**
+ * Whether the page's history goes on past a shallow clone's boundary. That is
+ * so when the oldest listed version is itself a boundary commit, or when the
+ * page already existed in its parent (which the log could not reach). The
+ * check does not assume a clone depth: the boundary commit need not have
+ * changed this page.
+ */
+async function endsAtShallowBoundary(
+  git: GitBackend,
+  path: string,
+  commits: readonly CommitInfo[],
+): Promise<boolean> {
+  const oldest = commits.at(-1);
+  if (!oldest) return false;
+  const shallow = await git.shallowCommits();
+  if (shallow.size === 0) return false;
+  if (shallow.has(oldest.hash)) return true;
+  const parent = oldest.parent[0];
+  if (!parent) return false;
+  try {
+    // Null: the oldest version created the page, so nothing older is missing.
+    return (await git.readFileAt(parent, path)) !== null;
+  } catch {
+    // The parent is not downloaded.
+    return true;
+  }
 }
 
 /**

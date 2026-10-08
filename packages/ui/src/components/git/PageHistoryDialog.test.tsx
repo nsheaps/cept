@@ -65,6 +65,36 @@ describe('PageHistoryDialog', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('stays open on an outside click while a restore runs', async () => {
+    const { source, all } = fakeSource(3);
+    let finish = () => {};
+    const onRestore = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const onClose = vi.fn();
+    render(
+      <PageHistoryDialog
+        title="A"
+        source={source}
+        canRestore
+        onRestore={onRestore}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(await screen.findByTestId(short(all[1]!)));
+    fireEvent.click(await screen.findByTestId('history-restore-a.md'));
+    await waitFor(() => expect(onRestore).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('page-history-dialog'));
+    expect(onClose).not.toHaveBeenCalled();
+
+    finish();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
   it('shows versions without restore in a read-only space', async () => {
     const { source, all } = fakeSource(2);
     render(
