@@ -319,6 +319,19 @@ export {
 } from './space/index.js';
 export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './space/index.js';
 
+// Space autodiscovery (find the spaces in every repository a GitHub token can read)
+export { autodiscoverSpaces, AutodiscoveryError, MemoryEtagCache } from './space/index.js';
+export type {
+  RemoteSpace,
+  LostSpace,
+  AutodiscoveryOptions,
+  AutodiscoveryResult,
+  AutodiscoveryWarning,
+  AutodiscoveryWarningKind,
+  CachedResponse,
+  EtagCache,
+} from './space/index.js';
+
 // Space discovery (find every space.cept.yaml below a folder, read-only)
 export { discoverSpaces, walkSpaces } from './space/index.js';
 export type {

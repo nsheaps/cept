@@ -63,11 +63,11 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
-| [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                | MUST     | partial     | undocumented           | n/a           |
 | [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space         | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                 | MUST     | implemented | documented             | accurate      |
 
-Status counts: 2 implemented, 6 partial, 4 stubbed, 7 not-started, 3 divergent, 2 deferred, 1 decided (25 requirements).
+Status counts: 2 implemented, 7 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (25 requirements).
 
 ## Architecture
 
@@ -767,11 +767,11 @@ branch: docs # optional (D-30)
 - Nothing is cloned during discovery; a space is cloned only when the user opens or pins it (PR 34).
 - Tests: mocked GitHub REST responses with two spaces in one repository, a fork, an archived repository, a `403` on one repository and a nested marker.
 
-**Current state: not-started.** Discovery inside one opened folder or clone exists (`discoverSpaces` in [packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts)); nothing reads an account's repositories yet.
+**Current state: partial.** `autodiscoverSpaces` in [packages/core/src/space/autodiscover.ts](../../../packages/core/src/space/autodiscover.ts) (Phase 1 plan PR 33) does everything above for a personal access token: paged `GET /user/repos`, forks and archived repositories skipped, recursive Git Trees on the default branch, marker blobs only (no clone), D-3 nesting warnings, dot folders ignored, duplicate slugs per repository as errors, declared `branch:`, an `EtagCache` (blobs cached by sha), capped concurrency, an early stop when `X-RateLimit-Remaining` reaches 0 (`complete: false`), `403`/`404` repositories skipped with a warning, an empty repository (`409`) read as having no spaces, a truncated tree warned about, `lost` spaces flagged as `access`, `removed` or `excluded` (now a fork or archived) against an earlier result, and a cancelled `signal` rejecting. A secondary rate limit (`429`, or `403` with `Retry-After`) also stops discovery. Tests: `autodiscover.test.ts`. Discovery inside one opened folder or clone is `discoverSpaces` in [discover.ts](../../../packages/core/src/space/discover.ts).
 
-**Docs state: undocumented.**
+**Docs state: undocumented.** Nothing users see yet; the Discovered list (PR 34) brings the user docs.
 
-**Gap.** Everything above; Phase 1 plan PRs 33 and 34.
+**Gap.** The Discovered list in the app, with open and pin, a persistent per-account cache and refresh on sign-in (PR 34); GitHub App installations (Phase 2).
 
 **Related:** REQ-WS-002, REQ-WS-013, REQ-AUTH-014, D-3, D-30.
 
