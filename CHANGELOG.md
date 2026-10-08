@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.1](https://github.com/nsheaps/cept/compare/v0.15.0...v0.15.1) (2026-10-08)
+
+### Bug Fixes
+
+* **deps:** update dependency ignore to v7.0.9 ([#386](https://github.com/nsheaps/cept/issues/386)) ([379cfab](https://github.com/nsheaps/cept/commit/379cfabe526af3dd287fc810ff4c89b439d5c472))
+
 ## [0.15.0](https://github.com/nsheaps/cept/compare/v0.14.0...v0.15.0) (2026-10-08)
 
 ### Features
