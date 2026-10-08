@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.19.1](https://github.com/nsheaps/cept/compare/v0.19.0...v0.19.1) (2026-10-08)
+
+### Refactoring
+
+* **web:** read the git proxy url from one build setting ([#391](https://github.com/nsheaps/cept/issues/391)) ([01957a3](https://github.com/nsheaps/cept/commit/01957a3d03e3a43af632f62925e782d15aca4b7f))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1bb3929](https://github.com/nsheaps/cept/commit/1bb392905383015e1be4b8e3613247daa4c93eaf))
+
 ## [0.19.0](https://github.com/nsheaps/cept/compare/v0.18.0...v0.19.0) (2026-10-08)
 
 ### Features
