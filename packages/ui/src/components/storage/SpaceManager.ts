@@ -265,6 +265,7 @@ export async function updateSpaceSyncTimestamp(
   const space = manifest.spaces.find((s) => s.id === spaceId);
   if (!space) throw new Error(`Space not found: ${spaceId}`);
   space.lastSyncedAt = new Date().toISOString();
+  // Keep the recorded access when the caller doesn't know it, rather than erasing it.
   if (access) space.access = access;
   await saveSpaces(backend, manifest);
   return manifest;

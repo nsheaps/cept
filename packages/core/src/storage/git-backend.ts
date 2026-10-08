@@ -342,9 +342,14 @@ export class GitBackend implements GitStorageBackend {
       ref: `refs/remotes/origin/${ref}`,
     });
     if (local === remote) return 'unchanged';
-    const fastForward = await git
-      .isDescendent({ fs: this.fs, dir: this.dir, oid: remote, ancestor: local, depth: -1 })
-      .catch(() => false);
+    // Stops (false) at a shallow clone's boundary rather than throwing; any error here is a real one.
+    const fastForward = await git.isDescendent({
+      fs: this.fs,
+      dir: this.dir,
+      oid: remote,
+      ancestor: local,
+      depth: -1,
+    });
     if (!fastForward && !options?.resetOnDivergence) throw new GitDivergedError(ref);
     await git.writeRef({
       fs: this.fs,

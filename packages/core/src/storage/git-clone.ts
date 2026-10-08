@@ -46,7 +46,7 @@ export interface RemoteCloneOptions {
   /** The clone's directory on `host`, kept between syncs (see {@link remoteCloneDir}). */
   dir: string;
   url: string;
-  /** Branch or tag to track (default `main`). */
+  /** Branch to track (default `main`). */
   ref?: string;
   corsProxy?: string;
   /** Credentials; without them the clone is anonymous. */
