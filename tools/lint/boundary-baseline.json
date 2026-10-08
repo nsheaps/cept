@@ -1,5 +1,5 @@
 {
-  "$comment": "Known boundary violations from before PR 8 (D-23). Entries may only be removed: tools/lint/boundaries.integration.test.ts fails if one is added or no longer matches a real import.",
+  "$comment": "Known boundary violations from before PR 8. Each entry allows `count` (default 1) imports of that group, module and name in that file; one more fails lint. Entries and counts may only go down: tools/lint/boundaries.integration.test.ts fails if one grows or no longer matches the file's real imports.",
   "entries": [
     {
       "file": "packages/core/src/storage/local-fs.ts",
@@ -23,6 +23,7 @@
       "file": "packages/ui/src/components/App.tsx",
       "group": "isomorphic-git",
       "module": "isomorphic-git/http/web",
+      "count": 4,
       "removedBy": "PR 28"
     },
     {

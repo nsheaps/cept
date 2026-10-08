@@ -62,13 +62,13 @@ The full list is in [CLAUDE.md](CLAUDE.md#architecture-rules-never-violate). Lin
 
 1. `@cept/ui` and `@cept/core` must **never** import platform-specific modules (lint: `cept/restricted-imports`)
 2. `@cept/ui` uses the `StorageBackend` interface, never a concrete backend, and only `GitBackend` imports `isomorphic-git` (lint: `cept/restricted-imports`)
-3. Projects only import the projects their `scope:` and `platform:` tags allow (lint: `@nx/enforce-module-boundaries`)
+3. Projects only import the projects their `scope:` tags allow, `platform:none` projects only import `platform:none` projects, and no project imports another by relative path (lint: `@nx/enforce-module-boundaries`)
 4. All persistence goes through the `StorageBackend` interface
 5. Git-specific UI is gated by `backend.capabilities` checks
 6. The app must boot to a fully functional state with `BrowserFsBackend` alone
 7. TypeScript strict mode everywhere — no `any`, no `@ts-ignore`
 
-Imports that broke these rules before lint checked them are listed in [`tools/lint/boundary-baseline.json`](tools/lint/boundary-baseline.json). The list may only shrink: remove an entry when you fix the import, and never add one.
+Imports that broke these rules before lint checked them are listed in [`tools/lint/boundary-baseline.json`](tools/lint/boundary-baseline.json). Each entry allows `count` (default 1) such imports in its file, so a duplicate still fails. Entries and counts may only go down: lower or remove one when you fix the import, and never add one.
 
 ## Making Changes
 

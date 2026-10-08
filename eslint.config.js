@@ -6,7 +6,11 @@ import boundaries, { readBaseline } from './tools/lint/boundaries.js';
 
 /**
  * Which projects may depend on which, by Nx tag (each project has one scope: and
- * one platform: tag; `mise run check:targets` checks that).
+ * one platform: tag; `mise run check:targets` checks that). Only core and ui are
+ * importable today (both platform:none); app projects cannot be imported by name
+ * and Nx rejects paths into another project, so platform isolation inside core
+ * and ui is `cept/restricted-imports`' job. Add platform:* rows when a
+ * platform-specific library appears.
  */
 const depConstraints = [
   { sourceTag: 'scope:shared', onlyDependOnLibsWithTags: ['scope:shared'] },

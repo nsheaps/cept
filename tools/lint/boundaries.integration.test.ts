@@ -12,7 +12,7 @@
  * `@nx/enforce-module-boundaries` reads Nx's cached project graph; run them
  * through `mise run test:integration` (an Nx target), which creates it.
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { ESLint } from 'eslint';
 import { describe, expect, it, vi } from 'vitest';
@@ -22,16 +22,19 @@ vi.setConfig({ testTimeout: 60_000 });
 
 const FIXTURES = path.join(ROOT, 'tools/boundary-fixtures');
 
-/** The baseline when the gate landed (PR 8). Entries may be removed, never added. */
-const BASELINE_AT_PR_8 = [
-  'packages/core/src/storage/local-fs.ts|platform|node:fs/promises|',
-  'packages/core/src/storage/local-fs.ts|platform|node:path|',
-  'packages/core/src/storage/local-fs.ts|platform|node:fs|',
-  'packages/ui/src/components/App.tsx|isomorphic-git|isomorphic-git/http/web|',
-  'packages/ui/src/components/App.tsx|concrete-backend|@cept/core|BrowserFsBackend',
-  'packages/ui/src/components/storage/git-space.ts|concrete-backend|@cept/core|GitBackend',
-  'packages/ui/src/components/storage/git-space.ts|concrete-backend|@cept/core|BrowserFsBackend',
-];
+/** The baseline when the gate landed (PR 8), as key → count. Entries and counts may only go down. */
+const BASELINE_AT_PR_8 = new Map([
+  ['packages/core/src/storage/local-fs.ts|platform|node:fs/promises|', 1],
+  ['packages/core/src/storage/local-fs.ts|platform|node:path|', 1],
+  ['packages/core/src/storage/local-fs.ts|platform|node:fs|', 1],
+  ['packages/ui/src/components/App.tsx|isomorphic-git|isomorphic-git/http/web|', 4],
+  ['packages/ui/src/components/App.tsx|concrete-backend|@cept/core|BrowserFsBackend', 1],
+  ['packages/ui/src/components/storage/git-space.ts|concrete-backend|@cept/core|GitBackend', 1],
+  [
+    'packages/ui/src/components/storage/git-space.ts|concrete-backend|@cept/core|BrowserFsBackend',
+    1,
+  ],
+]);
 
 const BOUNDARY_RULES = ['@nx/enforce-module-boundaries', 'cept/restricted-imports'];
 
@@ -87,25 +90,36 @@ describe('boundary fixtures', () => {
 describe('boundary baseline', () => {
   const baseline = readBaseline();
 
-  it('only shrinks: every entry was in the baseline when the gate landed', () => {
+  it('only shrinks: every entry and count was in the baseline when the gate landed', () => {
     const keys = baseline.map((e) => `${e.file}|${e.group}|${e.module}|${e.name ?? ''}`);
-    expect(BASELINE_AT_PR_8).toEqual(expect.arrayContaining(keys));
-    expect(new Set(keys).size).toBe(keys.length);
+    expect(new Set(keys).size, 'duplicate baseline entries').toBe(keys.length);
+    for (const [i, entry] of baseline.entries()) {
+      const key = keys[i] ?? '';
+      expect(BASELINE_AT_PR_8.has(key), `${key} was not in the baseline at PR 8`).toBe(true);
+      expect(entry.count ?? 1, `${key} count grew`).toBeLessThanOrEqual(
+        BASELINE_AT_PR_8.get(key) ?? 0,
+      );
+    }
   });
 
-  it('has no stale entries: each one still matches an import in its file', async () => {
+  it('has no stale entries: each one matches exactly `count` imports in its file', async () => {
     const eslint = new ESLint({
       cwd: ROOT,
       overrideConfig: { rules: { 'cept/restricted-imports': ['error', { baseline: [] }] } },
     });
     for (const entry of baseline) {
-      const code = readFileSync(path.join(ROOT, entry.file), 'utf8');
-      const messages = await boundaryMessages(eslint, code, entry.file);
-      const what = entry.name ? `"${entry.name}" from "${entry.module}"` : `"${entry.module}"`;
-      const match = messages.some(
-        (m) => m.startsWith(`cept/restricted-imports ${what} `) && m.endsWith(`[${entry.group}]`),
+      const file = path.join(ROOT, entry.file);
+      expect(existsSync(file), `${entry.file} no longer exists; remove its baseline entries`).toBe(
+        true,
       );
-      expect(match, `${entry.file}: ${what} [${entry.group}] is no longer imported`).toBe(true);
+      const messages = await boundaryMessages(eslint, readFileSync(file, 'utf8'), entry.file);
+      const what = entry.name ? `"${entry.name}" from "${entry.module}"` : `"${entry.module}"`;
+      const found = messages.filter(
+        (m) => m.startsWith(`cept/restricted-imports ${what} `) && m.endsWith(`[${entry.group}]`),
+      ).length;
+      expect(found, `${entry.file}: ${what} [${entry.group}] imports; set count to match`).toBe(
+        entry.count ?? 1,
+      );
     }
   });
 });

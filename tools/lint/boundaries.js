@@ -19,7 +19,8 @@ export const BASELINE_FILE = path.join(ROOT, 'tools/lint/boundary-baseline.json'
  * @property {string[]} files Path prefixes (relative to the repo root) the group applies to.
  * @property {string[]} [except] Files exempt from the group.
  * @property {RegExp} modules Module specifiers the group forbids.
- * @property {string[]} [names] When set, only these named (value) imports are forbidden.
+ * @property {string[]} [names] When set, only these named (value) imports are forbidden, plus any
+ *   import that hides which names it uses (`import * as`, `import()`, `export *`, `require()`).
  * @property {string} message
  */
 
@@ -52,7 +53,8 @@ export const GROUPS = [
  * @property {string} file
  * @property {string} group
  * @property {string} module
- * @property {string} [name]
+ * @property {string} [name] The named import, or `*` for a namespace import.
+ * @property {number} [count] How many such imports the file has (default 1).
  * @property {string} removedBy
  */
 
@@ -91,27 +93,37 @@ const restrictedImports = {
     const file = path.relative(ROOT, context.filename).split(path.sep).join('/');
     const groups = groupsFor(file);
     if (groups.length === 0) return {};
-    /** @type {BaselineEntry[]} */
-    const baseline = (context.options[0]?.baseline ?? []).filter(
-      (/** @type {BaselineEntry} */ e) => e.file === file,
+    /** Imports each baseline entry still allows in this file; one is used up per report it silences. */
+    const allowance = new Map(
+      (context.options[0]?.baseline ?? [])
+        .filter((/** @type {BaselineEntry} */ e) => e.file === file)
+        .map((/** @type {BaselineEntry} */ e) => [
+          `${e.group}|${e.module}|${e.name ?? ''}`,
+          e.count ?? 1,
+        ]),
     );
 
     /**
      * @param {import('eslint').Rule.Node} node
      * @param {string} module
-     * @param {string[] | null} names Value names imported, or null when the import is not by name.
+     * @param {string[] | null} names Value names imported, or null when the import does not say
+     *   which names it uses (a namespace import, `import()`, `export *` or `require()`).
      */
     function check(node, module, names) {
       for (const group of groups) {
         if (!group.modules.test(module)) continue;
-        const hits = group.names
-          ? (names ?? []).filter((n) => group.names?.includes(n))
-          : [undefined];
+        const hits = !group.names
+          ? [undefined]
+          : names === null
+            ? ['*']
+            : names.filter((n) => group.names?.includes(n));
         for (const name of hits) {
-          const allowed = baseline.some(
-            (e) => e.group === group.id && e.module === module && e.name === name,
-          );
-          if (allowed) continue;
+          const key = `${group.id}|${module}|${name ?? ''}`;
+          const left = allowance.get(key) ?? 0;
+          if (left > 0) {
+            allowance.set(key, left - 1);
+            continue;
+          }
           context.report({
             node,
             messageId: 'forbidden',
@@ -133,6 +145,10 @@ const restrictedImports = {
       /** @param {any} node */
       ImportDeclaration(node) {
         if (node.importKind === 'type') return;
+        if (node.specifiers.some((/** @type {any} */ s) => s.type === 'ImportNamespaceSpecifier')) {
+          check(node, node.source.value, null);
+          return;
+        }
         const names = node.specifiers
           .filter((/** @type {any} */ s) => s.type === 'ImportSpecifier' && s.importKind !== 'type')
           .map((/** @type {any} */ s) => s.imported.name ?? s.imported.value);
