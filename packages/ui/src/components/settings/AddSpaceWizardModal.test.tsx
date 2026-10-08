@@ -15,6 +15,7 @@ const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
   onCreateSpace: vi.fn(),
+  sources: { browser: true, folder: false, git: true },
 };
 
 describe('AddSpaceWizardModal', () => {
@@ -28,7 +29,7 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('add-space-wizard-modal')).toBeDefined();
   });
 
-  it('shows Local and Git by default, and nothing that is not available', () => {
+  it('shows Local and Git when both are available, and nothing else', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
     expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
@@ -108,6 +109,21 @@ describe('AddSpaceWizardModal', () => {
       );
       expect(screen.getByTestId('wizard-no-sources')).toBeDefined();
       expect(screen.queryByTestId('wizard-choose-local')).toBeNull();
+    });
+
+    it('closes from the no-sources message', () => {
+      const onClose = vi.fn();
+      render(
+        <AddSpaceWizardModal
+          {...defaultProps}
+          onClose={onClose}
+          sources={{ browser: false, folder: false, git: false }}
+        />,
+      );
+      act(() => {
+        fireEvent.click(screen.getByTestId('wizard-no-sources-close'));
+      });
+      expect(onClose).toHaveBeenCalled();
     });
   });
 

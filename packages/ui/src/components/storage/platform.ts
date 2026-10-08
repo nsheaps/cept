@@ -26,11 +26,12 @@ export interface SpaceSources {
 }
 
 /** Probe `scope` (the window by default) for the storage APIs Cept uses. */
-export function probePlatform(scope: object = globalThis): PlatformFeatures {
-  const api = scope as { showDirectoryPicker?: unknown; indexedDB?: unknown };
+export function probePlatform(
+  scope: { showDirectoryPicker?: unknown; indexedDB?: unknown } = globalThis,
+): PlatformFeatures {
   return {
-    fileSystemAccess: typeof api.showDirectoryPicker === 'function',
-    indexedDB: typeof api.indexedDB === 'object' && api.indexedDB !== null,
+    fileSystemAccess: typeof scope.showDirectoryPicker === 'function',
+    indexedDB: typeof scope.indexedDB === 'object' && scope.indexedDB !== null,
   };
 }
 

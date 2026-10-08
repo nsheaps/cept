@@ -189,13 +189,44 @@ const restrictedImports = {
 /** Comparisons that test equality, either way round. */
 const EQUALITY = new Set(['===', '!==', '==', '!=']);
 
-/** @param {any} node Whether `node` is the string literal `'git'`. */
-const isGitLiteral = (node) => node?.type === 'Literal' && node.value === 'git';
-/** @param {any} node Whether `node` reads a `type` property (`x.type`, `x?.type`, `x['type']`). */
-const readsType = (node) =>
-  node?.type === 'MemberExpression' &&
-  ((!node.computed && node.property.name === 'type') ||
-    (node.computed && node.property.type === 'Literal' && node.property.value === 'type'));
+/** TypeScript wrappers that do not change a value: `x as T`, `x!`, `x satisfies T`, `<T>x`. */
+const WRAPPERS = new Set([
+  'TSAsExpression',
+  'TSNonNullExpression',
+  'TSSatisfiesExpression',
+  'TSTypeAssertion',
+  'ChainExpression',
+]);
+/** @param {any} node `node` without any value-preserving wrappers around it. */
+const unwrap = (node) => {
+  let inner = node;
+  while (inner && WRAPPERS.has(inner.type)) inner = inner.expression;
+  return inner;
+};
+
+/** @param {any} node Whether `node` is the string `'git'` (a literal or a plain template). */
+const isGitLiteral = (node) => {
+  const inner = unwrap(node);
+  if (inner?.type === 'Literal') return inner.value === 'git';
+  return (
+    inner?.type === 'TemplateLiteral' &&
+    inner.expressions.length === 0 &&
+    inner.quasis[0]?.value.cooked === 'git'
+  );
+};
+/**
+ * @param {any} node Whether `node` reads a `type`: `x.type`, `x?.type`, `x['type']`, or a
+ * variable named `type` (as from `const { type } = backend`), through any casts.
+ */
+const readsType = (node) => {
+  const inner = unwrap(node);
+  if (inner?.type === 'Identifier') return inner.name === 'type';
+  return (
+    inner?.type === 'MemberExpression' &&
+    ((!inner.computed && inner.property.name === 'type') ||
+      (inner.computed && inner.property.type === 'Literal' && inner.property.value === 'type'))
+  );
+};
 
 /** @type {import('eslint').Rule.RuleModule} */
 const noGitTypeCheck = {

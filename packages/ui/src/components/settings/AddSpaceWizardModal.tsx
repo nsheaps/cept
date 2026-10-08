@@ -15,10 +15,8 @@ export interface AddSpaceWizardModalProps {
   /** Opens a folder on disk as a space; the folder option shows only when this is set. */
   onOpenFolder?: () => void;
   /** The kinds of space this device supports (REQ-WS-017); only these are offered. */
-  sources?: SpaceSources;
+  sources: SpaceSources;
 }
-
-const DEFAULT_SOURCES: SpaceSources = { browser: true, folder: false, git: true };
 
 type WizardStep = 'choose-type' | 'create-local' | 'add-git';
 
@@ -28,7 +26,7 @@ export function AddSpaceWizardModal({
   onCreateSpace,
   onAddRemoteRepo,
   onOpenFolder,
-  sources = DEFAULT_SOURCES,
+  sources,
 }: AddSpaceWizardModalProps) {
   const showFolder = sources.folder && onOpenFolder !== undefined;
   const nothingAvailable = !sources.browser && !showFolder && !sources.git;
@@ -132,9 +130,18 @@ export function AddSpaceWizardModal({
           {step === 'choose-type' && (
             <div data-testid="wizard-type-chooser">
               {nothingAvailable ? (
-                <p className="cept-wizard-desc" data-testid="wizard-no-sources">
-                  No kind of space can be added on this device.
-                </p>
+                <>
+                  <p className="cept-wizard-desc" data-testid="wizard-no-sources">
+                    No kind of space can be added on this device.
+                  </p>
+                  <button
+                    className="cept-wizard-cancel-btn"
+                    onClick={resetAndClose}
+                    data-testid="wizard-no-sources-close"
+                  >
+                    Close
+                  </button>
+                </>
               ) : (
                 <p className="cept-wizard-desc">Choose the type of space you want to create.</p>
               )}
