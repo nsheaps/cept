@@ -13,6 +13,7 @@ import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 import type { SidebarPageRef } from '../sidebar/Sidebar.js';
 import { DEFAULT_SETTINGS } from '../settings/SettingsModal.js';
 import type { CeptSettings } from '../settings/SettingsModal.js';
+import { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
 
 /** Shape of the persisted workspace state stored via the backend */
 export interface PersistedState {
@@ -25,21 +26,10 @@ export interface PersistedState {
   spaceName?: string;
 }
 
-const WORKSPACE_FILE = '.cept/workspace-state.json';
-const PAGES_DIR = 'pages';
+const WORKSPACE_FILE = spaceWorkspaceFile(DEFAULT_SPACE_ID);
+const PAGES_DIR = spacePagesDir(DEFAULT_SPACE_ID);
 const SETTINGS_FILE = '.cept/settings.json';
 
-/** Get workspace file path for a specific space */
-export function spaceWorkspaceFile(spaceId: string): string {
-  if (spaceId === 'default') return WORKSPACE_FILE;
-  return `.cept/spaces/${spaceId}/workspace-state.json`;
-}
-
-/** Get pages directory for a specific space */
-export function spacePagesDir(spaceId: string): string {
-  if (spaceId === 'default') return PAGES_DIR;
-  return `.cept/spaces/${spaceId}/pages`;
-}
 const LEGACY_STORAGE_KEY = 'cept-workspace';
 const LEGACY_SETTINGS_KEY = 'cept-settings';
 
