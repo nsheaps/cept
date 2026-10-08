@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.0](https://github.com/nsheaps/cept/compare/v0.12.0...v0.13.0) (2026-10-08)
+
+### Features
+
+* **ui:** load the page tree from the folder layout ([#383](https://github.com/nsheaps/cept/issues/383)) ([10dbcfc](https://github.com/nsheaps/cept/commit/10dbcfc44db774f02cf901273aefe9b9c8077fea)), references [#382](https://github.com/nsheaps/cept/issues/382)
+
 ## [0.12.0](https://github.com/nsheaps/cept/compare/v0.11.1...v0.12.0) (2026-10-08)
 
 ### Features
