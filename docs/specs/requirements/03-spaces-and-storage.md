@@ -482,7 +482,7 @@ branch: docs # optional (D-30)
 - An E2E test with a mocked handle passes.
 - The docs state which browsers are supported.
 
-**Current state: stubbed.** `WebFsBackend` and `pickDirectory`, `persistDirectoryHandle` and `loadDirectoryHandle` exist with tests in [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) and are exported from [packages/core/src/storage/index.ts](../../../packages/core/src/storage/index.ts) (~line 24). Nothing in `packages/ui` or `packages/web` calls them.
+**Current state: stubbed.** [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) has `WebFsBackend`, `pickDirectory` and the handle persistence the app will use: `createFolderHandleStore` keeps one handle per space id in IndexedDB, `restoreFolders` lists the saved handles with their permission state on reload without prompting, and `reconnectFolder` re-requests read-write permission from a user gesture (`folderPermission` wraps `queryPermission`/`requestPermission`). Unit tests with mocked handles cover persist, reload and permission denied ([web-fs-handles.test.ts](../../../packages/core/src/storage/web-fs-handles.test.ts)). Nothing in `packages/ui` or `packages/web` calls them yet; the "Open folder" entry point is phase-1 plan PR 25. Permission prompts differ by browser; Phase 1 targets Chromium.
 
 **Docs state: documented-differently, stale.** [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) line 57 lists Local Folder on Web as "No\*", while roadmap.md line 40 says it is done. No doc separates the IndexedDB case from the real-folder case.
 
