@@ -8,12 +8,13 @@ set -euo pipefail
 
 branch=${1:?usage: commit-format-fixes.sh <pr-head-branch>}
 
-if git diff --quiet; then
+if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
   echo "Formatting is already clean; nothing to commit."
   exit 0
 fi
 
 git diff --stat
-git commit --all --message "style: apply prettier formatting"
+git add --all
+git commit --message "style: apply prettier formatting"
 git push origin "HEAD:refs/heads/$branch"
 echo "::notice title=Format autofix::Pushed Prettier fixes to $branch; CI re-runs on the new commit."

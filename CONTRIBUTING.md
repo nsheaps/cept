@@ -71,7 +71,7 @@ These rules are enforced in code review and CI:
 ### Code Style
 
 - TypeScript strict mode
-- ESLint, and Prettier for formatting: `mise run lint` fails on unformatted files. On pull requests from this repo, the Format workflow commits `mise run format` fixes to your branch; on fork PRs, run `mise run format` yourself
+- ESLint for lints, Prettier for formatting. `mise run lint` fails on unformatted files. Same-repo PRs get an autofix commit from the Format workflow; on fork PRs, run `mise run format` yourself.
 - Prefer functional patterns where appropriate
 - Write tests for all new code
 
