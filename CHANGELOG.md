@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.39](https://github.com/nsheaps/cept/compare/v0.7.38...v0.7.39) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([212ae65](https://github.com/nsheaps/cept/commit/212ae659dbab92fee48dda5d6a4ef5ba4f22da11))
+
+### Chores
+
+* **deps:** update dependency @types/bun to v1.4.2 ([#359](https://github.com/nsheaps/cept/issues/359)) ([cbff5d8](https://github.com/nsheaps/cept/commit/cbff5d808ef724b5b05204ccdbb1309f1d7cd31b))
+
 ## [0.7.38](https://github.com/nsheaps/cept/compare/v0.7.37...v0.7.38) (2026-10-08)
 
 ### Documentation
