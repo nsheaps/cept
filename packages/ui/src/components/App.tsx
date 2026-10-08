@@ -66,6 +66,7 @@ import {
   cloneErrorMessage,
   cloneRemoteRepo,
   normalizeRepoUrl,
+  remoteWebUrl,
 } from './storage/git-space.js';
 import { useGitHubAccount } from './settings/github-account.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
@@ -136,6 +137,16 @@ function demoRequestedByUrl(): boolean {
   }
 }
 
+/** Whether the page URL links into a remote space, which opens even on a first visit. */
+function remoteSpaceRequestedByUrl(): boolean {
+  try {
+    const route = peekRoute();
+    return !route.notFound && route.space === 'user' && isRemoteSpaceId(route.spaceId);
+  } catch {
+    return false;
+  }
+}
+
 const MAX_RECENT = 10;
 
 function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
@@ -188,6 +199,7 @@ export function App() {
   useTheme(settings.themeMode);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'settings' | 'about' | 'spaces'>('settings');
+  const [settingsSpaceId, setSettingsSpaceId] = useState<string | undefined>();
   const [addSpaceWizardOpen, setAddSpaceWizardOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState<'user' | 'docs'>('user');
   const [docsSelectedPageId, setDocsSelectedPageId] = useState<string | undefined>('docs-index');
@@ -502,7 +514,8 @@ export function App() {
   useEffect(() => {
     if (!initializedRef.current || routeRestoredRef.current || !startupDone) return;
     // Wait until pages are actually populated (or we confirmed there are none)
-    if (!hasStarted && !persisted) return;
+    // (A link into a remote space skips the landing page: it clones and opens the space.)
+    if (!hasStarted && !persisted && !remoteSpaceRequestedByUrl()) return;
     routeRestoredRef.current = true;
     routeResolvingRef.current = true;
     const routeDone = () => {
@@ -1548,10 +1561,14 @@ export function App() {
     setExportDialogOpen(true);
   }, []);
 
-  const handleOpenSettings = useCallback((tab: 'settings' | 'about' | 'spaces' = 'settings') => {
-    setSettingsTab(tab);
-    setSettingsOpen(true);
-  }, []);
+  const handleOpenSettings = useCallback(
+    (tab: 'settings' | 'about' | 'spaces' = 'settings', spaceId?: string) => {
+      setSettingsTab(tab);
+      setSettingsSpaceId(spaceId);
+      setSettingsOpen(true);
+    },
+    [],
+  );
 
   const handleOpenDocs = useCallback(() => {
     setNotFound(undefined);
@@ -1676,15 +1693,18 @@ export function App() {
 
       // If we're refreshing the currently active space, update the UI state
       if (spaceId === userSpaceId) {
+        // Stay on the open page, and keep the favorites and recents, that the remote still has.
+        const stillThere = (id: string) => clonedContents[id] !== undefined;
         setPages(clonedPages);
         setPageContents(clonedContents);
-        setSelectedPageId(clonedPages[0]?.id);
-        setFavorites([]);
-        setRecentPages([]);
+        setSelectedPageId((prev) => (prev && stillThere(prev) ? prev : clonedPages[0]?.id));
+        setFavorites((prev) => prev.filter((f) => stillThere(f.id)));
+        setRecentPages((prev) => prev.filter((r) => stillThere(r.id)));
       }
 
       // Show the updated lastSyncedAt
       setSpacesManifest(updatedManifest);
+      addToast(`"${spaceMeta.name}" is refreshed from its remote.`, 'success');
     },
     [backend, spaces, userSpaceId, setSpacesManifest, gitAuth, addToast],
   );
@@ -1719,6 +1739,23 @@ export function App() {
       cancelled = true;
     };
   }, [settingsOpen, spacesManifest, spaces]);
+
+  // The open space's entry, and where its open page lives on GitHub (remote spaces only).
+  const activeSpaceMeta =
+    activeSpace === 'user' ? spacesManifest?.spaces.find((s) => s.id === userSpaceId) : undefined;
+  const activeRemoteHref =
+    activeSpaceMeta?.remoteUrl &&
+    remoteWebUrl(
+      {
+        remoteUrl: activeSpaceMeta.remoteUrl,
+        branch: activeSpaceMeta.branch,
+        subPath: activeSpaceMeta.subPath,
+      },
+      selectedPageId,
+    );
+  const activeRemoteLink = activeRemoteHref
+    ? { href: activeRemoteHref, label: 'View on GitHub' }
+    : undefined;
 
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
@@ -1926,6 +1963,15 @@ export function App() {
           }}
           onDuplicate={handlePageDuplicate}
           onDelete={handlePageDelete}
+          remoteLink={activeRemoteLink}
+          onRefreshSpace={
+            activeSpaceMeta?.remoteUrl ? () => void handleRefreshSpace(userSpaceId) : undefined
+          }
+          onOpenSpaceSettings={
+            activeSpaceMeta?.remoteUrl
+              ? () => handleOpenSettings('spaces', activeSpaceMeta.id)
+              : undefined
+          }
         />
       </header>
       <main className="flex flex-1 min-h-0">
@@ -2314,6 +2360,7 @@ export function App() {
       <SettingsModal
         isOpen={settingsOpen}
         initialTab={settingsTab}
+        initialSpaceId={settingsSpaceId}
         settings={settings}
         spaces={spaceInfoList}
         activeSpaceId={userSpaceId}

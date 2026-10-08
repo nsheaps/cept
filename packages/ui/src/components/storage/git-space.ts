@@ -70,6 +70,27 @@ export function isGitHubUrl(url: string): boolean {
   }
 }
 
+/** Where a remote space lives, as `remoteWebUrl` needs it. */
+export interface RemoteLocation {
+  remoteUrl: string;
+  branch?: string;
+  subPath?: string;
+}
+
+/**
+ * The page on github.com for a remote space, or for one of its pages (a file
+ * id opens the file, a folder id the folder). Null for hosts other than
+ * github.com, whose web URLs Cept cannot know.
+ */
+export function remoteWebUrl(space: RemoteLocation, pageId?: string): string | null {
+  const repo = normalizeRepoUrl(space.remoteUrl);
+  if (!isGitHubUrl(repo)) return null;
+  const path = [space.subPath, pageId].flatMap((part) => (part ?? '').split('/')).filter(Boolean);
+  if (path.length === 0 && !space.branch) return repo;
+  const kind = pageId && /\.(md|markdown)$/i.test(pageId) ? 'blob' : 'tree';
+  return [repo, kind, space.branch ?? 'main', ...path.map(encodeURIComponent)].join('/');
+}
+
 /**
  * Clone a remote Git repository, or fetch into the space's kept clone, and
  * extract its Markdown files as Cept pages. The token in `auth` is only sent

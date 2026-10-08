@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GitAuthRequiredError, MemoryBackend, remoteCloneDir } from '@cept/core';
 import type { RemoteCloneOptions } from '@cept/core';
-import { cloneErrorMessage, cloneRemoteRepo, isGitHubUrl, normalizeRepoUrl } from './git-space.js';
+import {
+  cloneErrorMessage,
+  cloneRemoteRepo,
+  isGitHubUrl,
+  normalizeRepoUrl,
+  remoteWebUrl,
+} from './git-space.js';
 import type { GitCloneHost } from './git-space.js';
 
 const SPACE_ID = 'github.com/u/r@main';
@@ -160,5 +166,34 @@ describe('normalizeRepoUrl', () => {
 
   it('should trim whitespace', () => {
     expect(normalizeRepoUrl('  github.com/user/repo  ')).toBe('https://github.com/user/repo');
+  });
+});
+
+describe('remoteWebUrl', () => {
+  const space = { remoteUrl: 'https://github.com/o/r', branch: 'main', subPath: 'docs' };
+
+  it('opens a file page as a blob under the space sub-path', () => {
+    expect(remoteWebUrl(space, 'guides/intro.md')).toBe(
+      'https://github.com/o/r/blob/main/docs/guides/intro.md',
+    );
+  });
+
+  it('opens a folder page, or the space itself, as a tree', () => {
+    expect(remoteWebUrl(space, 'guides')).toBe('https://github.com/o/r/tree/main/docs/guides');
+    expect(remoteWebUrl(space)).toBe('https://github.com/o/r/tree/main/docs');
+    expect(remoteWebUrl({ remoteUrl: 'github.com/o/r.git', branch: 'dev' })).toBe(
+      'https://github.com/o/r/tree/dev',
+    );
+  });
+
+  it('encodes each path segment', () => {
+    expect(remoteWebUrl({ ...space, subPath: undefined }, 'a b/c#d.md')).toBe(
+      'https://github.com/o/r/blob/main/a%20b/c%23d.md',
+    );
+  });
+
+  it('is null for hosts other than github.com', () => {
+    expect(remoteWebUrl({ remoteUrl: 'https://gitlab.com/o/r', branch: 'main' })).toBeNull();
+    expect(remoteWebUrl({ remoteUrl: 'https://github.com.evil.test/o/r' }, 'a.md')).toBeNull();
   });
 });

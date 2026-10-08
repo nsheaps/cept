@@ -52,6 +52,16 @@ Once signed in, adding a GitHub repository as a space uses the token, so private
 
 Each space keeps its copy of the repository on this device. Refreshing it, or opening it more than 5 minutes after the last sync, downloads only what changed on GitHub.
 
+## Working in a repository space
+
+A link to a Markdown file on GitHub, in the form `/g/github.com/<owner>/<repo>/blob/<branch>/<path>`, opens it in Cept (see [Page links](../reference/space-config.md#page-links)). The first link into a repository adds it as a space; later links into the same repository and branch open in that space.
+
+While a repository space is open, the **Page actions** menu at the top right has:
+
+- **View on GitHub**: opens the page (or folder) on github.com in a new tab.
+- **Refresh from remote**: downloads what changed on GitHub. The page you are on stays open if the repository still has it.
+- **Space settings**: opens the space's details, which show the repository, branch, path and last sync, with **Open on GitHub** and a refresh button.
+
 Each time Cept starts it checks the saved token again. A token GitHub no longer accepts (expired or revoked) is forgotten and you are signed out. When GitHub cannot be reached, the token is kept and checked next time.
 
 Choose **Sign out** to forget the token on this device. To revoke it, delete it on GitHub.

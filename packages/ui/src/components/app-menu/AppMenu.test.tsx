@@ -75,4 +75,40 @@ describe('AppMenu', () => {
     fireEvent.click(screen.getByTestId('page-menu-rename'));
     expect(onRename).toHaveBeenCalledWith('test-page');
   });
+  it('hides the remote-space items without their props', () => {
+    render(<AppMenu pageId="test-page" />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    expect(screen.queryByTestId('page-menu-view-remote')).toBeNull();
+    expect(screen.queryByTestId('page-menu-refresh-space')).toBeNull();
+    expect(screen.queryByTestId('page-menu-space-settings')).toBeNull();
+  });
+
+  it('links to the remote page in a new tab', () => {
+    const href = 'https://github.com/o/r/blob/main/docs/a.md';
+    render(<AppMenu pageId="test-page" remoteLink={{ href, label: 'View on GitHub' }} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    const link = screen.getByTestId('page-menu-view-remote');
+    expect(link.getAttribute('href')).toBe(href);
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noreferrer');
+    expect(link.textContent).toContain('View on GitHub');
+  });
+
+  it('calls onRefreshSpace and closes the menu', () => {
+    const onRefreshSpace = vi.fn();
+    render(<AppMenu pageId="test-page" onRefreshSpace={onRefreshSpace} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-refresh-space'));
+    expect(onRefreshSpace).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('page-menu-refresh-space')).toBeNull();
+  });
+
+  it('calls onOpenSpaceSettings and closes the menu', () => {
+    const onOpenSpaceSettings = vi.fn();
+    render(<AppMenu pageId="test-page" onOpenSpaceSettings={onOpenSpaceSettings} />);
+    fireEvent.click(screen.getByTestId('page-menu-btn'));
+    fireEvent.click(screen.getByTestId('page-menu-space-settings'));
+    expect(onOpenSpaceSettings).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('page-menu-space-settings')).toBeNull();
+  });
 });
