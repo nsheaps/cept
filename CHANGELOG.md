@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.42](https://github.com/nsheaps/cept/compare/v0.7.41...v0.7.42) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([9daffda](https://github.com/nsheaps/cept/commit/9daffdaaf0a20c0706f94b14d5459156e8ca63ec))
+
+### CI/CD
+
+* check pr titles are conventional commits ([#366](https://github.com/nsheaps/cept/issues/366)) ([c80acf2](https://github.com/nsheaps/cept/commit/c80acf2ba942ed37353e6153cb3f05f493781652)), references [#358](https://github.com/nsheaps/cept/issues/358)
+
 ## [0.7.41](https://github.com/nsheaps/cept/compare/v0.7.40...v0.7.41) (2026-10-08)
 
 ### Documentation
