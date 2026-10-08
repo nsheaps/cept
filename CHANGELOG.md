@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.48](https://github.com/nsheaps/cept/compare/v0.7.47...v0.7.48) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1210c1a](https://github.com/nsheaps/cept/commit/1210c1a11ce6dad8e2d903ea4e58f26af1061b82))
+
+### CI/CD
+
+* require status checks on main ([#373](https://github.com/nsheaps/cept/issues/373)) ([20dcb5c](https://github.com/nsheaps/cept/commit/20dcb5c43d8808f7e9699640ba3dcc8a27d2c4b7))
+
 ## [0.7.47](https://github.com/nsheaps/cept/compare/v0.7.46...v0.7.47) (2026-10-08)
 
 ### Documentation
