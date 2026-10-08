@@ -21,7 +21,7 @@ describeStorageBackendConformance('MemoryBackend', () => ({ backend: new MemoryB
 
 describeStorageBackendConformance(
   'BrowserFsBackend',
-  () => ({ backend: new BrowserFsBackend(`conformance-${Date.now()}-${Math.random()}`) }),
+  () => ({ backend: new BrowserFsBackend(`conformance-${crypto.randomUUID()}`) }),
   { watch: true },
 );
 

@@ -41,6 +41,9 @@ interface Watcher {
 }
 
 export class MemoryBackend implements StorageBackend {
+  // Reports 'browser' because, like BrowserFsBackend, it has no disk, history or
+  // sync. Code that branches on `type === 'browser'` cannot tell the two apart;
+  // branch on `capabilities` instead (architecture rule 4).
   readonly type = 'browser' as const;
   readonly capabilities: BackendCapabilities = MEMORY_CAPABILITIES;
 
@@ -180,6 +183,15 @@ Welcome to your new workspace.
   }
 
   private put(normalized: string, data: Uint8Array): void {
+    // Match real filesystems: a path is either a file or a directory, never both.
+    if (this.kindOf(normalized) === 'directory') {
+      throw new Error(`EISDIR: cannot write file over directory ${normalized}`);
+    }
+    for (let dir = parentOf(normalized); dir !== '/'; dir = parentOf(dir)) {
+      if (this.files.has(dir)) {
+        throw new Error(`ENOTDIR: ${dir} is a file, cannot write ${normalized}`);
+      }
+    }
     const existing = this.files.get(normalized);
     const now = new Date();
     this.files.set(normalized, {
@@ -216,6 +228,11 @@ function normalize(path: string): string {
 }
 
 /** True if `path` is strictly inside directory `dir`. */
+function parentOf(path: string): string {
+  const slash = path.lastIndexOf('/');
+  return slash <= 0 ? '/' : path.slice(0, slash);
+}
+
 function isUnder(path: string, dir: string): boolean {
   return dir === '/' ? path !== '/' : path.startsWith(`${dir}/`);
 }

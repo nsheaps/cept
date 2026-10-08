@@ -7,7 +7,7 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { watch as fsWatch, type FSWatcher } from 'node:fs';
+import { existsSync, mkdirSync, watch as fsWatch, type FSWatcher } from 'node:fs';
 import type {
   StorageBackend,
   BackendCapabilities,
@@ -109,7 +109,9 @@ export class LocalFsBackend implements StorageBackend {
 
   watch(watchPath: string, callback: (event: FsEvent) => void): Unsubscribe {
     // One recursive watcher on the workspace root serves every subscription, so
-    // watching a path that does not exist yet still works once it is created.
+    // watching a sub-path that does not exist yet still works once it is created.
+    // The root itself must exist for fs.watch, so it is created if missing
+    // (creating an empty folder never touches existing files).
     // Events carry workspace-relative paths with a leading "/", like the other
     // backends, and are delivered for any change at or under the watched path.
     const listener: WatchListener = { path: toWorkspacePath(watchPath), callback };
@@ -117,12 +119,13 @@ export class LocalFsBackend implements StorageBackend {
 
     if (!this.rootWatcher) {
       try {
+        mkdirSync(this.rootDir, { recursive: true });
         this.rootWatcher = fsWatch(this.rootDir, { recursive: true }, (eventType, filename) => {
           if (!filename) return;
-          void this.dispatch(eventType, toWorkspacePath(filename.toString()));
+          this.dispatch(eventType, toWorkspacePath(filename.toString()));
         });
       } catch {
-        // Root does not exist — nothing to watch
+        // Root cannot be created or watched; the next watch() call retries
       }
     }
 
@@ -193,12 +196,14 @@ Welcome to your new workspace.
   }
 
   /** Turn a raw fs.watch notification into create/modify/delete for matching listeners. */
-  private async dispatch(eventType: string, eventPath: string): Promise<void> {
+  private dispatch(eventType: string, eventPath: string): void {
     const matching = [...this.listeners].filter((l) => isAtOrUnder(eventPath, l.path));
     if (matching.length === 0) return;
     let type: FsEvent['type'] = 'modify';
     if (eventType === 'rename') {
-      type = (await this.exists(eventPath)) ? 'create' : 'delete';
+      // Classify synchronously, in notification order, so a quick write-then-delete
+      // cannot have both notifications resolve after the delete and lose the create.
+      type = existsSync(this.resolve(eventPath)) ? 'create' : 'delete';
     }
     for (const l of matching) {
       l.callback({ type, path: eventPath });

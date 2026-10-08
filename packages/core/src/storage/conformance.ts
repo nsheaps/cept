@@ -307,13 +307,12 @@ export function describeStorageBackendConformance(
         const events: FsEvent[] = [];
         const unsubscribe = backend.watch('watched', (e) => events.push(e));
         await backend.writeFile('watched/first.txt', enc('1'));
-        await waitFor(() => events.length > 0);
+        await waitFor(() => events.some((e) => stripSlash(e.path).endsWith('first.txt')));
         unsubscribe();
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        const count = events.length;
         await backend.writeFile('watched/second.txt', enc('2'));
         await new Promise((resolve) => setTimeout(resolve, 150));
-        expect(events.length).toBe(count);
+        // Late events for first.txt may still trickle in; only second.txt proves a leak.
+        expect(events.some((e) => stripSlash(e.path).endsWith('second.txt'))).toBe(false);
       });
     });
   });
