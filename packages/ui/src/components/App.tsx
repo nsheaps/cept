@@ -646,13 +646,15 @@ export function App() {
 
   // Persist tree state to backend (debounced) — page content is saved separately per-file
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // The state save in flight, so a layout change can wait for it to land.
+  const persistSaveRef = useRef<Promise<unknown>>(Promise.resolve());
   useEffect(() => {
     if (!initializedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
       const state = { pages, favorites, recentPages, selectedPageId, spaceName };
       // Each space, the default one included, saves its own state file.
-      void spaces.saveState(userSpaceId, state);
+      persistSaveRef.current = spaces.saveState(userSpaceId, state).catch(() => undefined);
     }, 300);
   }, [pages, favorites, recentPages, selectedPageId, spaceName, spaces, userSpaceId]);
 
@@ -1050,6 +1052,7 @@ export function App() {
           // Nothing still waiting to be saved may land after the old layout is back.
           await flushPendingWrite();
           if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+          await persistSaveRef.current;
         }
         await spaces.undoConversion(id);
         setConversionBackups((prev) => ({ ...prev, [id]: false }));

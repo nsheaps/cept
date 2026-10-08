@@ -6,6 +6,7 @@ import type { SpaceStore } from './space-store.js';
 import {
   BACKUP_DIR,
   confirmFlatMigration,
+  finishInterruptedUndo,
   hasMigrationBackup,
   migrateFlatSpace,
   MIGRATION_MAP_FILE,
@@ -217,6 +218,25 @@ describe('confirming and undoing a migration', () => {
     after.delete('.cept/spaces/space-1/.cept/keep-flat-layout');
     expect(after).toEqual(before);
     expect(store.backend).toBeInstanceOf(ScopedBackend);
+  });
+
+  it('finishes an undo that stopped half way', async () => {
+    const backend = new MemoryBackend();
+    seedFlat(backend, '.cept/workspace-state.json');
+    const before = await filesOf(backend);
+    const store = ownSpaceStore(backend);
+    await migrateFlatSpace(store, 'Fallback');
+    expect(await finishInterruptedUndo(store)).toBe(false);
+
+    // The undo marked the space flat and removed the marker, then stopped.
+    await backend.writeFile('.cept/keep-flat-layout', new Uint8Array());
+    await backend.deleteFile('space.cept.yaml');
+
+    expect(await finishInterruptedUndo(store)).toBe(true);
+    const after = await filesOf(backend);
+    after.delete('.cept/keep-flat-layout');
+    expect(after).toEqual(before);
+    expect(await finishInterruptedUndo(store)).toBe(false);
   });
 
   it('refuses to undo without a backup', async () => {

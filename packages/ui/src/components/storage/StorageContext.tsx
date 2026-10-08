@@ -226,8 +226,11 @@ export async function deletePageContent(backend: StorageBackend, pageId: string)
 /** Clear all workspace data from the backend */
 export async function clearAllData(backend: StorageBackend): Promise<void> {
   // The default space lives at the root: in the folder layout its pages are
-  // every root entry but `.cept/`, which also holds the other spaces.
-  const rootEntries = await backend.listDirectory('/').catch(() => []);
+  // every root entry but `.cept/`, which also holds the other spaces. Only the
+  // browser store is Cept's alone; in a folder on disk the root can hold the
+  // user's own files, so there only Cept's files go.
+  const rootEntries =
+    backend.type === 'browser' ? await backend.listDirectory('/').catch(() => []) : [];
   const paths = [
     ...rootEntries.filter((e) => e.name !== '.cept').map((e) => e.name),
     WORKSPACE_FILE,

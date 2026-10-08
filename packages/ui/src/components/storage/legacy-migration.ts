@@ -248,3 +248,16 @@ export async function undoFlatMigration(store: SpaceStore): Promise<void> {
   await backend.deleteFile(MIGRATION_MAP_FILE);
   await backend.deleteFile(BACKUP_DIR);
 }
+
+/**
+ * Finish an undo that stopped half way (the space is marked flat but the
+ * backup is still there). Every step of the undo can run again, so this just
+ * reruns it. Returns whether there was one to finish.
+ */
+export async function finishInterruptedUndo(store: SpaceStore): Promise<boolean> {
+  const { backend } = store;
+  if (!(await backend.exists(KEEP_FLAT_FILE))) return false;
+  if (!(await hasMigrationBackup(backend))) return false;
+  await undoFlatMigration(store);
+  return true;
+}

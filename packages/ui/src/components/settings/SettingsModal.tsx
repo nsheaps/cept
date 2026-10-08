@@ -718,6 +718,7 @@ function SpaceDetails({
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
+  const [confirmUndo, setConfirmUndo] = useState(false);
 
   return (
     <div data-testid={`space-details-${space.id}`}>
@@ -856,15 +857,42 @@ function SpaceDetails({
                 Keep (delete backup)
               </button>
             )}
-            {onUndoConversion && (
-              <button
-                className="cept-settings-action-btn"
-                onClick={onUndoConversion}
-                data-testid="space-migration-undo"
-              >
-                Undo conversion
-              </button>
-            )}
+            {onUndoConversion &&
+              (confirmUndo ? (
+                <>
+                  <p
+                    className="cept-settings-wizard-desc"
+                    data-testid="space-migration-undo-warning"
+                  >
+                    Pages added, edited, moved or renamed since the conversion will be lost.
+                  </p>
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={() => {
+                      setConfirmUndo(false);
+                      onUndoConversion();
+                    }}
+                    data-testid="space-migration-undo-confirm"
+                  >
+                    Undo and lose those changes
+                  </button>
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={() => setConfirmUndo(false)}
+                    data-testid="space-migration-undo-cancel"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="cept-settings-action-btn"
+                  onClick={() => setConfirmUndo(true)}
+                  data-testid="space-migration-undo"
+                >
+                  Undo conversion
+                </button>
+              ))}
           </div>
         </>
       )}

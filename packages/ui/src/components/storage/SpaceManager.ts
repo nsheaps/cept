@@ -38,6 +38,7 @@ import {
 import type { FolderChange } from './folder-space.js';
 import {
   confirmFlatMigration,
+  finishInterruptedUndo,
   hasMigrationBackup,
   migrateFlatSpace,
   undoFlatMigration,
@@ -544,6 +545,8 @@ export class SpaceManager {
     let folder = await this.detectLayout(id);
     let converted = false;
     if (!folder && this.migrates(id)) {
+      // An undo that stopped half way is finished before anything reads the space.
+      await finishInterruptedUndo(this.store(id));
       converted = await migrateFlatSpace(this.store(id), fallbackName);
       if (converted) folder = await this.detectLayout(id);
     }

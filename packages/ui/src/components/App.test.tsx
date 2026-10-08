@@ -624,6 +624,22 @@ describe('App', () => {
       await waitFor(() => expect(screen.queryByTestId('space-migration')).toBeNull());
     });
 
+    it('leaves the conversion in place when undo is cancelled', async () => {
+      const backend = new MemoryBackend();
+      seedFlatDefault(backend);
+      renderApp(backend);
+      await waitFor(() => expect(backend.hasFile('Notes.md')).toBe(true));
+
+      await openSpaceDetails();
+      fireEvent.click(screen.getByTestId('space-migration-undo'));
+      fireEvent.click(screen.getByTestId('space-migration-undo-cancel'));
+
+      expect(screen.queryByTestId('space-migration-undo-warning')).toBeNull();
+      expect(screen.getByTestId('space-migration-undo')).toBeDefined();
+      expect(backend.hasFile('Notes.md')).toBe(true);
+      expect(backend.hasFile('.cept/migration-backup/manifest.json')).toBe(true);
+    });
+
     it('undoes the conversion and shows the flat space again', async () => {
       const backend = new MemoryBackend();
       seedFlatDefault(backend);
@@ -632,6 +648,10 @@ describe('App', () => {
 
       await openSpaceDetails();
       fireEvent.click(screen.getByTestId('space-migration-undo'));
+      // Undo asks first: it loses changes made since the conversion.
+      expect(screen.getByTestId('space-migration-undo-warning')).toBeDefined();
+      expect(backend.hasFile('Notes.md')).toBe(true);
+      fireEvent.click(screen.getByTestId('space-migration-undo-confirm'));
 
       await waitFor(() => {
         expect(screen.getByText(/back in its old layout/)).toBeDefined();

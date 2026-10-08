@@ -99,7 +99,7 @@ Spaces saved in the older layout, where pages are stored as `pages/<id>.md` and 
 The old files are kept in `.cept/migration-backup/` until you choose, in **Settings > Spaces**, under the space's details:
 
 - **Keep (delete backup)** deletes the backup.
-- **Undo conversion** puts the old layout back and keeps the space in it. Changes made since the conversion are lost.
+- **Undo conversion** asks you to confirm, then puts the old layout back and keeps the space in it. Changes made since the conversion are lost. If an undo stops part way, it finishes the next time the space opens.
 
 Cept never deletes the backup on its own. `.cept/migration-map.json` lists each page's old id and new path.
 
