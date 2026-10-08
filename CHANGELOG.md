@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.0](https://github.com/nsheaps/cept/compare/v0.13.0...v0.14.0) (2026-10-08)
+
+### Features
+
+* **ui:** migrate legacy flat spaces to folders ([#384](https://github.com/nsheaps/cept/issues/384)) ([d4115b7](https://github.com/nsheaps/cept/commit/d4115b7939e68f7f64532b9c523ee8e31ef8c9ab))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([ed9d905](https://github.com/nsheaps/cept/commit/ed9d9050bb4925db7081f623b47978d6b057f5ce))
+
 ## [0.13.0](https://github.com/nsheaps/cept/compare/v0.12.0...v0.13.0) (2026-10-08)
 
 ### Features
