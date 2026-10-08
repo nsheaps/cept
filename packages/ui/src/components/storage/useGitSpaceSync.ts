@@ -36,7 +36,10 @@ export interface SpaceSyncSession {
   localChanges(): Promise<GitSpaceLocalChanges>;
   resolveConflicts(resolutions: readonly ConflictResolution[]): Promise<GitSpaceSyncResult>;
   pushToNewBranch(): Promise<GitSpaceNewBranchResult>;
-  readonly sync: Pick<GitSpaceSession['sync'], 'getStatus' | 'on' | 'reportOnline'>;
+  readonly sync: Pick<
+    GitSpaceSession['sync'],
+    'getStatus' | 'on' | 'reportOnline' | 'reportOffline'
+  >;
   readonly autoCommit: Pick<GitSpaceSession['autoCommit'], 'on'>;
 }
 
@@ -229,9 +232,14 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       unsubscribe.push(
         foreground.onOnline(() => {
           s.sync.reportOnline();
+          // The leader sends what was committed meanwhile; followers wait for it.
           if (!cancelled && foreground.isActive()) s.start(onAuto);
         }),
       );
+      if (foreground.onOffline) {
+        // Show "Offline" at once; local commits wait in the clone until the network is back.
+        unsubscribe.push(foreground.onOffline(() => s.sync.reportOffline()));
+      }
       follow();
     })();
 

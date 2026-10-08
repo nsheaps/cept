@@ -69,6 +69,10 @@ const http: GitHttp = {
     };
   },
 };
+/** No network: every request fails the way `fetch` does offline. */
+const offlineHttp: GitHttp = {
+  request: () => Promise.reject(new TypeError('Failed to fetch')),
+};
 const identity = commitIdentityFor({ login: 'octo', id: 42, name: 'Octo Cat' });
 const encode = (text: string) => new TextEncoder().encode(text);
 const decode = (data: Uint8Array | null) => new TextDecoder().decode(data ?? undefined);
@@ -300,6 +304,61 @@ describe('GitSpaceSession', () => {
     await pushing.dispose();
     expect(await countUnpushedCommits({ host, fs, dir })).toBe(0);
     expect(await countUnpushedCommits({ host, fs, dir: `${dir}-missing` })).toBe(0);
+  });
+
+  it('keeps commits made offline across a reload and pushes them when back online', async () => {
+    const { bare } = makeRepo('offline');
+    const before = git(bare, 'rev-parse', 'main');
+    const device = await cloneOnNewDevice('offline');
+    const offline = await GitSpaceSession.open({ ...device, http: offlineHttp, identity });
+
+    for (const n of [1, 2, 3]) {
+      await offline.backend.writeFile('README.md', encode(`# Edit ${n}\n`));
+      const result = await offline.syncNow();
+      expect(result.status.state).toBe('offline');
+    }
+    expect(await offline.localChanges()).toEqual({ pending: 0, unpushed: 3 });
+    await offline.dispose();
+    expect(git(bare, 'rev-parse', 'main')).toBe(before);
+
+    // A reload: a new session over the same clone, now with the network back.
+    const online = await GitSpaceSession.open({ ...device, http, identity });
+    expect(await online.localChanges()).toEqual({ pending: 0, unpushed: 3 });
+    const synced = await online.syncNow();
+    await online.dispose();
+    expect(synced.status.state).toBe('synced');
+    expect(git(bare, 'rev-list', '--count', `${before}..main`)).toBe('3');
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Edit 3');
+  });
+
+  it('keeps a push asked for offline queued across a reload when auto-push is off', async () => {
+    const { bare } = makeRepo('queued');
+    const before = git(bare, 'rev-parse', 'main');
+    const device = await cloneOnNewDevice('queued');
+    const settings = { ...DEFAULT_SYNC_SETTINGS, autoPush: false };
+    const offline = await GitSpaceSession.open({
+      ...device,
+      http: offlineHttp,
+      identity,
+      settings,
+    });
+    await offline.backend.writeFile('README.md', encode('# Queued\n'));
+    expect((await offline.pushNow()).status.state).toBe('offline');
+    await offline.dispose();
+
+    const online = await GitSpaceSession.open({ ...device, http, identity, settings });
+    expect(online.sync.getStatus().pendingPush).toBe(true);
+    // An automatic sync, not a manual push, sends the queued work.
+    await online.syncNow();
+    expect(online.sync.getStatus().pendingPush).toBe(false);
+    await online.dispose();
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Queued');
+    expect(git(bare, 'rev-list', '--count', `${before}..main`)).toBe('1');
+
+    // Once pushed, the queue is empty: a later session does not push by itself.
+    const later = await GitSpaceSession.open({ ...device, http, identity, settings });
+    expect(later.sync.getStatus().pendingPush).toBe(false);
+    await later.dispose();
   });
 
   it('starts a space in a repository without one by committing its marker', async () => {

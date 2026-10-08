@@ -486,9 +486,41 @@ export class GitBackend implements GitStorageBackend {
     await this.fsCall('writeFile', path, next, 'utf8');
   }
 
+  /** The marker file that keeps a push queued across reloads, inside `.git`. */
+  private get pushQueueMarker(): string {
+    return `${this.dir.replace(/\/+$/, '')}/.git/cept-push-queued`;
+  }
+
+  /**
+   * Whether a push was asked for and has not gone through yet (REQ-WS-027).
+   * Kept in the clone's `.git` folder, so it lives as long as the commits it
+   * is about: in the browser that is IndexedDB, and it survives a reload.
+   */
+  async pushQueued(): Promise<boolean> {
+    try {
+      await this.fsCall('lstat', this.pushQueueMarker);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Queue a push (`true`) or mark the queue as sent (`false`). */
+  async setPushQueued(queued: boolean): Promise<void> {
+    if (queued) {
+      await this.fsCall('writeFile', this.pushQueueMarker, 'queued\n', 'utf8');
+      return;
+    }
+    try {
+      await this.fsCall('unlink', this.pushQueueMarker);
+    } catch {
+      // Nothing queued.
+    }
+  }
+
   /** Call the injected fs, through its `promises` namespace or its callback API. */
   private fsCall(
-    name: 'readFile' | 'writeFile' | 'mkdir' | 'lstat',
+    name: 'readFile' | 'writeFile' | 'mkdir' | 'lstat' | 'unlink',
     ...args: unknown[]
   ): Promise<unknown> {
     const promises = this.fs.promises;

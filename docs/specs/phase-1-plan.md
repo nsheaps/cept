@@ -469,6 +469,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: integration test: go offline, make N commits, reload, reconnect, the remote has N commits.
 - Accept: tests green.
 - Risk: overlaps the service worker (PR 67); the SW only wakes the leader, the queue lives in core.
+- Deviation (PR 39): the queue is the clone itself, not a separate IndexedDB store. Unpushed commits already live in the clone (lightning-fs, backed by IndexedDB), and `localChanges` counts them, so only the request to push is stored: a `cept-push-queued` marker in the clone's `.git`, written by `pushNow` and conflict resolution and removed once a push succeeds. With auto-push on (the default) the first sync after a reload pushes regardless. The existing "N unsynced" count is the pending-sync indicator; offline it reads "N waiting".
 
 **PR 40 — `feat(web): request persistent storage and warn on low quota`**
 

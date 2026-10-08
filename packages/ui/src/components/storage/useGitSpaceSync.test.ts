@@ -51,6 +51,7 @@ function fakeSession(name = 's') {
         return () => syncListeners.delete(fn);
       },
       reportOnline: vi.fn(),
+      reportOffline: vi.fn(),
     },
     autoCommit: { on: () => () => undefined },
   } satisfies SpaceSyncSession & { name: string };
@@ -69,6 +70,7 @@ function fakeForeground(active = true) {
   let isActive = active;
   const changes = new Set<() => void>();
   const online = new Set<() => void>();
+  const offline = new Set<() => void>();
   const fg: Foreground = {
     isActive: () => isActive,
     subscribe: (fn) => {
@@ -79,6 +81,10 @@ function fakeForeground(active = true) {
       online.add(fn);
       return () => online.delete(fn);
     },
+    onOffline: (fn) => {
+      offline.add(fn);
+      return () => offline.delete(fn);
+    },
   };
   return {
     fg,
@@ -88,6 +94,9 @@ function fakeForeground(active = true) {
     },
     goOnline: () => {
       for (const fn of online) fn();
+    },
+    goOffline: () => {
+      for (const fn of offline) fn();
     },
     changes,
   };
@@ -192,6 +201,23 @@ describe('useGitSpaceSync', () => {
     act(() => fg.goOnline());
     expect(f.session.sync.reportOnline).toHaveBeenCalled();
     expect(f.session.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports going offline at once and flushes from the leader when back online (PR 39)', async () => {
+    const f = fakeSession();
+    const fg = fakeForeground(true);
+    const { result } = renderHook(() =>
+      useGitSpaceSync(options({ open: async () => f.session, foreground: fg.fg })),
+    );
+    await waitFor(() => expect(result.current.session).toBe(f.session));
+    expect(f.session.start).toHaveBeenCalledTimes(1);
+
+    act(() => fg.goOffline());
+    expect(f.session.sync.reportOffline).toHaveBeenCalledTimes(1);
+
+    act(() => fg.goOnline());
+    expect(f.session.sync.reportOnline).toHaveBeenCalledTimes(1);
+    expect(f.session.start).toHaveBeenCalledTimes(2);
   });
 
   it('makes a foreground per session, shares syncs with other tabs and leaves on close', async () => {
