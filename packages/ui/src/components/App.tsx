@@ -59,6 +59,7 @@ import type {
   ImportedPage,
   PageContent,
   RemoteSpace,
+  RepoInfo,
   StorageBackend,
 } from '@cept/core';
 import {
@@ -90,6 +91,7 @@ import {
   openGitSpaceSession,
   pageHistoryAccess,
   pageHistorySource,
+  publishSpaceToRepo,
   remoteWebUrl,
   startSpaceInRepo,
   unpushedCommitsOf,
@@ -101,6 +103,8 @@ import { ConflictResolver } from './git/ConflictResolver.js';
 import { PageHistoryDialog } from './git/PageHistoryDialog.js';
 import { StartRepoSpaceDialog } from './git/StartRepoSpaceDialog.js';
 import type { StartRepoSpaceRequest } from './git/StartRepoSpaceDialog.js';
+import { PublishSpaceDialog, createRepoErrorMessage } from './git/PublishSpaceDialog.js';
+import type { PublishSpaceRequest } from './git/PublishSpaceDialog.js';
 import { useGitHubAccount } from './settings/github-account.js';
 import { useDiscoveredSpaces } from './settings/discovered-spaces.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
@@ -307,6 +311,10 @@ export function App() {
   /** Edits and commits of writable GitHub spaces not on GitHub yet, read while settings are open. */
   const [unsyncedChanges, setUnsyncedChanges] = useState<Record<string, number>>({});
   const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
+  /** The space being published to a new GitHub repository (REQ-WS-020). */
+  const [publishSpaceId, setPublishSpaceId] = useState<string | null>(null);
+  /** The repository created by a publish whose push failed, reused when it is tried again. */
+  const publishRepoRef = useRef<{ spaceId: string; repo: RepoInfo } | null>(null);
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
@@ -2059,6 +2067,91 @@ export function App() {
     ],
   );
 
+  /**
+   * Publish a space on this device to a new repository in the signed-in
+   * account (REQ-WS-020, as limited by D-29): create the repository, push the
+   * space's files to it, then add and open the published space. The local
+   * space is kept. Rejects with the reason, which the dialog shows.
+   */
+  const handlePublishSpace = useCallback(
+    async ({ repoName, description, private: isPrivate }: PublishSpaceRequest) => {
+      const id = publishSpaceId;
+      const auth = await gitAuth?.();
+      const createRepo = githubAccount?.createRepo;
+      if (!id || !signedInAccount || !auth || !createRepo || !canHostGitClone(backend)) {
+        throw new Error(GIT_SPACE_LOCKED);
+      }
+      const local = (await spaces.load()).spaces.find((s) => s.id === id);
+      if (!local) throw new Error('This space is no longer listed.');
+      if (!spaces.isConnected(id)) {
+        throw new Error(`Connect the folder of "${local.name}" first, then publish it.`);
+      }
+      // The pages waiting on the save debounce are published too.
+      if (id === userSpaceId) {
+        saveActiveSpace();
+        await spaceSaveRef.current;
+      }
+      const earlier = publishRepoRef.current;
+      let repo: RepoInfo;
+      if (earlier?.spaceId === id && earlier.repo.name === repoName) {
+        repo = earlier.repo;
+      } else {
+        try {
+          repo = await createRepo({
+            name: repoName,
+            ...(description ? { description } : {}),
+            private: isPrivate,
+          });
+        } catch (err) {
+          throw new Error(createRepoErrorMessage(err));
+        }
+        publishRepoRef.current = { spaceId: id, repo };
+      }
+      const remoteUrl = normalizeRepoUrl(repo.url);
+      const branch = repo.defaultBranch || 'main';
+      await publishSpaceToRepo(backend, spaces.store(id).backend, {
+        spaceId: generateRemoteSpaceId(remoteUrl, branch),
+        url: remoteUrl,
+        branch,
+        auth,
+        identity: commitIdentityFor(signedInAccount),
+        login: signedInAccount.login,
+        corsProxy: gitCorsProxy(),
+      });
+      publishRepoRef.current = null;
+      setPublishSpaceId(null);
+      setSettingsOpen(false);
+      setActiveSpace('user');
+      saveActiveSpace();
+      const created = await spaces.createRemote(local.name, remoteUrl, branch, undefined, 'token', {
+        writable: true,
+      });
+      setSpacesManifest(created.manifest);
+      setUserSpaceId(created.space.id);
+      void requestPersistentStorage();
+      await loadAndApplySpaceState(created.space.id, local.name);
+      addToast(
+        `"${local.name}" is published to ${repo.fullName}. Edits here are committed and synced; the copy on this device is kept until you remove it.`,
+        'success',
+      );
+    },
+    [
+      publishSpaceId,
+      gitAuth,
+      githubAccount,
+      signedInAccount,
+      backend,
+      spaces,
+      userSpaceId,
+      saveActiveSpace,
+      setSpacesManifest,
+      setUserSpaceId,
+      loadAndApplySpaceState,
+      addToast,
+      requestPersistentStorage,
+    ],
+  );
+
   /** Handle "Add Space" from the remote repo form in the wizard. */
   const handleAddRemoteRepo = useCallback(
     (config: RemoteSpaceConfig) => addRemoteSpace(config, { activate: true }),
@@ -2976,6 +3069,11 @@ export function App() {
             ? () => setStartRepoSpaceOpen(true)
             : undefined
         }
+        onPublishSpace={
+          signedInAccount && githubAccount?.createRepo && canHostGitClone(backend)
+            ? (id) => setPublishSpaceId(id)
+            : undefined
+        }
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
@@ -3069,6 +3167,14 @@ export function App() {
             handleOpenSettings('settings');
           }}
           onClose={() => setStartRepoSpaceOpen(false)}
+        />
+      )}
+      {publishSpaceId && signedInAccount && (
+        <PublishSpaceDialog
+          spaceName={spacesManifest?.spaces.find((s) => s.id === publishSpaceId)?.name ?? 'Space'}
+          login={signedInAccount.login}
+          onPublish={handlePublishSpace}
+          onClose={() => setPublishSpaceId(null)}
         />
       )}
       {pickedFolder && (

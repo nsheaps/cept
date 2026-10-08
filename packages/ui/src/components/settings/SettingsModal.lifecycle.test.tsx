@@ -178,3 +178,55 @@ describe('SettingsModal space lifecycle (REQ-WS-024)', () => {
     expect(screen.queryByTestId('space-detail-slug')).toBeNull();
   });
 });
+
+describe('publishing a space from its details (REQ-WS-020)', () => {
+  function renderWith(spaces: SpaceInfo[], onPublishSpace?: (id: string) => void) {
+    render(
+      <SettingsModal
+        isOpen
+        initialTab="spaces"
+        settings={{ ...DEFAULT_SETTINGS }}
+        spaces={spaces}
+        activeSpaceId={spaces[0]?.id}
+        onClose={vi.fn()}
+        onSettingsChange={vi.fn()}
+        onResetSettings={vi.fn()}
+        onDeleteSpace={vi.fn()}
+        onSpaceRename={vi.fn()}
+        onSwitchSpace={vi.fn()}
+        onClearAllData={vi.fn()}
+        onRecreateDemoSpace={vi.fn()}
+        onPublishSpace={onPublishSpace}
+      />,
+    );
+  }
+
+  it('offers publishing for spaces on this device', () => {
+    const onPublishSpace = vi.fn();
+    renderWith([app('default', 'My Space'), app('work', 'Work')], onPublishSpace);
+    fireEvent.click(screen.getByTestId('space-settings-work'));
+    fireEvent.click(screen.getByTestId('space-details-publish'));
+    expect(onPublishSpace).toHaveBeenCalledWith('work');
+  });
+
+  it('does not offer it for GitHub spaces or unconnected folders', () => {
+    const repo: SpaceInfo = {
+      ...app('github.com/me/notes@main', 'Repo'),
+      kind: 'remote',
+      remoteUrl: 'https://github.com/me/notes',
+    };
+    const away: SpaceInfo = { ...app('folder-1', 'Notes'), kind: 'folder', pageCount: null };
+    renderWith([app('default', 'My Space'), repo, away], vi.fn());
+    fireEvent.click(screen.getByTestId('space-settings-github.com/me/notes@main'));
+    expect(screen.queryByTestId('space-details-publish')).toBeNull();
+    fireEvent.click(screen.getByTestId('space-details-back'));
+    fireEvent.click(screen.getByTestId('space-settings-folder-1'));
+    expect(screen.queryByTestId('space-details-publish')).toBeNull();
+  });
+
+  it('has no publish button when signed out', () => {
+    renderWith([app('default', 'My Space'), app('work', 'Work')]);
+    fireEvent.click(screen.getByTestId('space-settings-work'));
+    expect(screen.queryByTestId('space-details-publish')).toBeNull();
+  });
+});

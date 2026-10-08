@@ -95,6 +95,14 @@ If the branch is protected, or the push is refused for another reason, the heade
 
 Signed in, choose **Start a space in a GitHub repository** in Settings > Spaces. Pick one of your repositories (or create a new one), name the space and, if you want, a folder. Cept writes `space.cept.yaml` in that folder, commits and pushes it, and opens the space. If the folder is already a space, Cept opens it as it is.
 
+### Publishing a space to GitHub
+
+Signed in, open the details of a space kept in this browser or in a folder on your computer and choose **Publish to a new GitHub repository**. Name the repository (Cept suggests one from the space's name), add a description if you want, and choose whether it is private (the default). Cept creates the repository in your account, pushes the space's pages, files and `space.cept.yaml` to it, and opens the published space, which commits and syncs your edits from then on. Files and folders whose names start with `.` (such as Cept's own `.cept/` folder or a `.git/` folder) are not published, and GitHub's starter `README.md` is removed unless the space has its own.
+
+The space you published stays on this device, unchanged; remove it when you no longer need it. A space that has not been converted to folders yet (it has no `space.cept.yaml`) has to be opened once before it can be published.
+
+Creating a repository needs a token allowed to: a classic token with the `repo` scope (or `public_repo` for a public repository), or a fine-grained token with access to all repositories and the **Administration** permission set to read and write. If the token cannot, Cept says which permission is missing. If the push fails after the repository is created, publishing again with the same name pushes to that repository instead of creating another.
+
 ## Working in a repository space
 
 A link to a Markdown file on GitHub, in the form `/g/github.com/<owner>/<repo>/blob/<branch>/<path>`, opens it in Cept (see [Page links](../reference/space-config.md#page-links)). The first link into a repository adds it as a space; later links into the same repository and branch open in that space.

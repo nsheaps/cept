@@ -386,6 +386,101 @@ export async function startSpaceInRepo(
   return { created: true };
 }
 
+/** Publishing a local space to a new repository: where, and as whom. */
+export interface PublishSpaceRequest extends GitSpaceSessionRequest {
+  /** URL of the new, empty repository (GitHub's first commit only). */
+  url: string;
+  branch: string;
+}
+
+/**
+ * The files of a space that are published: every file under its root except
+ * dot files and folders (`.cept/` holds this device's state, `.git/` a repository).
+ */
+export async function publishableFiles(source: StorageBackend, dir = ''): Promise<string[]> {
+  const entries = await source.listDirectory(dir).catch(() => []);
+  const files: string[] = [];
+  for (const entry of [...entries].sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.name.startsWith('.')) continue;
+    const path = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory) files.push(...(await publishableFiles(source, path)));
+    else if (entry.isFile) files.push(path);
+  }
+  return files;
+}
+
+function sameBytes(a: Uint8Array | null, b: Uint8Array | null): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  return a.every((byte, i) => byte === b[i]);
+}
+
+/**
+ * Publish a space in the folder layout (REQ-WS-020, as limited by D-29) to a
+ * repository just created for it: clone the repository with the GitHub
+ * sign-in, copy the space's files into the clone (see {@link publishableFiles}),
+ * check each copy byte for byte, then commit and push. GitHub's own README
+ * is removed unless the space has one. The space itself is only read.
+ * Rejects when the push does not go through, leaving the commit in the clone;
+ * publishing again pushes it.
+ */
+export async function publishSpaceToRepo(
+  host: GitCloneHost,
+  source: StorageBackend,
+  request: PublishSpaceRequest,
+): Promise<{ files: number }> {
+  const url = normalizeRepoUrl(request.url);
+  if (!request.auth || !isGitHubUrl(url)) {
+    throw new Error('Publishing a space needs the GitHub sign-in and a github.com repository.');
+  }
+  if ((await findSpaceMarker(source, '').catch(() => null)) === null) {
+    throw new Error(
+      'This space has no space.cept.yaml yet. Open it once so Cept converts it to folders, then publish it.',
+    );
+  }
+  const files = await publishableFiles(source);
+  // As in startSpaceInRepo: commits of an earlier attempt are pushed by the session.
+  if ((await unpushedCommitsOf(host, request.spaceId)) === 0) {
+    await syncRemoteClone({
+      host,
+      fs: host.getRawFs() as GitFs,
+      dir: remoteCloneDir(request.spaceId),
+      url,
+      ref: request.branch,
+      corsProxy: request.corsProxy,
+      auth: request.auth,
+      http: request.http,
+    });
+  }
+  const session = await openGitSpaceSession(host, request);
+  let result: GitSpaceSyncResult;
+  try {
+    const target = session.backend;
+    if (!files.includes('README.md') && (await target.exists('README.md'))) {
+      await target.deleteFile('README.md');
+    }
+    for (const file of files) {
+      const data = await source.readFile(file);
+      if (data) await target.writeFile(file, data);
+    }
+    for (const file of files) {
+      if (!sameBytes(await source.readFile(file), await target.readFile(file))) {
+        throw new Error(`"${file}" did not copy correctly; nothing was pushed.`);
+      }
+    }
+    result = await session.pushNow();
+  } finally {
+    await session.dispose();
+  }
+  if (result.status.state !== 'synced') {
+    throw new Error(
+      `The space was committed on this device but could not be pushed: ${
+        result.status.lastError ?? result.status.state
+      }`,
+    );
+  }
+  return { files: files.length };
+}
+
 /** What to tell the user when cloning or refreshing a remote space failed. */
 export function cloneErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof GitAuthRequiredError) {

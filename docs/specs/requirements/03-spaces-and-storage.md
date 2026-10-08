@@ -697,11 +697,11 @@ branch: docs # optional (D-30)
 - A "Move/upgrade storage" flow copies every page, database and asset to the target backend and verifies the result with checksums.
 - Exporting a space produces a valid space folder (marker plus pages), so that "export, then open folder" is lossless.
 
-**Current state: partial.** No backend switching exists. On `main`, one-way paths exist: the Markdown/HTML exporter ([packages/core/src/exporters/exporter.ts](../../../packages/core/src/exporters/exporter.ts), wired via [packages/ui/src/components/import-export/ExportDialog.tsx](../../../packages/ui/src/components/import-export/ExportDialog.tsx)) and the Notion and Obsidian importers ([packages/core/src/importers/](../../../packages/core/src/importers/)); none of them round-trips a whole space. Draft PR #24 adds ZIP export/import of a space (`packages/core/src/spaces/space-archive.ts`, with a `manifest.json` and a SHA-256 per file). That is a portable move, but the archive bundles `workspace-state.json` and assumes the current JSON-tree layout.
+**Current state: partial.** Publishing a space kept on the device (in the browser or a folder) to a new GitHub repository works (PR 43). The app creates the repository with the sign-in; then `publishSpaceToRepo` in [packages/ui/src/components/storage/git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) copies the space's files (all but dot files and folders) into a clone of it, checks them byte for byte, commits and pushes them, and the published space is added as an editable GitHub space. The local space is kept. Other moves between backends do not exist. On `main`, one-way paths also exist: the Markdown/HTML exporter ([packages/core/src/exporters/exporter.ts](../../../packages/core/src/exporters/exporter.ts), wired via [packages/ui/src/components/import-export/ExportDialog.tsx](../../../packages/ui/src/components/import-export/ExportDialog.tsx)) and the Notion and Obsidian importers ([packages/core/src/importers/](../../../packages/core/src/importers/)); none of them round-trips a whole space. Draft PR #24 adds ZIP export/import of a space (`packages/core/src/spaces/space-archive.ts`, with a `manifest.json` and a SHA-256 per file). That is a portable move, but the archive bundles `workspace-state.json` and assumes the current JSON-tree layout.
 
 **Docs state: documented-as-desired, accurate** (SPECIFICATION.md §5.10.5 table).
 
-**Gap.** A migration flow, and a ZIP format aligned with the folder plus `space.cept.yaml` model.
+**Gap.** Moves other than "publish to a new GitHub repository" (later, per D-29), and a ZIP format aligned with the folder plus `space.cept.yaml` model.
 
 **Related:** [#24](https://github.com/nsheaps/cept/pull/24).
 

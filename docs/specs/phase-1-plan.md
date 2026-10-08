@@ -501,6 +501,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: integration test against a mocked API and a local bare repo.
 - Accept: tests green.
 - Risk: fine-grained PATs may lack repo-creation rights; show the needed permission.
+- Note (PR 43): the local space is kept after publishing (the user removes it), so no data is deleted on the strength of a push. Dot files and folders are not published (`.cept/` holds device state, `.git/` a repository); GitHub's auto-init README is removed unless the space has one. Each copied file is compared byte for byte before the commit. A space still in the flat layout must be opened (and so converted) first. A push that fails after the repository was created is retried into the same repository. The test runs against a local bare repository served by `git http-backend`; repository creation is unit-tested through the dialog's error mapping, since the providers' `createRepo` already has its own tests.
 
 ### M3 — Markdown and editor pipeline
 

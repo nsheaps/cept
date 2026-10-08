@@ -3,7 +3,8 @@
  * served by `git http-backend` at github.com-like URLs: a clone made with the
  * sign-in whose folder holds `space.cept.yaml` is writable, edits made through
  * its session are committed and pushed, an anonymous clone stays read-only,
- * and a space can be started in a repository that has none.
+ * a space can be started in a repository that has none, and a local space can
+ * be published to a new repository.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -15,6 +16,7 @@ import {
   BrowserFsBackend,
   commitIdentityFor,
   listPageHistory,
+  MemoryBackend,
   pageVersionContent,
 } from '@cept/core';
 import type { GitAuth, GitHttp } from '@cept/core';
@@ -24,6 +26,8 @@ import {
   isWritableClone,
   openGitSpaceSession,
   pageHistorySource,
+  publishableFiles,
+  publishSpaceToRepo,
   startSpaceInRepo,
   unpushedCommitsOf,
 } from './git-space.js';
@@ -245,6 +249,104 @@ describe('writable GitHub spaces (REQ-WS-027)', () => {
         identity,
         http,
       }),
+    ).rejects.toThrow(/GitHub sign-in/);
+  });
+});
+
+describe('publishing a local space (REQ-WS-020)', () => {
+  const enc = new TextEncoder();
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 255, 1, 2]);
+
+  async function localSpace(files: Record<string, string | Uint8Array>): Promise<MemoryBackend> {
+    const source = new MemoryBackend();
+    for (const [file, data] of Object.entries(files)) {
+      await source.writeFile(file, typeof data === 'string' ? enc.encode(data) : data);
+    }
+    return source;
+  }
+
+  const request = (name: string) => {
+    const url = `https://github.com/octo/${name}`;
+    return { spaceId: generateRemoteSpaceId(url, 'main'), url, branch: 'main', auth, identity };
+  };
+
+  it("pushes every file but dot folders, replacing GitHub's README, and reads nothing back in", async () => {
+    const bare = makeRepo('published', { 'README.md': '# published\n' });
+    const source = await localSpace({
+      'space.cept.yaml': 'version: 1\nname: Notes\nslug: notes\n',
+      'Home.md': '# Home\n',
+      'notes/Day.md': '---\ntags: [a]\n---\n# Day\n',
+      'assets/pic.png': png,
+      '.cept/workspace-state.json': '{}',
+    });
+    const before = await publishableFiles(source);
+    const host = newHost();
+
+    await expect(
+      publishSpaceToRepo(host, source, { ...request('published'), http }),
+    ).resolves.toEqual({ files: 4 });
+
+    expect(git(bare, 'ls-tree', '-r', '--name-only', 'main').split('\n')).toEqual([
+      'Home.md',
+      'assets/pic.png',
+      'notes/Day.md',
+      'space.cept.yaml',
+    ]);
+    expect(git(bare, 'show', 'main:notes/Day.md')).toBe('---\ntags: [a]\n---\n# Day');
+    expect(execFileSync('git', ['show', 'main:assets/pic.png'], { cwd: bare })).toEqual(
+      Buffer.from(png),
+    );
+    expect(await isWritableClone(host, { id: request('published').spaceId, access: 'token' })).toBe(
+      true,
+    );
+    // The local space is only read.
+    expect(await publishableFiles(source)).toEqual(before);
+    expect(await source.exists('.cept/workspace-state.json')).toBe(true);
+  });
+
+  it("keeps the space's own README", async () => {
+    const bare = makeRepo('own-readme', { 'README.md': '# own-readme\n' });
+    const source = await localSpace({
+      'space.cept.yaml': 'version: 1\nname: R\nslug: r\n',
+      'README.md': '# Mine\n',
+    });
+    await publishSpaceToRepo(newHost(), source, { ...request('own-readme'), http });
+    expect(git(bare, 'show', 'main:README.md')).toBe('# Mine');
+  });
+
+  it('pushes the commit of a publish whose push failed when published again', async () => {
+    const bare = makeRepo('pub-retry', { 'README.md': '# x\n' });
+    const source = await localSpace({
+      'space.cept.yaml': 'version: 1\nname: R\nslug: r\n',
+      'Page.md': 'text',
+    });
+    const host = newHost();
+    const offline: GitHttp = {
+      request: (r) =>
+        r.url.includes('git-receive-pack')
+          ? Promise.reject(new Error('network down'))
+          : http.request(r),
+    };
+
+    await expect(
+      publishSpaceToRepo(host, source, { ...request('pub-retry'), http: offline }),
+    ).rejects.toThrow(/could not be pushed/);
+    expect(() => git(bare, 'show', 'main:Page.md')).toThrow();
+
+    await publishSpaceToRepo(host, source, { ...request('pub-retry'), http });
+    expect(git(bare, 'show', 'main:Page.md')).toBe('text');
+    expect(await unpushedCommitsOf(host, request('pub-retry').spaceId)).toBe(0);
+  });
+
+  it('refuses a space without a marker, or without the sign-in', async () => {
+    makeRepo('pub-refused', { 'README.md': '# x\n' });
+    const flat = await localSpace({ '.cept/workspace-state.json': '{}' });
+    await expect(
+      publishSpaceToRepo(newHost(), flat, { ...request('pub-refused'), http }),
+    ).rejects.toThrow(/space\.cept\.yaml/);
+    const marked = await localSpace({ 'space.cept.yaml': 'version: 1\nname: X\nslug: x\n' });
+    await expect(
+      publishSpaceToRepo(newHost(), marked, { ...request('pub-refused'), auth: undefined, http }),
     ).rejects.toThrow(/GitHub sign-in/);
   });
 });
