@@ -25,7 +25,8 @@ export interface PageHistoryDialogProps {
  * Page history (REQ-NTN-016): the versions of one page, what each changed,
  * and (in editable spaces) restoring one, which saves its text as a new
  * version. The list grows a page at a time; a shallow clone's older versions
- * are downloaded on request.
+ * are downloaded on request (not for a folder's own repository, which Cept
+ * only reads).
  */
 export function PageHistoryDialog({
   title,
@@ -126,6 +127,10 @@ export function PageHistoryDialog({
         >
           Show older versions
         </button>
+      ) : source?.canFetchOlder === false ? (
+        <p className="cept-history-note" data-testid="history-truncated">
+          Older versions are not in this folder's repository (it has a shallow history).
+        </p>
       ) : (
         <>
           <p className="cept-history-note" data-testid="history-truncated">

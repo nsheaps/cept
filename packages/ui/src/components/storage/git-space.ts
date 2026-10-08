@@ -11,6 +11,7 @@ import {
   countUnpushedCommits,
   findSpaceMarker,
   GitAuthRequiredError,
+  openLocalRepository,
   openRemoteClone,
   GitSpaceSession,
   createGitHttp,
@@ -234,18 +235,22 @@ export function unpushedCommitsOf(host: GitCloneHost, spaceId: string): Promise<
 
 /**
  * What page history (REQ-NTN-016) offers for the open page: nothing outside
- * remote spaces or on a host that cannot keep a clone, the list and diffs for
- * read-only spaces, and restoring too when the space is open for editing.
+ * remote spaces (on a host that can keep a clone) and folders in a Git
+ * repository, the list and diffs for read-only spaces, and restoring too when
+ * the space is open for editing.
  */
 export type PageHistoryAccess = 'none' | 'view' | 'restore';
 
 export function pageHistoryAccess(options: {
   space: { remoteUrl?: string } | undefined;
   hostCanClone: boolean;
-  /** The space has an open editing session and is not locked. */
+  /** The space is a folder on this device inside a Git repository (REQ-WS-021). */
+  localRepo?: boolean;
+  /** The space can be edited now: an open editing session, or a folder, and not locked. */
   editable: boolean;
 }): PageHistoryAccess {
-  if (!options.space?.remoteUrl || !options.hostCanClone) return 'none';
+  const remote = !!options.space?.remoteUrl && options.hostCanClone;
+  if (!remote && !(options.space && options.localRepo)) return 'none';
   return options.editable ? 'restore' : 'view';
 }
 
@@ -256,6 +261,8 @@ export interface PageHistorySource {
   path: string;
   /** The branch the clone tracks, which older versions are fetched for. */
   ref: string;
+  /** Whether older versions can be downloaded (false for a folder's own repository). */
+  canFetchOlder?: boolean;
 }
 
 /**
@@ -285,6 +292,35 @@ export async function pageHistorySource(
     auth: github ? options.auth : undefined,
   });
   return { git, path, ref };
+}
+
+/** Whether a folder space's folder is (or sits in) a Git repository the browser can read. */
+export async function hasLocalRepository(
+  folder: StorageBackend,
+  space: { subPath?: string },
+): Promise<boolean> {
+  return (await openLocalRepository(folder, space.subPath ?? '').catch(() => null)) !== null;
+}
+
+/**
+ * The history source of page `pageId` in a folder space whose folder is (or
+ * sits in) a Git repository (REQ-WS-021): the repository read in place, which
+ * Cept never writes to. Null when there is no repository the browser can read
+ * or the page has no file.
+ */
+export async function localPageHistorySource(
+  folder: StorageBackend,
+  space: { subPath?: string },
+  pageId: string,
+): Promise<PageHistorySource | null> {
+  const repo = await openLocalRepository(folder, space.subPath ?? '');
+  if (!repo) return null;
+  const root = space.subPath ? new ScopedBackend(folder, space.subPath) : folder;
+  const file = await folderPageFile(root, pageId).catch(() => null);
+  if (!file) return null;
+  const path = [...repo.prefix.split('/'), file].filter(Boolean).join('/');
+  const ref = await repo.git.branch.current().catch(() => 'HEAD');
+  return { git: repo.git, path, ref, canFetchOlder: false };
 }
 
 /** Starting a space in a repository: where, and as whom. */

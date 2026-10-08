@@ -249,4 +249,19 @@ describe('pageHistoryAccess (REQ-NTN-016)', () => {
       'restore',
     );
   });
+
+  it('offers history in a folder space inside a Git repository, on any host (REQ-WS-021)', () => {
+    expect(
+      pageHistoryAccess({ space: {}, hostCanClone: false, localRepo: true, editable: true }),
+    ).toBe('restore');
+    expect(
+      pageHistoryAccess({ space: {}, hostCanClone: false, localRepo: true, editable: false }),
+    ).toBe('view');
+    expect(
+      pageHistoryAccess({ space: {}, hostCanClone: true, localRepo: false, editable: true }),
+    ).toBe('none');
+    expect(
+      pageHistoryAccess({ space: undefined, hostCanClone: true, localRepo: true, editable: true }),
+    ).toBe('none');
+  });
 });

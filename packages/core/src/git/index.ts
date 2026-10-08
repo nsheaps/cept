@@ -94,6 +94,8 @@ export {
   pageVersionDiff,
 } from './page-history.js';
 export type { PageHistory } from './page-history.js';
+export { openLocalRepository, readOnlyGitFs } from './local-repository.js';
+export type { LocalRepository } from './local-repository.js';
 
 export { GitSpaceSession, RecordingBackend } from './git-space-session.js';
 export type {

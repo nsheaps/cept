@@ -150,6 +150,25 @@ describe('PageHistoryDialog', () => {
     expect(screen.queryByTestId('history-truncated')).toBeNull();
   });
 
+  it("does not offer a download for a shallow folder's own repository", async () => {
+    const { source, git } = fakeSource(3, { shallow: true });
+    render(
+      <PageHistoryDialog
+        title="A"
+        source={{ ...source, canFetchOlder: false }}
+        canRestore
+        onRestore={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect((await screen.findByTestId('history-truncated')).textContent).toContain(
+      "not in this folder's repository",
+    );
+    expect(screen.queryByTestId('history-fetch-older')).toBeNull();
+    expect(git.fetchFullHistory).not.toHaveBeenCalled();
+  });
+
   it('says when the changes of the oldest downloaded version cannot be shown', async () => {
     const { source, git, all } = fakeSource(2, { shallow: true });
     git.diff.mockClear();
