@@ -532,7 +532,7 @@ Every requirement, linked to its section in the area file. Priority, statuses an
 | [REQ-NTN-013](11-notion-parity-and-comments.md#req-ntn-013--page-icon-and-cover-can-be-set-in-the-ui)                | Page icon and cover can be set in the UI                                     | SHOULD      | partial        | documented-as-desired  | n/a           |
 | [REQ-NTN-014](11-notion-parity-and-comments.md#req-ntn-014--templates-usable-from-the-ui)                            | Templates usable from the UI                                                 | SHOULD      | stubbed        | documented-as-desired  | stale         |
 | [REQ-NTN-015](11-notion-parity-and-comments.md#req-ntn-015--synced-blocks)                                           | Synced blocks                                                                | MAY         | stubbed        | documented-as-desired  | n/a           |
-| [REQ-NTN-016](11-notion-parity-and-comments.md#req-ntn-016--page-history-ui)                                         | Page history UI                                                              | SHOULD      | stubbed        | documented-as-desired  | stale         |
+| [REQ-NTN-016](11-notion-parity-and-comments.md#req-ntn-016--page-history-ui)                                         | Page history UI                                                              | SHOULD      | partial        | documented-as-desired  | accurate      |
 | [REQ-NTN-017](11-notion-parity-and-comments.md#req-ntn-017--import-from-notion)                                      | Import from Notion                                                           | SHOULD      | partial        | documented-as-desired  | n/a           |
 
 ## 6. Conflicts and owner decisions needed

@@ -103,6 +103,7 @@ While a repository space is open, the **Page actions** menu at the top right has
 
 - **View on GitHub**: opens the page (or folder) on github.com in a new tab.
 - **Refresh from remote**: downloads what changed on GitHub (in an editable space, syncs it). The page you are on stays open if the repository still has it.
+- **Page history**: lists the versions of the page, newest first, with who saved each and when. Select one to see what it changed. In a space you can edit, **Restore** saves that version's text as a new version; nothing in the repository's history is rewritten. In a read-only space you can look but not restore. Cept downloads only the latest version of a repository at first, so the list may end with "Older versions are not downloaded to this device yet"; choose **Download older versions** to fetch the rest. Long histories show 20 versions at a time, with **Show older versions** for more.
 - **Space settings**: opens the space's details, which show the repository, branch, path and last sync, with **Open on GitHub** and a refresh button.
 
 Each time Cept starts it checks the saved token again. A token GitHub no longer accepts (expired or revoked) is forgotten and you are signed out. When GitHub cannot be reached, the token is kept and checked next time.

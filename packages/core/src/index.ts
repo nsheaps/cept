@@ -53,6 +53,7 @@ export {
   GitDivergedError,
   GIT_REPOS_DIR,
   countUnpushedCommits,
+  openRemoteClone,
   remoteCloneDir,
   syncRemoteClone,
 } from './storage/index.js';
@@ -197,6 +198,13 @@ export type {
   MergeAttemptResult,
   AutoMergeConfig,
 } from './git/index.js';
+export {
+  listPageHistory,
+  PAGE_HISTORY_PAGE_SIZE,
+  pageVersionContent,
+  pageVersionDiff,
+} from './git/index.js';
+export type { PageHistory } from './git/index.js';
 export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
 export type {
   GitSpaceLocalChanges,

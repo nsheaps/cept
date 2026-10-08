@@ -10,6 +10,7 @@ import {
   isWritableClone,
   isWritableRemote,
   normalizeRepoUrl,
+  pageHistoryAccess,
   remoteWebUrl,
 } from './git-space.js';
 import type { GitCloneHost } from './git-space.js';
@@ -228,5 +229,24 @@ describe('writable remote spaces (REQ-WS-027)', () => {
       await isWritableClone(host, { id: SPACE_ID, subPath: 'docs', access: 'anonymous' }),
     ).toBe(false);
     expect(await isWritableClone(host, { id: SPACE_ID, subPath: 'docs' })).toBe(false);
+  });
+});
+
+describe('pageHistoryAccess (REQ-NTN-016)', () => {
+  const remote = { remoteUrl: 'https://github.com/u/r' };
+
+  it('hides history outside remote spaces and on hosts that cannot keep a clone', () => {
+    expect(pageHistoryAccess({ space: undefined, hostCanClone: true, editable: true })).toBe(
+      'none',
+    );
+    expect(pageHistoryAccess({ space: {}, hostCanClone: true, editable: true })).toBe('none');
+    expect(pageHistoryAccess({ space: remote, hostCanClone: false, editable: true })).toBe('none');
+  });
+
+  it('offers restore only when the space is open for editing', () => {
+    expect(pageHistoryAccess({ space: remote, hostCanClone: true, editable: false })).toBe('view');
+    expect(pageHistoryAccess({ space: remote, hostCanClone: true, editable: true })).toBe(
+      'restore',
+    );
   });
 });

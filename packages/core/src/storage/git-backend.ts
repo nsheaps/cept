@@ -701,7 +701,72 @@ export class GitBackend implements GitStorageBackend {
       }));
   }
 
-  async diff(commitA: string, commitB: string, _path?: string): Promise<DiffResult> {
+  /**
+   * The text of `path` at commit `ref`, or null when that commit has no such
+   * file. Throws when the commit itself is not in the repository (beyond a
+   * shallow clone's boundary).
+   */
+  async readFileAt(ref: string, path: string): Promise<string | null> {
+    await git.readCommit({ fs: this.fs, dir: this.dir, oid: ref });
+    try {
+      const { blob } = await git.readBlob({ fs: this.fs, dir: this.dir, oid: ref, filepath: path });
+      return new TextDecoder().decode(blob);
+    } catch (err) {
+      if (err instanceof git.Errors.NotFoundError) return null;
+      throw err;
+    }
+  }
+
+  /** The commits a shallow clone stops at (empty for a full clone). */
+  async shallowCommits(): Promise<Set<CommitHash>> {
+    try {
+      const text = await this.fsCall('readFile', `${this.dir.replace(/\/+$/, '')}/.git/shallow`, {
+        encoding: 'utf8',
+      });
+      return new Set(
+        String(text)
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean),
+      );
+    } catch {
+      return new Set();
+    }
+  }
+
+  /**
+   * Fetch the commits a shallow clone left out, without moving the local
+   * branch or the working tree.
+   */
+  async fetchFullHistory(ref: string): Promise<void> {
+    if (!this.http) throw new Error('GitBackend: http client required for fetch');
+    await git.fetch({
+      fs: this.fs,
+      http: this.http,
+      dir: this.dir,
+      ref,
+      singleBranch: true,
+      tags: false,
+      depth: UNSHALLOW_DEPTH,
+      corsProxy: this.corsProxy,
+      onAuth: this.auth ? () => this.getOnAuth() : undefined,
+    });
+  }
+
+  /**
+   * The changes from `commitA` to `commitB`. With `path`, only that file is
+   * compared, and an empty `commitA` stands for "before the file existed".
+   */
+  async diff(commitA: string, commitB: string, path?: string): Promise<DiffResult> {
+    if (path !== undefined) {
+      const before = commitA ? await this.readFileAt(commitA, path) : null;
+      const after = await this.readFileAt(commitB, path);
+      if (before === after) return { files: [] };
+      const type = before === null ? 'add' : after === null ? 'delete' : 'modify';
+      return {
+        files: [{ path, type, hunks: generateUnifiedHunks(before ?? '', after ?? '') }],
+      };
+    }
     const treeA = await this.getTreeAtCommit(commitA);
     const treeB = await this.getTreeAtCommit(commitB);
 

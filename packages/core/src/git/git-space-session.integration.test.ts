@@ -14,6 +14,7 @@ import { BrowserFsBackend } from '../storage/browser-fs.js';
 import type { GitFs, GitHttp } from '../storage/git-backend.js';
 import { countUnpushedCommits, remoteCloneDir, syncRemoteClone } from '../storage/git-clone.js';
 import { GitSpaceSession } from './git-space-session.js';
+import { listPageHistory, pageVersionContent, pageVersionDiff } from './page-history.js';
 import type { GitSpaceSessionOptions } from './git-space-session.js';
 import { commitIdentityFor, DEFAULT_SYNC_SETTINGS, SYNC_SETTINGS_PATH } from './sync-policy.js';
 import type { SyncSettings } from './sync-policy.js';
@@ -400,6 +401,42 @@ function protectMain(bare: string): void {
   );
   chmodSync(hook, 0o755);
 }
+
+describe('page history (REQ-NTN-016)', () => {
+  it('downloads older versions on request and restores one as a new commit', async () => {
+    const { work, bare } = makeRepo('history');
+    writeFileSync(path.join(work, 'docs', 'guide.md'), '# Guide\n\nSecond.\n');
+    commitAll(work, 'second');
+    writeFileSync(path.join(work, 'docs', 'guide.md'), '# Guide\n\nThird.\n');
+    commitAll(work, 'third');
+    git(work, 'push', '-q', 'origin', 'main');
+    const { session } = await openSession('history', {}, { subPath: 'docs' });
+
+    // The clone is shallow: only the newest version is there.
+    const shallow = await listPageHistory(session.git, 'docs/guide.md');
+    expect(shallow.commits.map((c) => c.message)).toEqual(['third']);
+    expect(shallow.truncated).toBe(true);
+    expect(await pageVersionDiff(session.git, 'docs/guide.md', shallow.commits[0]!)).toBeNull();
+
+    await session.git.fetchFullHistory('main');
+    const full = await listPageHistory(session.git, 'docs/guide.md');
+    expect(full.commits.map((c) => c.message)).toEqual(['third', 'second', 'first']);
+    expect(full.truncated).toBe(false);
+    const change = await pageVersionDiff(session.git, 'docs/guide.md', full.commits[0]!);
+    expect(change?.files[0]?.hunks[0]).toContain('+Third.');
+
+    const old = await pageVersionContent(session.git, 'docs/guide.md', full.commits[2]!.hash);
+    expect(old).toBe('# Guide\n');
+    await session.backend.writeFile('guide.md', encode(old!));
+    const { status } = await session.syncNow();
+    await session.dispose();
+
+    expect(status.state).toBe('synced');
+    expect(git(bare, 'show', 'main:docs/guide.md')).toBe('# Guide');
+    expect(git(bare, 'log', '--format=%s', 'main').split('\n')).toHaveLength(4);
+    expect((await listPageHistory(session.git, 'docs/guide.md')).commits).toHaveLength(4);
+  });
+});
 
 describe('GitSpaceSession conflicts (REQ-WS-026)', () => {
   const page = (front: string[], body: string) => ['---', ...front, '---', body].join('\n');

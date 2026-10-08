@@ -485,6 +485,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: component test for gating; integration test restoring a prior version from a local repo.
 - Accept: tests green.
 - Risk: `log(path)` is slow on long histories; page the list.
+- Note (PR 41): clones are shallow (depth 1), so the list ends at the clone's boundary until the user chooses "Download older versions", which fetches the full history without moving the branch or the working tree. The gate is not `capabilities.history` of the space's backend (writable spaces are bound to a `RecordingBackend` over the browser backend, which reports no history) but whether the space is a GitHub space on a host that keeps a clone (`pageHistoryAccess`). Restore needs the space's editing session to be open; read-only and still-opening spaces get the list and diffs. Folder pages show the history of their `index.md`/`README.md`.
 
 **PR 42 — `feat(storage): enable history and sync for folders with .git`**
 

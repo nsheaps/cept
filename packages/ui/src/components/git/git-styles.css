@@ -445,3 +445,188 @@
 .dark .cept-conflict-warning {
   color: #fbbf24;
 }
+
+/* Page history (REQ-NTN-016) */
+.cept-history-dialog {
+  max-width: 720px;
+}
+
+.cept-history-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cept-history-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cept-history-search {
+  padding: 4px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.cept-history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cept-history-commits {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.cept-history-commit {
+  padding: 8px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.cept-history-commit:hover {
+  background: #f7f7f5;
+}
+
+.cept-history-commit.is-selected {
+  background: #e8f0fe;
+}
+
+.cept-history-commit-message {
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow: hidden;
+  max-height: 3.6em;
+}
+
+.cept-history-commit-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #787774;
+}
+
+.cept-history-commit-hash {
+  font-family: ui-monospace, monospace;
+}
+
+.cept-history-loading,
+.cept-history-empty,
+.cept-history-diff-loading,
+.cept-history-diff-empty,
+.cept-history-note {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #787774;
+  margin: 0;
+}
+
+.cept-history-more {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cept-history-action-btn {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #37352f;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cept-history-action-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.cept-history-action-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cept-history-diff-file-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.cept-history-diff-path {
+  flex: 1;
+  font-family: ui-monospace, monospace;
+}
+
+.cept-history-restore {
+  padding: 2px 10px;
+  border: 1px solid #2383e2;
+  border-radius: 4px;
+  background: #2383e2;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cept-history-diff-hunk {
+  margin: 6px 0 0;
+  padding: 8px;
+  max-height: 280px;
+  overflow: auto;
+  background: #f7f7f5;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: pre;
+}
+
+.dark .cept-history-search,
+.dark .cept-history-commits {
+  border-color: #3a3a3a;
+  background: #1f1f1f;
+  color: #e3e3e3;
+}
+
+.dark .cept-history-commit {
+  border-bottom-color: #2c2c2c;
+}
+
+.dark .cept-history-commit:hover {
+  background: #2a2a2a;
+}
+
+.dark .cept-history-commit.is-selected {
+  background: #1e3a5f;
+}
+
+.dark .cept-history-diff-hunk {
+  background: #262626;
+  color: #e3e3e3;
+}
+
+.dark .cept-history-commit-meta,
+.dark .cept-history-loading,
+.dark .cept-history-empty,
+.dark .cept-history-diff-loading,
+.dark .cept-history-diff-empty,
+.dark .cept-history-note {
+  color: #a1a1aa;
+}
+
+.dark .cept-history-action-btn {
+  border-color: #404040;
+  background: #333;
+  color: #e3e3e3;
+}
+
+.dark .cept-history-action-btn:hover:not(:disabled) {
+  background: #404040;
+}

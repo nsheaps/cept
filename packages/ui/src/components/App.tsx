@@ -86,13 +86,17 @@ import {
   isWritableRemote,
   normalizeRepoUrl,
   openGitSpaceSession,
+  pageHistoryAccess,
+  pageHistorySource,
   remoteWebUrl,
   startSpaceInRepo,
   unpushedCommitsOf,
 } from './storage/git-space.js';
+import type { PageHistorySource } from './storage/git-space.js';
 import { useGitSpaceSync } from './storage/useGitSpaceSync.js';
 import { SyncIndicator } from './git/SyncIndicator.js';
 import { ConflictResolver } from './git/ConflictResolver.js';
+import { PageHistoryDialog } from './git/PageHistoryDialog.js';
 import { StartRepoSpaceDialog } from './git/StartRepoSpaceDialog.js';
 import type { StartRepoSpaceRequest } from './git/StartRepoSpaceDialog.js';
 import { useGitHubAccount } from './settings/github-account.js';
@@ -2223,6 +2227,57 @@ export function App() {
     ? { href: activeRemoteHref, label: 'View on GitHub' }
     : undefined;
 
+  // Page history (REQ-NTN-016): remote spaces keep it in their clone.
+  const historyAccess = pageHistoryAccess({
+    space: activeSpaceMeta,
+    hostCanClone: canHostGitClone(backend),
+    editable: activeSpace === 'user' && gitSessionSpaceId === userSpaceId && !editLocked,
+  });
+  /** The page whose history is open, and where it is read (null while it is found). */
+  const [historyView, setHistoryView] = useState<{
+    pageId: string;
+    title: string;
+    source: PageHistorySource | null;
+  } | null>(null);
+
+  const handleOpenHistory = useCallback(async () => {
+    const pageId = selectedPageId;
+    if (!pageId || !activeSpaceMeta || !canHostGitClone(backend)) return;
+    const title = flattenPages(pagesRef.current).find((p) => p.id === pageId)?.title ?? pageId;
+    setHistoryView({ pageId, title, source: null });
+    try {
+      const source = await pageHistorySource(backend, activeSpaceMeta, pageId, {
+        sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
+        auth: await gitAuth?.(),
+        corsProxy: gitCorsProxy(),
+      });
+      if (!source) {
+        setHistoryView(null);
+        addToast('This page has no file of its own, so it has no history.', 'info');
+        return;
+      }
+      setHistoryView((prev) => (prev?.pageId === pageId ? { ...prev, source } : prev));
+    } catch (err) {
+      setHistoryView(null);
+      addToast(
+        `Page history is not available: ${err instanceof Error ? err.message : String(err)}`,
+        'error',
+      );
+    }
+  }, [selectedPageId, activeSpaceMeta, backend, gitSessionSpaceId, gitSession, gitAuth, addToast]);
+
+  /** Restore: the old text is saved as an ordinary edit, which the session commits as a new version. */
+  const handleRestoreVersion = useCallback(
+    async (pageId: string, content: string) => {
+      await flushPendingWrite();
+      await currentWritePage(pageId, content);
+      setPageContents((prev) => ({ ...prev, [pageId]: content }));
+      if (pageId === selectedPageIdRef.current) setEditorVersion((v) => v + 1);
+      addToast('Version restored. It is saved as a new version of the page.', 'success');
+    },
+    [flushPendingWrite, currentWritePage, addToast],
+  );
+
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
     const defaultSource = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
@@ -2456,6 +2511,7 @@ export function App() {
               ? () => handleOpenSettings('spaces', activeSpaceMeta.id)
               : undefined
           }
+          onOpenHistory={historyAccess !== 'none' ? () => void handleOpenHistory() : undefined}
         />
       </header>
       <main className="flex flex-1 min-h-0">
@@ -2938,6 +2994,16 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+      {historyView && (
+        <PageHistoryDialog
+          key={historyView.pageId}
+          title={historyView.title}
+          source={historyView.source}
+          canRestore={historyAccess === 'restore'}
+          onRestore={(content) => handleRestoreVersion(historyView.pageId, content)}
+          onClose={() => setHistoryView(null)}
+        />
       )}
       {startRepoSpaceOpen && githubAccount?.listRepos && (
         <StartRepoSpaceDialog

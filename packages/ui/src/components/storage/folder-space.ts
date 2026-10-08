@@ -145,6 +145,14 @@ async function pageFileOf(backend: StorageBackend, id: string): Promise<string |
   );
 }
 
+/**
+ * The file that holds page `id` (a folder page's `index.md` or `README.md`),
+ * relative to the space root; null when there is no such page.
+ */
+export function folderPageFile(backend: StorageBackend, id: string): Promise<string | null> {
+  return pageFileOf(backend, id);
+}
+
 export async function readFolderPage(backend: StorageBackend, id: string): Promise<string | null> {
   const file = await pageFileOf(backend, id);
   const bytes = file ? await backend.readFile(at(file)) : null;
