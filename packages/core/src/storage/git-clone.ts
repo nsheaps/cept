@@ -50,15 +50,22 @@ export async function withShallowClone<T>(
     await git.clone(options.url, { ref: options.ref ?? 'main', depth: 1, singleBranch: true });
     return await read(dir);
   } finally {
-    await options.host.deleteFile(dir).catch(() => undefined);
+    await options.host.deleteFile(dir).catch((err: unknown) => {
+      // The clone's own result still stands; a leftover directory is only wasted space.
+      console.warn(`withShallowClone: could not delete ${dir}`, err);
+    });
   }
 }
+
+/** Most directories tried for one clone before giving up. */
+const MAX_CLONE_DIR_ATTEMPTS = 1000;
 
 /** A clone directory that does not exist yet, named after the current time. */
 async function freeCloneDir(host: StorageBackend): Promise<string> {
   const stamp = Date.now();
-  for (let n = 0; ; n++) {
+  for (let n = 0; n < MAX_CLONE_DIR_ATTEMPTS; n++) {
     const dir = `${GIT_CLONES_DIR}/${n === 0 ? stamp : `${stamp}-${n}`}`;
     if (!(await host.exists(dir))) return dir;
   }
+  throw new Error(`withShallowClone: no free directory under ${GIT_CLONES_DIR}/${stamp}`);
 }

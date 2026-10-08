@@ -516,7 +516,7 @@ branch: docs # optional (D-30)
 - `GitBackend` in [packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) implements clone, fetch, log, diff and branch, with tests.
 - In the app, `cloneRemoteRepo` in git-space.ts asks core's `withShallowClone` for a shallow `depth: 1` clone into lightning-fs, then copies the markdown, front matter included, into a `readOnly: true` space (`createRemoteSpace` in SpaceManager.ts). Page titles come from the first H1 after any front matter, else the filename.
 - App.tsx re-clones the active remote space whenever it is visited and the last sync is older than 5 minutes (a `useEffect` gated on `SYNC_INTERVAL_MS`, not a timer; ~lines 426-470), only on `BrowserFsBackend` (~line 430). All clones go through `https://cors.isomorphic-git.org` (~lines 363, 467, 987, 1064). Adding a remote space on any other backend silently creates an empty local space instead (~lines 955-960).
-- Each clone or sync uses a new `/.cept/git-clones/<Date.now()>` directory and deletes it once the pages are read, whether or not the clone succeeded (PR 28). Clone directories left by earlier versions are not swept.
+- Each clone or sync uses a new `/.cept/git-clones/<Date.now()>` directory and deletes it once the pages are read, whether or not the clone succeeded (PR 28). Cloning no longer calls `initialize()` on the host, which used to rewrite the root `.cept/config.yaml` to `name: "git-clone"` on every clone and refresh. Clone directories left by earlier versions are not swept.
 
 **Docs state: documented-as-desired, stale.**
 

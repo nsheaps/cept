@@ -267,7 +267,8 @@ export class GitBackend implements GitStorageBackend {
     options?: { ref?: string; depth?: number; singleBranch?: boolean },
   ): Promise<void> {
     if (!this.http) throw new Error('GitBackend: http client required for clone');
-    await this.underlying.initialize({ name: 'git-clone' });
+    // isomorphic-git creates `dir`; the host's workspace (its config and
+    // pages) is not the clone's and must not be initialized over.
     await git.clone({
       fs: this.fs,
       http: this.http,

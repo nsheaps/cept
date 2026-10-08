@@ -110,6 +110,24 @@ describe('withShallowClone', () => {
     expect(await backend.exists(cloneDir)).toBe(false);
   });
 
+  it("leaves the host's workspace config and pages alone", async () => {
+    const backend = host();
+    const config = 'name: "Mine"\n';
+    await backend.writeFile('.cept/config.yaml', new TextEncoder().encode(config));
+    await withShallowClone(
+      {
+        host: backend,
+        fs: backend.getRawFs() as unknown as GitFs,
+        url: 'http://git.test/repo.git',
+        http: httpBackend,
+      },
+      async () => undefined,
+    );
+    const after = await backend.readFile('.cept/config.yaml');
+    expect(new TextDecoder().decode(after ?? undefined)).toBe(config);
+    expect(await backend.exists('pages/index.md')).toBe(false);
+  });
+
   it('deletes the clone when the reader throws', async () => {
     const backend = host();
     let cloneDir = '';

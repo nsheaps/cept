@@ -159,7 +159,7 @@ async function walkMarkdownFiles(
 
 /** Markdown without a leading YAML front matter block, so its `#` comments are not headings. */
 function withoutFrontMatter(md: string): string {
-  return md.replace(/^---\r?\n[\s\S]*?\r?\n---[ \t]*(\r?\n|$)/, '');
+  return md.replace(/^\uFEFF/, '').replace(/^---\r?\n[\s\S]*?\r?\n---[ \t]*(\r?\n|$)/, '');
 }
 
 /** Extract a human-readable title from a markdown filename */

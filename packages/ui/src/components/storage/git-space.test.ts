@@ -6,6 +6,8 @@ import type { GitCloneHost } from './git-space.js';
 
 const CLONE_DIR = '/.cept/git-clones/1';
 const cloneCalls: ShallowCloneOptions[] = [];
+/** Stands in for the host's raw fs, which only the (faked) clone may use. */
+const RAW_FS = Object.freeze({ fake: 'raw fs' });
 
 // The clone itself is core's (tested against a real Git server there); this
 // fake lays the "cloned" files out on the host and hands over the directory.
@@ -30,7 +32,7 @@ async function hostWith(files: Record<string, string>): Promise<GitCloneHost> {
   for (const [file, text] of Object.entries(files)) {
     await backend.writeFile(`${CLONE_DIR}/${file}`, encode(text));
   }
-  return Object.assign(backend, { getRawFs: () => ({}) });
+  return Object.assign(backend, { getRawFs: () => RAW_FS });
 }
 
 describe('cloneRemoteRepo', () => {
@@ -44,6 +46,7 @@ describe('cloneRemoteRepo', () => {
     expect(cloneCalls).toHaveLength(1);
     expect(cloneCalls[0]).toMatchObject({
       host: backend,
+      fs: RAW_FS,
       url: 'https://github.com/u/r',
       ref: 'dev',
       corsProxy: 'https://proxy.test',
@@ -56,6 +59,12 @@ describe('cloneRemoteRepo', () => {
     const { pages, pageContents } = await cloneRemoteRepo(backend, 'github.com/u/r');
     expect(pageContents['README.md']).toBe(readme);
     expect(pages).toEqual([{ id: 'README.md', title: 'Real Title', children: [] }]);
+  });
+
+  it('skips front matter after a byte order mark when looking for the title', async () => {
+    const backend = await hostWith({ 'bom.md': '\uFEFF---\n# comment\n---\n\n# Heading\n' });
+    const { pages } = await cloneRemoteRepo(backend, 'github.com/u/r');
+    expect(pages[0]?.title).toBe('Heading');
   });
 
   it('falls back to the filename when only the front matter has a # line', async () => {
