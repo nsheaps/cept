@@ -33,6 +33,7 @@ describeFeature(feature, ({ Scenario }) => {
     });
 
     When('I click "Start writing"', () => {
+      expect(appLoaded).toBe(true);
       backendType = 'browser';
     });
 

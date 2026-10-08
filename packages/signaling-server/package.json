@@ -10,12 +10,18 @@
   "scripts": {
     "start": "bun run src/server.ts",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --root ../.. --project unit packages/signaling-server/"
   },
   "dependencies": {
     "@cept/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "1.4.2"
+  },
+  "cept": {
+    "skipTargets": {
+      "build": "Co-editing (and so the signaling server deployment) is later; only its unit tests run."
+    }
   }
 }

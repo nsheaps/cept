@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/nx/schemas/project-schema.json",
+  "name": "cept-workspace",
+  "metadata": {
+    "description": "Repo-level code outside the packages: scripts/ci, tools/ and the features/ integration suite."
+  },
+  "targets": {
+    "test:unit": {
+      "command": "vitest run --project unit scripts/",
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/scripts/**/*",
+        "{workspaceRoot}/vitest.config.ts",
+        "{workspaceRoot}/.mise.toml",
+        "{workspaceRoot}/.release-it.json",
+        "{workspaceRoot}/bun.lock"
+      ]
+    },
+    "test:integration": {
+      "command": "vitest run --project integration",
+      "cache": false
+    },
+    "typecheck": {
+      "command": "tsc --noEmit -p tsconfig.scripts.json",
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/scripts/**/*.ts",
+        "{workspaceRoot}/tools/**/*.ts",
+        "{workspaceRoot}/features/**/*.ts",
+        "{workspaceRoot}/*.config.ts",
+        "{workspaceRoot}/tsconfig.scripts.json",
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/bun.lock"
+      ]
+    }
+  }
+}
