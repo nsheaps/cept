@@ -111,6 +111,7 @@ import {
 import type { AppRoute } from '../router.js';
 import { NotFoundPage } from './shared/NotFoundPage.js';
 import { gitCorsProxy } from '../config/git-proxy.js';
+import { useStoragePersistence } from './storage/useStoragePersistence.js';
 
 const DEMO_PAGES: PageTreeNode[] = [
   {
@@ -290,6 +291,9 @@ export function App() {
   /** Page counts, sizes and slugs of the listed spaces, read while settings are open. */
   const [spaceStats, setSpaceStats] = useState<Record<string, SpaceStats | null>>({});
   const { messages: toastMessages, addToast, dismissToast } = useToast();
+  const warnStorage = useCallback((text: string) => addToast(text, 'warning'), [addToast]);
+  /** Ask for persistent storage when a space is first created this page load (REQ-WEB-004). */
+  const requestPersistentStorage = useStoragePersistence(warnStorage);
   /** The writable GitHub space whose editing session is open (REQ-WS-027), or null. */
   const [gitSessionSpaceId, setGitSessionSpaceId] = useState<string | null>(null);
   /** Bumped when the open page is read again from its file after a sync, to show it. */
@@ -730,6 +734,7 @@ export function App() {
                   setSpacesManifest(updatedManifest);
                   setUserSpaceId(newSpace.id);
                   setActiveSpace('user');
+                  void requestPersistentStorage();
                   // A writable space's pages are the files of its clone; nothing is copied.
                   const tree = writable
                     ? await loadAndApplySpaceState(newSpace.id, displayName)
@@ -778,6 +783,7 @@ export function App() {
     applyClonedSpace,
     openDemoSpace,
     gitAuth,
+    requestPersistentStorage,
   ]);
 
   // Background sync: auto-refresh remote spaces every 5 minutes
@@ -1561,9 +1567,17 @@ export function App() {
         setSpacesManifest(manifest);
         setUserSpaceId(space.id);
         applySpace(emptySnapshot(name));
+        void requestPersistentStorage();
       });
     },
-    [spaces, saveActiveSpace, setSpacesManifest, setUserSpaceId, applySpace],
+    [
+      spaces,
+      saveActiveSpace,
+      setSpacesManifest,
+      setUserSpaceId,
+      applySpace,
+      requestPersistentStorage,
+    ],
   );
 
   const handleSwitchSpace = useCallback(
@@ -1924,6 +1938,7 @@ export function App() {
           { activate: options.activate, writable },
         );
         setSpacesManifest(manifest);
+        void requestPersistentStorage();
 
         if (options.activate) {
           setUserSpaceId(newSpace.id);
@@ -1971,6 +1986,7 @@ export function App() {
       setUserSpaceId,
       applyClonedSpace,
       loadAndApplySpaceState,
+      requestPersistentStorage,
     ],
   );
 
@@ -2018,6 +2034,7 @@ export function App() {
       });
       setSpacesManifest(created.manifest);
       setUserSpaceId(created.space.id);
+      void requestPersistentStorage();
       await loadAndApplySpaceState(created.space.id, name);
       addToast(`"${name}" is ready. Your edits are committed and synced with GitHub.`, 'success');
     },
@@ -2032,6 +2049,7 @@ export function App() {
       setUserSpaceId,
       loadAndApplySpaceState,
       addToast,
+      requestPersistentStorage,
     ],
   );
 

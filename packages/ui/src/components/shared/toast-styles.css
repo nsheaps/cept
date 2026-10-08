@@ -44,6 +44,12 @@
   color: #166534;
 }
 
+.cept-toast--warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
 .cept-toast--error {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -79,6 +85,11 @@
   background: #14291e;
   border-color: #22543d;
   color: #86efac;
+}
+.dark .cept-toast--warning {
+  background: #2b2111;
+  border-color: #5c4313;
+  color: #fcd34d;
 }
 .dark .cept-toast--error {
   background: #2d1515;

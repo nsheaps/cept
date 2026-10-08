@@ -477,6 +477,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: unit tests with mocked `navigator.storage`.
 - Accept: tests green.
 - Risk: none notable.
+- Note (PR 40): "first space creation" is the first space created or cloned from GitHub in each page load, so a refusal is shown again after a reload rather than remembered. "Low" means under 50 MB, or under a tenth of the quota, left. The warning is a toast of a new `warning` type. Tracked under REQ-WEB-004 rather than a new requirement.
 
 **PR 41 — `feat(history): page history list, diff and restore`**
 
