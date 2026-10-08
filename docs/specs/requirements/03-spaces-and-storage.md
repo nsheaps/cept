@@ -63,10 +63,11 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                | MUST     | not-started | undocumented           | n/a           |
 | [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space         | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                 | MUST     | implemented | documented             | accurate      |
 
-Status counts: 2 implemented, 6 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (24 requirements).
+Status counts: 2 implemented, 6 partial, 4 stubbed, 7 not-started, 3 divergent, 2 deferred, 1 decided (25 requirements).
 
 ## Architecture
 
@@ -745,6 +746,34 @@ branch: docs # optional (D-30)
 **Docs state: documented-differently, stale.** These requirement docs use "space". [SPECIFICATION.md](../../SPECIFICATION.md) and the user docs still say "workspace".
 
 **Related:** [#45](https://github.com/nsheaps/cept/issues/45).
+
+### REQ-WS-023 — Space autodiscovery from account access
+
+> **Scope: Phase 1 (D-30).** Phase 1 plan PR 33 (discovery in `@cept/core`) and PR 34 (the Discovered list). Phase 1 uses personal access tokens only; GitHub App installations are Phase 2.
+
+**Statement.** After sign-in, Cept MUST find the spaces in every repository the credential can read and offer them to the user, without cloning anything. Discovery MUST respect GitHub's rate limits, and a space the credential can no longer read MUST be flagged, not deleted from this device.
+
+**Source.** Owner request (autodiscovery of spaces from what the login can access); scope gap analysis ([scope.md](../scope.md)); D-3, D-30.
+
+**Acceptance criteria**
+
+- Repositories: `GET /user/repos`, every page, for a personal access token. Forks and archived repositories are skipped. (Phase 2 adds `/user/installations` and `/user/installations/{id}/repositories` for the GitHub App.)
+- Markers: for each repository, the default branch's tree is read with the recursive REST Git Trees API (not code search, which misses files), and every `space.cept.yaml` / `space.cept.yml` is found. D-3 applies: no space is reported inside another; a nested marker is reported as a warning. A truncated tree is reported, not silently treated as complete.
+- Branch: a marker that declares `branch:` is reported with that branch; otherwise the default branch.
+- Each result names the repository, the path of the space in it, the branch, and the name from the marker (falling back to the folder or repository name).
+- Caching and limits: responses are cached per account with ETags, so an unchanged repository costs a `304`. Requests run with capped concurrency, and discovery stops early, keeping what it found, when `X-RateLimit-Remaining` runs out.
+- Errors: a `403` or `404` on one repository skips that repository with a warning; discovery of the rest continues.
+- Lost access: a space found earlier whose repository is no longer listed, or now refuses access, is flagged as lost.
+- Nothing is cloned during discovery; a space is cloned only when the user opens or pins it (PR 34).
+- Tests: mocked GitHub REST responses with two spaces in one repository, a fork, an archived repository, a `403` on one repository and a nested marker.
+
+**Current state: not-started.** Discovery inside one opened folder or clone exists (`discoverSpaces` in [packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts)); nothing reads an account's repositories yet.
+
+**Docs state: undocumented.**
+
+**Gap.** Everything above; Phase 1 plan PRs 33 and 34.
+
+**Related:** REQ-WS-002, REQ-WS-013, REQ-AUTH-014, D-3, D-30.
 
 ### REQ-WS-024 — Space lifecycle
 
