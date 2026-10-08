@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.0](https://github.com/nsheaps/cept/compare/v0.18.0...v0.19.0) (2026-10-08)
+
+### Features
+
+* **ui:** space lifecycle and inactive-space stats ([#390](https://github.com/nsheaps/cept/issues/390)) ([834340c](https://github.com/nsheaps/cept/commit/834340cb0f4f824a3e566c0108ea6fca4be6625c))
+
 ## [0.18.0](https://github.com/nsheaps/cept/compare/v0.17.0...v0.18.0) (2026-10-08)
 
 ### Features
