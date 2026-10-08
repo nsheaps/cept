@@ -1,5 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/nrwl/nx/master/packages/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "sharedGlobals": [
+      "{workspaceRoot}/nx.json",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/bun.lock",
+      "{workspaceRoot}/bunfig.toml",
+      "{workspaceRoot}/.mise.toml",
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/vitest.config.ts"
+    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"]
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],
@@ -18,14 +31,13 @@
       "cache": true,
       "inputs": [
         "{projectRoot}/**/*",
+        "sharedGlobals",
         "{workspaceRoot}/eslint.config.js",
         "{workspaceRoot}/tools/lint/**/*",
-        "{workspaceRoot}/nx.json",
         "{workspaceRoot}/project.json",
         "{workspaceRoot}/packages/*/package.json",
         "{workspaceRoot}/docs/package.json",
-        "{workspaceRoot}/e2e/package.json",
-        "{workspaceRoot}/bun.lock"
+        "{workspaceRoot}/e2e/package.json"
       ]
     },
     "typecheck": {

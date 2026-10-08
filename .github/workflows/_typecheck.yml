@@ -7,8 +7,19 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    env:
+      # Pull requests run only the Nx projects the change affects (scripts/ci/nx-targets.ts);
+      # pushes to main leave NX_BASE empty and run everything.
+      NX_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Fetch the pull request base
+        # nx affected diffs against NX_BASE. Without a merge base in this shallow
+        # clone it diffs the two commits directly, which is the PR's change because
+        # the checkout is the merge of the PR into that base.
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "$NX_BASE"
 
       - name: Install mise
         uses: jdx/mise-action@v4

@@ -18,7 +18,7 @@
     "test": "nx run-many -t test:unit test:integration",
     "test:unit": "nx run-many -t test:unit",
     "test:integration": "nx run-many -t test:integration",
-    "test:e2e": "nx run @cept/e2e:test",
+    "test:e2e": "nx run @cept/e2e:test:e2e",
     "test:e2e:screenshots": "nx run @cept/e2e:test:screenshots",
     "lint": "nx run-many -t lint",
     "typecheck": "nx run-many -t typecheck",

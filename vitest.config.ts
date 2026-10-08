@@ -31,14 +31,18 @@ export default defineConfig({
             'docs/src/**/*.{test,spec}.{ts,tsx}',
             'scripts/**/*.test.ts',
           ],
-          exclude: ['node_modules', 'dist', 'e2e'],
+          exclude: ['node_modules', 'dist', 'e2e', '**/*.integration.test.ts'],
         },
       },
       {
         extends: true,
         test: {
           name: 'integration',
-          include: ['features/step-definitions/**/*.steps.ts', 'tools/**/*.integration.test.ts'],
+          include: [
+            'features/step-definitions/**/*.steps.ts',
+            'tools/**/*.integration.test.ts',
+            'scripts/**/*.integration.test.ts',
+          ],
           exclude: ['node_modules', 'dist', 'e2e'],
         },
       },

@@ -34,9 +34,9 @@ description = "Fail if any file is not Prettier-formatted (fix with `mise run fo
 run = "bunx prettier --check ."
 
 [tasks.lint]
-description = "Lint every project, the workflows and formatting"
+description = "Lint every project (affected ones when NX_BASE is set), the workflows and formatting"
 depends = ["lint:workflows", "lint:format", "check:targets"]
-run = "bun run lint"
+run = "bun scripts/ci/nx-targets.ts lint"
 env = { NX_DAEMON = "false" }
 
 [tasks."check:targets"]
@@ -49,27 +49,27 @@ description = "Apply Prettier formatting"
 run = "bunx prettier --write ."
 
 [tasks.typecheck]
-description = "Typecheck every project"
-run = "bun run typecheck"
+description = "Typecheck every project (affected ones when NX_BASE is set)"
+run = "bun scripts/ci/nx-targets.ts typecheck"
 env = { NX_DAEMON = "false" }
 
 [tasks."test:unit"]
-description = "Run unit tests"
-run = "bun run test:unit"
+description = "Run unit tests (affected projects when NX_BASE is set)"
+run = "bun scripts/ci/nx-targets.ts test:unit"
 env = { NX_DAEMON = "false" }
 
 [tasks."test:integration"]
-description = "Run integration tests"
-run = "bun run test:integration"
+description = "Run integration tests (affected projects when NX_BASE is set)"
+run = "bun scripts/ci/nx-targets.ts test:integration"
 env = { NX_DAEMON = "false" }
 
 [tasks."test:e2e"]
-description = "Run Playwright end-to-end tests"
-run = "bun run test:e2e"
+description = "Run Playwright end-to-end tests (skipped when NX_BASE is set and e2e is not affected)"
+run = "bun scripts/ci/nx-targets.ts test:e2e"
 
 [tasks.build]
-description = "Build every project"
-run = "bun run build"
+description = "Build every project (affected ones when NX_BASE is set)"
+run = "bun scripts/ci/nx-targets.ts build"
 env = { NX_DAEMON = "false" }
 
 [tasks."build:web"]
@@ -92,6 +92,10 @@ run = "bun scripts/ci/pr-title.ts"
 [tasks."ci:playwright-version"]
 description = "Print version=<installed Playwright version> for $GITHUB_OUTPUT"
 run = "bun scripts/ci/playwright-version.ts"
+
+[tasks."ci:affected"]
+description = "Print affected=true|false for the project named after --, for $GITHUB_OUTPUT (true without NX_BASE)"
+run = "bun scripts/ci/nx-affected.ts"
 
 [tasks."ci:playwright-provision"]
 description = "Copy Playwright browsers out of the official image (needs PLAYWRIGHT_VERSION)"
