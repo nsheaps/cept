@@ -41,8 +41,15 @@ function writeSpy(inner: StorageBackend): { backend: StorageBackend; writes: str
   return { backend, writes };
 }
 
-/** A directory handle whose permission is `permission` until it is asked for again. */
-function folderHandle(name: string, permission: PermissionState = 'granted') {
+/**
+ * A directory handle whose permission is `permission` until it is asked for
+ * again, when the user answers `answer`.
+ */
+function folderHandle(
+  name: string,
+  permission: PermissionState = 'granted',
+  answer: PermissionState = 'granted',
+) {
   const state = { permission };
   return {
     kind: 'directory',
@@ -50,7 +57,7 @@ function folderHandle(name: string, permission: PermissionState = 'granted') {
     isSameEntry: async (other: { name: string }) => other.name === name,
     queryPermission: async () => state.permission,
     requestPermission: async () => {
-      state.permission = 'granted';
+      state.permission = answer;
       return state.permission;
     },
   } as unknown as FileSystemDirectoryHandle;
@@ -213,6 +220,37 @@ describe('App folder spaces', () => {
       0,
     );
     expect(screen.queryByTestId('folder-reconnect')).toBeNull();
+  });
+
+  it('after the user refuses the saved folder, the next reconnect picks it again', async () => {
+    const app = new MemoryBackend();
+    const folder = notesFolder();
+    const handles = memoryStore();
+    const first = fakeHost(new Map([['notes', folder]]), handles);
+    first.next.handle = folderHandle('notes');
+    renderApp(app, first.host);
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    await screen.findAllByText('Welcome', {}, { timeout: 3000 });
+    await settle();
+    cleanup();
+
+    const [{ id }] = await handles.list();
+    await handles.save(id, folderHandle('notes', 'prompt', 'denied'));
+    const second = fakeHost(new Map([['notes', folder]]), handles);
+    renderApp(app, second.host);
+
+    fireEvent.click(await screen.findByTestId('folder-reconnect-btn'));
+    expect(await screen.findByText(/was not allowed to open the folder "notes"/)).toBeDefined();
+    expect(screen.getByTestId('folder-reconnect-btn').textContent).toBe('Pick the folder');
+
+    const picked = folderHandle('notes');
+    second.next.handle = picked;
+    fireEvent.click(screen.getByTestId('folder-reconnect-btn'));
+    expect((await screen.findAllByText('Welcome', {}, { timeout: 3000 })).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByTestId('folder-reconnect')).toBeNull();
+    expect(await handles.load(id)).toBe(picked);
   });
 
   it('a link to a page of a folder space waits for the folder, then shows the page', async () => {

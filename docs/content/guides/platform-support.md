@@ -73,7 +73,7 @@ In a Chromium-based browser on a computer, such as Chrome or Edge, choose **Loca
 - If it is not, Cept lists the spaces in its subfolders, and offers to make the folder itself a space. Only that choice writes to the folder, and it adds a single file, `space.cept.yaml`.
 - If its `space.cept.yaml` cannot be read, Cept says why and opens nothing; it never overwrites that file. Fix the file, or pick a subfolder to open a space inside it.
 - Opening a folder and reading its pages changes nothing in it. Cept writes a page's file only after you edit that page. Your recent pages, favorites and expanded folders are kept in the browser, not in the folder.
-- Cept remembers the folder. After a reload or a new visit, the browser may ask for permission again: the space shows a **Reconnect folder** button, and the folder opens once you allow it. If the browser has lost the folder, you pick it again; Cept checks that it holds the space, and asks before using a folder whose space has another name.
+- Cept remembers the folder. After a reload or a new visit, the browser may ask for permission again: the space shows a **Reconnect folder** button, and the folder opens once you allow it. If you refuse, the button changes to **Pick the folder** so you can choose it again. If the browser has lost the folder, you pick it again; Cept checks that it holds the space, and asks before using a folder whose space has another name.
 - Changes made to the folder outside Cept show after you reload the page; Cept does not watch the folder while it is open.
 
 ## Desktop-Specific Features (Coming Soon)

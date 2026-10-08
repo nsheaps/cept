@@ -222,6 +222,11 @@ export function App() {
   const [reconnectMismatch, setReconnectMismatch] = useState<
     { id: string; handle: FileSystemDirectoryHandle; foundName: string } | undefined
   >(undefined);
+  /**
+   * The space whose saved folder the user would not allow: the next reconnect
+   * picks the folder again instead of asking for the same one.
+   */
+  const [pickToReconnect, setPickToReconnect] = useState<string | undefined>(undefined);
   /** A picked folder that is not a space, waiting for the user to choose what to open. */
   const [pickedFolder, setPickedFolder] = useState<
     | { handle: FileSystemDirectoryHandle; folder: StorageBackend; contents: FolderContents }
@@ -1384,6 +1389,7 @@ export function App() {
       if (!space) return;
       if (picked) await folderHost.handles.save(target.id, handle).catch(() => undefined);
       setReconnectMismatch(undefined);
+      setPickToReconnect(undefined);
       waitingFoldersRef.current.delete(target.id);
       spaces.connectFolder(space, folderHost.open(handle));
       const tree = await loadAndApplySpaceState(target.id, target.name);
@@ -1408,11 +1414,18 @@ export function App() {
     if (!target || !folderHost) return;
     const space = spacesManifest?.spaces.find((s) => s.id === target.id);
     if (!space) return;
-    let handle = waitingFoldersRef.current.get(target.id) ?? null;
-    if (!handle) handle = await folderHost.handles.load(target.id).catch(() => null);
+    let handle: FileSystemDirectoryHandle | null = null;
+    if (pickToReconnect !== target.id) {
+      handle = waitingFoldersRef.current.get(target.id) ?? null;
+      if (!handle) handle = await folderHost.handles.load(target.id).catch(() => null);
+    }
     if (handle) {
       if (!(await reconnectFolder(handle))) {
-        addToast(`Cept was not allowed to open the folder "${handle.name}".`, 'error');
+        setPickToReconnect(target.id);
+        addToast(
+          `Cept was not allowed to open the folder "${handle.name}". Pick the folder to open it.`,
+          'error',
+        );
         return;
       }
       await bindReconnectedFolder(target, handle, false);
@@ -1447,7 +1460,14 @@ export function App() {
       return;
     }
     await bindReconnectedFolder(target, handle, true);
-  }, [folderToReconnect, folderHost, spacesManifest, bindReconnectedFolder, addToast]);
+  }, [
+    folderToReconnect,
+    folderHost,
+    spacesManifest,
+    pickToReconnect,
+    bindReconnectedFolder,
+    addToast,
+  ]);
 
   const handleImportComplete = useCallback(
     (importedPages: ImportedPage[]) => {
@@ -2050,7 +2070,9 @@ export function App() {
                   >
                     {reconnectMismatch?.id === folderToReconnect.id
                       ? 'Pick another folder'
-                      : 'Reconnect folder'}
+                      : pickToReconnect === folderToReconnect.id
+                        ? 'Pick the folder'
+                        : 'Reconnect folder'}
                   </button>
                 )}
                 <button
