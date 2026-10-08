@@ -29,6 +29,7 @@ export default defineConfig({
           include: [
             'packages/*/src/**/*.{test,spec}.{ts,tsx}',
             'docs/src/**/*.{test,spec}.{ts,tsx}',
+            'scripts/**/*.test.ts',
           ],
           exclude: ['node_modules', 'dist', 'e2e'],
         },
