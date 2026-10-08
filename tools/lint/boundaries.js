@@ -5,6 +5,9 @@
  * outside GitBackend (rule 5). Unlike `no-restricted-imports` this also checks
  * `import()`, re-exports and `require()`, and its baseline names single
  * imports, so a baselined file still fails on any new forbidden import.
+ *
+ * `no-git-type-check` enforces rule 4: ui gates Git features on
+ * `backend.capabilities`, never on a type being `'git'`.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -183,7 +186,51 @@ const restrictedImports = {
   },
 };
 
+/** Comparisons that test equality, either way round. */
+const EQUALITY = new Set(['===', '!==', '==', '!=']);
+
+/** @param {any} node Whether `node` is the string literal `'git'`. */
+const isGitLiteral = (node) => node?.type === 'Literal' && node.value === 'git';
+/** @param {any} node Whether `node` reads a `type` property (`x.type`, `x?.type`, `x['type']`). */
+const readsType = (node) =>
+  node?.type === 'MemberExpression' &&
+  ((!node.computed && node.property.name === 'type') ||
+    (node.computed && node.property.type === 'Literal' && node.property.value === 'type'));
+
+/** @type {import('eslint').Rule.RuleModule} */
+const noGitTypeCheck = {
+  meta: {
+    type: 'problem',
+    docs: { description: "Forbid gating ui on a backend's type being 'git'" },
+    schema: [],
+    messages: {
+      forbidden:
+        "Checking a type against 'git' is forbidden in ui: gate Git features on backend.capabilities (CLAUDE.md rule 4).",
+    },
+  },
+  create(context) {
+    const file = path.relative(ROOT, context.filename).split(path.sep).join('/');
+    if (!file.startsWith('packages/ui/src/') || TEST_FILE.test(file)) return {};
+    return {
+      /** @param {any} node */
+      BinaryExpression(node) {
+        if (!EQUALITY.has(node.operator)) return;
+        if (
+          (isGitLiteral(node.right) && readsType(node.left)) ||
+          (isGitLiteral(node.left) && readsType(node.right))
+        )
+          context.report({ node, messageId: 'forbidden' });
+      },
+      /** @param {any} node */
+      SwitchCase(node) {
+        if (isGitLiteral(node.test) && readsType(node.parent.discriminant))
+          context.report({ node, messageId: 'forbidden' });
+      },
+    };
+  },
+};
+
 export default {
   meta: { name: 'cept-boundaries' },
-  rules: { 'restricted-imports': restrictedImports },
+  rules: { 'restricted-imports': restrictedImports, 'no-git-type-check': noGitTypeCheck },
 };

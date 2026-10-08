@@ -1,6 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { MemoryBackend } from '@cept/core';
 import { AddSpaceWizardModal } from './AddSpaceWizardModal.js';
+import { probePlatform, spaceSources } from '../storage/platform.js';
+
+/** A backend that can host a Git clone, like the IndexedDB browser backend. */
+class CloneHostBackend extends MemoryBackend {
+  getRawFs(): unknown {
+    return {};
+  }
+}
 
 const defaultProps = {
   isOpen: true,
@@ -19,12 +28,13 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.getByTestId('add-space-wizard-modal')).toBeDefined();
   });
 
-  it('shows type chooser with Local, Git, and S3 options', () => {
+  it('shows Local and Git by default, and nothing that is not available', () => {
     render(<AddSpaceWizardModal {...defaultProps} />);
     expect(screen.getByTestId('wizard-type-chooser')).toBeDefined();
     expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
     expect(screen.getByTestId('wizard-choose-git')).toBeDefined();
-    expect(screen.getByTestId('wizard-choose-s3')).toBeDefined();
+    expect(screen.queryByTestId('wizard-choose-folder')).toBeNull();
+    expect(screen.queryByTestId('wizard-choose-s3')).toBeNull();
   });
 
   it('does not show back button on type chooser', () => {
@@ -32,11 +42,73 @@ describe('AddSpaceWizardModal', () => {
     expect(screen.queryByTestId('wizard-back')).toBeNull();
   });
 
-  it('S3 option is disabled', () => {
-    render(<AddSpaceWizardModal {...defaultProps} />);
-    const s3 = screen.getByTestId('wizard-choose-s3');
-    // S3 is a div, not a button — no click handler
-    expect(s3.tagName).toBe('DIV');
+  describe('on each platform (REQ-WS-017)', () => {
+    // jsdom has no IndexedDB; every browser Cept supports has one.
+    beforeEach(() => vi.stubGlobal('indexedDB', {}));
+    afterEach(() => vi.unstubAllGlobals());
+
+    const sourcesHere = () => spaceSources(probePlatform(window), new CloneHostBackend());
+
+    it('offers a local folder where File System Access exists', () => {
+      vi.stubGlobal('showDirectoryPicker', vi.fn());
+      const onOpenFolder = vi.fn();
+      const onClose = vi.fn();
+      render(
+        <AddSpaceWizardModal
+          {...defaultProps}
+          onClose={onClose}
+          sources={sourcesHere()}
+          onOpenFolder={onOpenFolder}
+        />,
+      );
+      expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
+      expect(screen.getByTestId('wizard-choose-git')).toBeDefined();
+      fireEvent.click(screen.getByTestId('wizard-choose-folder'));
+      expect(onOpenFolder).toHaveBeenCalledOnce();
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it('hides the local folder in a phone PWA without File System Access', () => {
+      vi.stubGlobal('showDirectoryPicker', undefined);
+      render(
+        <AddSpaceWizardModal {...defaultProps} sources={sourcesHere()} onOpenFolder={vi.fn()} />,
+      );
+      expect(screen.queryByTestId('wizard-choose-folder')).toBeNull();
+      expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
+      expect(screen.getByTestId('wizard-choose-git')).toBeDefined();
+    });
+
+    it('hides the local folder until the app can open one', () => {
+      render(
+        <AddSpaceWizardModal
+          {...defaultProps}
+          sources={{ browser: true, folder: true, git: true }}
+        />,
+      );
+      expect(screen.queryByTestId('wizard-choose-folder')).toBeNull();
+    });
+
+    it('hides Git where the backend cannot clone', () => {
+      render(
+        <AddSpaceWizardModal
+          {...defaultProps}
+          sources={{ browser: true, folder: false, git: false }}
+        />,
+      );
+      expect(screen.queryByTestId('wizard-choose-git')).toBeNull();
+      expect(screen.getByTestId('wizard-choose-local')).toBeDefined();
+    });
+
+    it('says so when no kind of space is available', () => {
+      render(
+        <AddSpaceWizardModal
+          {...defaultProps}
+          sources={{ browser: false, folder: false, git: false }}
+        />,
+      );
+      expect(screen.getByTestId('wizard-no-sources')).toBeDefined();
+      expect(screen.queryByTestId('wizard-choose-local')).toBeNull();
+    });
   });
 
   it('shows create form when Local selected', () => {

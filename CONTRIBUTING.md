@@ -64,7 +64,7 @@ The full list is in [CLAUDE.md](CLAUDE.md#architecture-rules-never-violate). Lin
 2. `@cept/ui` uses the `StorageBackend` interface, never a concrete backend, and only `GitBackend` imports `isomorphic-git` (lint: `cept/restricted-imports`)
 3. Projects only import the projects their `scope:` tags allow, `platform:none` projects only import `platform:none` projects, and no project imports another by relative path (lint: `@nx/enforce-module-boundaries`)
 4. All persistence goes through the `StorageBackend` interface
-5. Git-specific UI is gated by `backend.capabilities` checks
+5. Git-specific UI is gated by `backend.capabilities` checks, never by `type === 'git'` (lint: `cept/no-git-type-check`)
 6. The app must boot to a fully functional state with `BrowserFsBackend` alone
 7. TypeScript strict mode everywhere — no `any`, no `@ts-ignore`
 

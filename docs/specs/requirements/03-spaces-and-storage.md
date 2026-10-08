@@ -57,7 +57,7 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-014](#req-ws-014--git-backed-space-write-commit-pushpull-sync)                      | Git-backed space: write, commit, push/pull                              | MUST     | stubbed     | documented-as-desired  | stale         |
 | [REQ-WS-015](#req-ws-015--google-drive-backend)                                             | Google Drive backend                                                    | MUST     | not-started | undocumented           | n/a           |
 | [REQ-WS-016](#req-ws-016--sftp-backend)                                                     | SFTP backend, served through app or daemon                              | MUST     | not-started | undocumented           | n/a           |
-| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones | SHOULD   | partial     | documented-differently | stale         |
+| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones | SHOULD   | partial     | documented             | current       |
 | [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                     | MUST     | partial     | documented-differently | stale         |
 | [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | divergent   | documented-as-desired  | accurate      |
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
@@ -625,11 +625,11 @@ branch: docs # optional (D-30)
 - [docs/content/guides/platform-support.md](../../content/guides/platform-support.md) contains this matrix, kept in sync with the code.
 - The Add Space wizard derives its options from a platform capability probe, with a test per platform mock, including a phone-PWA mock (no File System Access).
 
-**Current state: partial.** The Add Space wizard ([packages/ui/src/components/settings/AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx), ~lines 102-147) offers Local (meaning a new IndexedDB space), Git, and a disabled "S3 – Coming soon" card. It does no platform detection.
+**Current state: partial.** [packages/ui/src/components/storage/platform.ts](../../../packages/ui/src/components/storage/platform.ts) probes the device (`probePlatform`: File System Access, IndexedDB) and combines it with the backend's ability to host a clone (`spaceSources`). The Add Space wizard ([AddSpaceWizardModal.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.tsx)) shows only the kinds of space that work here: Local (a new IndexedDB space) where IndexedDB exists, Local folder where File System Access exists and the app can open a folder, and Git where the backend can host a clone; with none it says so. The disabled "S3 – Coming soon" card is gone. Tests cover desktop Chrome, a phone PWA (no File System Access) and a device with neither API ([platform.test.ts](../../../packages/ui/src/components/storage/platform.test.ts), [AddSpaceWizardModal.test.tsx](../../../packages/ui/src/components/settings/AddSpaceWizardModal.test.tsx)). The app does not yet pass a folder handler, so Local folder stays hidden until PR 25.
 
-**Docs state: documented-differently, stale.** platform-support.md lines 52-66 cover only the Browser, Local Folder and Git rows, and say Browser is "IndexedDB/localStorage".
+**Docs state: documented, current.** [platform-support.md](../../content/guides/platform-support.md) has the Phase 1 rows of this matrix.
 
-**Gap.** Extend the matrix and make the wizard platform-aware.
+**Gap.** Wire "Local folder" to the File System Access backend (PR 25).
 
 **Related:** [#55](https://github.com/nsheaps/cept/issues/55), [#56](https://github.com/nsheaps/cept/issues/56).
 
