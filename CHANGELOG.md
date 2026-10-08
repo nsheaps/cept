@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.18.0](https://github.com/nsheaps/cept/compare/v0.17.0...v0.18.0) (2026-10-08)
+
+### Features
+
+* **ui:** open a local folder as a space ([#389](https://github.com/nsheaps/cept/issues/389)) ([23773cf](https://github.com/nsheaps/cept/commit/23773cf5d5e3ceb39a132ce3a6531fd55422c464))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([8e462fb](https://github.com/nsheaps/cept/commit/8e462fbe802539f78585e3ac8266de4c2bd4d3a9))
+
 ## [0.17.0](https://github.com/nsheaps/cept/compare/v0.16.0...v0.17.0) (2026-10-08)
 
 ### Features
