@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.47](https://github.com/nsheaps/cept/compare/v0.7.46...v0.7.47) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([7927e91](https://github.com/nsheaps/cept/commit/7927e917d5078b691313684e428455c719df4408))
+
+### CI/CD
+
+* **cd:** replace fake-green native jobs with placeholders ([#372](https://github.com/nsheaps/cept/issues/372)) ([c4cc81b](https://github.com/nsheaps/cept/commit/c4cc81bc736fd1c7e8b863ca6f0366a9601165a2))
+
 ## [0.7.46](https://github.com/nsheaps/cept/compare/v0.7.45...v0.7.46) (2026-10-08)
 
 ### Documentation
