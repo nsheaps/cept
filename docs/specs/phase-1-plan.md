@@ -493,6 +493,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: unit tests with and without `.git`, and with the space in a subfolder.
 - Accept: tests green.
 - Risk: isomorphic-git over File System Access handles may be slow; desktop uses the native path (PR 74).
+- Note (PR 42, deviation): history only; sync is deferred. The repository is read through a file system that refuses every write (`openLocalRepository`), so opening or browsing never changes it (REQ-WS-019). Committing and pushing from the browser into a repository the user also edits with Git, an IDE or other tools risks a corrupt index or a moved branch under them, and File System Access gives no locking. Edits and restores are saved to the working files and the user commits them. A `.git` file (worktree, submodule) is not followed. A shallow local repository's older versions are not downloaded (there is no remote transport for it). Sync for local repositories can come with the desktop native path (PR 74).
 
 **PR 43 — `feat(spaces): publish a local space to a new github repo`**
 

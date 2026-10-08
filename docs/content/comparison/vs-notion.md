@@ -33,7 +33,7 @@ Your notes are plain Markdown files (with YAML front matter for databases). You 
 Cept runs entirely on the client. No data leaves your device unless you choose to sync with a Git remote. There's no telemetry, no analytics, and no third-party servers.
 
 ### Version History
-In a space synced with a GitHub repository, every edit is a commit, so version history is unlimited and free. **Page history** in the page menu lists a page's versions, shows what each changed and restores an earlier one as a new version. Spaces kept only in the browser have no history.
+In a space synced with a GitHub repository, every edit is a commit, so version history is unlimited and free. **Page history** in the page menu lists a page's versions, shows what each changed and restores an earlier one as a new version. A folder on your device that is a Git repository shows that repository's commits too. Spaces kept only in the browser have no history.
 
 ### Knowledge Graph
 Cept includes a built-in interactive knowledge graph that visualizes page connections. Notion doesn't have this feature.

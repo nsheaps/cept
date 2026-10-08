@@ -81,9 +81,11 @@ import type { FolderContents, FolderSpaceChoice } from './storage/folder-open.js
 import {
   canHostGitClone,
   cloneErrorMessage,
+  hasLocalRepository,
   cloneRemoteRepo,
   isWritableClone,
   isWritableRemote,
+  localPageHistorySource,
   normalizeRepoUrl,
   openGitSpaceSession,
   pageHistoryAccess,
@@ -2227,11 +2229,34 @@ export function App() {
     ? { href: activeRemoteHref, label: 'View on GitHub' }
     : undefined;
 
-  // Page history (REQ-NTN-016): remote spaces keep it in their clone.
+  // Page history (REQ-NTN-016): remote spaces keep it in their clone; a folder
+  // space has it when its folder is (or sits in) a Git repository (REQ-WS-021).
+  const historyFolder =
+    activeSpaceMeta && !activeSpaceMeta.remoteUrl
+      ? spaces.folderRoot(activeSpaceMeta.id)
+      : undefined;
+  const historySubPath = activeSpaceMeta?.subPath;
+  const historySpaceId = activeSpaceMeta?.id;
+  /** The folder space whose folder holds a Git repository, once found. */
+  const [localRepoSpace, setLocalRepoSpace] = useState<string | null>(null);
+  useEffect(() => {
+    setLocalRepoSpace(null);
+    if (!historyFolder || !historySpaceId) return;
+    let cancelled = false;
+    void hasLocalRepository(historyFolder, { subPath: historySubPath }).then((found) => {
+      if (!cancelled && found) setLocalRepoSpace(historySpaceId);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [historyFolder, historySpaceId, historySubPath]);
+  const localRepo = !!historyFolder && localRepoSpace === historySpaceId;
   const historyAccess = pageHistoryAccess({
     space: activeSpaceMeta,
     hostCanClone: canHostGitClone(backend),
-    editable: activeSpace === 'user' && gitSessionSpaceId === userSpaceId && !editLocked,
+    localRepo,
+    editable:
+      activeSpace === 'user' && !editLocked && (localRepo || gitSessionSpaceId === userSpaceId),
   });
   /** The page whose history is open, and where it is read (null while it is found). */
   const [historyView, setHistoryView] = useState<{
@@ -2242,15 +2267,21 @@ export function App() {
 
   const handleOpenHistory = useCallback(async () => {
     const pageId = selectedPageId;
-    if (!pageId || !activeSpaceMeta || !canHostGitClone(backend)) return;
+    if (!pageId || !activeSpaceMeta) return;
+    const local = localRepo ? historyFolder : undefined;
+    if (!local && !canHostGitClone(backend)) return;
     const title = flattenPages(pagesRef.current).find((p) => p.id === pageId)?.title ?? pageId;
     setHistoryView({ pageId, title, source: null });
     try {
-      const source = await pageHistorySource(backend, activeSpaceMeta, pageId, {
-        sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
-        auth: await gitAuth?.(),
-        corsProxy: gitCorsProxy(),
-      });
+      const source = local
+        ? await localPageHistorySource(local, activeSpaceMeta, pageId)
+        : canHostGitClone(backend)
+          ? await pageHistorySource(backend, activeSpaceMeta, pageId, {
+              sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
+              auth: await gitAuth?.(),
+              corsProxy: gitCorsProxy(),
+            })
+          : null;
       if (!source) {
         setHistoryView(null);
         addToast('This page has no file of its own, so it has no history.', 'info');
@@ -2264,18 +2295,37 @@ export function App() {
         'error',
       );
     }
-  }, [selectedPageId, activeSpaceMeta, backend, gitSessionSpaceId, gitSession, gitAuth, addToast]);
+  }, [
+    selectedPageId,
+    activeSpaceMeta,
+    backend,
+    localRepo,
+    historyFolder,
+    gitSessionSpaceId,
+    gitSession,
+    gitAuth,
+    addToast,
+  ]);
 
-  /** Restore: the old text is saved as an ordinary edit, which the session commits as a new version. */
+  /**
+   * Restore: the old text is saved as an ordinary edit, which the session
+   * commits as a new version. In a folder's own repository it is saved to the
+   * page's file only; committing it is left to the user (REQ-WS-021).
+   */
   const handleRestoreVersion = useCallback(
     async (pageId: string, content: string) => {
       await flushPendingWrite();
       await currentWritePage(pageId, content);
       setPageContents((prev) => ({ ...prev, [pageId]: content }));
       if (pageId === selectedPageIdRef.current) setEditorVersion((v) => v + 1);
-      addToast('Version restored. It is saved as a new version of the page.', 'success');
+      addToast(
+        localRepo
+          ? "Version restored to the page's file. Commit it with Git to keep it in the history."
+          : 'Version restored. It is saved as a new version of the page.',
+        'success',
+      );
     },
-    [flushPendingWrite, currentWritePage, addToast],
+    [flushPendingWrite, currentWritePage, addToast, localRepo],
   );
 
   const spaceInfoList = useMemo((): SpaceInfo[] => {

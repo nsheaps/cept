@@ -719,11 +719,11 @@ branch: docs # optional (D-30)
 - Opening a folder without `.git/` does not enable them.
 - If the space root is a subfolder of a repo, detection walks up to the repo root, and this is tested.
 
-**Current state: partial.** `findGitRoot` and the `gitRoot` field of each space returned by `discoverSpaces` ([packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) walk up from the space to the nearest folder holding `.git` (a directory, or a file as in worktrees and submodules), with tests for a space in a repo subfolder and for nested repos. The browser folder-open flow (REQ-WS-012) does not use `gitRoot` yet, so nothing turns the result into history and sync capabilities.
+**Current state: partial (PR 42: history, not sync).** `findGitRoot` and the `gitRoot` field of each space returned by `discoverSpaces` ([packages/core/src/space/discover.ts](../../../packages/core/src/space/discover.ts), PR 15) walk up from the space to the nearest folder holding `.git` (a directory, or a file as in worktrees and submodules), with tests for a space in a repo subfolder and for nested repos. `openLocalRepository` ([local-repository.ts](../../../packages/core/src/git/local-repository.ts)) opens the repository around a space in an opened folder through a file system that refuses every write, so Cept never commits, moves the branch or touches the index (REQ-WS-019). The app looks for it when a folder space opens (`hasLocalRepository` in [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts), from the folder the space was connected from, `SpaceManager.folderRoot`) and then offers **Page history** (REQ-NTN-016) for the space's pages. A `.git` file (worktree or submodule) is not followed, so such folders get no history. Tests: [local-repository.integration.test.ts](../../../packages/core/src/git/local-repository.integration.test.ts) (repo at the root, space in a subfolder with packed objects, repo in a subfolder of the opened folder, no `.git`, a `.git` file, writes refused) and [local-history.integration.test.ts](../../../packages/ui/src/components/storage/local-history.integration.test.ts).
 
 **Docs state: documented-as-desired, accurate.**
 
-**Gap.** Implement after REQ-WS-009 and REQ-WS-012.
+**Gap.** Sync for a folder's own repository is deferred (see the PR 42 note in the [phase 1 plan](../phase-1-plan.md)): committing and pushing from the browser into a repository the user also works on with other tools risks corrupting its index or branch. Edits are saved to the working files; the user commits them with Git.
 
 **Related:** none.
 

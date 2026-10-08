@@ -205,6 +205,8 @@ export {
   pageVersionDiff,
 } from './git/index.js';
 export type { PageHistory } from './git/index.js';
+export { openLocalRepository, readOnlyGitFs } from './git/index.js';
+export type { LocalRepository } from './git/index.js';
 export { GitSpaceSession, RecordingBackend, SyncEngine } from './git/index.js';
 export type {
   GitSpaceLocalChanges,

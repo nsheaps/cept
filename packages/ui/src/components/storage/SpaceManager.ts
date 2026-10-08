@@ -419,6 +419,8 @@ export class SpaceManager {
   private readonly layouts = new Map<string, boolean>();
   /** Folder spaces seen in the manifest; those not bound wait for their folder. */
   private readonly folders = new Set<string>();
+  /** The folder each connected folder space was opened from (its root, above any sub-path). */
+  private readonly folderRoots = new Map<string, StorageBackend>();
   /** The state last read or written per space, so an unchanged state is not written again. */
   private readonly savedState = new Map<string, string>();
   /** Writable GitHub spaces seen in the manifest: their pages are the files of their kept clone. */
@@ -434,11 +436,13 @@ export class SpaceManager {
   /** Use `backend` as the store for space `id` from now on. */
   bind(id: string, backend: StorageBackend): void {
     this.bound.set(id, backend);
+    this.folderRoots.delete(id);
   }
 
   /** Stop using the backend bound to space `id`; it goes back to its default store. */
   unbind(id: string): void {
     this.bound.delete(id);
+    this.folderRoots.delete(id);
   }
 
   /** Whether `id` is a writable GitHub space (see {@link SpaceMeta.readOnly}). */
@@ -460,6 +464,15 @@ export class SpaceManager {
   connectFolder(space: SpaceMeta, folder: StorageBackend): void {
     this.folders.add(space.id);
     this.bind(space.id, space.subPath ? new ScopedBackend(folder, space.subPath) : folder);
+    this.folderRoots.set(space.id, folder);
+  }
+
+  /**
+   * The folder a connected folder space was opened from: its root, so a Git
+   * repository around the space's sub-path can be found (REQ-WS-021).
+   */
+  folderRoot(id: string): StorageBackend | undefined {
+    return this.folderRoots.get(id);
   }
 
   /** Whether a space can be opened now: false only for a folder space whose folder is not connected. */
@@ -737,6 +750,7 @@ export class SpaceManager {
     if (this.sessionActive === id) this.sessionActive = null;
     this.bound.delete(id);
     this.folders.delete(id);
+    this.folderRoots.delete(id);
     this.gitClones.delete(id);
     this.layouts.delete(id);
     this.savedState.delete(id);
