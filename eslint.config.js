@@ -57,6 +57,7 @@ export default [
       '@typescript-eslint/ban-ts-comment': 'error',
       '@nx/enforce-module-boundaries': ['error', { allow: [], depConstraints }],
       'cept/restricted-imports': ['error', { baseline: readBaseline() }],
+      'cept/no-git-type-check': 'error',
     },
   },
   prettier,

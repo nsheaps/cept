@@ -33,7 +33,11 @@ const BASELINE_AT_PR_8 = new Map([
   ],
 ]);
 
-const BOUNDARY_RULES = ['@nx/enforce-module-boundaries', 'cept/restricted-imports'];
+const BOUNDARY_RULES = [
+  '@nx/enforce-module-boundaries',
+  'cept/restricted-imports',
+  'cept/no-git-type-check',
+];
 
 interface Fixture {
   name: string;
@@ -67,7 +71,7 @@ describe('boundary fixtures', () => {
   const eslint = new ESLint({ cwd: ROOT });
   const fixtures = readFixtures();
 
-  it('has fixtures for both rules and a clean one', () => {
+  it('has fixtures for every rule and a clean one', () => {
     const expects = fixtures.map((f) => f.expect.split(' ')[0]);
     expect(expects).toEqual(expect.arrayContaining([...BOUNDARY_RULES, 'none']));
   });

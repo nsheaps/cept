@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import type { SpaceSources } from '../storage/platform.js';
 
 export interface RemoteSpaceConfig {
   url: string;
@@ -11,6 +12,10 @@ export interface AddSpaceWizardModalProps {
   onClose: () => void;
   onCreateSpace: (name: string) => void;
   onAddRemoteRepo?: (config: RemoteSpaceConfig) => void;
+  /** Opens a folder on disk as a space; the folder option shows only when this is set. */
+  onOpenFolder?: () => void;
+  /** The kinds of space this device supports (REQ-WS-017); only these are offered. */
+  sources: SpaceSources;
 }
 
 type WizardStep = 'choose-type' | 'create-local' | 'add-git';
@@ -20,7 +25,11 @@ export function AddSpaceWizardModal({
   onClose,
   onCreateSpace,
   onAddRemoteRepo,
+  onOpenFolder,
+  sources,
 }: AddSpaceWizardModalProps) {
+  const showFolder = sources.folder && onOpenFolder !== undefined;
+  const nothingAvailable = !sources.browser && !showFolder && !sources.git;
   const [step, setStep] = useState<WizardStep>('choose-type');
   const [newSpaceName, setNewSpaceName] = useState('');
   const [remoteUrl, setRemoteUrl] = useState('github.com/nsheaps/cept');
@@ -53,6 +62,11 @@ export function AddSpaceWizardModal({
       resetAndClose();
     }
   }, [remoteUrl, remoteBranch, remoteSubPath, onAddRemoteRepo, resetAndClose]);
+
+  const handleOpenFolder = useCallback(() => {
+    onOpenFolder?.();
+    resetAndClose();
+  }, [onOpenFolder, resetAndClose]);
 
   const handleBack = useCallback(() => {
     if (step === 'create-local' || step === 'add-git') {
@@ -115,75 +129,98 @@ export function AddSpaceWizardModal({
         <div className="cept-wizard-content">
           {step === 'choose-type' && (
             <div data-testid="wizard-type-chooser">
-              <p className="cept-wizard-desc">Choose the type of space you want to create.</p>
+              {nothingAvailable ? (
+                <>
+                  <p className="cept-wizard-desc" data-testid="wizard-no-sources">
+                    No kind of space can be added on this device.
+                  </p>
+                  <button
+                    className="cept-wizard-cancel-btn"
+                    onClick={resetAndClose}
+                    data-testid="wizard-no-sources-close"
+                  >
+                    Close
+                  </button>
+                </>
+              ) : (
+                <p className="cept-wizard-desc">Choose the type of space you want to create.</p>
+              )}
               <div className="cept-wizard-type-grid">
-                <button
-                  className="cept-wizard-type-card"
-                  onClick={() => setStep('create-local')}
-                  data-testid="wizard-choose-local"
-                >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
+                {sources.browser && (
+                  <button
+                    className="cept-wizard-type-card"
+                    onClick={() => setStep('create-local')}
+                    data-testid="wizard-choose-local"
                   >
-                    <rect x="2" y="1" width="12" height="14" rx="1" />
-                    <path d="M5 5h6M5 8h6M5 11h3" />
-                  </svg>
-                  <div className="cept-wizard-type-card-text">
-                    <span className="cept-wizard-type-card-title">Local</span>
-                    <span className="cept-wizard-type-card-desc">
-                      Can sync to a remote source later
-                    </span>
-                  </div>
-                </button>
-                <button
-                  className="cept-wizard-type-card"
-                  onClick={() => setStep('add-git')}
-                  data-testid="wizard-choose-git"
-                >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <rect x="2" y="1" width="12" height="14" rx="1" />
+                      <path d="M5 5h6M5 8h6M5 11h3" />
+                    </svg>
+                    <div className="cept-wizard-type-card-text">
+                      <span className="cept-wizard-type-card-title">Local</span>
+                      <span className="cept-wizard-type-card-desc">
+                        Can sync to a remote source later
+                      </span>
+                    </div>
+                  </button>
+                )}
+                {showFolder && (
+                  <button
+                    className="cept-wizard-type-card"
+                    onClick={handleOpenFolder}
+                    data-testid="wizard-choose-folder"
                   >
-                    <circle cx="8" cy="8" r="6.5" />
-                    <path d="M2 6h12M2 10h12" />
-                    <ellipse cx="8" cy="8" rx="3" ry="6.5" />
-                  </svg>
-                  <div className="cept-wizard-type-card-text">
-                    <span className="cept-wizard-type-card-title">Git</span>
-                    <span className="cept-wizard-type-card-desc">
-                      Add a space from a remote repository
-                    </span>
-                  </div>
-                </button>
-                <div
-                  className="cept-wizard-type-card cept-wizard-type-card--disabled"
-                  data-testid="wizard-choose-s3"
-                >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <path d="M1.5 3.5h5l1.5 2h6.5v8h-13z" />
+                    </svg>
+                    <div className="cept-wizard-type-card-text">
+                      <span className="cept-wizard-type-card-title">Local folder</span>
+                      <span className="cept-wizard-type-card-desc">
+                        Open a folder of Markdown files on this device
+                      </span>
+                    </div>
+                  </button>
+                )}
+                {sources.git && (
+                  <button
+                    className="cept-wizard-type-card"
+                    onClick={() => setStep('add-git')}
+                    data-testid="wizard-choose-git"
                   >
-                    <path d="M2 5l6-3 6 3v6l-6 3-6-3V5z" />
-                    <path d="M2 5l6 3 6-3M8 8v6" />
-                  </svg>
-                  <div className="cept-wizard-type-card-text">
-                    <span className="cept-wizard-type-card-title">S3</span>
-                    <span className="cept-wizard-type-card-desc">Coming soon</span>
-                  </div>
-                </div>
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <circle cx="8" cy="8" r="6.5" />
+                      <path d="M2 6h12M2 10h12" />
+                      <ellipse cx="8" cy="8" rx="3" ry="6.5" />
+                    </svg>
+                    <div className="cept-wizard-type-card-text">
+                      <span className="cept-wizard-type-card-title">Git</span>
+                      <span className="cept-wizard-type-card-desc">
+                        Add a space from a remote repository
+                      </span>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           )}

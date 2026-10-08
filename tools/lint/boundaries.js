@@ -5,6 +5,9 @@
  * outside GitBackend (rule 5). Unlike `no-restricted-imports` this also checks
  * `import()`, re-exports and `require()`, and its baseline names single
  * imports, so a baselined file still fails on any new forbidden import.
+ *
+ * `no-git-type-check` enforces rule 4: ui gates Git features on
+ * `backend.capabilities`, never on a type being `'git'`.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -183,7 +186,82 @@ const restrictedImports = {
   },
 };
 
+/** Comparisons that test equality, either way round. */
+const EQUALITY = new Set(['===', '!==', '==', '!=']);
+
+/** TypeScript wrappers that do not change a value: `x as T`, `x!`, `x satisfies T`, `<T>x`. */
+const WRAPPERS = new Set([
+  'TSAsExpression',
+  'TSNonNullExpression',
+  'TSSatisfiesExpression',
+  'TSTypeAssertion',
+  'ChainExpression',
+]);
+/** @param {any} node `node` without any value-preserving wrappers around it. */
+const unwrap = (node) => {
+  let inner = node;
+  while (inner && WRAPPERS.has(inner.type)) inner = inner.expression;
+  return inner;
+};
+
+/** @param {any} node Whether `node` is the string `'git'` (a literal or a plain template). */
+const isGitLiteral = (node) => {
+  const inner = unwrap(node);
+  if (inner?.type === 'Literal') return inner.value === 'git';
+  return (
+    inner?.type === 'TemplateLiteral' &&
+    inner.expressions.length === 0 &&
+    inner.quasis[0]?.value.cooked === 'git'
+  );
+};
+/**
+ * @param {any} node Whether `node` reads a `type`: `x.type`, `x?.type`, `x['type']`, or a
+ * variable named `type` (as from `const { type } = backend`), through any casts.
+ */
+const readsType = (node) => {
+  const inner = unwrap(node);
+  if (inner?.type === 'Identifier') return inner.name === 'type';
+  return (
+    inner?.type === 'MemberExpression' &&
+    ((!inner.computed && inner.property.name === 'type') ||
+      (inner.computed && inner.property.type === 'Literal' && inner.property.value === 'type'))
+  );
+};
+
+/** @type {import('eslint').Rule.RuleModule} */
+const noGitTypeCheck = {
+  meta: {
+    type: 'problem',
+    docs: { description: "Forbid gating ui on a backend's type being 'git'" },
+    schema: [],
+    messages: {
+      forbidden:
+        "Checking a type against 'git' is forbidden in ui: gate Git features on backend.capabilities (CLAUDE.md rule 4).",
+    },
+  },
+  create(context) {
+    const file = path.relative(ROOT, context.filename).split(path.sep).join('/');
+    if (!file.startsWith('packages/ui/src/') || TEST_FILE.test(file)) return {};
+    return {
+      /** @param {any} node */
+      BinaryExpression(node) {
+        if (!EQUALITY.has(node.operator)) return;
+        if (
+          (isGitLiteral(node.right) && readsType(node.left)) ||
+          (isGitLiteral(node.left) && readsType(node.right))
+        )
+          context.report({ node, messageId: 'forbidden' });
+      },
+      /** @param {any} node */
+      SwitchCase(node) {
+        if (isGitLiteral(node.test) && readsType(node.parent.discriminant))
+          context.report({ node, messageId: 'forbidden' });
+      },
+    };
+  },
+};
+
 export default {
   meta: { name: 'cept-boundaries' },
-  rules: { 'restricted-imports': restrictedImports },
+  rules: { 'restricted-imports': restrictedImports, 'no-git-type-check': noGitTypeCheck },
 };

@@ -51,15 +51,19 @@ This means:
 
 ## Storage Backend Availability by Platform
 
-| Backend | Web | Desktop | Mobile |
-|---------|-----|---------|--------|
-| Browser (IndexedDB/localStorage) | Yes | Yes | Yes |
-| Local Folder (filesystem) | No* | Yes | No |
-| Git Repository | Yes** | Yes | Yes** |
+| Backend                   | Web             | PWA (incl. phones) | Desktop app |
+| ------------------------- | --------------- | ------------------ | ----------- |
+| Browser (IndexedDB)       | Yes             | Yes                | No          |
+| Folder (File System Access) | Where supported\* | Where supported\* | No          |
+| Folder (native filesystem) | No             | No                 | Yes         |
+| Git repository            | Yes\*\*         | Yes\*\*            | Yes         |
+| In-memory demo            | Yes             | Yes                | No          |
 
-\* Web has limited filesystem access via the File System Access API (Chrome only).
+\* The File System Access API exists in Chromium browsers on desktop. Phones and other browsers don't have it.
 
-\** Git operations use isomorphic-git, which runs entirely in the browser/app. No server-side Git required.
+\*\* Git runs in the browser with isomorphic-git, through a CORS proxy for the network calls. No server-side Git is needed.
+
+The Add Space dialog only offers the kinds of space that work on your device: it checks for IndexedDB and the File System Access API before showing those options. Native mobile apps come later; on phones, install the PWA.
 
 ## Desktop-Specific Features (Coming Soon)
 

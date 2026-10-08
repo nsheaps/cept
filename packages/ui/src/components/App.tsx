@@ -52,6 +52,7 @@ import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
 import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
+import { probePlatform, spaceSources } from './storage/platform.js';
 import type { GitHttp } from '@cept/core';
 import {
   restoreRoute,
@@ -1388,6 +1389,9 @@ export function App() {
     setDocsPages((prev) => toggleNode(prev, id));
   }, []);
 
+  // The kinds of space this device can add (REQ-WS-017).
+  const addableSources = useMemo(() => spaceSources(probePlatform(), backend), [backend]);
+
   const spaceInfoList = useMemo((): SpaceInfo[] => {
     const list: SpaceInfo[] = [];
     const defaultSource = `Browser (${backend.type === 'browser' ? 'IndexedDB' : backend.type})`;
@@ -1937,6 +1941,7 @@ export function App() {
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
+        sources={addableSources}
         onClose={() => setAddSpaceWizardOpen(false)}
         onCreateSpace={(name) => {
           handleCreateSpace(name);
