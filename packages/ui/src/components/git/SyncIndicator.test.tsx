@@ -51,6 +51,21 @@ describe('SyncIndicator', () => {
     expect(screen.getByTestId('sync-local-changes').textContent).toBe('3 unsynced');
   });
 
+  it('says local changes wait for the network while offline', () => {
+    render(
+      <SyncIndicator
+        status={status({ state: 'offline', pending: 1, unpushed: 2 })}
+        onSyncNow={() => undefined}
+        now={NOW}
+      />,
+    );
+    const count = screen.getByTestId('sync-local-changes');
+    expect(count.textContent).toBe('3 waiting');
+    expect(count.getAttribute('title')).toBe(
+      '3 local changes not on GitHub: saved here, sent when back online',
+    );
+  });
+
   it('hides the local change count when everything is on GitHub', () => {
     render(<SyncIndicator status={status()} onSyncNow={() => undefined} now={NOW} />);
     expect(screen.queryByTestId('sync-local-changes')).toBeNull();

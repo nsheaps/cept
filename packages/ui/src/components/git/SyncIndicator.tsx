@@ -92,7 +92,11 @@ export function SyncIndicator({
   const state: GitSyncState = syncing ? 'syncing' : (status?.state ?? 'idle');
   const local = status ? status.pending + status.unpushed : 0;
   const details: string[] = [];
-  if (local > 0) details.push(`${local} local change${local === 1 ? '' : 's'} not on GitHub`);
+  if (local > 0) {
+    const changes = `${local} local change${local === 1 ? '' : 's'} not on GitHub`;
+    // Offline, the commits wait in the clone on this device and go out on reconnect.
+    details.push(state === 'offline' ? `${changes}: saved here, sent when back online` : changes);
+  }
   if (status?.lastSyncTime)
     details.push(`Last synced ${formatLastSynced(status.lastSyncTime, now)}`);
   if (status?.lastError && (state === 'error' || state === 'conflict'))
@@ -113,7 +117,7 @@ export function SyncIndicator({
           data-testid="sync-local-changes"
           title={details[0]}
         >
-          {local} unsynced
+          {local} {state === 'offline' ? 'waiting' : 'unsynced'}
         </span>
       )}
       {status?.lastSyncTime ? (

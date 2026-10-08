@@ -170,6 +170,32 @@ describe('electSyncLeader (REQ-WS-027)', () => {
     expect(posted).not.toHaveBeenCalled();
   });
 
+  it('hears the network go away through the page, elected or not', () => {
+    const offline = new Set<() => void>();
+    const page = {
+      ...fallback,
+      onOffline: (fn: () => void) => {
+        offline.add(fn);
+        return () => void offline.delete(fn);
+      },
+    };
+    const elected = electSyncLeader('space-a', {
+      locks: fakeLocks(),
+      channel: null,
+      fallback: page,
+    });
+    const plain = electSyncLeader('space-b', { locks: null, channel: null, fallback: page });
+    const heardElected = vi.fn();
+    const heardPlain = vi.fn();
+    elected.onOffline?.(heardElected);
+    const off = plain.onOffline?.(heardPlain);
+    for (const fn of offline) fn();
+    expect(heardElected).toHaveBeenCalledOnce();
+    expect(heardPlain).toHaveBeenCalledOnce();
+    off?.();
+    expect(offline.size).toBe(1);
+  });
+
   it('falls back to the page being visible without Web Locks', () => {
     const visible = { ...fallback, isActive: () => true };
     const fg = electSyncLeader('space-a', { locks: null, channel: null, fallback: visible });

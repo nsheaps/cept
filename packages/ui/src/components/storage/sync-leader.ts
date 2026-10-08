@@ -21,6 +21,8 @@ export interface Foreground {
   subscribe(onChange: () => void): () => void;
   /** Call `onOnline` when the network comes back; returns an unsubscribe. */
   onOnline(onOnline: () => void): () => void;
+  /** Call `onOffline` when the network goes away; returns an unsubscribe. */
+  onOffline?(onOffline: () => void): () => void;
   /** Stop taking part (leave the election); for a per-session foreground. */
   dispose?(): void;
   /** Tell the other tabs a sync of this space settled. */
@@ -41,6 +43,11 @@ export const documentForeground: Foreground = {
     if (typeof window === 'undefined') return () => undefined;
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
+  },
+  onOffline(onOffline) {
+    if (typeof window === 'undefined') return () => undefined;
+    window.addEventListener('offline', onOffline);
+    return () => window.removeEventListener('offline', onOffline);
   },
 };
 
@@ -125,6 +132,7 @@ export function electSyncLeader(
       isActive: () => env.fallback.isActive(),
       subscribe: (onChange) => env.fallback.subscribe(onChange),
       onOnline: (onOnline) => env.fallback.onOnline(onOnline),
+      onOffline: (onOffline) => env.fallback.onOffline?.(onOffline) ?? (() => undefined),
       dispose: () => {
         closed = true;
         peerListeners.clear();
@@ -161,6 +169,7 @@ export function electSyncLeader(
       return () => void listeners.delete(onChange);
     },
     onOnline: (onOnline) => env.fallback.onOnline(onOnline),
+    onOffline: (onOffline) => env.fallback.onOffline?.(onOffline) ?? (() => undefined),
     dispose() {
       if (disposed) return;
       disposed = true;

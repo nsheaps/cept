@@ -156,6 +156,8 @@ export class GitSpaceSession {
   private disposed = false;
   /** The last sync queued, settled or not: syncs run one at a time, in order. */
   private tail: Promise<unknown> = Promise.resolve();
+  /** What the clone's push queue marker last said (`GitBackend.pushQueued`). */
+  private pushQueued = false;
 
   private constructor(
     readonly git: GitBackend,
@@ -197,7 +199,22 @@ export class GitSpaceSession {
       (path, type) => autoCommit.recordChange(path, type),
     );
     const login = options.login ?? options.identity.email.replace(/@.*$/, '').replace(/^\d+\+/, '');
-    return new GitSpaceSession(git, backend, autoCommit, sync, settings, login);
+    const session = new GitSpaceSession(git, backend, autoCommit, sync, settings, login);
+    // A push asked for before a reload (or while offline) is still owed. If the
+    // marker cannot be read, assume it is: an extra push is harmless, a lost one is not.
+    if (await git.pushQueued().catch(() => true)) {
+      session.pushQueued = true;
+      sync.markDirty();
+    }
+    return session;
+  }
+
+  /** Ask for a push, remembering the request in the clone until it goes through. */
+  private async queuePush(): Promise<void> {
+    this.sync.markDirty();
+    if (this.pushQueued) return;
+    await this.git.setPushQueued(true);
+    this.pushQueued = true;
   }
 
   /**
@@ -216,6 +233,10 @@ export class GitSpaceSession {
     const before = await this.git.head().catch(() => null);
     const status = await this.sync.sync();
     const after = await this.git.head().catch(() => null);
+    if (this.pushQueued && !status.pendingPush) {
+      await this.git.setPushQueued(false);
+      this.pushQueued = false;
+    }
     return { status, changed: before !== after && status.state !== 'conflict' };
   }
 
@@ -226,9 +247,10 @@ export class GitSpaceSession {
 
   /** Commit what is pending, pull, then push even when auto-push is off. */
   pushNow(): Promise<GitSpaceSyncResult> {
-    return this.enqueue(() => {
-      // runSync() commits what is pending; markDirty makes it push even when auto-push is off.
-      this.sync.markDirty();
+    return this.enqueue(async () => {
+      // runSync() commits what is pending; the queued push makes it push even
+      // when auto-push is off, and stays queued in the clone until it does.
+      await this.queuePush();
       return this.runSync();
     });
   }
@@ -249,7 +271,7 @@ export class GitSpaceSession {
       const before = await this.git.head().catch(() => null);
       const merge = await this.git.mergeRemote({ resolutions });
       if (merge.ok) this.sync.resolveConflicts();
-      this.sync.markDirty();
+      await this.queuePush();
       const result = await this.runSync();
       return { ...result, changed: result.changed || (merge.ok && before !== merge.mergeCommit) };
     });

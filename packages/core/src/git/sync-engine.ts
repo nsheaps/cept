@@ -190,6 +190,16 @@ export class SyncEngine {
     this._pendingPush = true;
   }
 
+  /**
+   * Report that the network went away. Unless a sync is running (which will
+   * find out for itself), the state becomes `offline` at once.
+   */
+  reportOffline(): void {
+    if (this._syncing || this._state === 'offline' || this._state === 'conflict') return;
+    this.setState('offline');
+    this.emit({ type: 'offline' });
+  }
+
   /** Report that network is back online */
   reportOnline(): void {
     if (this._state === 'offline') {

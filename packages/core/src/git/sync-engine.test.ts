@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SyncEngine } from './sync-engine.js';
 import type { SyncEvent } from './sync-engine.js';
-import type { GitStorageBackend } from '../storage/backend.js';
+import type { GitStorageBackend, MergeResult } from '../storage/backend.js';
 
 /** An HTTP failure shaped like isomorphic-git's HttpError. */
 function httpError(statusCode: number): Error {
@@ -287,6 +287,28 @@ describe('SyncEngine', () => {
 
     expect(engine.getStatus().state).toBe('idle');
     expect(events.some((e) => e.type === 'online')).toBe(true);
+  });
+
+  it('reportOffline shows offline at once, but leaves a conflict or a running sync alone', async () => {
+    const engine = new SyncEngine(backend);
+    const events: SyncEvent[] = [];
+    engine.on((e) => events.push(e));
+    engine.reportOffline();
+    expect(engine.getStatus().state).toBe('offline');
+    expect(events.map((e) => e.type)).toEqual(['offline']);
+    engine.reportOffline();
+    expect(events).toHaveLength(1);
+
+    let release: (value: MergeResult) => void = () => undefined;
+    (backend.pull as ReturnType<typeof vi.fn>).mockImplementation(
+      () => new Promise<MergeResult>((resolve) => (release = resolve)),
+    );
+    engine.reportOnline();
+    const running = engine.sync();
+    engine.reportOffline();
+    expect(engine.getStatus().state).toBe('pulling');
+    release({ ok: true, conflicts: [] });
+    await running;
   });
 
   it('setEnabled disables sync', () => {
