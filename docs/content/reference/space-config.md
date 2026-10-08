@@ -94,6 +94,15 @@ When you add a page inside a page that is a single file, such as `guides/setup.m
 
 A space created with **New space** gets a `space.cept.yaml` at its root, so it is read as a folder as described above. The space's own settings that files do not hold (page icons, covers, expanded folders, favorites and recent pages) are kept in its `.cept/workspace-state.json`, which is not a page.
 
-The default space, the demo and spaces created before this change have no `space.cept.yaml`. They keep the older layout, where pages are stored as `pages/<id>.md` and the page tree is kept in `.cept/workspace-state.json`, until they are converted.
+Spaces saved in the older layout, where pages are stored as `pages/<id>.md` and the page tree is kept in `.cept/workspace-state.json`, are converted the first time they open, the default space included. Each page becomes a Markdown file named from its title (a page with sub-pages becomes a folder with an `index.md`), the space gets a `space.cept.yaml`, and icons, favorites and recent pages carry over. A message says when a space was converted.
+
+The old files are kept in `.cept/migration-backup/` until you choose, in **Settings > Spaces**, under the space's details:
+
+- **Keep (delete backup)** deletes the backup.
+- **Undo conversion** asks you to confirm, then puts the old layout back and keeps the space in it. Changes made since the conversion are lost. If an undo stops part way, it finishes the next time the space opens.
+
+Cept never deletes the backup on its own. `.cept/migration-map.json` lists each page's old id and new path.
+
+Spaces cloned from a Git remote and the demo keep the older layout for now.
 
 In a folder space, deleting a page moves it to the trash, but its file stays on disk until you empty the trash or delete the page for good. The trash lasts only until you reload, so a page still in the trash then shows again in the sidebar.

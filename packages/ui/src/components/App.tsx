@@ -35,7 +35,6 @@ import {
   saveSettingsToBackend,
   resetSettingsOnBackend,
   clearAllData,
-  readPageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -141,12 +140,7 @@ function clonedSnapshot(pages: PageTreeNode[], spaceName: string): SpaceSnapshot
  */
 export function App() {
   const backend = useStorage();
-  const {
-    state: persisted,
-    settings: initialSettings,
-    ready,
-    save,
-  } = useWorkspacePersistence(backend);
+  const { state: persisted, settings: initialSettings, ready } = useWorkspacePersistence(backend);
 
   // Demo mode: the showDemoContent setting (on by default in builds with
   // VITE_DEMO_DEFAULT) opens the demo when there is nothing saved yet.
@@ -190,6 +184,8 @@ export function App() {
     error?: string;
   }>({ active: false });
   const [spaceLoadError, setSpaceLoadError] = useState<string | undefined>(undefined);
+  /** Spaces opened this session whose conversion to folders still keeps a backup. */
+  const [conversionBackups, setConversionBackups] = useState<Record<string, boolean>>({});
   const { messages: toastMessages, addToast, dismissToast } = useToast();
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -299,12 +295,22 @@ export function App() {
     async (spaceId: string, name: string) => {
       setSpaceLoadError(undefined);
       try {
-        const { snapshot, selectedContent } = await spaces.open(spaceId, name);
+        const { snapshot, selectedContent, converted, backupKept } = await spaces.open(
+          spaceId,
+          name,
+        );
         const selected = snapshot?.selectedPageId;
         applySpace(
           snapshot ?? emptySnapshot(name),
           selected ? { [selected]: selectedContent ?? '' } : {},
         );
+        setConversionBackups((prev) => ({ ...prev, [spaceId]: backupKept ?? false }));
+        if (converted) {
+          addToast(
+            `"${snapshot?.spaceName ?? name}" now keeps its pages as files and folders. A backup is kept until you confirm in Settings > Spaces.`,
+            'info',
+          );
+        }
         if (!snapshot?.pages.length && isRemoteSpaceId(spaceId)) {
           // Remote space with no persisted content
           setSpaceLoadError(
@@ -317,7 +323,7 @@ export function App() {
         setSpaceLoadError(`Error loading "${name}": ${message}`);
       }
     },
-    [spaces, applySpace],
+    [spaces, applySpace, addToast],
   );
 
   /** Show a freshly cloned remote space and save it as that space's state */
@@ -369,40 +375,11 @@ export function App() {
         return;
       }
 
-      // If the active space is NOT the default, load it from its per-space storage
-      if (activeId !== 'default') {
+      // Open the active space from storage. A saved flat space (the default
+      // one included) is converted to folders as it opens (REQ-WS-025).
+      if (activeId !== 'default' || persisted) {
         const space = manifest.spaces.find((s) => s.id === activeId);
         void loadAndApplySpaceState(activeId, space?.name ?? 'My Space');
-        // Still save the default persisted state for backward compat
-        if (persisted) {
-          void spaces.saveState('default', {
-            ...persisted,
-            spaceName: persisted.spaceName ?? 'My Space',
-          });
-        }
-        return;
-      }
-
-      // Active space is 'default' — use the loaded persisted state
-      if (persisted) {
-        setPages(persisted.pages);
-        setSelectedPageId(persisted.selectedPageId);
-        setFavorites(persisted.favorites ?? []);
-        setRecentPages(persisted.recentPages ?? []);
-        setSpaceName(persisted.spaceName ?? 'My Space');
-        setHasStarted(true);
-        setTrash([]);
-        // Also save to per-space file so switching back works
-        void spaces.saveState('default', {
-          ...persisted,
-          spaceName: persisted.spaceName ?? 'My Space',
-        });
-        // Load selected page content from backend
-        if (persisted.selectedPageId) {
-          void readPageContent(backend, persisted.selectedPageId).then((content) => {
-            setPageContents((prev) => ({ ...prev, [persisted.selectedPageId!]: content ?? '' }));
-          });
-        }
       } else if (shouldShowDemo) {
         void openDemoSpace();
       }
@@ -412,7 +389,6 @@ export function App() {
     persisted,
     initialSettings,
     shouldShowDemo,
-    backend,
     spaces,
     setSpacesManifest,
     setUserSpaceId,
@@ -670,20 +646,17 @@ export function App() {
 
   // Persist tree state to backend (debounced) — page content is saved separately per-file
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // The state save in flight, so a layout change can wait for it to land.
+  const persistSaveRef = useRef<Promise<unknown>>(Promise.resolve());
   useEffect(() => {
     if (!initializedRef.current) return;
     if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
     persistTimeoutRef.current = setTimeout(() => {
       const state = { pages, favorites, recentPages, selectedPageId, spaceName };
-      // Only write to root workspace file when on default space to avoid
-      // overwriting the default space's state with another space's data (#40).
-      if (userSpaceId === 'default') {
-        save(state);
-      }
-      // Save to per-space file
-      void spaces.saveState(userSpaceId, state);
+      // Each space, the default one included, saves its own state file.
+      persistSaveRef.current = spaces.saveState(userSpaceId, state).catch(() => undefined);
     }, 300);
-  }, [pages, favorites, recentPages, selectedPageId, spaceName, save, spaces, userSpaceId]);
+  }, [pages, favorites, recentPages, selectedPageId, spaceName, spaces, userSpaceId]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -964,18 +937,33 @@ export function App() {
 
   const handleStartWriting = useCallback(() => {
     setHasStarted(true);
-    const firstPage: PageTreeNode = {
-      id: `page-${Date.now()}`,
-      title: 'Welcome',
-      icon: '\u{1F44B}',
-      children: [],
-    };
     const content = '<p>Start typing here...</p>';
-    setPages([firstPage]);
-    setPageContents({ [firstPage.id]: content });
-    setSelectedPageId(firstPage.id);
-    void currentWritePage(firstPage.id, content);
-  }, [currentWritePage]);
+    void (async () => {
+      // A new space starts in the folder layout, so it never needs converting.
+      if (await spaces.startFolder(userSpaceId, spaceName)) {
+        const change = await runFolderChange(() =>
+          spaces.addPage(userSpaceId, undefined, 'Welcome', content),
+        );
+        if (!change) return;
+        setPages((prev) =>
+          prev.map((p) => (p.id === change.pageId ? { ...p, icon: '\u{1F44B}' } : p)),
+        );
+        setPageContents({ [change.pageId]: content });
+        setSelectedPageId(change.pageId);
+        return;
+      }
+      const firstPage: PageTreeNode = {
+        id: `page-${Date.now()}`,
+        title: 'Welcome',
+        icon: '\u{1F44B}',
+        children: [],
+      };
+      setPages([firstPage]);
+      setPageContents({ [firstPage.id]: content });
+      setSelectedPageId(firstPage.id);
+      void currentWritePage(firstPage.id, content);
+    })();
+  }, [currentWritePage, spaces, userSpaceId, spaceName, runFolderChange]);
 
   const handleResetDemo = useCallback(() => {
     // The demo is thrown away on reset, so only save a real space: saving the
@@ -1039,6 +1027,53 @@ export function App() {
       });
     },
     [spaces, userSpaceId, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
+  );
+
+  /** Keep a space's conversion to folders: its flat-layout backup is deleted. */
+  const handleKeepConversion = useCallback(
+    async (id: string) => {
+      try {
+        await spaces.confirmConversion(id);
+        setConversionBackups((prev) => ({ ...prev, [id]: false }));
+        addToast('The backup of the old layout was deleted.', 'success');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : String(err), 'error');
+      }
+    },
+    [spaces, addToast],
+  );
+
+  /** Undo a space's conversion to folders and reopen it in the flat layout. */
+  const handleUndoConversion = useCallback(
+    async (id: string) => {
+      const active = id === userSpaceId;
+      try {
+        if (active) {
+          // Nothing still waiting to be saved may land after the old layout is back.
+          await flushPendingWrite();
+          if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
+          await persistSaveRef.current;
+        }
+        await spaces.undoConversion(id);
+        setConversionBackups((prev) => ({ ...prev, [id]: false }));
+        if (active) {
+          const name = spacesManifest?.spaces.find((s) => s.id === id)?.name ?? spaceName;
+          await loadAndApplySpaceState(id, name);
+        }
+        addToast('The space is back in its old layout.', 'success');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : String(err), 'error');
+      }
+    },
+    [
+      spaces,
+      userSpaceId,
+      spacesManifest,
+      spaceName,
+      flushPendingWrite,
+      loadAndApplySpaceState,
+      addToast,
+    ],
   );
 
   const handleCreateSpace = useCallback(
@@ -1285,6 +1320,7 @@ export function App() {
             branch: space.branch,
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
+            conversionBackup: conversionBackups[space.id] ?? false,
           });
         } else {
           list.push({
@@ -1298,6 +1334,7 @@ export function App() {
             branch: space.branch,
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
+            conversionBackup: conversionBackups[space.id] ?? false,
           });
         }
       }
@@ -1314,7 +1351,16 @@ export function App() {
     }
     list.push(DOCS_SPACE_INFO);
     return list;
-  }, [hasStarted, pages, pageContents, spaceName, spacesManifest, userSpaceId, backend.type]);
+  }, [
+    hasStarted,
+    pages,
+    pageContents,
+    spaceName,
+    spacesManifest,
+    userSpaceId,
+    backend.type,
+    conversionBackups,
+  ]);
 
   const commandItems: CommandItem[] = useMemo(
     () => [
@@ -1771,6 +1817,8 @@ export function App() {
         onSettingsChange={handleSettingsChange}
         onResetSettings={handleResetSettings}
         onDeleteSpace={handleDeleteSpace}
+        onKeepConversion={(id) => void handleKeepConversion(id)}
+        onUndoConversion={(id) => void handleUndoConversion(id)}
         onSpaceRename={handleSpaceRename}
         onSwitchSpace={handleSwitchSpace}
         onClearAllData={handleClearAllData}

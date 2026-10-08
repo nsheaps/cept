@@ -63,8 +63,9 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                 | MUST     | implemented | documented             | accurate      |
 
-Status counts: 1 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (22 requirements).
+Status counts: 2 implemented, 5 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (23 requirements).
 
 ## Architecture
 
@@ -172,7 +173,7 @@ flowchart TB
 
 - `@cept/core` reads and writes a space as a folder tree (`readSpaceTree`, `createPage`, `movePage` and `writePageText` in [packages/core/src/space/tree.ts](../../../packages/core/src/space/tree.ts), Phase 1 plan PR 19). Page ids are paths; `index.md` wins over `README.md` as the folder page, and the loser stays a child page; `ignore:` and nested-space markers are applied. Tests round-trip a fixture folder byte for byte on `MemoryBackend` and `BrowserFsBackend`.
 - The app uses it for spaces whose root holds `space.cept.yaml` (PR 20, [packages/ui/src/components/storage/folder-space.ts](../../../packages/ui/src/components/storage/folder-space.ts)). Spaces created with "New space" get that marker, so their sidebar is read from their files and adding, renaming, moving, duplicating and deleting pages change files at their paths. Icons, covers, expanded folders and the sidebar lists stay in the space's own `.cept/workspace-state.json`. Local `/s/` URLs carry the path id as one encoded segment.
-- The default space, the demo and existing spaces have no marker and keep the flat layout until migration (PR 21), so the points below still describe them:
+- Flat spaces in the app's backend, the default space included, are converted to that layout when they open (REQ-WS-025, PR 21), and a new space starts in it. Remote git spaces, the in-memory demo and spaces whose conversion was undone keep the flat layout, so the points below still describe them:
   - Pages are written flat as `pages/<pageId>.md` with ids like `page-${Date.now()}` (the page handlers in [packages/ui/src/components/App.tsx](../../../packages/ui/src/components/App.tsx), and `writePageContent` in [packages/ui/src/components/storage/StorageContext.tsx](../../../packages/ui/src/components/storage/StorageContext.tsx)).
   - The hierarchy lives as JSON in `.cept/workspace-state.json` (`PersistedState` in StorageContext.tsx).
   - Non-default spaces in the app's backend live under `.cept/spaces/<id>/pages` (`appSpaceStore` in [packages/ui/src/components/storage/space-store.ts](../../../packages/ui/src/components/storage/space-store.ts)).
@@ -741,6 +742,30 @@ branch: docs # optional (D-30)
 **Docs state: documented-differently, stale.** These requirement docs use "space". [SPECIFICATION.md](../../SPECIFICATION.md) and the user docs still say "workspace".
 
 **Related:** [#45](https://github.com/nsheaps/cept/issues/45).
+
+### REQ-WS-025 — Legacy flat spaces are converted to folders
+
+> **Scope: Phase 1 (D-30).** Phase 1 plan PR 21.
+
+**Statement.** A space saved in the flat layout (a page tree in `workspace-state.json` and each page in `pages/<id>.md`, or inline in the state file) MUST be converted once to the folder layout of REQ-WS-001, with no data loss. The conversion MUST be reversible until the user confirms it, and its backup MUST NOT be deleted without the user asking.
+
+**Source.** Owner decision D-30; Phase 1 plan PR 21.
+
+**Acceptance criteria**
+
+- Opening a flat space writes each page as a Markdown file named from its title, a page with children as `<name>/index.md`, and a `space.cept.yaml` at the root. Icons, covers, expanded folders, favourites, recent pages and the selected page carry over to the new path ids.
+- Running the conversion again does nothing, and a conversion stopped half way finishes the next time the space opens.
+- The old state file and page files are copied to `.cept/migration-backup/` first and stay there until the user keeps the conversion. Undoing it restores them byte for byte, and the space then stays flat.
+- `.cept/migration-map.json` records each old page id and its new path, so old links and URLs can be followed.
+- An e2e test seeds a legacy space, loads the app, and sees the same pages before and after a reload.
+
+**Current state: implemented.** [packages/ui/src/components/storage/legacy-migration.ts](../../../packages/ui/src/components/storage/legacy-migration.ts) converts, confirms and undoes; `SpaceManager.open` converts spaces kept in the app's backend (the default space and `.cept/spaces/<id>/`) and says so with a toast. Settings > Spaces > a space's details offers **Keep (delete backup)** and **Undo conversion** while the backup is kept. Remote git spaces stay flat until syncing writes folders, and the in-memory demo is never converted. Page files no page in the tree points to (pages trashed before a reload) are kept only in the backup. Tests: `legacy-migration.test.ts`, `SpaceManager.class.test.ts`, `App.test.tsx` and [e2e/tests/legacy-migration.spec.ts](../../../e2e/tests/legacy-migration.spec.ts).
+
+**Docs state: documented, accurate.** [Space configuration](../../content/reference/space-config.md#which-spaces-are-read-this-way).
+
+**Gap.** Old `/s/<space>/<page-id>` URLs do not yet redirect through the migration map (Phase 1 plan PR 22).
+
+**Related:** REQ-WS-001, D-30.
 
 ## Conflicts and open questions
 

@@ -64,6 +64,8 @@ export interface SpaceInfo {
   branch?: string;
   subPath?: string;
   lastSyncedAt?: string;
+  /** The space was converted from the flat layout and its backup is still kept. */
+  conversionBackup?: boolean;
 }
 
 export interface SettingsModalProps {
@@ -76,6 +78,10 @@ export interface SettingsModalProps {
   onSettingsChange: (settings: CeptSettings) => void;
   onResetSettings: () => void;
   onDeleteSpace: (id: string) => void;
+  /** Keep a converted space's new layout and delete its backup. */
+  onKeepConversion?: (id: string) => void;
+  /** Put a converted space's old layout back from its backup. */
+  onUndoConversion?: (id: string) => void;
   onSpaceRename: (id: string, name: string) => void;
   onSwitchSpace: (id: string) => void;
   onClearAllData: () => void;
@@ -99,6 +105,8 @@ export function SettingsModal({
   onSettingsChange,
   onResetSettings,
   onDeleteSpace,
+  onKeepConversion,
+  onUndoConversion,
   onSpaceRename,
   onSwitchSpace,
   onClearAllData,
@@ -622,6 +630,12 @@ export function SettingsModal({
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
                 onRename={(name) => onSpaceRename(selectedSpace.id, name)}
+                onKeepConversion={
+                  onKeepConversion ? () => onKeepConversion(selectedSpace.id) : undefined
+                }
+                onUndoConversion={
+                  onUndoConversion ? () => onUndoConversion(selectedSpace.id) : undefined
+                }
                 onDelete={() => {
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
@@ -689,17 +703,22 @@ function SpaceDetails({
   onBrowseFiles,
   onRefresh,
   isRefreshing,
+  onKeepConversion,
+  onUndoConversion,
 }: {
   space: SpaceInfo;
   onBack: () => void;
   onDelete: () => void;
   onRename: (name: string) => void;
+  onKeepConversion?: () => void;
+  onUndoConversion?: () => void;
   onBrowseFiles?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
+  const [confirmUndo, setConfirmUndo] = useState(false);
 
   return (
     <div data-testid={`space-details-${space.id}`}>
@@ -820,6 +839,63 @@ function SpaceDetails({
           </div>
         )}
       </div>
+      {space.conversionBackup && (onKeepConversion || onUndoConversion) && (
+        <>
+          <div className="cept-settings-section-divider" />
+          <div data-testid="space-migration">
+            <p className="cept-settings-wizard-desc">
+              This space was converted to keep its pages as Markdown files and folders. A backup of
+              the old layout is kept until you choose. Undoing the conversion loses changes made
+              since it.
+            </p>
+            {onKeepConversion && (
+              <button
+                className="cept-settings-action-btn"
+                onClick={onKeepConversion}
+                data-testid="space-migration-keep"
+              >
+                Keep (delete backup)
+              </button>
+            )}
+            {onUndoConversion &&
+              (confirmUndo ? (
+                <>
+                  <p
+                    className="cept-settings-wizard-desc"
+                    data-testid="space-migration-undo-warning"
+                  >
+                    Pages added, edited, moved or renamed since the conversion will be lost.
+                  </p>
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={() => {
+                      setConfirmUndo(false);
+                      onUndoConversion();
+                    }}
+                    data-testid="space-migration-undo-confirm"
+                  >
+                    Undo and lose those changes
+                  </button>
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={() => setConfirmUndo(false)}
+                    data-testid="space-migration-undo-cancel"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="cept-settings-action-btn"
+                  onClick={() => setConfirmUndo(true)}
+                  data-testid="space-migration-undo"
+                >
+                  Undo conversion
+                </button>
+              ))}
+          </div>
+        </>
+      )}
       {onRefresh && (
         <>
           <div className="cept-settings-section-divider" />
