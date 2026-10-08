@@ -84,6 +84,13 @@ describe('folderPermission', () => {
     );
   });
 
+  it('reports prompt without asking when the query itself throws', async () => {
+    const handle = mockHandle('granted');
+    handle.queryPermission.mockRejectedValueOnce(new DOMException('Gone', 'NotFoundError'));
+    expect(await folderPermission(handle, { request: true })).toBe('prompt');
+    expect(handle.requestPermission).not.toHaveBeenCalled();
+  });
+
   it('treats a handle without the permission API as usable', async () => {
     expect(await folderPermission(cloneable('plain'))).toBe('granted');
   });

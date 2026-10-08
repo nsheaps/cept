@@ -274,11 +274,17 @@ export async function folderPermission(
 ): Promise<FolderPermission> {
   const api = handle as unknown as PermissionHandle;
   if (typeof api.queryPermission !== 'function') return 'granted';
+  let current: FolderPermission;
   try {
-    const current = await api.queryPermission({ mode: 'readwrite' });
-    if (current !== 'prompt' || !request || typeof api.requestPermission !== 'function') {
-      return current;
-    }
+    current = await api.queryPermission({ mode: 'readwrite' });
+  } catch {
+    // An unanswerable query is not a refusal: report `prompt` so the user can retry.
+    return 'prompt';
+  }
+  if (current !== 'prompt' || !request || typeof api.requestPermission !== 'function') {
+    return current;
+  }
+  try {
     return await api.requestPermission({ mode: 'readwrite' });
   } catch {
     // requestPermission throws outside a user gesture; the browser can still ask later.
@@ -298,11 +304,12 @@ const HANDLE_STORE = 'cept-fs-handles';
 
 /**
  * A FolderHandleStore in IndexedDB, which can hold handles (they are
- * structured-cloneable). Pass a per-deploy `dbName` so previews and
- * production keep separate handles.
+ * structured-cloneable). `dbName` has no default: every deploy on one origin
+ * (production and each PR preview) shares IndexedDB, so the host passes a
+ * per-deploy name, or a folder opened in one preview reappears in the others.
  */
 export function createFolderHandleStore(
-  dbName = 'cept-handles',
+  dbName: string,
   idb: IDBFactory = globalThis.indexedDB,
 ): FolderHandleStore {
   const open = (): Promise<IDBDatabase> =>
@@ -317,10 +324,10 @@ export function createFolderHandleStore(
       req.onerror = () => reject(req.error);
     });
 
-  const run = async <T>(
+  const run = async <R, T>(
     mode: IDBTransactionMode,
-    action: (store: IDBObjectStore) => IDBRequest,
-    read: (request: IDBRequest) => T,
+    action: (store: IDBObjectStore) => R,
+    read: (requests: R) => T,
   ): Promise<T> => {
     const db = await open();
     try {
@@ -350,25 +357,16 @@ export function createFolderHandleStore(
         (store) => store.get(id),
         (request) => (request.result as FileSystemDirectoryHandle | undefined) ?? null,
       ),
-    list: async () => {
-      const db = await open();
-      try {
-        const tx = db.transaction(HANDLE_STORE, 'readonly');
-        const store = tx.objectStore(HANDLE_STORE);
-        const keys = store.getAllKeys();
-        const values = store.getAll();
-        await new Promise<void>((resolve, reject) => {
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-        return (keys.result as IDBValidKey[]).map((key, i) => ({
-          id: String(key),
-          handle: values.result[i] as FileSystemDirectoryHandle,
-        }));
-      } finally {
-        db.close();
-      }
-    },
+    list: () =>
+      run(
+        'readonly',
+        (store) => [store.getAllKeys(), store.getAll()] as const,
+        ([keys, values]) =>
+          keys.result.map((key, i) => ({
+            id: String(key),
+            handle: values.result[i] as FileSystemDirectoryHandle,
+          })),
+      ),
     remove: (id) =>
       run(
         'readwrite',
