@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.19.2](https://github.com/nsheaps/cept/compare/v0.19.1...v0.19.2) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([5f78e7c](https://github.com/nsheaps/cept/commit/5f78e7cb605f6662c47860c633f9444e89e0ca78))
+
+### Chores
+
+* **deps:** update nsheaps/agents digest to 49e4ab5 ([#393](https://github.com/nsheaps/cept/issues/393)) ([7218e78](https://github.com/nsheaps/cept/commit/7218e78ca9a61957b7d9c3e2a511608f4be34a73))
+
 ## [0.19.1](https://github.com/nsheaps/cept/compare/v0.19.0...v0.19.1) (2026-10-08)
 
 ### Refactoring
