@@ -1,3 +1,57 @@
+# Every tool is pinned to an exact version; `mise run check:pins` enforces it.
+# Bun must match the version that writes bun.lock.
 [tools]
-bun = "1"
-node = "24"
+bun = "1.4.2"
+node = "24.21.0"
+gitleaks = "8.30.1"
+osv-scanner = "2.6.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+
+# Nx-backed tasks set NX_DAEMON=false: `check` runs them in parallel, and the
+# Nx daemon races on its project graph then.
+#
+# Tasks wrap the root package.json scripts, which stay the inner commands.
+# CI calls these tasks so a contributor can reproduce any job locally.
+[tasks.install]
+description = "Install dependencies from the lockfile"
+run = "bun install --frozen-lockfile"
+
+[tasks."check:pins"]
+description = "Fail if any mise tool is not pinned to an exact version"
+run = "bun scripts/ci/check-pins.ts .mise.toml"
+
+[tasks.lint]
+description = "Lint every project"
+run = "bun run lint"
+env = { NX_DAEMON = "false" }
+
+[tasks.format]
+description = "Apply Prettier formatting"
+run = "bunx prettier --write ."
+
+[tasks.typecheck]
+description = "Typecheck every project"
+run = "bun run typecheck"
+env = { NX_DAEMON = "false" }
+
+[tasks."test:unit"]
+description = "Run unit tests"
+run = "bun run test:unit"
+
+[tasks."test:integration"]
+description = "Run integration tests"
+run = "bun run test:integration"
+
+[tasks."test:e2e"]
+description = "Run Playwright end-to-end tests"
+run = "bun run test:e2e"
+
+[tasks.build]
+description = "Build every project"
+run = "bun run build"
+env = { NX_DAEMON = "false" }
+
+[tasks.check]
+description = "The full local gate: pins, lint, typecheck, unit and integration tests, build"
+depends = ["check:pins", "lint", "typecheck", "test:unit", "test:integration", "build"]
