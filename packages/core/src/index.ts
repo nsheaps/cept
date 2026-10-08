@@ -246,3 +246,32 @@ export type {
   ExportError,
   PageContent,
 } from './exporters/index.js';
+
+// Space config (space.cept.yaml, .cept.yaml)
+export {
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+  SPACE_CONFIG_VERSION,
+  spaceConfigSchema,
+  pickSpaceMarker,
+  pickCeptConfigFile,
+  findSpaceMarker,
+  parseSpaceConfig,
+  serializeSpaceConfig,
+  parseCeptConfig,
+  serializeCeptConfig,
+  mergeFolderConfigs,
+  createIgnoreMatcher,
+  isDefaultHidden,
+} from './space/index.js';
+export type {
+  PickedFile,
+  ParseResult,
+  SpaceConfig,
+  CeptFolderConfig,
+  ConfigLayer,
+  MergedFolderConfig,
+  IgnoreMatcher,
+} from './space/index.js';

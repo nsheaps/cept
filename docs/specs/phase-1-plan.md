@@ -283,7 +283,7 @@ Each entry gives: **Changes** (packages and files), **Red** (the failing test wr
 
 **PR 14 — `feat(core): parse space.cept.yaml and .cept.yaml`**
 
-- Changes: `core/src/space/config.ts` with Zod schemas for `space.cept.yaml` (`name`, `slug`, `version`, optional `branch`; D-3, D-30) and `.cept.yaml` (`ignore:`, `hide:` alias; D-41); `.yaml` over `.yml` precedence; nearest-wins merge from the space root down; default hidden paths (dotfiles, `.git/`, `.cept/`). Adds a `yaml` dependency to core.
+- Changes: `core/src/space/config.ts` with Zod schemas for `space.cept.yaml` (`name`, `slug`, `version`, optional `branch`; D-3, D-30) and `.cept.yaml` (`ignore:`, `hide:` alias; D-41); `.yaml` over `.yml` precedence; nearest-wins merge from the space root down; default hidden paths (dotfiles, `.git/`, `.cept/`). Adds `zod` and `ignore` (exact pins) to core; YAML uses the existing `js-yaml` (REQ-WS-004).
 - Red: unit tests for precedence, schema version, unknown keys, nearest-wins merge, `hide:` alias and gitignore-style matching.
 - Accept: tests green; the schema doc in `03-spaces-and-storage.md` matches the Zod schema.
 - Risk: key casing (WS open question 10) must be settled in D2 first.

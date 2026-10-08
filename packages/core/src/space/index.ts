@@ -1,0 +1,27 @@
+export {
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+  SPACE_CONFIG_VERSION,
+  spaceConfigSchema,
+  pickSpaceMarker,
+  pickCeptConfigFile,
+  findSpaceMarker,
+  parseSpaceConfig,
+  serializeSpaceConfig,
+  parseCeptConfig,
+  serializeCeptConfig,
+  mergeFolderConfigs,
+  createIgnoreMatcher,
+  isDefaultHidden,
+} from './config.js';
+export type {
+  PickedFile,
+  ParseResult,
+  SpaceConfig,
+  CeptFolderConfig,
+  ConfigLayer,
+  MergedFolderConfig,
+  IgnoreMatcher,
+} from './config.js';

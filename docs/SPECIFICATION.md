@@ -2712,6 +2712,8 @@ threads:
 
 ### Appendix F: Configuration Reference
 
+> **Superseded in part (D-47).** Config keys are camelCase, and space settings now live in `space.cept.yaml` (name, slug, version, optional branch) and per-folder `.cept.yaml` (`ignore:`), not in `.cept/config.yaml`. The snake_case sample below is the legacy design and is kept for the sections not yet re-specified. See `docs/content/reference/space-config.md` and `docs/specs/requirements/03-spaces-and-storage.md`.
+
 ```yaml
 # .cept/config.yaml
 workspace:

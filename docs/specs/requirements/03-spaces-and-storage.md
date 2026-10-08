@@ -42,9 +42,9 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 | ID                                                                                          | Requirement                                                             | Priority | Impl status | Docs status            | Docs accurate |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
 | [REQ-WS-001](#req-ws-001--space-is-a-folder-in-a-filesystem)                                | Space is a folder in a filesystem; folder hierarchy mirrors page tree   | MUST     | divergent   | documented-differently | stale         |
-| [REQ-WS-002](#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)                 | `space.cept.yaml` / `space.cept.yml` marks the space root               | MUST     | not-started | documented-differently | n/a           |
-| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted)                            | Both `.yaml` and `.yml` accepted, with defined precedence               | MUST     | not-started | undocumented           | n/a           |
-| [REQ-WS-004](#req-ws-004--spaceceptyaml-schema)                                             | Versioned, documented `space.cept.yaml` schema                          | MUST     | not-started | documented-differently | stale         |
+| [REQ-WS-002](#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)                 | `space.cept.yaml` / `space.cept.yml` marks the space root               | MUST     | partial     | documented-differently | n/a           |
+| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted)                            | Both `.yaml` and `.yml` accepted, with defined precedence               | MUST     | partial     | documented             | n/a           |
+| [REQ-WS-004](#req-ws-004--spaceceptyaml-schema)                                             | Versioned, documented `space.cept.yaml` schema                          | MUST     | partial     | documented             | accurate      |
 | [REQ-WS-005](#req-ws-005--nested-spaces-inside-a-parent-space-deferred)                     | Nested spaces inside a parent space                                     | MAY      | deferred    | undocumented           | n/a           |
 | [REQ-WS-006](#req-ws-006--nesting-depth-limit-deferred)                                     | Nesting depth limit                                                     | MAY      | deferred    | undocumented           | n/a           |
 | [REQ-WS-007](#req-ws-007--per-space-backend-selection)                                      | Each space bound to its own backend; several open at once               | MUST     | divergent   | documented-differently | stale         |
@@ -204,11 +204,11 @@ flowchart TB
 - A space is addressed by (backend location, path-within-backend). Two spaces at different subfolder paths within the same backend are independent.
 - Discovery does not descend into a subfolder that is itself a space root (nested spaces are reported as a warning; see REQ-WS-005).
 - **Per-folder `.cept.yaml` (D-41, supersedes open question 13).** A `.cept.yaml` in any folder holds Cept configuration for that folder and everything below it, so a large org can keep config next to the content its team owns instead of in one central file. It never defines a space and is never treated as a space marker; only `space.cept.yaml` / `space.cept.yml` does that. This works inside a single space and does not require nested spaces (REQ-WS-005 stays deferred).
-- Settings merge from the space root down, and the nearest `.cept.yaml` wins per key.
-- The first key is `ignore:`, a list of gitignore-style patterns relative to the folder holding the `.cept.yaml`. Matching files and folders are hidden from the page tree, search, backlinks and the graph. Dotfiles, `.git/` and `.cept/` are hidden by default without any configuration. PR #67's `hide:` key is read as an alias of `ignore:`.
+- Settings merge from the space root down, and the nearest `.cept.yaml` wins per key. `ignore` is the exception to replacement: every ancestor's patterns stay in force for its own subtree, evaluated relative to the folder holding that file, and the deepest folder with a matching pattern decides (so a child can re-include with `!`). Implemented by `mergeFolderConfigs` and `createIgnoreMatcher`.
+- The first key is `ignore:`, a list of gitignore-style patterns relative to the folder holding the `.cept.yaml`. Matching files and folders are hidden from the page tree, search, backlinks and the graph. Dotfiles, `.git/` and `.cept/` are hidden by default without any configuration. PR #67's `hide:` key is read as an alias of `ignore:`; if both keys are present the lists are combined (`ignore` first, then `hide`, duplicates removed) and Cept writes only `ignore`. Default-hidden paths (any dotfile or dotfolder at any depth) cannot be re-included by a pattern.
 - Cept writes a `.cept.yaml` only when the user changes a setting in that folder; opening or browsing never creates one (REQ-WS-019). Unit tests cover merge order, nearest-wins, the `hide:` alias and the default-hidden paths. The marker-versus-config distinction is documented in the reference page for REQ-WS-004.
 
-**Current state: not-started.** A grep of `packages/`, `docs/`, `features/`, `e2e/` and `README.md` finds no `space.cept.yaml` or `space.cept.yml`. The nearest artifacts are:
+**Current state: partial.** The parsers, serializers, marker precedence, nearest-wins merge and gitignore-style matcher exist in [packages/core/src/space/config.ts](../../../packages/core/src/space/config.ts) (PR 14). Discovery over a `StorageBackend` tree (PR 15), the writer flows and the `.cept/config.yaml` migration are not built yet. Before PR 14 a grep found no `space.cept.yaml`; the older artifacts are:
 
 - `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/desktop/src/local-fs.ts](../../../packages/desktop/src/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
 - A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, from PR #67, now closed per D-42; not on `main`). It is rebuilt as the D-41 `.cept.yaml` with `ignore:` (and `hide:` as an alias).
@@ -237,11 +237,13 @@ flowchart TB
 - Unit tests cover three cases: only `.yaml`, only `.yml`, and both present (with the chosen precedence or error).
 - The user-facing docs state the precedence rule.
 
-**Current state: not-started.** No marker-file handling exists.
+**Current state: partial.** `pickSpaceMarker`, `pickCeptConfigFile` and `findSpaceMarker` in `packages/core/src/space/config.ts` implement the rule below with unit tests for only-`.yaml`, only-`.yml` and both. Wiring into discovery comes in PR 15.
 
-**Docs state: undocumented, n/a.**
+**Docs state: documented, accurate** ([space-config reference](../../content/reference/space-config.md)).
 
-**Gap.** Decide the precedence (see open questions), then implement and test it.
+**Decided (open question 2):** `.yaml` wins over `.yml` when both exist in the same folder; `.yml` is ignored and a warning is reported. The same rule applies to `.cept.yaml` / `.cept.yml`, where the spec was otherwise silent.
+
+**Gap.** Use the picker from discovery (PR 15).
 
 **Related:** none.
 
@@ -249,7 +251,7 @@ flowchart TB
 
 > **Decided (D-30).** The minimal schema gains one optional field, `branch: <name>`. The marker MUST exist on the default branch; Cept then uses the declared branch for that space. Scope: Phase 1 (D-26). **Decided (D-41):** this schema describes `space.cept.yaml` only. Cept configuration such as `ignore:` lives in the separate per-folder `.cept.yaml` (REQ-WS-002) and is not part of this schema; the reference page documents both files and how they differ.
 
-**Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements, except one optional field, `branch` (D-30): the name of the branch Cept uses for this space. The marker file MUST exist on the default branch (that is where discovery finds it).
+**Statement.** `space.cept.yaml` MUST have a minimal, versioned schema. The initial schema contains exactly three required fields: `name` (human-readable display name), `slug` (URL-friendly identifier: lowercase `[a-z0-9-]`, 1–63 characters, unique per host/listing), and `version` (schema version, currently `"1"`). Additional fields are deferred to later requirements, except one optional field, `branch` (D-30): the name of the branch Cept uses for this space. The marker file MUST exist on the default branch (that is where discovery finds it). All keys are camelCase (D-47).
 
 **Source.** Derived from REQ-WS-002 and D-3 (owner direction: schema starts minimal).
 
@@ -264,16 +266,16 @@ branch: docs # optional (D-30)
 
 **Acceptance criteria**
 
-- The schema is published (JSON Schema or Zod) with the three required fields above; unknown keys are preserved on write.
+- The schema is published as a Zod schema (`spaceConfigSchema`, `packages/core/src/space/config.ts`) with the three required fields above; unknown keys are preserved on write. `version` is the string `'1'`: an unquoted YAML `1` is normalized to `'1'`, and any other value (a future version, a non-number) is rejected with an "unsupported version" error. `name` and `branch`, when present, are non-empty strings.
 - `slug` is validated: must match `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$` or be a single character `[a-z0-9]`; duplicate slugs within a listing are an error.
 - The parser and serializer use a real YAML library (`js-yaml`), and a test round-trips names that contain `:`, `#` and quotes.
 - A reference page exists under `docs/content/reference/`.
 
-**Current state: not-started.** The closest analog is the TS type `WorkspaceConfig {name, icon?, defaultPage?}` in [packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) (lines ~40-44). It is serialized flat in camelCase by hand-built string templates without escaping (local-fs.ts ~161) and never read back, even though `js-yaml` is already a root dependency ([package.json](../../../package.json) line 90) used by the markdown parser and database engine.
+**Current state: partial.** `parseSpaceConfig` and `serializeSpaceConfig` (js-yaml, with a round-trip test for names containing `:`, `#` and quotes) and the reference page [space-config.md](../../content/reference/space-config.md) exist (PR 14). The migration from `.cept/config.yaml` does not. The older analog is the TS type `WorkspaceConfig {name, icon?, defaultPage?}` in [packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) (lines ~40-44). It is serialized flat in camelCase by hand-built string templates without escaping (local-fs.ts ~161) and never read back, even though `js-yaml` is already a root dependency ([package.json](../../../package.json) line 90) used by the markdown parser and database engine.
 
-**Docs state: documented-differently, stale.** SPECIFICATION.md Appendix F gives a nested snake_case schema (`workspace.default_page`, `git.*`, `sync.*`, `editor.*`), which does not match what the code writes. The `configuration.md` reference page planned in §11.2 does not exist.
+**Docs state: documented, accurate for `space.cept.yaml`.** SPECIFICATION.md Appendix F still describes the legacy `.cept/config.yaml` in nested snake_case; it now carries a note that camelCase (D-47) and the files above supersede it.
 
-**Gap.** Schema, parser and serializer, migration from `.cept/config.yaml`, and a reference doc.
+**Gap.** Migration from `.cept/config.yaml`.
 
 **Related:** [#58](https://github.com/nsheaps/cept/issues/58).
 
@@ -748,7 +750,7 @@ branch: docs # optional (D-30)
 **Open questions (owner to decide):**
 
 1. **Config location.** `space.cept.yaml` as the space-level config competes with three others: `.cept/config.yaml` (code), the per-folder `.cept.yaml` in PR #67, and `.cept/space-config.json` (issue #58). Proposal: `space.cept.yaml` is the only space-level config; the others are retired with migration. _(Partly answered D-41: `space.cept.yaml` defines the space and the per-folder `.cept.yaml` is kept as Cept config, not retired; `.cept/config.yaml` and `.cept/space-config.json` are still retired with migration.)_
-2. **`.yaml` vs `.yml` precedence.** If both `space.cept.yaml` and `space.cept.yml` exist in the same folder, is that an error, or does `.yaml` win with a warning?
+2. **`.yaml` vs `.yml` precedence.** _(Answered in PR 14: `.yaml` wins with a warning; the same rule applies to `.cept.yaml` / `.cept.yml`. See REQ-WS-003.)_
 3. **Nesting depth counting (deferred, later per D-26).** When nesting is undeferred: is the root level 1 or level 0? Does "up to 10 deep" mean 10 levels including the root?
 4. **Nested space semantics (deferred, later per D-26).** When undeferred: can a child space use a different backend or remote from its parent? Do links, search, graph and databases cross the boundary?
 5. **Folder-as-tree migration.** Existing users have flat `pages/page-<ts>.md` plus `workspace-state.json`. What migration is required? _(Answered D-30: legacy flat-space migration is in scope for Phase 1.)_
@@ -756,7 +758,7 @@ branch: docs # optional (D-30)
 7. **Backend list.** _(Partly answered D-26/D-29: Phase 1 = IndexedDB, desktop folder, File System Access, GitHub; Google Drive and SFTP are later; S3 and URL not addressed.)_ The owner listed local-app, local-browser, git, gdrive and sftp. The UI advertises S3 "Coming soon", and issues #55 and #56 request S3 and URL. Should S3 and URL be in scope?
 8. **Sync ownership.** Who runs Git push/pull and Drive/SFTP sync: the daemon, the service worker, or the app? Must stay consistent with [05-cli-and-daemon.md](05-cli-and-daemon.md) and [01-browser-app-and-pwa.md](01-browser-app-and-pwa.md). _(Was question 9.)_ _(Answered D-37: in Phase 1 the app owns sync, with queued offline commits and push-on-reconnect; daemon is later.)_
 9. **Architecture rule violations.** CLAUDE.md rule 3 is broken by `instanceof BrowserFsBackend` in App.tsx and by git-space.ts typed on `BrowserFsBackend`. Rule 5 is broken by App.tsx importing `isomorphic-git/http/web`. Rule 11 is broken by `initialize()` creating `pages/` and overwriting config. Fix before new backends?
-10. **Config schema shape.** SPECIFICATION.md Appendix F (nested snake_case `workspace.default_page`) does not match what the code writes (flat camelCase `defaultPage`). Which convention should `space.cept.yaml` use for future fields?
+10. **Config schema shape.** _(Answered D-47: camelCase everywhere. `space.cept.yaml` and `.cept.yaml` use flat camelCase keys; SPECIFICATION.md Appendix F's snake_case is superseded.)_
 11. **CORS proxy.** Git cloning hard-codes `https://cors.isomorphic-git.org`; the owner wants the nsheaps/iac Cloudflare worker. See [09-remotes-and-auth.md](09-remotes-and-auth.md). _(Partly answered D-27: the relay Worker and iac work are Phase 2; Phase 1 keeps the public proxy behind a build-time setting (D-39).)_
 12. **`slug` uniqueness scope.** Slugs must be unique per listing/host, but what is "the listing"? Per parent folder? Per backend root? Per Cept instance?
 13. **Per-folder `.cept.yaml` (PR #67).** _(Answered D-41, D-42: in scope for Phase 1, independent of nested spaces. Per-folder `.cept.yaml` holds Cept config with `ignore:` (alias `hide:`), merges from the space root down with nearest-wins, and is never a space marker; PR #67 is closed and its ideas are rebuilt. See REQ-WS-002.)_
