@@ -37,12 +37,7 @@ import {
   clearAllData,
   readPageContent,
   writePageContent,
-  deletePageContent,
   saveSpaceState,
-  loadSpaceState,
-  readSpacePageContent,
-  writeSpacePageContent,
-  deleteSpacePageContent,
 } from './storage/StorageContext.js';
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
@@ -55,18 +50,9 @@ import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { CeptSearchIndex } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
-import {
-  createSpace as createSpaceInBackend,
-  createRemoteSpace as createRemoteSpaceInBackend,
-  switchSpace as switchSpaceInBackend,
-  deleteSpace as deleteSpaceInBackend,
-  renameSpace as renameSpaceInBackend,
-  loadSpaces,
-  saveSpaces as saveSpacesManifest,
-  updateSpaceSyncTimestamp,
-  parseRemoteSpaceId,
-} from './storage/SpaceManager.js';
-import type { SpacesManifest } from './storage/SpaceManager.js';
+import { parseRemoteSpaceId } from './storage/SpaceManager.js';
+import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
+import { useSpaces } from './storage/useSpaces.js';
 import { cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { BrowserFsBackend } from '@cept/core';
 import type { GitHttp } from '@cept/core';
@@ -111,6 +97,16 @@ function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
   return result;
 }
 
+/** A space with no pages yet. */
+function emptySnapshot(spaceName: string): SpaceSnapshot {
+  return { pages: [], favorites: [], recentPages: [], selectedPageId: undefined, spaceName };
+}
+
+/** A space freshly cloned from a remote: its pages, the first one selected. */
+function clonedSnapshot(pages: PageTreeNode[], spaceName: string): SpaceSnapshot {
+  return { pages, favorites: [], recentPages: [], selectedPageId: pages[0]?.id, spaceName };
+}
+
 /**
  * Root application component.
  * Renders the main Cept workspace UI.
@@ -152,8 +148,13 @@ export function App() {
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
-  const [userSpaceId, setUserSpaceId] = useState('default');
-  const [spacesManifest, setSpacesManifest] = useState<SpacesManifest | null>(null);
+  const {
+    manager: spaces,
+    manifest: spacesManifest,
+    setManifest: setSpacesManifest,
+    activeId: userSpaceId,
+    setActiveId: setUserSpaceId,
+  } = useSpaces(backend);
   const [cloneStatus, setCloneStatus] = useState<{
     active: boolean;
     message?: string;
@@ -165,112 +166,84 @@ export function App() {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
 
-  // Space-aware page content helpers — for default space, use legacy paths for backward compat
+  // Page content of the active space
   const currentReadPage = useCallback(
-    (pageId: string) => {
-      if (userSpaceId === 'default') return readPageContent(backend, pageId);
-      return readSpacePageContent(backend, userSpaceId, pageId);
-    },
-    [backend, userSpaceId],
+    (pageId: string) => spaces.readPage(userSpaceId, pageId),
+    [spaces, userSpaceId],
   );
   const currentWritePage = useCallback(
-    (pageId: string, content: string) => {
-      if (userSpaceId === 'default') return writePageContent(backend, pageId, content);
-      return writeSpacePageContent(backend, userSpaceId, pageId, content);
-    },
-    [backend, userSpaceId],
+    (pageId: string, content: string) => spaces.writePage(userSpaceId, pageId, content),
+    [spaces, userSpaceId],
   );
   const currentDeletePage = useCallback(
-    (pageId: string) => {
-      if (userSpaceId === 'default') return deletePageContent(backend, pageId);
-      return deleteSpacePageContent(backend, userSpaceId, pageId);
-    },
-    [backend, userSpaceId],
+    (pageId: string) => spaces.deletePage(userSpaceId, pageId),
+    [spaces, userSpaceId],
   );
 
-  /** Save current space state to its per-space workspace file */
-  const saveCurrentSpaceState = useCallback(
-    (
-      currentSpaceId: string,
-      currentPages: PageTreeNode[],
-      currentFavorites: SidebarPageRef[],
-      currentRecentPages: SidebarPageRef[],
-      currentSelectedPageId: string | undefined,
-      currentSpaceName: string,
-      currentPageContents: Record<string, string>,
-    ) => {
-      void saveSpaceState(backend, currentSpaceId, {
-        pages: currentPages,
-        favorites: currentFavorites,
-        recentPages: currentRecentPages,
-        selectedPageId: currentSelectedPageId,
-        spaceName: currentSpaceName,
-      });
-      // Also write page contents to per-space dir
-      for (const [pageId, content] of Object.entries(currentPageContents)) {
-        if (content) {
-          void writeSpacePageContent(backend, currentSpaceId, pageId, content);
-        }
-      }
+  /** Save the active space's state and in-memory page contents to its own files */
+  const saveActiveSpace = useCallback(() => {
+    void spaces.saveState(
+      userSpaceId,
+      { pages, favorites, recentPages, selectedPageId, spaceName },
+      pageContents,
+    );
+  }, [spaces, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents]);
+
+  /** Show a space: replace the page tree, sidebar lists and loaded contents */
+  const applySpace = useCallback(
+    (snapshot: SpaceSnapshot, contents: Record<string, string> = {}) => {
+      setPages(snapshot.pages);
+      setSelectedPageId(snapshot.selectedPageId);
+      setFavorites(snapshot.favorites);
+      setRecentPages(snapshot.recentPages);
+      setSpaceName(snapshot.spaceName);
+      setPageContents(contents);
+      setTrash([]);
+      setHasStarted(true);
     },
-    [backend],
+    [],
   );
 
-  /** Load a space's state from storage and apply it to React state */
+  /** Load a space's state from storage and show it */
   const loadAndApplySpaceState = useCallback(
     async (spaceId: string, name: string) => {
       setSpaceLoadError(undefined);
       try {
-        const state = await loadSpaceState(backend, spaceId);
-        if (state && state.pages.length > 0) {
-          setPages(state.pages);
-          setSelectedPageId(state.selectedPageId);
-          setFavorites(state.favorites ?? []);
-          setRecentPages(state.recentPages ?? []);
-          setSpaceName(state.spaceName ?? name);
-          setPageContents({});
-          setTrash([]);
-          setHasStarted(true);
-          // Load selected page content
-          if (state.selectedPageId) {
-            const content = await readSpacePageContent(backend, spaceId, state.selectedPageId);
-            setPageContents((prev) => ({ ...prev, [state.selectedPageId!]: content ?? '' }));
-          }
-        } else if (isRemoteSpaceId(spaceId)) {
-          // Remote space with no persisted content — show error
-          setPages([]);
-          setPageContents({});
-          setSelectedPageId(undefined);
-          setFavorites([]);
-          setRecentPages([]);
-          setTrash([]);
-          setSpaceName(name);
-          setHasStarted(true);
+        const { snapshot, selectedContent } = await spaces.open(spaceId, name);
+        if (snapshot) {
+          const selected = snapshot.selectedPageId;
+          applySpace(snapshot, selected ? { [selected]: selectedContent ?? '' } : {});
+          return;
+        }
+        applySpace(emptySnapshot(name));
+        if (isRemoteSpaceId(spaceId)) {
+          // Remote space with no persisted content
           setSpaceLoadError(
             `Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`,
           );
-        } else {
-          // Empty local space
-          setPages([]);
-          setPageContents({});
-          setSelectedPageId(undefined);
-          setFavorites([]);
-          setRecentPages([]);
-          setTrash([]);
-          setSpaceName(name);
-          setHasStarted(true);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load space';
+        applySpace(emptySnapshot(name));
         setSpaceLoadError(`Error loading "${name}": ${message}`);
-        setPages([]);
-        setPageContents({});
-        setSelectedPageId(undefined);
-        setSpaceName(name);
-        setHasStarted(true);
       }
     },
-    [backend],
+    [spaces, applySpace],
+  );
+
+  /** Show a freshly cloned remote space and save it as that space's state */
+  const applyClonedSpace = useCallback(
+    async (
+      spaceId: string,
+      name: string,
+      clonedPages: PageTreeNode[],
+      clonedContents: Record<string, string>,
+    ) => {
+      const snapshot = clonedSnapshot(clonedPages, name);
+      applySpace(snapshot, clonedContents);
+      await spaces.saveState(spaceId, snapshot, clonedContents);
+    },
+    [spaces, applySpace],
   );
 
   // Apply loaded state once backend is ready
@@ -282,7 +255,7 @@ export function App() {
     setSettings(initialSettings);
 
     // Load spaces manifest and then determine which space to restore
-    void loadSpaces(backend).then((manifest) => {
+    void spaces.load().then((manifest) => {
       setSpacesManifest(manifest);
       const activeId = manifest.activeSpaceId;
       setUserSpaceId(activeId);
@@ -343,12 +316,22 @@ export function App() {
         const defaultSpace = manifest.spaces.find((s) => s.id === 'default');
         if (defaultSpace && defaultSpace.name === 'My Space') {
           defaultSpace.name = 'Demo Space';
-          void saveSpacesManifest(backend, manifest);
+          void spaces.save(manifest);
           setSpacesManifest({ ...manifest });
         }
       }
     });
-  }, [ready, persisted, initialSettings, shouldShowDemo, backend, loadAndApplySpaceState]);
+  }, [
+    ready,
+    persisted,
+    initialSettings,
+    shouldShowDemo,
+    backend,
+    spaces,
+    setSpacesManifest,
+    setUserSpaceId,
+    loadAndApplySpaceState,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -384,9 +367,9 @@ export function App() {
       const switchToExistingSpace = (manifest: SpacesManifest, spaceId: string) => {
         const space = manifest.spaces.find((s) => s.id === spaceId);
         if (!space) return;
-        void switchSpaceInBackend(backend, spaceId).then(() => {
+        void spaces.switch(spaceId).then(({ manifest: switched }) => {
           setUserSpaceId(spaceId);
-          setSpacesManifest(manifest);
+          setSpacesManifest(switched);
           void loadAndApplySpaceState(spaceId, space.name).then(() => {
             if (route.pageId) {
               setSelectedPageId(route.pageId);
@@ -396,7 +379,7 @@ export function App() {
         });
       };
 
-      void loadSpaces(backend).then((manifest) => {
+      void spaces.load().then((manifest) => {
         // Check if this exact space ID exists
         const existingSpace = manifest.spaces.find((s) => s.id === route.spaceId);
         if (existingSpace) {
@@ -429,40 +412,17 @@ export function App() {
                   'https://cors.isomorphic-git.org',
                 );
 
-                const newSpace = await createRemoteSpaceInBackend(
-                  backend,
+                const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
                   displayName,
                   normalizeRepoUrl(parsed.repo),
                   parsed.branch,
                   parsed.subPath || undefined,
                 );
 
-                const updatedManifest = await loadSpaces(backend);
                 setSpacesManifest(updatedManifest);
                 setUserSpaceId(newSpace.id);
                 setActiveSpace('user');
-                setPages(clonedPages);
-                setPageContents(clonedContents);
-                setSelectedPageId(clonedPages[0]?.id);
-                setFavorites([]);
-                setRecentPages([]);
-                setTrash([]);
-                setSpaceName(displayName);
-                setHasStarted(true);
-
-                await saveSpaceState(backend, newSpace.id, {
-                  pages: clonedPages,
-                  favorites: [],
-                  recentPages: [],
-                  selectedPageId: clonedPages[0]?.id,
-                  spaceName: displayName,
-                });
-
-                for (const [pageId, content] of Object.entries(clonedContents)) {
-                  if (content) {
-                    void writeSpacePageContent(backend, newSpace.id, pageId, content);
-                  }
-                }
+                await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
 
                 setCloneStatus({ active: false });
 
@@ -487,7 +447,18 @@ export function App() {
         setPages((prev) => expandToNode(prev, route.pageId!));
       }
     }
-  }, [hasStarted, pages, persisted, backend, userSpaceId, loadAndApplySpaceState]);
+  }, [
+    hasStarted,
+    pages,
+    persisted,
+    backend,
+    spaces,
+    userSpaceId,
+    setSpacesManifest,
+    setUserSpaceId,
+    loadAndApplySpaceState,
+    applyClonedSpace,
+  ]);
 
   // Background sync: auto-refresh remote spaces every 5 minutes
   const SYNC_INTERVAL_MS = 5 * 60 * 1000;
@@ -533,22 +504,14 @@ export function App() {
           'https://cors.isomorphic-git.org',
         );
 
-        await updateSpaceSyncTimestamp(backend, userSpaceId);
+        const manifest = await spaces.markSynced(userSpaceId);
 
         // Persist the refreshed pages
-        await saveSpaceState(backend, userSpaceId, {
-          pages: clonedPages,
-          favorites: [],
-          recentPages: [],
-          selectedPageId: clonedPages[0]?.id,
-          spaceName: spaceMeta.name,
-        });
-
-        for (const [pageId, content] of Object.entries(clonedContents)) {
-          if (content) {
-            void writeSpacePageContent(backend, userSpaceId, pageId, content);
-          }
-        }
+        await spaces.saveState(
+          userSpaceId,
+          clonedSnapshot(clonedPages, spaceMeta.name),
+          clonedContents,
+        );
 
         // Update UI state
         setPages(clonedPages);
@@ -558,7 +521,6 @@ export function App() {
         }
 
         // Update manifest
-        const manifest = await loadSpaces(backend);
         setSpacesManifest(manifest);
 
         // Check if current page was updated
@@ -578,7 +540,7 @@ export function App() {
     };
 
     void syncSpace();
-  }, [hasStarted, userSpaceId, spacesManifest, backend]);
+  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces]);
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -949,9 +911,9 @@ export function App() {
         selectedPageId: 'welcome',
         spaceName: 'Demo Space',
       });
-      void saveSpacesManifest(backend, freshManifest);
+      void spaces.save(freshManifest);
     });
-  }, [backend]);
+  }, [backend, spaces, setSpacesManifest, setUserSpaceId]);
 
   const handleSettingsChange = useCallback(
     (updated: CeptSettings) => {
@@ -971,107 +933,50 @@ export function App() {
       if (id === userSpaceId) {
         setSpaceName(name);
       }
-      void renameSpaceInBackend(backend, id, name).then(() => {
-        void loadSpaces(backend).then((manifest) => setSpacesManifest(manifest));
-      });
+      void spaces.rename(id, name).then(setSpacesManifest);
     },
-    [backend, userSpaceId],
+    [spaces, userSpaceId, setSpacesManifest],
   );
 
   const handleDeleteSpace = useCallback(
     (id: string) => {
-      void deleteSpaceInBackend(backend, id).then(() => {
-        void loadSpaces(backend).then((manifest) => {
-          setSpacesManifest(manifest);
-          if (id === userSpaceId) {
-            const targetId = manifest.activeSpaceId;
-            const targetSpace = manifest.spaces.find((s) => s.id === targetId);
-            setUserSpaceId(targetId);
-            void loadAndApplySpaceState(targetId, targetSpace?.name ?? 'My Space');
-          }
-        });
+      void spaces.delete(id).then(({ manifest, active }) => {
+        setSpacesManifest(manifest);
+        if (id === userSpaceId) {
+          setUserSpaceId(active.id);
+          void loadAndApplySpaceState(active.id, active.name);
+        }
       });
     },
-    [backend, userSpaceId, loadAndApplySpaceState],
+    [spaces, userSpaceId, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
   );
 
   const handleCreateSpace = useCallback(
     (name: string) => {
-      // Save current space state before switching
-      saveCurrentSpaceState(
-        userSpaceId,
-        pages,
-        favorites,
-        recentPages,
-        selectedPageId,
-        spaceName,
-        pageContents,
-      );
+      saveActiveSpace();
       setSpaceLoadError(undefined);
       // Switch to user view (important when creating from docs view)
       setActiveSpace('user');
-      void createSpaceInBackend(backend, name).then((newSpace) => {
-        void loadSpaces(backend).then((manifest) => {
-          setSpacesManifest(manifest);
-        });
-        setUserSpaceId(newSpace.id);
-        setPages([]);
-        setPageContents({});
-        setSelectedPageId(undefined);
-        setFavorites([]);
-        setRecentPages([]);
-        setTrash([]);
-        setSpaceName(name);
-        setHasStarted(true);
+      void spaces.create(name).then(({ space, manifest }) => {
+        setSpacesManifest(manifest);
+        setUserSpaceId(space.id);
+        applySpace(emptySnapshot(name));
       });
     },
-    [
-      backend,
-      userSpaceId,
-      pages,
-      favorites,
-      recentPages,
-      selectedPageId,
-      spaceName,
-      pageContents,
-      saveCurrentSpaceState,
-    ],
+    [spaces, saveActiveSpace, setSpacesManifest, setUserSpaceId, applySpace],
   );
 
   const handleSwitchSpace = useCallback(
     (id: string) => {
-      // Save current space state before switching
-      saveCurrentSpaceState(
-        userSpaceId,
-        pages,
-        favorites,
-        recentPages,
-        selectedPageId,
-        spaceName,
-        pageContents,
-      );
+      saveActiveSpace();
       setSpaceLoadError(undefined);
-      void switchSpaceInBackend(backend, id).then(() => {
+      void spaces.switch(id).then(({ space, manifest }) => {
         setUserSpaceId(id);
-        void loadSpaces(backend).then((manifest) => {
-          setSpacesManifest(manifest);
-          const space = manifest.spaces.find((s) => s.id === id);
-          void loadAndApplySpaceState(id, space?.name ?? 'My Space');
-        });
+        setSpacesManifest(manifest);
+        void loadAndApplySpaceState(id, space.name);
       });
     },
-    [
-      backend,
-      userSpaceId,
-      pages,
-      favorites,
-      recentPages,
-      selectedPageId,
-      spaceName,
-      pageContents,
-      saveCurrentSpaceState,
-      loadAndApplySpaceState,
-    ],
+    [spaces, saveActiveSpace, setSpacesManifest, setUserSpaceId, loadAndApplySpaceState],
   );
 
   const handleImportComplete = useCallback(
@@ -1148,15 +1053,7 @@ export function App() {
 
       try {
         // Save current space state before switching
-        saveCurrentSpaceState(
-          userSpaceId,
-          pages,
-          favorites,
-          recentPages,
-          selectedPageId,
-          spaceName,
-          pageContents,
-        );
+        saveActiveSpace();
         setActiveSpace('user');
 
         // Clone the remote repo and extract pages
@@ -1171,44 +1068,17 @@ export function App() {
 
         // Create the space with remote metadata
         const branch = config.branch || 'main';
-        const newSpace = await createRemoteSpaceInBackend(
-          backend,
+        const { space: newSpace, manifest } = await spaces.createRemote(
           displayName,
           normalizeRepoUrl(config.url),
           branch,
           config.subPath.trim() || undefined,
         );
-
-        // Update manifest in state
-        const manifest = await loadSpaces(backend);
         setSpacesManifest(manifest);
         setUserSpaceId(newSpace.id);
 
-        // Apply cloned pages to the UI
-        setPages(clonedPages);
-        setPageContents(clonedContents);
-        setSelectedPageId(clonedPages[0]?.id);
-        setFavorites([]);
-        setRecentPages([]);
-        setTrash([]);
-        setSpaceName(displayName);
-        setHasStarted(true);
-
-        // Persist the cloned pages to the space's storage
-        await saveSpaceState(backend, newSpace.id, {
-          pages: clonedPages,
-          favorites: [],
-          recentPages: [],
-          selectedPageId: clonedPages[0]?.id,
-          spaceName: displayName,
-        });
-
-        // Write page contents to individual files
-        for (const [pageId, content] of Object.entries(clonedContents)) {
-          if (content) {
-            void writeSpacePageContent(backend, newSpace.id, pageId, content);
-          }
-        }
+        // Show the cloned pages and persist them to the space's storage
+        await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
 
         setCloneStatus({ active: false });
       } catch (err) {
@@ -1219,15 +1089,12 @@ export function App() {
     },
     [
       backend,
+      spaces,
       handleCreateSpace,
-      userSpaceId,
-      pages,
-      favorites,
-      recentPages,
-      selectedPageId,
-      spaceName,
-      pageContents,
-      saveCurrentSpaceState,
+      saveActiveSpace,
+      setSpacesManifest,
+      setUserSpaceId,
+      applyClonedSpace,
     ],
   );
 
@@ -1237,7 +1104,7 @@ export function App() {
       if (!(backend instanceof BrowserFsBackend)) return;
 
       // Find the space metadata
-      const manifest = await loadSpaces(backend);
+      const manifest = await spaces.load();
       const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
       if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
 
@@ -1261,22 +1128,10 @@ export function App() {
       );
 
       // Update the sync timestamp
-      await updateSpaceSyncTimestamp(backend, spaceId);
+      const updatedManifest = await spaces.markSynced(spaceId);
 
       // Persist the refreshed pages
-      await saveSpaceState(backend, spaceId, {
-        pages: clonedPages,
-        favorites: [],
-        recentPages: [],
-        selectedPageId: clonedPages[0]?.id,
-        spaceName: spaceMeta.name,
-      });
-
-      for (const [pageId, content] of Object.entries(clonedContents)) {
-        if (content) {
-          void writeSpacePageContent(backend, spaceId, pageId, content);
-        }
-      }
+      await spaces.saveState(spaceId, clonedSnapshot(clonedPages, spaceMeta.name), clonedContents);
 
       // If we're refreshing the currently active space, update the UI state
       if (spaceId === userSpaceId) {
@@ -1287,11 +1142,10 @@ export function App() {
         setRecentPages([]);
       }
 
-      // Reload manifest to get updated lastSyncedAt
-      const updatedManifest = await loadSpaces(backend);
+      // Show the updated lastSyncedAt
       setSpacesManifest(updatedManifest);
     },
-    [backend, userSpaceId],
+    [backend, spaces, userSpaceId, setSpacesManifest],
   );
 
   const handleDocsPageSelect = useCallback((id: string) => {

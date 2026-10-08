@@ -147,8 +147,16 @@ export {
   renameSpace,
   spaceWorkspaceFile,
   spacePagesDir,
+  SpaceManager,
 } from './components/storage/SpaceManager.js';
-export type { SpaceMeta, SpacesManifest } from './components/storage/SpaceManager.js';
+export type {
+  SpaceMeta,
+  SpacesManifest,
+  SpaceSnapshot,
+  OpenedSpace,
+} from './components/storage/SpaceManager.js';
+export { useSpaces } from './components/storage/useSpaces.js';
+export type { UseSpaces } from './components/storage/useSpaces.js';
 export { ImportDialog } from './components/import-export/ImportDialog.js';
 export type { ImportDialogProps, ImportSource } from './components/import-export/ImportDialog.js';
 export { ExportDialog } from './components/import-export/ExportDialog.js';

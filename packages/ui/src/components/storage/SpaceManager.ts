@@ -8,6 +8,18 @@
  */
 
 import type { StorageBackend } from '@cept/core';
+import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
+import type { SidebarPageRef } from '../sidebar/Sidebar.js';
+import { DEFAULT_SPACE_ID, spaceDataDir } from './space-paths.js';
+import {
+  loadSpaceState,
+  readSpacePageContent,
+  saveSpaceState,
+  writeSpacePageContent,
+  deleteSpacePageContent,
+} from './StorageContext.js';
+
+export { DEFAULT_SPACE_ID, spacePagesDir, spaceWorkspaceFile } from './space-paths.js';
 
 export interface SpaceMeta {
   id: string;
@@ -32,7 +44,6 @@ export interface SpacesManifest {
 }
 
 const SPACES_FILE = '.cept/spaces.json';
-const DEFAULT_SPACE_ID = 'default';
 
 function encode(value: unknown): Uint8Array {
   return new TextEncoder().encode(JSON.stringify(value));
@@ -197,7 +208,7 @@ export async function deleteSpace(backend: StorageBackend, spaceId: string): Pro
   // Delete the space's data directory (for non-default spaces)
   if (spaceId !== DEFAULT_SPACE_ID) {
     try {
-      await backend.deleteFile(`.cept/spaces/${spaceId}`);
+      await backend.deleteFile(spaceDataDir(spaceId));
     } catch {
       // Ignore if not found
     }
@@ -223,20 +234,133 @@ export async function renameSpace(
   await saveSpaces(backend, manifest);
 }
 
-/**
- * Get the workspace state file path for a given space.
- * The default space uses the root path for backward compatibility.
- */
-export function spaceWorkspaceFile(spaceId: string): string {
-  if (spaceId === DEFAULT_SPACE_ID) return '.cept/workspace-state.json';
-  return `.cept/spaces/${spaceId}/workspace-state.json`;
+/** The part of a space's state that is saved per space (page tree, sidebar lists). */
+export interface SpaceSnapshot {
+  pages: PageTreeNode[];
+  favorites: SidebarPageRef[];
+  recentPages: SidebarPageRef[];
+  selectedPageId?: string;
+  spaceName: string;
+}
+
+/** What {@link SpaceManager.open} found for a space. */
+export interface OpenedSpace {
+  /** The saved snapshot, or `null` when the space has no saved pages yet. */
+  snapshot: SpaceSnapshot | null;
+  /** Content of the snapshot's selected page, when there is one. */
+  selectedContent: string | null;
 }
 
 /**
- * Get the pages directory for a given space.
- * The default space uses the root 'pages/' for backward compatibility.
+ * Space lifecycle over one StorageBackend: the manifest (create, switch,
+ * rename, delete, sync stamp) and each space's own state and page files.
+ * Methods that change the manifest return the manifest as saved, so callers
+ * can render it without reading it again.
  */
-export function spacePagesDir(spaceId: string): string {
-  if (spaceId === DEFAULT_SPACE_ID) return 'pages';
-  return `.cept/spaces/${spaceId}/pages`;
+export class SpaceManager {
+  constructor(readonly backend: StorageBackend) {}
+
+  /** The manifest, created with a default space if missing. */
+  load(): Promise<SpacesManifest> {
+    return loadSpaces(this.backend);
+  }
+
+  save(manifest: SpacesManifest): Promise<void> {
+    return saveSpaces(this.backend, manifest);
+  }
+
+  /** Create a local space and make it active. */
+  async create(
+    name: string,
+    icon?: string,
+  ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    const space = await createSpace(this.backend, name, icon);
+    return { space, manifest: await this.load() };
+  }
+
+  /** Add (or replace) a space linked to a remote repository and make it active. */
+  async createRemote(
+    name: string,
+    remoteUrl: string,
+    branch: string,
+    subPath?: string,
+  ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    const space = await createRemoteSpace(this.backend, name, remoteUrl, branch, subPath);
+    return { space, manifest: await this.load() };
+  }
+
+  /** Make `id` the active space. Throws if there is no such space. */
+  async switch(id: string): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
+    await switchSpace(this.backend, id);
+    const manifest = await this.load();
+    const space = manifest.spaces.find((s) => s.id === id);
+    if (!space) throw new Error(`Space not found: ${id}`);
+    return { space, manifest };
+  }
+
+  async rename(id: string, name: string): Promise<SpacesManifest> {
+    await renameSpace(this.backend, id, name);
+    return this.load();
+  }
+
+  /**
+   * Delete a space and its data. If it was active, the first remaining space
+   * becomes active; the returned `active` is the space now active.
+   */
+  async delete(id: string): Promise<{ manifest: SpacesManifest; active: SpaceMeta }> {
+    await deleteSpace(this.backend, id);
+    const manifest = await this.load();
+    const active =
+      manifest.spaces.find((s) => s.id === manifest.activeSpaceId) ?? manifest.spaces[0];
+    return { manifest, active };
+  }
+
+  /** Record a successful sync from the remote. */
+  async markSynced(id: string): Promise<SpacesManifest> {
+    await updateSpaceSyncTimestamp(this.backend, id);
+    return this.load();
+  }
+
+  /** Save a space's snapshot and any page contents held in memory. */
+  async saveState(
+    id: string,
+    snapshot: SpaceSnapshot,
+    pageContents: Record<string, string> = {},
+  ): Promise<void> {
+    await saveSpaceState(this.backend, id, snapshot);
+    await Promise.all(
+      Object.entries(pageContents)
+        .filter(([, content]) => content)
+        .map(([pageId, content]) => this.writePage(id, pageId, content)),
+    );
+  }
+
+  /** Read a space's saved snapshot and the content of its selected page. */
+  async open(id: string, fallbackName: string): Promise<OpenedSpace> {
+    const state = await loadSpaceState(this.backend, id);
+    if (!state || state.pages.length === 0) return { snapshot: null, selectedContent: null };
+    const snapshot: SpaceSnapshot = {
+      pages: state.pages,
+      favorites: state.favorites ?? [],
+      recentPages: state.recentPages ?? [],
+      selectedPageId: state.selectedPageId,
+      spaceName: state.spaceName ?? fallbackName,
+    };
+    const selectedContent = state.selectedPageId
+      ? await this.readPage(id, state.selectedPageId)
+      : null;
+    return { snapshot, selectedContent };
+  }
+
+  readPage(id: string, pageId: string): Promise<string | null> {
+    return readSpacePageContent(this.backend, id, pageId);
+  }
+
+  writePage(id: string, pageId: string, content: string): Promise<void> {
+    return writeSpacePageContent(this.backend, id, pageId, content);
+  }
+
+  deletePage(id: string, pageId: string): Promise<void> {
+    return deleteSpacePageContent(this.backend, id, pageId);
+  }
 }
