@@ -41,7 +41,7 @@ This plan turns the Phase 1 scope into an ordered list of small pull requests. I
 
 ## 2. Ground rules for every PR
 
-- **Owner policy.** Functional changes (code, CI, config) go in small draft PRs that wait for owner approval. Docs-only changes (the `D*` items below) are committed straight to `main` (D-21).
+- **Owner policy.** Functional changes (code, CI, config) go in small draft PRs that merge once Henry approves and CI is green (D-48). Docs-only changes (the `D*` items below) are committed straight to `main` (D-21).
 - **Size.** Aim for under about 400 changed lines of non-test code. S is under about 150 lines, M is about 150 to 400. Anything bigger is split; the only exception is PR 5, a mechanical Prettier reformat with no hand-written changes.
 - **Red first.** Each PR starts with the failing test named in [section 5](#5-per-pr-detail) and shows it failing for the right reason before the fix.
 - **Main stays releasable.** Every merge leaves the app booting on `BrowserFsBackend` alone (CLAUDE.md rule 6). A user-facing flow spread over several PRs gets its entry point (menu item, button, route) only in its last PR. Feature code may land earlier as library code with tests.
