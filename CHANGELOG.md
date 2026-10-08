@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.12.0](https://github.com/nsheaps/cept/compare/v0.11.1...v0.12.0) (2026-10-08)
+
+### Features
+
+* **core:** read and write spaces as folder trees ([#382](https://github.com/nsheaps/cept/issues/382)) ([862426e](https://github.com/nsheaps/cept/commit/862426e1adce56b1dffa03e59b07b4869cab3d99))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([ee0c92f](https://github.com/nsheaps/cept/commit/ee0c92f8ec473ea71e4c87408705047e3765b23a))
+
 ## [0.11.1](https://github.com/nsheaps/cept/compare/v0.11.0...v0.11.1) (2026-10-08)
 
 ### Bug Fixes
