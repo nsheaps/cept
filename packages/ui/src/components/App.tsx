@@ -48,7 +48,7 @@ import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { applyMoves, CeptSearchIndex, MemoryBackend, reconnectFolder } from '@cept/core';
 import type { ImportedPage, PageContent, StorageBackend } from '@cept/core';
-import { parseRemoteSpaceId } from './storage/SpaceManager.js';
+import { generateRemoteSpaceId, parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpaceStats, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
@@ -61,7 +61,13 @@ import {
   restoreFolderSpaces,
 } from './storage/folder-open.js';
 import type { FolderContents, FolderSpaceChoice } from './storage/folder-open.js';
-import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
+import {
+  canHostGitClone,
+  cloneErrorMessage,
+  cloneRemoteRepo,
+  normalizeRepoUrl,
+} from './storage/git-space.js';
+import { useGitHubAccount } from './settings/github-account.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
 import {
   restoreRoute,
@@ -199,6 +205,8 @@ export function App() {
     activeId: userSpaceId,
     setActiveId: setUserSpaceId,
   } = useSpaces(backend);
+  // The GitHub sign-in, for cloning private repositories (null without a host sign-in).
+  const gitAuth = useGitHubAccount()?.gitAuth;
   const [cloneStatus, setCloneStatus] = useState<{
     active: boolean;
     message?: string;
@@ -603,20 +611,27 @@ export function App() {
 
                 setCloneStatus({ active: true, message: `Cloning ${parsed.repo}...` });
                 try {
-                  const { pages: clonedPages, pageContents: clonedContents } =
-                    await cloneRemoteRepo(
-                      backend,
-                      parsed.repo,
-                      parsed.branch,
-                      parsed.subPath || undefined,
-                      gitCorsProxy(),
-                    );
+                  const remoteUrl = normalizeRepoUrl(parsed.repo);
+                  const subPath = parsed.subPath || undefined;
+                  const {
+                    pages: clonedPages,
+                    pageContents: clonedContents,
+                    access,
+                  } = await cloneRemoteRepo(backend, {
+                    spaceId: generateRemoteSpaceId(remoteUrl, parsed.branch, subPath),
+                    url: parsed.repo,
+                    branch: parsed.branch,
+                    subPath,
+                    corsProxy: gitCorsProxy(),
+                    auth: await gitAuth?.(),
+                  });
 
                   const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
                     displayName,
-                    normalizeRepoUrl(parsed.repo),
+                    remoteUrl,
                     parsed.branch,
-                    parsed.subPath || undefined,
+                    subPath,
+                    access,
                   );
 
                   setSpacesManifest(updatedManifest);
@@ -630,8 +645,7 @@ export function App() {
                   else routeDone();
                 } catch (err) {
                   routeDone();
-                  const message = err instanceof Error ? err.message : 'Clone failed';
-                  setCloneStatus({ active: false, error: message });
+                  setCloneStatus({ active: false, error: cloneErrorMessage(err, 'Clone failed') });
                 }
               };
               void autoSetupGitSpace();
@@ -665,6 +679,7 @@ export function App() {
     loadAndApplySpaceState,
     applyClonedSpace,
     openDemoSpace,
+    gitAuth,
   ]);
 
   // Background sync: auto-refresh remote spaces every 5 minutes
@@ -699,15 +714,20 @@ export function App() {
       try {
         const oldPageIds = new Set(pages.map((p) => p.id));
 
-        const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
-          backend,
-          spaceMeta.remoteUrl!,
-          spaceMeta.branch!,
-          spaceMeta.subPath || undefined,
-          gitCorsProxy(),
-        );
+        const {
+          pages: clonedPages,
+          pageContents: clonedContents,
+          access,
+        } = await cloneRemoteRepo(backend, {
+          spaceId: userSpaceId,
+          url: spaceMeta.remoteUrl!,
+          branch: spaceMeta.branch!,
+          subPath: spaceMeta.subPath || undefined,
+          corsProxy: gitCorsProxy(),
+          auth: await gitAuth?.(),
+        });
 
-        const manifest = await spaces.markSynced(userSpaceId);
+        const manifest = await spaces.markSynced(userSpaceId, access);
 
         // Persist the refreshed pages
         await spaces.saveState(
@@ -737,13 +757,13 @@ export function App() {
           addToast(`"${spaceMeta.name}" is up to date.`, 'success');
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Sync failed';
+        const message = cloneErrorMessage(err, 'Sync failed');
         addToast(`Sync failed for "${spaceMeta.name}": ${message}`, 'error');
       }
     };
 
     void syncSpace();
-  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces]);
+  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces, gitAuth]);
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -1570,21 +1590,29 @@ export function App() {
         setActiveSpace('user');
 
         // Clone the remote repo and extract pages
-        const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
-          backend,
-          config.url,
-          config.branch || 'main',
-          config.subPath.trim() || undefined,
-          gitCorsProxy(),
-        );
+        const branch = config.branch || 'main';
+        const remoteUrl = normalizeRepoUrl(config.url);
+        const subPath = config.subPath.trim() || undefined;
+        const {
+          pages: clonedPages,
+          pageContents: clonedContents,
+          access,
+        } = await cloneRemoteRepo(backend, {
+          spaceId: generateRemoteSpaceId(remoteUrl, branch, subPath),
+          url: config.url,
+          branch,
+          subPath,
+          corsProxy: gitCorsProxy(),
+          auth: await gitAuth?.(),
+        });
 
         // Create the space with remote metadata
-        const branch = config.branch || 'main';
         const { space: newSpace, manifest } = await spaces.createRemote(
           displayName,
-          normalizeRepoUrl(config.url),
+          remoteUrl,
           branch,
-          config.subPath.trim() || undefined,
+          subPath,
+          access,
         );
         setSpacesManifest(manifest);
         setUserSpaceId(newSpace.id);
@@ -1594,14 +1622,14 @@ export function App() {
 
         setCloneStatus({ active: false });
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Clone failed';
-        setCloneStatus({ active: false, error: message });
+        setCloneStatus({ active: false, error: cloneErrorMessage(err, 'Clone failed') });
         console.error('Failed to clone remote repo:', err);
       }
     },
     [
       backend,
       spaces,
+      gitAuth,
       handleCreateSpace,
       saveActiveSpace,
       setSpacesManifest,
@@ -1610,7 +1638,7 @@ export function App() {
     ],
   );
 
-  /** Refresh a git space by re-cloning from the remote. */
+  /** Refresh a git space by fetching from the remote into its kept clone. */
   const handleRefreshSpace = useCallback(
     async (spaceId: string) => {
       if (!canHostGitClone(backend)) return;
@@ -1620,17 +1648,28 @@ export function App() {
       const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
       if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
 
-      // Clone fresh from remote
-      const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
-        backend,
-        spaceMeta.remoteUrl,
-        spaceMeta.branch,
-        spaceMeta.subPath,
-        gitCorsProxy(),
-      );
+      // Fetch into the space's clone (cloning it first if it is not kept yet)
+      let cloned;
+      try {
+        cloned = await cloneRemoteRepo(backend, {
+          spaceId,
+          url: spaceMeta.remoteUrl,
+          branch: spaceMeta.branch,
+          subPath: spaceMeta.subPath,
+          corsProxy: gitCorsProxy(),
+          auth: await gitAuth?.(),
+        });
+      } catch (err) {
+        addToast(
+          `Refresh failed for "${spaceMeta.name}": ${cloneErrorMessage(err, 'Refresh failed')}`,
+          'error',
+        );
+        return;
+      }
+      const { pages: clonedPages, pageContents: clonedContents, access } = cloned;
 
       // Update the sync timestamp
-      const updatedManifest = await spaces.markSynced(spaceId);
+      const updatedManifest = await spaces.markSynced(spaceId, access);
 
       // Persist the refreshed pages
       await spaces.saveState(spaceId, clonedSnapshot(clonedPages, spaceMeta.name), clonedContents);
@@ -1647,7 +1686,7 @@ export function App() {
       // Show the updated lastSyncedAt
       setSpacesManifest(updatedManifest);
     },
-    [backend, spaces, userSpaceId, setSpacesManifest],
+    [backend, spaces, userSpaceId, setSpacesManifest, gitAuth, addToast],
   );
 
   const handleDocsPageSelect = useCallback((id: string) => {

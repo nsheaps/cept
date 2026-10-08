@@ -10,6 +10,7 @@
 import {
   findSpaceMarker,
   parseSpaceConfig,
+  remoteCloneDir,
   ScopedBackend,
   updateSpaceConfigText,
 } from '@cept/core';
@@ -80,9 +81,17 @@ export interface SpaceMeta {
   readOnly?: boolean;
   /** ISO timestamp of the last successful sync/clone from the remote */
   lastSyncedAt?: string;
+  /**
+   * How the remote space was last synced: `token` when with the GitHub
+   * sign-in, which makes it writable-capable (D-42); `anonymous` otherwise.
+   */
+  access?: RemoteAccess;
   /** Where the space's data lives; absent means `app`. */
   backend?: SpaceBackendKind;
 }
+
+/** How a remote space reaches its repository. */
+export type RemoteAccess = 'anonymous' | 'token';
 
 export interface SpacesManifest {
   activeSpaceId: string;
@@ -207,8 +216,9 @@ export async function createRemoteSpace(
   remoteUrl: string,
   branch: string,
   subPath?: string,
+  access?: RemoteAccess,
 ): Promise<SpaceMeta> {
-  return (await addRemoteSpace(backend, name, remoteUrl, branch, subPath)).space;
+  return (await addRemoteSpace(backend, name, remoteUrl, branch, subPath, access)).space;
 }
 
 /** Add (or replace) a remote space, make it active, and return it with the saved manifest. */
@@ -218,6 +228,7 @@ async function addRemoteSpace(
   remoteUrl: string,
   branch: string,
   subPath?: string,
+  access?: RemoteAccess,
 ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
@@ -231,6 +242,7 @@ async function addRemoteSpace(
     readOnly: true,
     lastSyncedAt: new Date().toISOString(),
   };
+  if (access) newSpace.access = access;
   // Replace existing space with same ID (re-clone) or add new
   const existingIdx = manifest.spaces.findIndex((s) => s.id === id);
   if (existingIdx >= 0) {
@@ -247,11 +259,14 @@ async function addRemoteSpace(
 export async function updateSpaceSyncTimestamp(
   backend: StorageBackend,
   spaceId: string,
+  access?: RemoteAccess,
 ): Promise<SpacesManifest> {
   const manifest = await loadSpaces(backend);
   const space = manifest.spaces.find((s) => s.id === spaceId);
   if (!space) throw new Error(`Space not found: ${spaceId}`);
   space.lastSyncedAt = new Date().toISOString();
+  // Keep the recorded access when the caller doesn't know it, rather than erasing it.
+  if (access) space.access = access;
   await saveSpaces(backend, manifest);
   return manifest;
 }
@@ -304,7 +319,8 @@ const APP_DIR = '.cept';
 async function deleteSpaceData(backend: StorageBackend, spaceId: string): Promise<void> {
   const remove = (path: string) => backend.deleteFile(path).catch(() => undefined);
   if (spaceId !== DEFAULT_SPACE_ID) {
-    await remove(spaceDataDir(spaceId));
+    // A remote space's kept clone goes with it.
+    await Promise.all([remove(spaceDataDir(spaceId)), remove(remoteCloneDir(spaceId))]);
     return;
   }
   const entries = await backend.listDirectory('').catch(() => []);
@@ -530,6 +546,7 @@ export class SpaceManager {
     remoteUrl: string,
     branch: string,
     subPath?: string,
+    access?: RemoteAccess,
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
     this.sessionActive = null;
     const { space, manifest } = await addRemoteSpace(
@@ -538,6 +555,7 @@ export class SpaceManager {
       remoteUrl,
       branch,
       subPath,
+      access,
     );
     return { space, manifest: this.visible(manifest) };
   }
@@ -659,8 +677,9 @@ export class SpaceManager {
   }
 
   /** Record a successful sync from the remote. */
-  async markSynced(id: string): Promise<SpacesManifest> {
-    return this.visible(await updateSpaceSyncTimestamp(this.backend, id));
+  /** Record a successful sync of a remote space, and how it reached the repository. */
+  async markSynced(id: string, access?: RemoteAccess): Promise<SpacesManifest> {
+    return this.visible(await updateSpaceSyncTimestamp(this.backend, id, access));
   }
 
   /**

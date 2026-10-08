@@ -48,6 +48,10 @@ Paste the token and choose **Sign in**. Cept checks it with GitHub before keepin
 
 In the browser, git traffic goes through a proxy, which can see the token when Cept clones or syncs a repository. Settings names the proxy in use.
 
+Once signed in, adding a GitHub repository as a space uses the token, so private repositories you can read open like public ones. The token is only ever sent to github.com. If GitHub refuses access (the token was revoked, or cannot read that repository), Cept says so and asks you to sign in again here; it does not keep retrying.
+
+Each space keeps its copy of the repository on this device. Refreshing it, or opening it more than 5 minutes after the last sync, downloads only what changed on GitHub.
+
 Each time Cept starts it checks the saved token again. A token GitHub no longer accepts (expired or revoked) is forgotten and you are signed out. When GitHub cannot be reached, the token is kept and checked next time.
 
 Choose **Sign out** to forget the token on this device. To revoke it, delete it on GitHub.

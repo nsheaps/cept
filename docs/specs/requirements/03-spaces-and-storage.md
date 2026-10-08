@@ -138,10 +138,10 @@ flowchart TB
     ONE --> SJ[".cept/spaces.json (flat list of spaces)"]
     ONE --> DEF["Default space: pages/page-TIMESTAMP.md + .cept/workspace-state.json (tree as JSON)"]
     ONE --> OTHER[".cept/spaces/ID/pages/... (other spaces)"]
-    ONE --> CL[".cept/git-clones/TIMESTAMP/ (shallow clone, deleted once read)"]
+    ONE --> CL["/.cept/git-repos/SPACE-ID/ (kept clone per remote space, shallow)"]
     CL -- "copy markdown, readOnly: true" --> OTHER
-    APPX["App.tsx: re-clone on visit if last sync older than 5 min, via cors.isomorphic-git.org"] --> CL
-    GBC["core withShallowClone: transient GitBackend, clone only (depth 1)"] --> CL
+    APPX["App.tsx: fetch on visit if last sync older than 5 min, with the GitHub token if signed in, via the configured CORS proxy"] --> CL
+    GBC["core syncRemoteClone: clone once, then fetch + fast-forward (GitBackend.updateFromRemote)"] --> CL
 
     subgraph Unwired["Exported but not instantiated or called by any client"]
         LFS["LocalFsBackend (Node fs)"]
@@ -350,7 +350,7 @@ branch: docs # optional (D-30)
   - A space bound with `SpaceManager.bind` or created with `{ kind: 'memory', backend }` uses that backend. Its `.cept/workspace-state.json` and `pages/` sit at the backend's root.
   - Spaces in the app's backend keep their existing paths, so stored data still loads. The default space is the backend root. Every other space is a `ScopedBackend` (in `@cept/core`) over `.cept/spaces/<id>/`.
 - `SpaceMeta.backend` records where a space lives: `app` (the default) or `memory`. Memory spaces are session-only (PR 18): `SpaceManager` lists them while it lives but never writes them, or their being active, to `.cept/spaces.json`. Any saved space that is not `app` and has no bound backend is left out of the manifest `SpaceManager` returns, and `switch` and `rename` refuse it before writing. The demo is such a memory space (REQ-WEB-012).
-- The app still creates one root backend: `new BrowserFsBackend(...)` in [packages/web/src/main.tsx](../../../packages/web/src/main.tsx). Cloned git spaces are still copied into it through `/.cept/git-clones/<ts>`.
+- The app still creates one root backend: `new BrowserFsBackend(...)` in [packages/web/src/main.tsx](../../../packages/web/src/main.tsx). Cloned git spaces are still copied into it from their kept clone under `/.cept/git-repos/<space id>`.
 - `@cept/ui` has no `instanceof` backend checks. Git cloning is gated on `canHostGitClone` in git-space.ts: the backend must expose a raw filesystem for isomorphic-git.
 
 **Docs state: documented-differently, stale.** SPECIFICATION.md §5.10 says "Every workspace is backed by a StorageBackend. The user chooses their backend when creating or opening a workspace", which implies one backend per space. The app does not behave this way.
@@ -378,7 +378,7 @@ branch: docs # optional (D-30)
 
 - The interface and `BackendCapabilities` exist in [packages/core/src/storage/backend.ts](../../../packages/core/src/storage/backend.ts) (lines ~47-88), but `type` is the closed union `'browser' | 'local' | 'git'` (~line 69).
 - `WebFsBackend` also reports `'local'` (web-fs.ts ~line 63).
-- The UI no longer names a concrete backend or isomorphic-git (PR 28): App.tsx and git-space.ts gate cloning on `canHostGitClone` (a backend that exposes `getRawFs()`), and the clone, its HTTP client (`createGitHttp`) and the throwaway clone directory live in `withShallowClone` in [packages/core/src/storage/git-clone.ts](../../../packages/core/src/storage/git-clone.ts). `tools/lint/boundary-baseline.json` is empty, so lint enforces CLAUDE.md rules 3 and 5 in ui with no exceptions.
+- The UI no longer names a concrete backend or isomorphic-git (PR 28): App.tsx and git-space.ts gate cloning on `canHostGitClone` (a backend that exposes `getRawFs()`), and the clone, its HTTP client (`createGitHttp`) and the kept clone per remote space live in `syncRemoteClone` in [packages/core/src/storage/git-clone.ts](../../../packages/core/src/storage/git-clone.ts). `tools/lint/boundary-baseline.json` is empty, so lint enforces CLAUDE.md rules 3 and 5 in ui with no exceptions.
 
 **Docs state: documented-as-desired, stale.** SPECIFICATION.md §5.10.6 and [docs/specs/storage-backends.md](../storage-backends.md) FR-4/FR-5 describe the abstraction correctly but list only three types.
 
@@ -514,9 +514,9 @@ branch: docs # optional (D-30)
 
 - Route resolution (D-42, PR 22): a `/g/…/blob/<branch>/<path>` URL is matched against existing spaces of the same repository and branch by `resolveRoute` in [packages/ui/src/router.ts](../../../packages/ui/src/router.ts); the space with the longest matching sub-path opens and the rest of the path is the page, so no duplicate space is cloned. With no match, a trailing Markdown file is the page and the rest is the sub-path to clone. The URL format is documented in [space-config.md](../../content/reference/space-config.md#page-links).
 - `GitBackend` in [packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) implements clone, fetch, log, diff and branch, with tests.
-- In the app, `cloneRemoteRepo` in git-space.ts asks core's `withShallowClone` for a shallow `depth: 1` clone into lightning-fs, then copies the markdown, front matter included, into a `readOnly: true` space (`createRemoteSpace` in SpaceManager.ts). Page titles come from the first H1 after any front matter, else the filename.
-- App.tsx re-clones the active remote space whenever it is visited and the last sync is older than 5 minutes (a `useEffect` gated on `SYNC_INTERVAL_MS`, not a timer; ~lines 426-470), only on `BrowserFsBackend` (~line 430). All clones go through `https://cors.isomorphic-git.org` (~lines 363, 467, 987, 1064). Adding a remote space on any other backend silently creates an empty local space instead (~lines 955-960).
-- Each clone or sync uses a new `/.cept/git-clones/<Date.now()>` directory and deletes it once the pages are read, whether or not the clone succeeded (PR 28). Cloning no longer calls `initialize()` on the host, which used to rewrite the root `.cept/config.yaml` to `name: "git-clone"` on every clone and refresh. Clone directories left by earlier versions are not swept.
+- In the app, `cloneRemoteRepo` in git-space.ts asks core's `syncRemoteClone` for a shallow `depth: 1` clone into lightning-fs (or a fetch into the space's kept clone), then copies the markdown, front matter included, into a `readOnly: true` space (`createRemoteSpace` in SpaceManager.ts). Page titles come from the first H1 after any front matter, else the filename.
+- App.tsx fetches into the active remote space's kept clone whenever it is visited and the last sync is older than 5 minutes (a `useEffect` gated on `SYNC_INTERVAL_MS`, not a timer; ~lines 426-470), only on `BrowserFsBackend` (~line 430). All clones go through `https://cors.isomorphic-git.org` (~lines 363, 467, 987, 1064). Adding a remote space on any other backend silently creates an empty local space instead (~lines 955-960).
+- Since PR 31 each remote space keeps its clone at `/.cept/git-repos/<encoded space id>`: the first sync clones, later ones fetch and fast-forward (a rewritten branch replaces the files, as the space is read-only), and deleting the space deletes the clone. A 401 or 403 asks the user to sign in under Settings → GitHub and is not retried. Cloning no longer calls `initialize()` on the host, which used to rewrite the root `.cept/config.yaml` to `name: "git-clone"` on every clone and refresh. Throwaway `/.cept/git-clones/<ts>` directories left by earlier versions are not swept.
 
 **Docs state: documented-as-desired, stale.**
 
@@ -649,7 +649,7 @@ branch: docs # optional (D-30)
 **Current state: partial.**
 
 - `initialize()` creates `.cept/databases`, `assets` and `templates` and writes `config.yaml` (browser-fs.ts ~143-150, local-fs.ts ~155-162, web-fs.ts ~206-213).
-- The app also writes files no spec lists: `.cept/spaces.json`, `.cept/workspace-state.json`, `.cept/settings.json`, `.cept/spaces/<id>/...` and `.cept/git-clones/<ts>/` (SpaceManager.ts ~line 34, StorageContext.tsx ~lines 27-29, git-space.ts ~line 53).
+- The app also writes files no spec lists: `.cept/spaces.json`, `.cept/workspace-state.json`, `.cept/settings.json`, `.cept/spaces/<id>/...` and `.cept/git-repos/<space id>/` (SpaceManager.ts ~line 34, StorageContext.tsx ~lines 27-29, git-space.ts ~line 53).
 - Closed PR #67 (D-42) added a per-folder `.cept.yaml` outside `.cept/`; that placement is kept by D-41.
 
 **Docs state: documented-differently, stale.** SPECIFICATION.md §4.6 lists `comments/`, `styles/` and `plugins/`, none of which are implemented, and omits the files above.

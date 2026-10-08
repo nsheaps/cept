@@ -3,8 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PatAuthProvider, PAT_STORE_KEY } from '@cept/core';
 import type { AuthToken, TokenStore } from '@cept/core';
-import { GitHubAccountProvider } from './github-account.js';
-import type { PatAuth } from './github-account.js';
+import { GitHubAccountProvider, useGitHubAccount } from './github-account.js';
+import type { GitHubAccountState, PatAuth } from './github-account.js';
 import { GitHubAccountSection, describeGrants } from './GitHubAccountSection.js';
 
 const GOOD = 'ghp_goodtoken123';
@@ -128,6 +128,7 @@ describe('GitHubAccountSection', () => {
       signIn: vi.fn(),
       restore: () => Promise.reject(new Error('offline')),
       logout,
+      getHttpAuth: vi.fn(),
     });
 
     expect(await screen.findByTestId('github-unverified')).toBeTruthy();
@@ -159,6 +160,7 @@ describe('GitHubAccountSection', () => {
       signIn: vi.fn(),
       restore: async () => account,
       logout: () => Promise.reject(new Error('IndexedDB is unavailable.')),
+      getHttpAuth: vi.fn(),
     });
     fireEvent.click(await screen.findByTestId('github-sign-out'));
 
@@ -172,7 +174,9 @@ describe('GitHubAccountSection', () => {
     const restore = vi.fn(async () => null);
     render(
       <StrictMode>
-        <GitHubAccountProvider auth={{ signIn: vi.fn(), restore, logout: vi.fn() }}>
+        <GitHubAccountProvider
+          auth={{ signIn: vi.fn(), restore, logout: vi.fn(), getHttpAuth: vi.fn() }}
+        >
           <GitHubAccountSection />
         </GitHubAccountProvider>
       </StrictMode>,
@@ -180,6 +184,36 @@ describe('GitHubAccountSection', () => {
 
     await screen.findByTestId('github-sign-in');
     expect(restore).toHaveBeenCalledOnce();
+  });
+});
+
+describe('gitAuth', () => {
+  /** Renders the provider and hands back its state once known. */
+  async function accountWith(store: MemoryStore): Promise<GitHubAccountState> {
+    let state: GitHubAccountState | null = null;
+    function Probe() {
+      state = useGitHubAccount();
+      return null;
+    }
+    render(
+      <GitHubAccountProvider auth={new PatAuthProvider({ tokenStore: store, fetch: fakeGitHub() })}>
+        <Probe />
+      </GitHubAccountProvider>,
+    );
+    await waitFor(() => expect(state?.status).not.toBe('checking'));
+    return state!;
+  }
+
+  it('gives git credentials for the saved token', async () => {
+    const store = new MemoryStore();
+    await store.set(PAT_STORE_KEY, { accessToken: GOOD, scopes: [] });
+    const account = await accountWith(store);
+    expect(await account.gitAuth()).toEqual({ username: 'x-access-token', password: GOOD });
+  });
+
+  it('gives none when signed out, for an anonymous clone', async () => {
+    const account = await accountWith(new MemoryStore());
+    expect(await account.gitAuth()).toBeUndefined();
   });
 });
 
