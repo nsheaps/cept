@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1](https://github.com/nsheaps/cept/compare/v0.8.0...v0.8.1) (2026-10-08)
+
+### Refactoring
+
+* **desktop:** move local-fs backend out of core ([#375](https://github.com/nsheaps/cept/issues/375)) ([f7f5c2a](https://github.com/nsheaps/cept/commit/f7f5c2a49c140f211691fea89cbf8bc64570e77b))
+
 ## [0.8.0](https://github.com/nsheaps/cept/compare/v0.7.48...v0.8.0) (2026-10-08)
 
 ### Features
