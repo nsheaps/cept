@@ -9,7 +9,12 @@ import type { FolderHandleStore, StorageBackend } from '@cept/core';
 import { MemoryBackend } from './test-helpers.js';
 import { SpaceManager } from './SpaceManager.js';
 import type { SpaceSnapshot } from './SpaceManager.js';
-import { findSavedFolder, inspectFolder, restoreFolderSpaces } from './folder-open.js';
+import {
+  findSavedFolder,
+  folderSpaceAt,
+  inspectFolder,
+  restoreFolderSpaces,
+} from './folder-open.js';
 import type { FolderHost } from './folder-host.js';
 import { initFolderSpace } from './folder-space.js';
 
@@ -115,6 +120,18 @@ describe('inspectFolder', () => {
     expect(writes).toEqual([]);
   });
 
+  it('treats a folder with a broken marker as that space, not as a parent of spaces', async () => {
+    const folder = new MemoryBackend();
+    folder.seedText('space.cept.yaml', 'not: [valid');
+    folder.seedText('docs/space.cept.yaml', 'version: 1\nname: Docs\nslug: docs\n');
+    const { backend, writes } = writeSpy(folder);
+
+    const found = await inspectFolder(backend, 'repo');
+    expect(found.root?.error).toBeTruthy();
+    expect(found.nested).toEqual([]);
+    expect(writes).toEqual([]);
+  });
+
   it('finds nothing in a plain folder, and writes nothing', async () => {
     const folder = new MemoryBackend();
     folder.seedText('todo.md', '- [ ] one');
@@ -122,6 +139,18 @@ describe('inspectFolder', () => {
     expect(await inspectFolder(backend, 'plain')).toEqual({ root: null, nested: [] });
     expect(writes).toEqual([]);
     expect(folder.hasFile('space.cept.yaml')).toBe(false);
+  });
+});
+
+describe('folderSpaceAt', () => {
+  it('finds the space at a path of a folder, or null', async () => {
+    const folder = new MemoryBackend();
+    folder.seedText('docs/space.cept.yaml', 'version: 1\nname: Docs\nslug: docs\n');
+    const { backend, writes } = writeSpy(folder);
+    expect(await folderSpaceAt(backend, 'repo', 'docs')).toEqual({ path: 'docs', name: 'Docs' });
+    expect(await folderSpaceAt(backend, 'repo', '')).toBeNull();
+    expect(await folderSpaceAt(backend, 'repo', 'wiki')).toBeNull();
+    expect(writes).toEqual([]);
   });
 });
 
@@ -317,5 +346,42 @@ describe('restoreFolderSpaces', () => {
     expect(reloaded.isConnected(a.id)).toBe(true);
     expect(reloaded.isConnected(b.id)).toBe(false);
     expect([...waiting]).toEqual([[b.id, handleB]]);
+  });
+
+  it('restores the other folders when one saved handle cannot be opened', async () => {
+    const app = new MemoryBackend();
+    const first = new SpaceManager(app);
+    const good = new MemoryBackend();
+    good.seedText('space.cept.yaml', MARKER);
+    const { space: broken } = await first.create('Broken', undefined, {
+      kind: 'folder',
+      backend: new MemoryBackend(),
+    });
+    const { space: ok } = await first.create('Ok', undefined, { kind: 'folder', backend: good });
+    const { space: later } = await first.create('Later', undefined, {
+      kind: 'folder',
+      backend: new MemoryBackend(),
+    });
+
+    const reloaded = new SpaceManager(app);
+    const manifest = await reloaded.load();
+    const handleLater = handle('later', 'prompt');
+    const host: FolderHost = {
+      pick: async () => null,
+      open: (h) => {
+        if (h.name === 'broken') throw new Error('folder is gone');
+        return good;
+      },
+      handles: memoryStore([
+        [broken.id, handle('broken', 'granted')],
+        [ok.id, handle('ok', 'granted')],
+        [later.id, handleLater],
+      ]),
+    };
+
+    const waiting = await restoreFolderSpaces(reloaded, manifest, host);
+    expect(reloaded.isConnected(broken.id)).toBe(false);
+    expect(reloaded.isConnected(ok.id)).toBe(true);
+    expect([...waiting]).toEqual([[later.id, handleLater]]);
   });
 });

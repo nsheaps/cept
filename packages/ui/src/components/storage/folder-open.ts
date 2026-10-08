@@ -28,8 +28,24 @@ export interface FolderSpaceChoice {
 export interface FolderContents {
   /** The folder itself, when it is a space. */
   root: FolderSpaceChoice | null;
-  /** Spaces in its subfolders. Empty when the folder itself is a space. */
+  /**
+   * Spaces in its subfolders. Empty when the folder itself is a space, even a
+   * broken one: discovery does not look inside a space (REQ-WS-005).
+   */
   nested: FolderSpaceChoice[];
+}
+
+/** Every space in an opened folder named `folderName`, the folder itself included. */
+async function listFolderSpaces(
+  backend: StorageBackend,
+  folderName: string,
+): Promise<FolderSpaceChoice[]> {
+  const { spaces } = await discoverSpaces(backend, { maxDepth: FOLDER_DISCOVERY_DEPTH });
+  return spaces.map((s): FolderSpaceChoice => ({
+    path: s.path,
+    name: s.config?.name ?? (s.path.split('/').filter(Boolean).at(-1) || folderName),
+    ...(s.errors.length > 0 ? { error: s.errors.join('; ') } : {}),
+  }));
 }
 
 /** Look for spaces in an opened folder named `folderName`. Reads only. */
@@ -37,14 +53,19 @@ export async function inspectFolder(
   backend: StorageBackend,
   folderName: string,
 ): Promise<FolderContents> {
-  const { spaces } = await discoverSpaces(backend, { maxDepth: FOLDER_DISCOVERY_DEPTH });
-  const choices = spaces.map((s): FolderSpaceChoice => ({
-    path: s.path,
-    name: s.config?.name ?? (s.path.split('/').filter(Boolean).at(-1) || folderName),
-    ...(s.errors.length > 0 ? { error: s.errors.join('; ') } : {}),
-  }));
+  const choices = await listFolderSpaces(backend, folderName);
   const root = choices.find((c) => c.path === '') ?? null;
   return { root, nested: root ? [] : choices };
+}
+
+/** The space at `subPath` of an opened folder named `folderName`, or null. Reads only. */
+export async function folderSpaceAt(
+  backend: StorageBackend,
+  folderName: string,
+  subPath: string,
+): Promise<FolderSpaceChoice | null> {
+  const choices = await listFolderSpaces(backend, folderName);
+  return choices.find((c) => c.path === subPath) ?? null;
 }
 
 /** A directory handle that can say whether it is the same folder as another. */
@@ -101,8 +122,13 @@ export async function restoreFolderSpaces(
   for (const { id, handle, permission } of await restoreFolders(host.handles)) {
     const space = folderSpaces.get(id);
     if (!space) continue;
-    if (permission === 'granted') manager.connectFolder(space, host.open(handle));
-    else waiting.set(id, handle);
+    try {
+      if (permission === 'granted') manager.connectFolder(space, host.open(handle));
+      else waiting.set(id, handle);
+    } catch {
+      // One unusable handle loses only its own space, which stays listed and
+      // offers to reconnect; the others still restore.
+    }
   }
   return waiting;
 }

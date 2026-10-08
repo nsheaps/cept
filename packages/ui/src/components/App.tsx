@@ -54,7 +54,12 @@ import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
 import { initFolderSpace } from './storage/folder-space.js';
 import { useFolderHost } from './storage/folder-host.js';
-import { findSavedFolder, inspectFolder, restoreFolderSpaces } from './storage/folder-open.js';
+import {
+  findSavedFolder,
+  folderSpaceAt,
+  inspectFolder,
+  restoreFolderSpaces,
+} from './storage/folder-open.js';
 import type { FolderContents, FolderSpaceChoice } from './storage/folder-open.js';
 import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
@@ -209,6 +214,13 @@ export function App() {
   /** The active folder space whose folder must be reconnected from a click. */
   const [folderToReconnect, setFolderToReconnect] = useState<
     { id: string; name: string } | undefined
+  >(undefined);
+  /**
+   * A folder picked to reconnect a space whose saved handle is gone, holding a
+   * space with another name: it is bound only after the user confirms.
+   */
+  const [reconnectMismatch, setReconnectMismatch] = useState<
+    { id: string; handle: FileSystemDirectoryHandle; foundName: string } | undefined
   >(undefined);
   /** A picked folder that is not a space, waiting for the user to choose what to open. */
   const [pickedFolder, setPickedFolder] = useState<
@@ -1317,7 +1329,7 @@ export function App() {
       const contents = await inspectFolder(folder, handle.name);
       if (contents.root?.error) {
         addToast(
-          `"${handle.name}" has a space.cept.yaml Cept cannot use: ${contents.root.error}`,
+          `"${handle.name}" has a space.cept.yaml Cept cannot use: ${contents.root.error}. Fix that file, or pick a subfolder to open a space inside it.`,
           'error',
         );
       } else if (contents.root) {
@@ -1358,8 +1370,38 @@ export function App() {
   );
 
   /**
+   * Bind `handle` to the folder space being reconnected and show it. A newly
+   * picked handle is saved so the next reload can restore it.
+   */
+  const bindReconnectedFolder = useCallback(
+    async (
+      target: { id: string; name: string },
+      handle: FileSystemDirectoryHandle,
+      picked: boolean,
+    ) => {
+      if (!folderHost) return;
+      const space = spacesManifest?.spaces.find((s) => s.id === target.id);
+      if (!space) return;
+      if (picked) await folderHost.handles.save(target.id, handle).catch(() => undefined);
+      setReconnectMismatch(undefined);
+      waitingFoldersRef.current.delete(target.id);
+      spaces.connectFolder(space, folderHost.open(handle));
+      const tree = await loadAndApplySpaceState(target.id, target.name);
+      const pending = pendingFolderPageRef.current;
+      pendingFolderPageRef.current = null;
+      if (pending?.spaceId === target.id && findNode(tree, pending.pageId)) {
+        setSelectedPageId(pending.pageId);
+        setPages((prev) => expandToNode(prev, pending.pageId));
+      }
+    },
+    [folderHost, spacesManifest, spaces, loadAndApplySpaceState],
+  );
+
+  /**
    * Ask the browser again for the folder of the active folder space (this
-   * must run from a click). Without a saved handle, the user picks it again.
+   * must run from a click). Without a saved handle, the user picks it again,
+   * and the picked folder must hold the space: one holding a space with
+   * another name is bound only after the user confirms.
    */
   const handleReconnectFolder = useCallback(async () => {
     const target = folderToReconnect;
@@ -1373,26 +1415,39 @@ export function App() {
         addToast(`Cept was not allowed to open the folder "${handle.name}".`, 'error');
         return;
       }
-    } else {
-      try {
-        handle = await folderHost.pick();
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Could not open that folder', 'error');
-        return;
-      }
-      if (!handle) return;
-      await folderHost.handles.save(target.id, handle).catch(() => undefined);
+      await bindReconnectedFolder(target, handle, false);
+      return;
     }
-    waitingFoldersRef.current.delete(target.id);
-    spaces.connectFolder(space, folderHost.open(handle));
-    const tree = await loadAndApplySpaceState(target.id, target.name);
-    const pending = pendingFolderPageRef.current;
-    pendingFolderPageRef.current = null;
-    if (pending?.spaceId === target.id && findNode(tree, pending.pageId)) {
-      setSelectedPageId(pending.pageId);
-      setPages((prev) => expandToNode(prev, pending.pageId));
+    setReconnectMismatch(undefined);
+    try {
+      handle = await folderHost.pick();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Could not open that folder', 'error');
+      return;
     }
-  }, [folderToReconnect, folderHost, spacesManifest, spaces, loadAndApplySpaceState, addToast]);
+    if (!handle) return;
+    let found: FolderSpaceChoice | null;
+    try {
+      found = await folderSpaceAt(folderHost.open(handle), handle.name, space.subPath ?? '');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      addToast(`Could not read "${handle.name}": ${message}`, 'error');
+      return;
+    }
+    if (!found || found.error) {
+      const marker = `${space.subPath ? `${space.subPath}/` : ''}space.cept.yaml`;
+      addToast(
+        `"${handle.name}" is not the folder of "${space.name}": ${found?.error ?? `it has no ${marker}`}`,
+        'error',
+      );
+      return;
+    }
+    if (found.name !== space.name) {
+      setReconnectMismatch({ id: target.id, handle, foundName: found.name });
+      return;
+    }
+    await bindReconnectedFolder(target, handle, true);
+  }, [folderToReconnect, folderHost, spacesManifest, bindReconnectedFolder, addToast]);
 
   const handleImportComplete = useCallback(
     (importedPages: ImportedPage[]) => {
@@ -1968,14 +2023,34 @@ export function App() {
                   ? 'This space is a folder on this device. Your browser asks again before Cept can open it.'
                   : 'This space is a folder on this device, and this browser cannot open folders.'}
               </p>
+              {reconnectMismatch?.id === folderToReconnect.id && (
+                <p data-testid="folder-reconnect-mismatch">
+                  “{reconnectMismatch.handle.name}” holds the space “{reconnectMismatch.foundName}”,
+                  not “{folderToReconnect.name}”. Use it for this space only if it is the same
+                  folder.
+                </p>
+              )}
               <div className="cept-space-error-actions">
+                {folderHost && reconnectMismatch?.id === folderToReconnect.id && (
+                  <button
+                    className="cept-space-error-btn"
+                    onClick={() =>
+                      void bindReconnectedFolder(folderToReconnect, reconnectMismatch.handle, true)
+                    }
+                    data-testid="folder-reconnect-confirm"
+                  >
+                    Use “{reconnectMismatch.handle.name}” anyway
+                  </button>
+                )}
                 {folderHost && (
                   <button
                     className="cept-space-error-btn"
                     onClick={() => void handleReconnectFolder()}
                     data-testid="folder-reconnect-btn"
                   >
-                    Reconnect folder
+                    {reconnectMismatch?.id === folderToReconnect.id
+                      ? 'Pick another folder'
+                      : 'Reconnect folder'}
                   </button>
                 )}
                 <button

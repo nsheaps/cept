@@ -259,4 +259,86 @@ describe('App folder spaces', () => {
     );
     expect(screen.queryByTestId('folder-reconnect')).toBeNull();
   });
+
+  /** Open the notes folder, then reload with its saved handle gone. */
+  async function reloadWithoutHandle(app: MemoryBackend, folders: Map<string, StorageBackend>) {
+    const handles = memoryStore();
+    const first = fakeHost(folders, handles);
+    first.next.handle = folderHandle('notes');
+    renderApp(app, first.host);
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    await screen.findAllByText('Welcome', {}, { timeout: 3000 });
+    await settle();
+    cleanup();
+    const [{ id }] = await handles.list();
+    await handles.remove(id);
+    const second = fakeHost(folders, handles);
+    renderApp(app, second.host);
+    await screen.findByTestId('folder-reconnect-btn', {}, { timeout: 3000 });
+    return { ...second, handles, id };
+  }
+
+  it('without a saved handle, refuses a picked folder that does not hold the space', async () => {
+    const app = new MemoryBackend();
+    const plain = new MemoryBackend();
+    plain.seedText('todo.md', '# Todo\n');
+    const { backend, writes } = writeSpy(plain);
+    const { next, handles } = await reloadWithoutHandle(
+      app,
+      new Map<string, StorageBackend>([
+        ['notes', notesFolder()],
+        ['plain', backend],
+      ]),
+    );
+
+    next.handle = folderHandle('plain');
+    fireEvent.click(screen.getByTestId('folder-reconnect-btn'));
+    expect(await screen.findByText(/"plain" is not the folder of "Notes"/)).toBeDefined();
+    expect(screen.getByTestId('folder-reconnect')).toBeDefined();
+    expect(await handles.list()).toEqual([]);
+    expect(writes).toEqual([]);
+  });
+
+  it('without a saved handle, asks before using a folder whose space has another name', async () => {
+    const app = new MemoryBackend();
+    const other = new MemoryBackend();
+    other.seedText('space.cept.yaml', 'version: 1\nname: Other\nslug: other\n');
+    other.seedText('Elsewhere.md', '# Elsewhere\n');
+    const { next, handles, id } = await reloadWithoutHandle(
+      app,
+      new Map<string, StorageBackend>([
+        ['notes', notesFolder()],
+        ['other', other],
+      ]),
+    );
+
+    next.handle = folderHandle('other');
+    fireEvent.click(screen.getByTestId('folder-reconnect-btn'));
+    expect(await screen.findByTestId('folder-reconnect-mismatch')).toBeDefined();
+    expect(screen.queryByText('Elsewhere')).toBeNull();
+    expect(await handles.list()).toEqual([]);
+
+    fireEvent.click(screen.getByTestId('folder-reconnect-confirm'));
+    expect((await screen.findAllByText('Elsewhere', {}, { timeout: 3000 })).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByTestId('folder-reconnect')).toBeNull();
+    expect((await handles.list()).map((e) => e.id)).toEqual([id]);
+  });
+
+  it('without a saved handle, binds a picked folder that holds the space', async () => {
+    const app = new MemoryBackend();
+    const { next, handles, id } = await reloadWithoutHandle(
+      app,
+      new Map<string, StorageBackend>([['notes', notesFolder()]]),
+    );
+
+    next.handle = folderHandle('notes');
+    fireEvent.click(screen.getByTestId('folder-reconnect-btn'));
+    expect((await screen.findAllByText('Welcome', {}, { timeout: 3000 })).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByTestId('folder-reconnect-mismatch')).toBeNull();
+    expect((await handles.list()).map((e) => e.id)).toEqual([id]);
+  });
 });

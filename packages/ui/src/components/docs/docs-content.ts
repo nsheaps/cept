@@ -151,7 +151,7 @@ Cept is a fully-featured Notion alternative that runs entirely on the client. It
 Cept uses a StorageBackend abstraction that supports three modes:
 
 1. **Browser** (IndexedDB) — Zero setup. Open the app and start writing. Each page is stored as an individual file in a virtual filesystem inside IndexedDB.
-2. **Local folder** — Open a folder of plain Markdown files on your computer as a space (Chrome or Edge on a computer).
+2. **Local folder** — Open a folder of plain Markdown files on your computer as a space (a Chromium-based browser on a computer, such as Chrome or Edge).
 3. **Git repository** — Full versioning, sync, and collaboration via any Git host (coming soon).
 
 The full editing and database experience works identically on any backend. Git adds collaboration, history, and sync — but it's never required.
@@ -284,7 +284,7 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type \
 | Backend | Setup | Offline | History | Collaboration | Status |
 |---------|-------|---------|---------|---------------|--------|
 | Browser (localStorage) | Zero setup | Yes | No | No | Available |
-| Local Folder | Choose a folder | Yes | No | No | Chrome and Edge on a computer |
+| Local Folder | Choose a folder | Yes | No | No | Chromium-based browsers on a computer (Chrome, Edge, …) |
 | Git Repository | Connect a remote | Yes | Full git log | Via branches | Coming soon |
 
 ## Databases (Coming Soon)

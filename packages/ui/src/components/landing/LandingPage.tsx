@@ -137,8 +137,8 @@ export function LandingPage({
             >
               <strong>Local folder</strong>
               <span className="block text-sm text-gray-500">
-                Plain Markdown files on your filesystem — needs a browser that can open folders
-                (Chrome or Edge on a computer)
+                Plain Markdown files on your filesystem — needs a browser that can open folders,
+                such as Chrome or Edge on a computer
               </span>
             </button>
           )}

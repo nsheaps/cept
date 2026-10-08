@@ -18,7 +18,7 @@ To try the demo without affecting your data, add `?demo` to the URL.
 2. Open the app
 3. Choose a storage mode:
    - **Browser storage** for quick start
-   - **Local folder** to store files on your computer (in the browser, Chrome or Edge on a computer can open a folder today; see [Platform support](../guides/platform-support.md#opening-a-folder-in-the-browser))
+   - **Local folder** to store files on your computer (in the browser this works today in Chromium-based browsers on a computer, such as Chrome or Edge; see [Platform support](../guides/platform-support.md#opening-a-folder-in-the-browser))
    - **Git repository** for version control and sync (coming soon)
 
 ## Mobile
