@@ -10,6 +10,7 @@ Welcome to the Cept documentation. Cept is an open-source Notion alternative tha
 ## Guides
 
 - [Features](guides/features.md) — Complete feature reference
+- [Managing Spaces](guides/managing-spaces.md) — Create, rename, remove and delete spaces
 - [Platform Support](guides/platform-support.md) — Supported platforms and browsers
 
 ## Comparisons

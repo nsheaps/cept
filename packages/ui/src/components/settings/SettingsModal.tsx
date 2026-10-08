@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
+import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
 
 export type ThemeMode = 'dark' | 'system' | 'light';
 
@@ -53,12 +54,21 @@ export function resetSettings(): void {
   }
 }
 
+/** Where a space's data lives, which decides what removing it does. */
+export type SpaceKind = 'app' | 'memory' | 'folder' | 'remote';
+
 export interface SpaceInfo {
   id: string;
   name: string;
   source: string;
-  pageCount: number;
-  contentSize: number;
+  /** Null when not known, as for a folder space whose folder is not connected. */
+  pageCount: number | null;
+  /** Bytes in the space's pages; null when not known. */
+  contentSize: number | null;
+  /** Absent means `app`. */
+  kind?: SpaceKind;
+  /** The slug in the space's `space.cept.yaml`; absent when it has none. */
+  slug?: string;
   createdAt?: string;
   remoteUrl?: string;
   branch?: string;
@@ -82,7 +92,8 @@ export interface SettingsModalProps {
   onKeepConversion?: (id: string) => void;
   /** Put a converted space's old layout back from its backup. */
   onUndoConversion?: (id: string) => void;
-  onSpaceRename: (id: string, name: string) => void;
+  /** Rename a space; `slug` also changes the slug in its `space.cept.yaml`. */
+  onSpaceRename: (id: string, name: string, slug?: string) => void;
   onSwitchSpace: (id: string) => void;
   onClearAllData: () => void;
   onRecreateDemoSpace: () => void;
@@ -124,6 +135,7 @@ export function SettingsModal({
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [browsingSpaceId, setBrowsingSpaceId] = useState<string | null>(null);
   const [refreshingSpaceId, setRefreshingSpaceId] = useState<string | null>(null);
+  const [removingSpaceId, setRemovingSpaceId] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -131,6 +143,7 @@ export function SettingsModal({
       setActiveTab(initialTab);
       setSelectedSpaceId(null);
       setBrowsingSpaceId(null);
+      setRemovingSpaceId(null);
     }
   }, [isOpen, initialTab]);
 
@@ -165,6 +178,7 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   const selectedSpace = selectedSpaceId ? spaces.find((s) => s.id === selectedSpaceId) : null;
+  const removingSpace = removingSpaceId ? spaces.find((s) => s.id === removingSpaceId) : null;
 
   return (
     <div className="cept-settings-overlay" onClick={onClose} data-testid="settings-modal">
@@ -380,7 +394,20 @@ export function SettingsModal({
               </div>
             )}
 
-            {activeTab === 'spaces' && !selectedSpace && (
+            {activeTab === 'spaces' && removingSpace && (
+              <RemoveSpaceConfirm
+                space={removingSpace}
+                isLast={spaces.filter((s) => s.id !== DOCS_SPACE_ID).length <= 1}
+                onCancel={() => setRemovingSpaceId(null)}
+                onConfirm={() => {
+                  setRemovingSpaceId(null);
+                  if (selectedSpaceId === removingSpace.id) setSelectedSpaceId(null);
+                  onDeleteSpace(removingSpace.id);
+                }}
+              />
+            )}
+
+            {activeTab === 'spaces' && !removingSpace && !selectedSpace && (
               <div data-testid="settings-panel-spaces">
                 <h3 className="cept-settings-section-title">Your Spaces</h3>
                 {spaces.length === 0 ? (
@@ -423,8 +450,8 @@ export function SettingsModal({
                                   </span>
                                 </>
                               )}{' '}
-                              &middot; {space.pageCount} pages &middot;{' '}
-                              {formatBytes(space.contentSize)}
+                              &middot; {formatPageCount(space.pageCount)} &middot;{' '}
+                              {formatSize(space.contentSize)}
                             </span>
                           </div>
                         </div>
@@ -452,7 +479,7 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.remoteUrl && onRefreshSpace && space.id !== 'cept-docs' && (
+                          {space.remoteUrl && onRefreshSpace && space.id !== DOCS_SPACE_ID && (
                             <button
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
@@ -478,11 +505,11 @@ export function SettingsModal({
                               </svg>
                             </button>
                           )}
-                          {space.id !== 'cept-docs' && (
+                          {space.id !== DOCS_SPACE_ID && (
                             <button
                               className="cept-settings-icon-btn cept-settings-icon-btn--danger"
-                              onClick={() => onDeleteSpace(space.id)}
-                              title="Delete space"
+                              onClick={() => setRemovingSpaceId(space.id)}
+                              title={removalLabel(space)}
                               data-testid={`delete-space-${space.id}`}
                             >
                               <svg
@@ -625,28 +652,25 @@ export function SettingsModal({
               </div>
             )}
 
-            {activeTab === 'spaces' && selectedSpace && !browsingSpaceId && (
+            {activeTab === 'spaces' && !removingSpace && selectedSpace && !browsingSpaceId && (
               <SpaceDetails
                 space={selectedSpace}
                 onBack={() => setSelectedSpaceId(null)}
-                onRename={(name) => onSpaceRename(selectedSpace.id, name)}
+                onRename={(name, slug) => onSpaceRename(selectedSpace.id, name, slug)}
                 onKeepConversion={
                   onKeepConversion ? () => onKeepConversion(selectedSpace.id) : undefined
                 }
                 onUndoConversion={
                   onUndoConversion ? () => onUndoConversion(selectedSpace.id) : undefined
                 }
-                onDelete={() => {
-                  onDeleteSpace(selectedSpace.id);
-                  setSelectedSpaceId(null);
-                }}
+                onDelete={() => setRemovingSpaceId(selectedSpace.id)}
                 onBrowseFiles={
-                  backend && selectedSpace.id !== 'cept-docs'
+                  backend && selectedSpace.id !== DOCS_SPACE_ID
                     ? () => setBrowsingSpaceId(selectedSpace.id)
                     : undefined
                 }
                 onRefresh={
-                  selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs'
+                  selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== DOCS_SPACE_ID
                     ? () => handleRefreshSpace(selectedSpace.id)
                     : undefined
                 }
@@ -709,7 +733,7 @@ function SpaceDetails({
   space: SpaceInfo;
   onBack: () => void;
   onDelete: () => void;
-  onRename: (name: string) => void;
+  onRename: (name: string, slug?: string) => void;
   onKeepConversion?: () => void;
   onUndoConversion?: () => void;
   onBrowseFiles?: () => void;
@@ -719,6 +743,13 @@ function SpaceDetails({
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
   const [confirmUndo, setConfirmUndo] = useState(false);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [editSlug, setEditSlug] = useState(space.slug ?? '');
+  const saveSlug = () => {
+    const slug = editSlug.trim();
+    if (slug && slug !== space.slug) onRename(space.name, slug);
+    setEditingSlug(false);
+  };
 
   return (
     <div data-testid={`space-details-${space.id}`}>
@@ -794,12 +825,64 @@ function SpaceDetails({
         </div>
         <div className="cept-settings-detail-row">
           <span className="cept-settings-detail-label">Pages</span>
-          <span className="cept-settings-detail-value">{space.pageCount}</span>
+          <span className="cept-settings-detail-value" data-testid="space-detail-pages">
+            {space.pageCount ?? 'Unknown'}
+          </span>
         </div>
         <div className="cept-settings-detail-row">
           <span className="cept-settings-detail-label">Storage used</span>
-          <span className="cept-settings-detail-value">{formatBytes(space.contentSize)}</span>
+          <span className="cept-settings-detail-value" data-testid="space-detail-size">
+            {space.contentSize === null ? 'Unknown' : formatBytes(space.contentSize)}
+          </span>
         </div>
+        {space.slug !== undefined && (
+          <div className="cept-settings-detail-row">
+            <span className="cept-settings-detail-label">Slug</span>
+            {editingSlug ? (
+              <span className="cept-settings-detail-value">
+                <input
+                  className="cept-settings-rename-input"
+                  value={editSlug}
+                  onChange={(e) => setEditSlug(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveSlug();
+                    if (e.key === 'Escape') {
+                      setEditSlug(space.slug ?? '');
+                      setEditingSlug(false);
+                    }
+                  }}
+                  autoFocus
+                  data-testid="space-slug-input"
+                />
+                <button
+                  className="cept-settings-action-btn"
+                  onClick={saveSlug}
+                  data-testid="space-slug-save"
+                >
+                  Save
+                </button>
+                {editSlug.trim() !== space.slug && (
+                  <span className="cept-settings-wizard-desc" data-testid="space-slug-warning">
+                    The slug names this space in listings and published links. Links that use the
+                    old slug, {space.slug}, stop working.
+                  </span>
+                )}
+              </span>
+            ) : (
+              <button
+                className="cept-settings-detail-value cept-settings-link-btn"
+                onClick={() => {
+                  setEditSlug(space.slug ?? '');
+                  setEditingSlug(true);
+                }}
+                title="Change the slug"
+                data-testid="space-detail-slug"
+              >
+                {space.slug}
+              </button>
+            )}
+          </div>
+        )}
         {space.remoteUrl && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Remote</span>
@@ -959,7 +1042,7 @@ function SpaceDetails({
         >
           <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
         </svg>
-        Delete this space
+        {removalLabel(space)}
       </button>
     </div>
   );
@@ -978,6 +1061,86 @@ function formatTimestamp(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+/** What removing a space does, as a button label. */
+function removalLabel(space: SpaceInfo): string {
+  switch (space.kind) {
+    case 'folder':
+      return 'Remove from Cept';
+    case 'remote':
+      return 'Remove from this device';
+    case 'memory':
+      return 'Discard this space';
+    default:
+      return 'Delete this space';
+  }
+}
+
+/** Asks before a space is removed, saying what is lost and what is kept. */
+function RemoveSpaceConfirm({
+  space,
+  isLast,
+  onCancel,
+  onConfirm,
+}: {
+  space: SpaceInfo;
+  isLast: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const explanation =
+    space.kind === 'folder'
+      ? 'The folder and its files stay on this device; Cept only forgets the space. You can open the folder again later.'
+      : space.kind === 'remote'
+        ? 'The copy on this device is deleted, with any changes not yet synced. The repository on GitHub is not changed.'
+        : space.kind === 'memory'
+          ? 'This space is kept only in memory, so its pages are lost.'
+          : 'Its pages are kept only in this browser, so they are deleted for good.';
+  return (
+    <div data-testid="space-remove-confirm">
+      <h3 className="cept-settings-section-title" data-testid="space-remove-title">
+        {space.kind === 'folder'
+          ? `Remove "${space.name}" from Cept?`
+          : space.kind === 'remote'
+            ? `Remove "${space.name}" from this device?`
+            : space.kind === 'memory'
+              ? `Discard "${space.name}"?`
+              : `Delete "${space.name}"?`}
+      </h3>
+      <p className="cept-settings-wizard-desc" data-testid="space-remove-explanation">
+        {explanation}
+      </p>
+      {isLast && (
+        <p className="cept-settings-wizard-desc" data-testid="space-remove-last">
+          It is your only space, so a new, empty space named My Space takes its place.
+        </p>
+      )}
+      <button
+        className="cept-settings-danger-btn"
+        onClick={onConfirm}
+        data-testid="space-remove-confirm-btn"
+      >
+        {removalLabel(space)}
+      </button>
+      <button
+        className="cept-settings-action-btn"
+        onClick={onCancel}
+        data-testid="space-remove-cancel"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function formatPageCount(count: number | null): string {
+  if (count === null) return 'pages unknown';
+  return count === 1 ? '1 page' : `${count} pages`;
+}
+
+function formatSize(bytes: number | null): string {
+  return bytes === null ? 'size unknown' : formatBytes(bytes);
 }
 
 function formatBytes(bytes: number): string {
