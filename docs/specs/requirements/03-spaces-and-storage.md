@@ -39,35 +39,37 @@ This document sets out what a Cept **space** is: a folder in some filesystem who
 
 ## Requirements summary
 
-| ID                                                                                          | Requirement                                                             | Priority | Impl status | Docs status            | Docs accurate |
-| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
-| [REQ-WS-001](#req-ws-001--space-is-a-folder-in-a-filesystem)                                | Space is a folder in a filesystem; folder hierarchy mirrors page tree   | MUST     | divergent   | documented-differently | stale         |
-| [REQ-WS-002](#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)                 | `space.cept.yaml` / `space.cept.yml` marks the space root               | MUST     | partial     | documented-differently | n/a           |
-| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted)                            | Both `.yaml` and `.yml` accepted, with defined precedence               | MUST     | partial     | documented             | n/a           |
-| [REQ-WS-004](#req-ws-004--spaceceptyaml-schema)                                             | Versioned, documented `space.cept.yaml` schema                          | MUST     | partial     | documented             | accurate      |
-| [REQ-WS-005](#req-ws-005--nested-spaces-inside-a-parent-space-deferred)                     | Nested spaces inside a parent space                                     | MAY      | deferred    | undocumented           | n/a           |
-| [REQ-WS-006](#req-ws-006--nesting-depth-limit-deferred)                                     | Nesting depth limit                                                     | MAY      | deferred    | undocumented           | n/a           |
-| [REQ-WS-007](#req-ws-007--per-space-backend-selection)                                      | Each space bound to its own backend; several open at once               | MUST     | divergent   | documented-differently | stale         |
-| [REQ-WS-008](#req-ws-008--common-extensible-storagebackend-interface)                       | Common, extensible `StorageBackend`; capability-gated features          | MUST     | partial     | documented-as-desired  | stale         |
-| [REQ-WS-009](#req-ws-009--local-app-only-native-filesystem-backend)                         | Local (app only) native filesystem backend                              | MUST     | stubbed     | documented-as-desired  | stale         |
-| [REQ-WS-010](#req-ws-010--native-fs-backend-detects-external-edits)                         | Native-fs backend detects external edits                                | MUST     | stubbed     | documented-as-desired  | accurate      |
-| [REQ-WS-011](#req-ws-011--local-browser-only-indexeddb-storage)                             | Local (browser only) IndexedDB storage                                  | MUST     | implemented | documented-as-desired  | stale         |
-| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API             | SHOULD   | partial     | documented-as-desired  | accurate      |
-| [REQ-WS-013](#req-ws-013--git-backed-space-cloneread-from-remote)                           | Git-backed space: clone and read                                        | MUST     | partial     | documented-as-desired  | stale         |
-| [REQ-WS-014](#req-ws-014--git-backed-space-write-commit-pushpull-sync)                      | Git-backed space: write, commit, push/pull                              | MUST     | stubbed     | documented-as-desired  | stale         |
-| [REQ-WS-015](#req-ws-015--google-drive-backend)                                             | Google Drive backend                                                    | MUST     | not-started | undocumented           | n/a           |
-| [REQ-WS-016](#req-ws-016--sftp-backend)                                                     | SFTP backend, served through app or daemon                              | MUST     | not-started | undocumented           | n/a           |
-| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones | SHOULD   | partial     | documented             | current       |
-| [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                     | MUST     | partial     | documented-differently | stale         |
-| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                           | MUST     | partial     | documented-as-desired  | accurate      |
-| [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                             | SHOULD   | partial     | documented-as-desired  | accurate      |
-| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                      | SHOULD   | partial     | documented-as-desired  | accurate      |
-| [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                             | MUST     | partial     | documented-differently | stale         |
-| [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                | MUST     | implemented | documented             | accurate      |
-| [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space         | MUST     | partial     | documented             | accurate      |
-| [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                 | MUST     | implemented | documented             | accurate      |
+| ID                                                                                          | Requirement                                                               | Priority | Impl status | Docs status            | Docs accurate |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------- | ----------- | ---------------------- | ------------- |
+| [REQ-WS-001](#req-ws-001--space-is-a-folder-in-a-filesystem)                                | Space is a folder in a filesystem; folder hierarchy mirrors page tree     | MUST     | divergent   | documented-differently | stale         |
+| [REQ-WS-002](#req-ws-002--spaceceptyaml--spaceceptyml-marks-the-space-root)                 | `space.cept.yaml` / `space.cept.yml` marks the space root                 | MUST     | partial     | documented-differently | n/a           |
+| [REQ-WS-003](#req-ws-003--both-yaml-and-yml-extensions-accepted)                            | Both `.yaml` and `.yml` accepted, with defined precedence                 | MUST     | partial     | documented             | n/a           |
+| [REQ-WS-004](#req-ws-004--spaceceptyaml-schema)                                             | Versioned, documented `space.cept.yaml` schema                            | MUST     | partial     | documented             | accurate      |
+| [REQ-WS-005](#req-ws-005--nested-spaces-inside-a-parent-space-deferred)                     | Nested spaces inside a parent space                                       | MAY      | deferred    | undocumented           | n/a           |
+| [REQ-WS-006](#req-ws-006--nesting-depth-limit-deferred)                                     | Nesting depth limit                                                       | MAY      | deferred    | undocumented           | n/a           |
+| [REQ-WS-007](#req-ws-007--per-space-backend-selection)                                      | Each space bound to its own backend; several open at once                 | MUST     | divergent   | documented-differently | stale         |
+| [REQ-WS-008](#req-ws-008--common-extensible-storagebackend-interface)                       | Common, extensible `StorageBackend`; capability-gated features            | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WS-009](#req-ws-009--local-app-only-native-filesystem-backend)                         | Local (app only) native filesystem backend                                | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-WS-010](#req-ws-010--native-fs-backend-detects-external-edits)                         | Native-fs backend detects external edits                                  | MUST     | stubbed     | documented-as-desired  | accurate      |
+| [REQ-WS-011](#req-ws-011--local-browser-only-indexeddb-storage)                             | Local (browser only) IndexedDB storage                                    | MUST     | implemented | documented-as-desired  | stale         |
+| [REQ-WS-012](#req-ws-012--local-browser-only-real-folder-access-via-file-system-access-api) | Local (browser only) real folder via File System Access API               | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WS-013](#req-ws-013--git-backed-space-cloneread-from-remote)                           | Git-backed space: clone and read                                          | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-WS-014](#req-ws-014--git-backed-space-write-commit-pushpull-sync)                      | Git-backed space: write, commit, push/pull                                | MUST     | stubbed     | documented-as-desired  | stale         |
+| [REQ-WS-015](#req-ws-015--google-drive-backend)                                             | Google Drive backend                                                      | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-016](#req-ws-016--sftp-backend)                                                     | SFTP backend, served through app or daemon                                | MUST     | not-started | undocumented           | n/a           |
+| [REQ-WS-017](#req-ws-017--backend-availability-matrix-per-platform)                         | Backend availability matrix per platform; UI offers only available ones   | SHOULD   | partial     | documented             | current       |
+| [REQ-WS-018](#req-ws-018--cept-metadata-directory-conventions)                              | Documented `.cept/` metadata layout                                       | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-019](#req-ws-019--opening-an-existing-folder-is-non-destructive)                    | Opening an existing folder is non-destructive                             | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-WS-020](#req-ws-020--backend-upgradeswitch-path)                                       | Backend upgrade/switch path                                               | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WS-021](#req-ws-021--detect-git-in-an-opened-folder)                                   | Detect `.git/` in an opened folder                                        | SHOULD   | partial     | documented-as-desired  | accurate      |
+| [REQ-WS-022](#req-ws-022--consistent-terminology-space-adopted-d-1)                         | "space" is the canonical term (D-1 decided)                               | MUST     | partial     | documented-differently | stale         |
+| [REQ-WS-023](#req-ws-023--space-autodiscovery-from-account-access)                          | Discover spaces in every repository the sign-in can read                  | MUST     | implemented | documented             | accurate      |
+| [REQ-WS-024](#req-ws-024--space-lifecycle)                                                  | Create, rename, remove and delete spaces; stats for every space           | MUST     | partial     | documented             | accurate      |
+| [REQ-WS-025](#req-ws-025--legacy-flat-spaces-are-converted-to-folders)                      | Legacy flat spaces are converted to folders, reversibly                   | MUST     | implemented | documented             | accurate      |
+| [REQ-WS-026](#req-ws-026--git-sync-conflict-resolution)                                     | Merge diverged changes; per-file conflict view; push to a new branch      | MUST     | stubbed     | undocumented           | n/a           |
+| [REQ-WS-027](#req-ws-027--git-sync-policy)                                                  | Commit author, messages, tracked branch, per-device settings, error types | MUST     | stubbed     | undocumented           | n/a           |
 
-Status counts: 3 implemented, 6 partial, 4 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (25 requirements).
+Status counts: 3 implemented, 6 partial, 6 stubbed, 6 not-started, 3 divergent, 2 deferred, 1 decided (27 requirements).
 
 ## Architecture
 
@@ -554,7 +556,7 @@ branch: docs # optional (D-30)
 - roadmap.md lines 88-90 say "Planned", which is accurate.
 - quick-start.md lines 56-64 ("Your space will sync automatically") are stale.
 
-**Gap.** Wire auth, auto-commit and the push/pull loop. Decide whether sync is owned by the daemon or the service worker.
+**Gap.** Wire auth, auto-commit and the push/pull loop under the policy in REQ-WS-027, and resolve conflicts as REQ-WS-026 describes. Sync runs in the app (D-4/D-5): one owner per space, a SharedWorker or a leader tab chosen with Web Locks (Phase 1 plan PR 38); the service worker only caches and flushes queued writes. Delegating sync to a daemon is deferred with the CLI (D-26).
 
 **Related:** [#48](https://github.com/nsheaps/cept/issues/48), TASKS P5.1–P5.6.
 
@@ -825,6 +827,59 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 **Gap.** Old `/s/<space>/<page-id>` URLs do not yet redirect through the migration map (Phase 1 plan PR 22).
 
 **Related:** REQ-WS-001, D-30.
+
+### REQ-WS-026 — Git sync conflict resolution
+
+> **Scope: Phase 1 (D-30, D-37).** Phase 1 plan PR 37; merging comment blocks by id is PR 64.
+
+**Statement.** When local and remote changes to a Git-backed space diverge, Cept MUST merge what it can without asking, and MUST show every remaining conflict per file so the user can resolve it. Conflict markers MUST never be committed into pages, and neither side's version MUST be lost.
+
+**Source.** Owner request ("syncing with a remote on github"); D-30 (rejected pushes), D-37 (offline editing with queued commits).
+
+**Acceptance criteria**
+
+- Changes that do not overlap merge automatically with a three-way merge against the common ancestor.
+- Front matter merges key by key; the same key changed on both sides is a conflict. `cept:comment` blocks merge by comment id (PR 64).
+- A per-file conflict view offers **Keep mine**, **Keep theirs** and **Edit merged**. Until every conflict in a space is resolved, that space does not push; editing other pages carries on.
+- The version not chosen is kept as a conflict copy the user can open, not discarded.
+- A file deleted on one side and changed on the other keeps the changed file and asks whether to delete it.
+- A rejected push (protected branch, or a branch that moved and cannot be merged) offers "push to a new branch" named `cept/<login>/<date>-<short-sha>`; the space keeps tracking its own branch.
+- Integration tests run against a local bare repo with diverging commits, and against a push rejected as protected.
+
+**Current state: stubbed.** [packages/core/src/git/merge-engine.ts](../../../packages/core/src/git/merge-engine.ts) has `threeWayMerge`, conflict markers and the ours/theirs/merge/manual strategies, with unit tests. Nothing in the app calls it, there is no conflict view, and front matter and comments are merged as plain text.
+
+**Docs state: undocumented.**
+
+**Gap.** Key-wise front matter merge, the conflict view, conflict copies, holding the push while conflicts remain, and the push-to-a-new-branch fallback.
+
+**Related:** REQ-WS-014, REQ-WS-027, D-30, D-37.
+
+### REQ-WS-027 — Git sync policy
+
+> **Scope: Phase 1 (D-4, D-5, D-30, D-34, D-37).** Phase 1 plan PR 35; the single sync owner across tabs (SharedWorker or leader tab) is PR 38.
+
+**Statement.** Cept MUST commit and sync a Git-backed space under a documented, predictable policy: who commits are attributed to, when commits are made and what their messages say, which branch is tracked, and how sync errors are reported. Settings that differ per device MUST NOT be committed.
+
+**Source.** Owner request ("syncing with a remote on github"); D-4/D-5 (sync owner), D-30 (`branch:` in the marker), D-34 (the signed-in user is the author), D-37 (offline commits).
+
+**Acceptance criteria**
+
+- Author and committer come from `GET /user` for the signed-in account: the name (or the login when no name is set) and `<id>+<login>@users.noreply.github.com`. The user's real email address is never used.
+- Edits are auto-committed after a debounce (5 s by default, with a cap on files per commit). The message follows a documented template: a subject such as `Update <page>`, `Add <page>` or `Update <n> pages`, and a body listing the changed paths.
+- The tracked branch is the `branch:` declared in `space.cept.yaml`, otherwise the repository's default branch. Cept never switches branch silently; the first push creates a declared branch that does not exist yet from the default branch.
+- Per-device settings (auto-commit on or off, the debounce, the sync interval, auto-push) live under `.cept/` in a file excluded through `.git/info/exclude`, and are never committed.
+- Sync pulls then pushes every 30 s and on demand. Commits made offline are queued and pushed on reconnect (D-37). One tab owns sync at a time (the focused tab until PR 38).
+- Errors are classified from structured error types, not from message text: offline or network, authentication (401/403), not fast-forward, protected branch, and quota or size limits. Each is shown to the user; quota errors say which limit was hit.
+- A space cloned without a sign-in stays read-only and never commits.
+- Unit tests cover the author, the message template, branch selection, the settings file and error classification.
+
+**Current state: stubbed.** [auto-commit.ts](../../../packages/core/src/git/auto-commit.ts) (`AutoCommitEngine`, 5 s debounce, batch cap of 50, `generateCommitMessage`), [sync-engine.ts](../../../packages/core/src/git/sync-engine.ts) (`SyncEngine`, 30 s interval, auto push and pull, three retries) and [branch-strategy.ts](../../../packages/core/src/git/branch-strategy.ts) exist with unit tests. The author is not taken from the account, `branch:` is not read, there is no per-device settings file, and `SyncEngine` recognises network errors by searching the message text.
+
+**Docs state: undocumented.**
+
+**Gap.** Everything in the acceptance criteria above beyond the existing debounce and interval defaults.
+
+**Related:** REQ-WS-014, REQ-WS-026, [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app), D-4, D-5, D-30, D-34, D-37.
 
 ## Conflicts and open questions
 
