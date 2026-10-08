@@ -84,6 +84,28 @@ describe('PatAuthProvider.signIn', () => {
     expect(account.grants).toEqual({ kind: 'fine-grained', scopes: null });
   });
 
+  it('reports no scopes for a fine-grained token even when GitHub sends an empty scope header', async () => {
+    const fetch = fetchReplying({ status: 200, body: USER, headers: { 'X-OAuth-Scopes': '' } });
+    const provider = new PatAuthProvider({ tokenStore: new MemoryTokenStore(), fetch });
+    expect((await provider.signIn(FINE)).grants.scopes).toBeNull();
+  });
+
+  it.each([
+    ['2027-01-02 03:04:05 UTC', Date.UTC(2027, 0, 2, 3, 4, 5)],
+    ['2027-01-02 03:04:05 +01:00', Date.UTC(2027, 0, 2, 2, 4, 5)],
+    ['2027-01-02 03:04:05 -0130', Date.UTC(2027, 0, 2, 4, 34, 5)],
+    ['2027-01-02T03:04:05Z', Date.UTC(2027, 0, 2, 3, 4, 5)],
+    ['next tuesday', undefined],
+  ])('reads the expiry header %j', async (header, expected) => {
+    const fetch = fetchReplying({
+      status: 200,
+      body: USER,
+      headers: { 'GitHub-Authentication-Token-Expiration': header },
+    });
+    const provider = new PatAuthProvider({ tokenStore: new MemoryTokenStore(), fetch });
+    expect((await provider.signIn(CLASSIC)).grants.expiresAt).toBe(expected);
+  });
+
   it('uses a configured API base (for a proxy or GitHub Enterprise)', async () => {
     const fetch = fetchReplying({ status: 200, body: USER });
     const provider = new PatAuthProvider({
@@ -154,6 +176,28 @@ describe('PatAuthProvider after sign-in', () => {
     });
     expect((await later.restore())?.login).toBe('octo');
     expect(await later.isAuthenticated()).toBe(true);
+  });
+
+  it('refreshes the stored scopes and expiry when it restores', async () => {
+    const store = new MemoryTokenStore();
+    await store.set(PAT_STORE_KEY, { accessToken: CLASSIC, scopes: ['repo'] });
+    const provider = new PatAuthProvider({
+      tokenStore: store,
+      fetch: fetchReplying({
+        status: 200,
+        body: USER,
+        headers: {
+          'X-OAuth-Scopes': 'repo, workflow',
+          'GitHub-Authentication-Token-Expiration': '2027-01-02 03:04:05 UTC',
+        },
+      }),
+    });
+    await provider.restore();
+    expect(await store.get(PAT_STORE_KEY)).toEqual({
+      accessToken: CLASSIC,
+      scopes: ['repo', 'workflow'],
+      expiresAt: Date.UTC(2027, 0, 2, 3, 4, 5),
+    });
   });
 
   it('forgets a stored token GitHub now rejects', async () => {

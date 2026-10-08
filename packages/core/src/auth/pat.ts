@@ -110,9 +110,7 @@ export class PatAuthProvider implements AuthProvider {
     const accessToken = token.trim();
     if (!accessToken) throw new PatAuthError('invalid', 'Paste a GitHub personal access token.');
     const account = await this.validate(accessToken);
-    const stored: AuthToken = { accessToken, scopes: account.grants.scopes ?? [] };
-    if (account.grants.expiresAt !== undefined) stored.expiresAt = account.grants.expiresAt;
-    await this.store.set(PAT_STORE_KEY, stored);
+    await this.save(accessToken, account.grants);
     return account;
   }
 
@@ -125,7 +123,9 @@ export class PatAuthProvider implements AuthProvider {
     const stored = await this.store.get(PAT_STORE_KEY);
     if (!stored) return null;
     try {
-      return await this.validate(stored.accessToken);
+      const account = await this.validate(stored.accessToken);
+      await this.save(stored.accessToken, account.grants);
+      return account;
     } catch (err) {
       if (err instanceof PatAuthError && err.reason === 'invalid') {
         await this.store.delete(PAT_STORE_KEY);
@@ -169,12 +169,24 @@ export class PatAuthProvider implements AuthProvider {
     return { username: 'x-access-token', password: accessToken, token: accessToken };
   }
 
+  /**
+   * Whether a token is saved. Unlike `GitHubAuthProvider` this does not ask
+   * GitHub, so it answers offline; use {@link restore} to check the token is
+   * still valid (it drops a revoked one).
+   */
   async isAuthenticated(): Promise<boolean> {
     return (await this.store.get(PAT_STORE_KEY)) !== null;
   }
 
   async logout(): Promise<void> {
     await this.store.delete(PAT_STORE_KEY);
+  }
+
+  /** Saves the token with what GitHub last said it grants. */
+  private async save(accessToken: string, grants: PatGrants): Promise<void> {
+    const stored: AuthToken = { accessToken, scopes: grants.scopes ?? [] };
+    if (grants.expiresAt !== undefined) stored.expiresAt = grants.expiresAt;
+    await this.store.set(PAT_STORE_KEY, stored);
   }
 
   private async requireToken(): Promise<AuthToken> {
@@ -236,24 +248,32 @@ function grantsOf(token: string, headers: Headers): PatGrants {
       ? 'classic'
       : 'unknown';
   const scopeHeader = headers.get('X-OAuth-Scopes');
-  const scopes =
+  const listed =
     scopeHeader === null
       ? null
       : scopeHeader
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean);
+  // Fine-grained tokens have no OAuth scopes; GitHub may still send an empty header.
+  const scopes = kind === 'fine-grained' && listed?.length === 0 ? null : listed;
   const grants: PatGrants = { kind, scopes };
   const expiry = parseGitHubDate(headers.get('GitHub-Authentication-Token-Expiration'));
   if (expiry !== undefined) grants.expiresAt = expiry;
   return grants;
 }
 
-/** GitHub sends token expiry as `2027-01-02 03:04:05 UTC` (or with a `+hh:mm` offset). */
+/** `2027-01-02 03:04:05 UTC`, as GitHub sends token expiry, or with a `T`, `Z` or `±hh[:]mm` offset. */
+const GITHUB_DATE = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\s*(UTC|Z|[+-]\d{2}:?\d{2})?$/;
+
+/** The time in ms since epoch, or `undefined` for a missing or unrecognised value. */
 function parseGitHubDate(value: string | null): number | undefined {
-  if (!value) return undefined;
-  const iso = value.trim().replace(' ', 'T').replace(/ UTC$/, 'Z').replace(' ', '');
-  const ms = Date.parse(iso);
+  const match = value ? GITHUB_DATE.exec(value.trim()) : null;
+  if (!match) return undefined;
+  const [, date, time, zone] = match;
+  const offset =
+    !zone || zone === 'UTC' || zone === 'Z' ? 'Z' : `${zone.slice(0, 3)}:${zone.slice(-2)}`;
+  const ms = Date.parse(`${date}T${time}${offset}`);
   return Number.isNaN(ms) ? undefined : ms;
 }
 
