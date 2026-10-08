@@ -36,12 +36,15 @@ const server = Bun.serve({
 
     // Health check endpoint
     if (url.pathname === '/health') {
-      return new Response(JSON.stringify({
-        status: 'ok',
-        rooms: roomManager.getActiveRooms().length,
-      }), {
-        headers: { 'content-type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          status: 'ok',
+          rooms: roomManager.getActiveRooms().length,
+        }),
+        {
+          headers: { 'content-type': 'application/json' },
+        },
+      );
     }
 
     // Upgrade WebSocket connections on /ws path
@@ -77,10 +80,12 @@ const server = Bun.serve({
 
         roomManager.handleMessage(connection, parsed);
       } catch {
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Invalid message format',
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'error',
+            message: 'Invalid message format',
+          }),
+        );
       }
     },
 

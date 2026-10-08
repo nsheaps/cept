@@ -30,13 +30,8 @@ export interface ScreenshotOptions {
 /**
  * Capture a screenshot and save it to the docs/screenshots directory.
  */
-export async function captureScreenshot(
-  page: Page,
-  options: ScreenshotOptions,
-): Promise<string> {
-  const dir = options.category
-    ? path.join(SCREENSHOTS_DIR, options.category)
-    : SCREENSHOTS_DIR;
+export async function captureScreenshot(page: Page, options: ScreenshotOptions): Promise<string> {
+  const dir = options.category ? path.join(SCREENSHOTS_DIR, options.category) : SCREENSHOTS_DIR;
 
   const filePath = path.join(dir, `${options.name}.png`);
 

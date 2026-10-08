@@ -8,7 +8,9 @@ import {
 } from './notion-importer.js';
 import type { ZipReader, ZipEntry } from './notion-importer.js';
 
-function createMockZipReader(entries: Array<{ path: string; content: string | Uint8Array; isDirectory?: boolean }>): ZipReader {
+function createMockZipReader(
+  entries: Array<{ path: string; content: string | Uint8Array; isDirectory?: boolean }>,
+): ZipReader {
   return {
     async getEntries(): Promise<ZipEntry[]> {
       return entries.map((e) => ({
@@ -28,8 +30,7 @@ function createMockZipReader(entries: Array<{ path: string; content: string | Ui
 
 describe('cleanNotionFilename', () => {
   it('removes Notion UUID suffix', () => {
-    expect(cleanNotionFilename('My Page a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md'))
-      .toBe('My Page.md');
+    expect(cleanNotionFilename('My Page a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md')).toBe('My Page.md');
   });
 
   it('preserves filenames without UUID', () => {
@@ -37,8 +38,9 @@ describe('cleanNotionFilename', () => {
   });
 
   it('handles nested paths', () => {
-    expect(cleanNotionFilename('folder/Page Name 0123456789abcdef0123456789abcdef.md'))
-      .toBe('folder/Page Name.md');
+    expect(cleanNotionFilename('folder/Page Name 0123456789abcdef0123456789abcdef.md')).toBe(
+      'folder/Page Name.md',
+    );
   });
 
   it('handles files without extension', () => {
@@ -67,9 +69,7 @@ describe('convertNotionLinks', () => {
   });
 
   it('matches by cleaned filename when exact match fails', () => {
-    const pathMap = new Map([
-      ['My Page a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md', '/pages/My Page.md'],
-    ]);
+    const pathMap = new Map([['My Page a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md', '/pages/My Page.md']]);
     const content = '[link](My%20Page%20a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md)';
     const result = convertNotionLinks(content, pathMap);
     expect(result).toBe('[[/pages/My Page.md|link]]');
@@ -121,9 +121,7 @@ describe('importNotionZip', () => {
 
   it('imports assets', async () => {
     const imageData = new Uint8Array([137, 80, 78, 71]); // PNG header
-    const reader = createMockZipReader([
-      { path: 'images/photo.png', content: imageData },
-    ]);
+    const reader = createMockZipReader([{ path: 'images/photo.png', content: imageData }]);
 
     const result = await importNotionZip(reader);
     expect(result.assets.length).toBe(1);
@@ -153,9 +151,7 @@ describe('importNotionZip', () => {
   });
 
   it('skips files exceeding max size', async () => {
-    const reader = createMockZipReader([
-      { path: 'huge.md', content: 'x'.repeat(100) },
-    ]);
+    const reader = createMockZipReader([{ path: 'huge.md', content: 'x'.repeat(100) }]);
 
     const result = await importNotionZip(reader, { maxFileSize: 10 });
     expect(result.pages.length).toBe(0);
@@ -165,9 +161,7 @@ describe('importNotionZip', () => {
   });
 
   it('skips databases when importDatabases is false', async () => {
-    const reader = createMockZipReader([
-      { path: 'data.csv', content: 'col1,col2' },
-    ]);
+    const reader = createMockZipReader([{ path: 'data.csv', content: 'col1,col2' }]);
 
     const result = await importNotionZip(reader, { importDatabases: false });
     expect(result.pages.length).toBe(0);
@@ -175,9 +169,7 @@ describe('importNotionZip', () => {
   });
 
   it('skips images when importImages is false', async () => {
-    const reader = createMockZipReader([
-      { path: 'photo.png', content: new Uint8Array([1, 2, 3]) },
-    ]);
+    const reader = createMockZipReader([{ path: 'photo.png', content: new Uint8Array([1, 2, 3]) }]);
 
     const result = await importNotionZip(reader, { importImages: false });
     expect(result.assets.length).toBe(0);
@@ -199,7 +191,10 @@ describe('importNotionZip', () => {
 
   it('converts Notion links when enabled', async () => {
     const reader = createMockZipReader([
-      { path: 'Page A a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md', content: '# A\n\n[link](Page%20B%20d4e5f6a7b8c9d0e1f2a3b4c5d6a7b8c9.md)' },
+      {
+        path: 'Page A a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.md',
+        content: '# A\n\n[link](Page%20B%20d4e5f6a7b8c9d0e1f2a3b4c5d6a7b8c9.md)',
+      },
       { path: 'Page B d4e5f6a7b8c9d0e1f2a3b4c5d6a7b8c9.md', content: '# B' },
     ]);
 
@@ -208,9 +203,7 @@ describe('importNotionZip', () => {
   });
 
   it('does not convert links when disabled', async () => {
-    const reader = createMockZipReader([
-      { path: 'Page A.md', content: '[link](Other.md)' },
-    ]);
+    const reader = createMockZipReader([{ path: 'Page A.md', content: '[link](Other.md)' }]);
 
     const result = await importNotionZip(reader, { convertLinks: false });
     expect(result.pages[0].content).toBe('[link](Other.md)');
@@ -218,7 +211,9 @@ describe('importNotionZip', () => {
 
   it('handles ZIP read errors gracefully', async () => {
     const reader: ZipReader = {
-      async getEntries() { throw new Error('corrupted zip'); },
+      async getEntries() {
+        throw new Error('corrupted zip');
+      },
       async close() {},
     };
 
@@ -234,9 +229,7 @@ describe('importNotionZip', () => {
   });
 
   it('uses custom target path', async () => {
-    const reader = createMockZipReader([
-      { path: 'page.md', content: '# Page' },
-    ]);
+    const reader = createMockZipReader([{ path: 'page.md', content: '# Page' }]);
 
     const result = await importNotionZip(reader, { targetPath: '/imported/notion' });
     expect(result.pages[0].targetPath).toContain('/imported/notion');
@@ -245,11 +238,15 @@ describe('importNotionZip', () => {
   it('handles file processing errors', async () => {
     const reader: ZipReader = {
       async getEntries() {
-        return [{
-          path: 'broken.md',
-          isDirectory: false,
-          async getData(): Promise<Uint8Array> { throw new Error('read error'); },
-        }];
+        return [
+          {
+            path: 'broken.md',
+            isDirectory: false,
+            async getData(): Promise<Uint8Array> {
+              throw new Error('read error');
+            },
+          },
+        ];
       },
       async close() {},
     };

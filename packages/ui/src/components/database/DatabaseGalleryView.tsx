@@ -56,10 +56,7 @@ export function DatabaseGalleryView({
               data-testid={`gallery-card-${row.id}`}
             >
               {coverProperty && (
-                <div
-                  className="cept-gallery-cover"
-                  data-testid={`gallery-cover-${row.id}`}
-                >
+                <div className="cept-gallery-cover" data-testid={`gallery-cover-${row.id}`}>
                   {coverUrl ? (
                     <img
                       src={coverUrl}
@@ -99,11 +96,7 @@ export function DatabaseGalleryView({
       </div>
 
       {onAddRow && (
-        <button
-          className="cept-gallery-add"
-          onClick={onAddRow}
-          data-testid="gallery-add-card"
-        >
+        <button className="cept-gallery-add" onClick={onAddRow} data-testid="gallery-add-card">
           + New
         </button>
       )}

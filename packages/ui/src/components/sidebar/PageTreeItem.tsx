@@ -83,9 +83,7 @@ export function PageTreeItem({
         >
           {isExpanded ? '\u25BC' : '\u25B6'}
         </span>
-        <span className="cept-sidebar-icon">
-          {node.icon ?? '\u{1F4C4}'}
-        </span>
+        <span className="cept-sidebar-icon">{node.icon ?? '\u{1F4C4}'}</span>
         <span className="cept-sidebar-title">{node.title || 'Untitled'}</span>
         {showActions && (
           <>

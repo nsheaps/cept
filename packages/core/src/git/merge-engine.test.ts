@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  parseConflictMarkers,
-  threeWayMerge,
-  autoResolve,
-} from './merge-engine.js';
+import { parseConflictMarkers, threeWayMerge, autoResolve } from './merge-engine.js';
 import type { MergeConflict } from './merge-engine.js';
 
 describe('parseConflictMarkers', () => {
@@ -122,13 +118,15 @@ describe('autoResolve', () => {
   });
 
   it('auto-resolves delete-modify with theirs strategy (default)', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'test.md',
-      type: 'delete-modify',
-      ours: null,
-      theirs: 'modified content',
-      base: 'original',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'test.md',
+        type: 'delete-modify',
+        ours: null,
+        theirs: 'modified content',
+        base: 'original',
+      },
+    ];
     const result = autoResolve(conflicts);
     expect(result.fullyResolved).toBe(true);
     expect(result.autoResolved[0].strategy).toBe('theirs');
@@ -136,26 +134,30 @@ describe('autoResolve', () => {
   });
 
   it('auto-resolves delete-modify with ours strategy', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'test.md',
-      type: 'delete-modify',
-      ours: null,
-      theirs: 'modified',
-      base: 'original',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'test.md',
+        type: 'delete-modify',
+        ours: null,
+        theirs: 'modified',
+        base: 'original',
+      },
+    ];
     const result = autoResolve(conflicts, { deleteModifyStrategy: 'ours' });
     expect(result.autoResolved[0].strategy).toBe('ours');
     expect(result.autoResolved[0].resolvedContent).toBe('');
   });
 
   it('auto-resolves add-add by merging (default)', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'new.md',
-      type: 'add-add',
-      ours: 'our content',
-      theirs: 'their content',
-      base: null,
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'new.md',
+        type: 'add-add',
+        ours: 'our content',
+        theirs: 'their content',
+        base: null,
+      },
+    ];
     const result = autoResolve(conflicts);
     expect(result.fullyResolved).toBe(true);
     expect(result.autoResolved[0].strategy).toBe('merge');
@@ -164,38 +166,44 @@ describe('autoResolve', () => {
   });
 
   it('auto-resolves add-add with ours strategy', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'new.md',
-      type: 'add-add',
-      ours: 'our content',
-      theirs: 'their content',
-      base: null,
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'new.md',
+        type: 'add-add',
+        ours: 'our content',
+        theirs: 'their content',
+        base: null,
+      },
+    ];
     const result = autoResolve(conflicts, { addAddStrategy: 'ours' });
     expect(result.autoResolved[0].resolvedContent).toBe('our content');
   });
 
   it('auto-resolves content conflict with three-way merge', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'page.md',
-      type: 'content',
-      ours: 'a\nX\nc',
-      theirs: 'a\nb\nY',
-      base: 'a\nb\nc',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'page.md',
+        type: 'content',
+        ours: 'a\nX\nc',
+        theirs: 'a\nb\nY',
+        base: 'a\nb\nc',
+      },
+    ];
     const result = autoResolve(conflicts);
     expect(result.fullyResolved).toBe(true);
     expect(result.autoResolved[0].resolvedContent).toBe('a\nX\nY');
   });
 
   it('reports manual conflict when three-way merge fails', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'page.md',
-      type: 'content',
-      ours: 'a\nX\nc',
-      theirs: 'a\nY\nc',
-      base: 'a\nb\nc',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'page.md',
+        type: 'content',
+        ours: 'a\nX\nc',
+        theirs: 'a\nY\nc',
+        base: 'a\nb\nc',
+      },
+    ];
     const result = autoResolve(conflicts);
     expect(result.fullyResolved).toBe(false);
     expect(result.manualConflicts).toHaveLength(1);
@@ -203,26 +211,30 @@ describe('autoResolve', () => {
   });
 
   it('uses ours strategy for all content conflicts', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'page.md',
-      type: 'content',
-      ours: 'our version',
-      theirs: 'their version',
-      base: 'base',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'page.md',
+        type: 'content',
+        ours: 'our version',
+        theirs: 'their version',
+        base: 'base',
+      },
+    ];
     const result = autoResolve(conflicts, { defaultStrategy: 'ours' });
     expect(result.fullyResolved).toBe(true);
     expect(result.autoResolved[0].resolvedContent).toBe('our version');
   });
 
   it('uses theirs strategy for all content conflicts', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'page.md',
-      type: 'content',
-      ours: 'our version',
-      theirs: 'their version',
-      base: 'base',
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'page.md',
+        type: 'content',
+        ours: 'our version',
+        theirs: 'their version',
+        base: 'base',
+      },
+    ];
     const result = autoResolve(conflicts, { defaultStrategy: 'theirs' });
     expect(result.fullyResolved).toBe(true);
     expect(result.autoResolved[0].resolvedContent).toBe('their version');
@@ -246,9 +258,7 @@ describe('autoResolve', () => {
       },
     ];
     const result = autoResolve(conflicts, {
-      patternStrategies: [
-        { pattern: '.yaml', strategy: 'ours' },
-      ],
+      patternStrategies: [{ pattern: '.yaml', strategy: 'ours' }],
     });
     expect(result.autoResolved).toHaveLength(1);
     expect(result.autoResolved[0].path).toBe('config.yaml');
@@ -258,13 +268,15 @@ describe('autoResolve', () => {
   });
 
   it('handles content conflict without base (manual)', () => {
-    const conflicts: MergeConflict[] = [{
-      path: 'page.md',
-      type: 'content',
-      ours: 'our version',
-      theirs: 'their version',
-      base: null,
-    }];
+    const conflicts: MergeConflict[] = [
+      {
+        path: 'page.md',
+        type: 'content',
+        ours: 'our version',
+        theirs: 'their version',
+        base: null,
+      },
+    ];
     const result = autoResolve(conflicts);
     expect(result.fullyResolved).toBe(false);
     expect(result.manualConflicts).toHaveLength(1);

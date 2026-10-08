@@ -129,7 +129,14 @@ describe('KnowledgeGraphView', () => {
   });
 
   it('updates depth when slider changes', () => {
-    render(<KnowledgeGraphView data={sampleData} initialMode="local" initialFocusNodeId="a" initialDepth={2} />);
+    render(
+      <KnowledgeGraphView
+        data={sampleData}
+        initialMode="local"
+        initialFocusNodeId="a"
+        initialDepth={2}
+      />,
+    );
     const slider = screen.getByTestId('graph-depth-slider') as HTMLInputElement;
     expect(screen.getByTestId('graph-depth-value').textContent).toBe('2');
 
@@ -175,7 +182,14 @@ describe('KnowledgeGraphView', () => {
   });
 
   it('respects maxDepth prop on slider', () => {
-    render(<KnowledgeGraphView data={sampleData} initialMode="local" initialFocusNodeId="a" maxDepth={8} />);
+    render(
+      <KnowledgeGraphView
+        data={sampleData}
+        initialMode="local"
+        initialFocusNodeId="a"
+        maxDepth={8}
+      />,
+    );
     const slider = screen.getByTestId('graph-depth-slider') as HTMLInputElement;
     expect(slider.max).toBe('8');
   });
@@ -194,7 +208,10 @@ describe('KnowledgeGraphView — filters', () => {
 
   it('does not show filter bar when no groups and single link type', () => {
     const simpleData: GraphData = {
-      nodes: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }],
+      nodes: [
+        { id: 'a', title: 'A' },
+        { id: 'b', title: 'B' },
+      ],
       links: [{ source: 'a', target: 'b', type: 'parent' }],
     };
     render(<KnowledgeGraphView data={simpleData} />);

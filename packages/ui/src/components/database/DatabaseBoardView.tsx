@@ -25,7 +25,11 @@ function getTitleValue(row: DatabaseRow, properties: SchemaProperty[]): string {
   return val != null ? String(val) : '';
 }
 
-function getPropertyPreview(row: DatabaseRow, properties: SchemaProperty[], groupByProperty: string): { name: string; value: string }[] {
+function getPropertyPreview(
+  row: DatabaseRow,
+  properties: SchemaProperty[],
+  groupByProperty: string,
+): { name: string; value: string }[] {
   const previews: { name: string; value: string }[] = [];
   for (const prop of properties) {
     if (prop.definition.type === 'title') continue;
@@ -114,14 +118,21 @@ export function DatabaseBoardView({
     setDragOverColumn(null);
   }, []);
 
-  const handleDrop = useCallback((columnValue: string) => {
-    if (dragRowId && dragSourceColumn.current != null && dragSourceColumn.current !== columnValue) {
-      onMoveRow?.(dragRowId, dragSourceColumn.current, columnValue);
-    }
-    setDragRowId(null);
-    setDragOverColumn(null);
-    dragSourceColumn.current = null;
-  }, [dragRowId, onMoveRow]);
+  const handleDrop = useCallback(
+    (columnValue: string) => {
+      if (
+        dragRowId &&
+        dragSourceColumn.current != null &&
+        dragSourceColumn.current !== columnValue
+      ) {
+        onMoveRow?.(dragRowId, dragSourceColumn.current, columnValue);
+      }
+      setDragRowId(null);
+      setDragOverColumn(null);
+      dragSourceColumn.current = null;
+    },
+    [dragRowId, onMoveRow],
+  );
 
   const handleDragEnd = useCallback(() => {
     setDragRowId(null);
@@ -141,15 +152,16 @@ export function DatabaseBoardView({
             onDragLeave={handleDragLeave}
             onDrop={() => handleDrop(column.value)}
           >
-            <div className="cept-board-column-header" data-testid={`board-column-header-${column.value || 'uncategorized'}`}>
+            <div
+              className="cept-board-column-header"
+              data-testid={`board-column-header-${column.value || 'uncategorized'}`}
+            >
+              <span className="cept-board-column-color" style={{ backgroundColor: column.color }} />
+              <span className="cept-board-column-title">{column.value || 'Uncategorized'}</span>
               <span
-                className="cept-board-column-color"
-                style={{ backgroundColor: column.color }}
-              />
-              <span className="cept-board-column-title">
-                {column.value || 'Uncategorized'}
-              </span>
-              <span className="cept-board-column-count" data-testid={`board-column-count-${column.value || 'uncategorized'}`}>
+                className="cept-board-column-count"
+                data-testid={`board-column-count-${column.value || 'uncategorized'}`}
+              >
                 {column.rows.length}
               </span>
             </div>
@@ -165,9 +177,7 @@ export function DatabaseBoardView({
                   onDragEnd={handleDragEnd}
                   onClick={() => onRowClick?.(row.id)}
                 >
-                  <div className="cept-board-card-title">
-                    {getTitleValue(row, properties)}
-                  </div>
+                  <div className="cept-board-card-title">{getTitleValue(row, properties)}</div>
                   {getPropertyPreview(row, properties, groupByProperty).map((preview) => (
                     <div key={preview.name} className="cept-board-card-property">
                       <span className="cept-board-card-property-name">{preview.name}</span>

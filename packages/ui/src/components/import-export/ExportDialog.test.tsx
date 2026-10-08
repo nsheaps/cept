@@ -11,23 +11,17 @@ const testPage: PageContent = {
 
 describe('ExportDialog', () => {
   it('does not render when closed', () => {
-    render(
-      <ExportDialog isOpen={false} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={false} onClose={vi.fn()} page={testPage} />);
     expect(screen.queryByTestId('export-dialog')).toBeNull();
   });
 
   it('does not render when page is null', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={null} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={null} />);
     expect(screen.queryByTestId('export-dialog')).toBeNull();
   });
 
   it('renders export options', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
     expect(screen.getByTestId('export-dialog')).toBeDefined();
     expect(screen.getByText('Export Page')).toBeDefined();
     expect(screen.getByTestId('export-format')).toBeDefined();
@@ -35,16 +29,12 @@ describe('ExportDialog', () => {
   });
 
   it('shows page title', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
     expect(screen.getByText('Test Page')).toBeDefined();
   });
 
   it('has format selector with markdown, html, pdf options', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
     const select = screen.getByTestId('export-format') as HTMLSelectElement;
     expect(select.options.length).toBe(3);
     expect(select.options[0].value).toBe('markdown');
@@ -53,16 +43,12 @@ describe('ExportDialog', () => {
   });
 
   it('shows front matter checkbox for markdown format', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
     expect(screen.getByTestId('export-frontmatter')).toBeDefined();
   });
 
   it('hides front matter checkbox for html format', () => {
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
     fireEvent.change(screen.getByTestId('export-format'), { target: { value: 'html' } });
     expect(screen.queryByTestId('export-frontmatter')).toBeNull();
   });
@@ -85,9 +71,7 @@ describe('ExportDialog', () => {
       return originalCreateElement(tag);
     });
 
-    render(
-      <ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={vi.fn()} page={testPage} />);
 
     fireEvent.click(screen.getByTestId('export-button'));
     expect(screen.getByTestId('export-done')).toBeDefined();
@@ -100,18 +84,14 @@ describe('ExportDialog', () => {
 
   it('calls onClose when close button is clicked', () => {
     const onClose = vi.fn();
-    render(
-      <ExportDialog isOpen={true} onClose={onClose} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={onClose} page={testPage} />);
     screen.getByTestId('export-close').click();
     expect(onClose).toHaveBeenCalled();
   });
 
   it('calls onClose on overlay click', () => {
     const onClose = vi.fn();
-    render(
-      <ExportDialog isOpen={true} onClose={onClose} page={testPage} />,
-    );
+    render(<ExportDialog isOpen={true} onClose={onClose} page={testPage} />);
     fireEvent.click(screen.getByTestId('export-dialog'));
     expect(onClose).toHaveBeenCalled();
   });

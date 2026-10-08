@@ -84,9 +84,7 @@ describe('LinkedDatabaseView', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('linked-db-tab-gallery'));
-    expect(onConfigChange).toHaveBeenCalledWith(
-      expect.objectContaining({ viewType: 'gallery' }),
-    );
+    expect(onConfigChange).toHaveBeenCalledWith(expect.objectContaining({ viewType: 'gallery' }));
   });
 
   it('shows placeholder when no renderView', () => {
@@ -106,12 +104,15 @@ describe('LinkedDatabaseView', () => {
       />,
     );
     expect(screen.getByTestId('custom-view')).toBeDefined();
-    expect(renderView).toHaveBeenCalledWith('table', expect.objectContaining({
-      properties,
-      rows,
-      filter: config.filter,
-      sort: config.sort,
-    }));
+    expect(renderView).toHaveBeenCalledWith(
+      'table',
+      expect.objectContaining({
+        properties,
+        rows,
+        filter: config.filter,
+        sort: config.sort,
+      }),
+    );
   });
 
   it('enters name editing on click', () => {
@@ -134,9 +135,7 @@ describe('LinkedDatabaseView', () => {
     const input = screen.getByTestId('linked-db-name-input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'New Name' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(onConfigChange).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'New Name' }),
-    );
+    expect(onConfigChange).toHaveBeenCalledWith(expect.objectContaining({ name: 'New Name' }));
   });
 
   it('cancels name editing on Escape', () => {

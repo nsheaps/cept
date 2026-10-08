@@ -51,7 +51,12 @@ export type {
   DeviceFlowVerification,
   FetchFn,
 } from './auth/index.js';
-export { GitHubAuthProvider, MemoryTokenStore, AuthPendingError, AuthSlowDownError } from './auth/index.js';
+export {
+  GitHubAuthProvider,
+  MemoryTokenStore,
+  AuthPendingError,
+  AuthSlowDownError,
+} from './auth/index.js';
 
 // Models
 export type {
@@ -142,16 +147,8 @@ export {
   generateDeviceId,
   generateSessionId,
 } from './git/index.js';
-export type {
-  BranchStrategyType,
-  BranchStrategyConfig,
-  BranchInfo,
-} from './git/index.js';
-export {
-  parseConflictMarkers,
-  threeWayMerge,
-  autoResolve,
-} from './git/index.js';
+export type { BranchStrategyType, BranchStrategyConfig, BranchInfo } from './git/index.js';
+export { parseConflictMarkers, threeWayMerge, autoResolve } from './git/index.js';
 export type {
   MergeConflict,
   ResolutionStrategy,

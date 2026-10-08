@@ -82,9 +82,7 @@ export function HistoryViewer({
   return (
     <div className="cept-history-viewer" data-testid="history-viewer">
       <div className="cept-history-header" data-testid="history-header">
-        <h3 className="cept-history-title">
-          {filePath ? `History: ${filePath}` : 'Page History'}
-        </h3>
+        <h3 className="cept-history-title">{filePath ? `History: ${filePath}` : 'Page History'}</h3>
         <input
           className="cept-history-search"
           type="text"

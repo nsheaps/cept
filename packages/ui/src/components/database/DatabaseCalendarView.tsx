@@ -15,8 +15,18 @@ export interface DatabaseCalendarViewProps {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function getTitleValue(row: DatabaseRow, properties: SchemaProperty[]): string {
@@ -205,7 +215,11 @@ export function DatabaseCalendarView({
       <div className="cept-calendar-grid" data-testid="calendar-grid">
         <div className="cept-calendar-weekdays">
           {WEEKDAYS.map((day) => (
-            <div key={day} className="cept-calendar-weekday" data-testid={`calendar-weekday-${day}`}>
+            <div
+              key={day}
+              className="cept-calendar-weekday"
+              data-testid={`calendar-weekday-${day}`}
+            >
               {day}
             </div>
           ))}
@@ -219,18 +233,21 @@ export function DatabaseCalendarView({
                 'cept-calendar-day',
                 day.isCurrentMonth ? 'is-current-month' : 'is-other-month',
                 day.isToday ? 'is-today' : '',
-              ].filter(Boolean).join(' ')}
+              ]
+                .filter(Boolean)
+                .join(' ')}
               data-testid={`calendar-day-${day.dateKey}`}
             >
-              <div className="cept-calendar-day-number">
-                {day.date.getDate()}
-              </div>
+              <div className="cept-calendar-day-number">{day.date.getDate()}</div>
               <div className="cept-calendar-day-events">
                 {day.rows.map((row) => (
                   <div
                     key={row.id}
                     className="cept-calendar-event"
-                    onClick={(e) => { e.stopPropagation(); onRowClick?.(row.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRowClick?.(row.id);
+                    }}
                     data-testid={`calendar-event-${row.id}`}
                   >
                     {getTitleValue(row, properties)}

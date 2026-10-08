@@ -99,7 +99,10 @@ export async function createSpace(
  */
 export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath?: string): string {
   // Strip protocol and trailing slashes
-  const repo = remoteUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+  const repo = remoteUrl
+    .replace(/^https?:\/\//, '')
+    .replace(/\.git$/, '')
+    .replace(/\/+$/, '');
   let id = `${repo}@${branch}`;
   // Append sub-path if present
   if (subPath) {
@@ -115,7 +118,9 @@ export function generateRemoteSpaceId(remoteUrl: string, branch: string, subPath
  * Parse a remote space ID back into its components.
  * Returns null if the ID is not a valid remote space ID.
  */
-export function parseRemoteSpaceId(spaceId: string): { repo: string; branch: string; subPath?: string } | null {
+export function parseRemoteSpaceId(
+  spaceId: string,
+): { repo: string; branch: string; subPath?: string } | null {
   const atIdx = spaceId.indexOf('@');
   if (atIdx < 0) return null;
   const repo = spaceId.substring(0, atIdx);

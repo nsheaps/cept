@@ -4,8 +4,22 @@ import { SearchPanel } from './SearchPanel.js';
 import type { SearchResult } from './SearchPanel.js';
 
 const mockResults: SearchResult[] = [
-  { pageId: 'p1', title: 'Getting Started', snippet: 'Welcome to the app...', path: '/getting-started', score: 2.5, matchType: 'title' },
-  { pageId: 'p2', title: 'API Reference', snippet: 'The API provides endpoints for...', path: '/api', score: 1.8, matchType: 'content' },
+  {
+    pageId: 'p1',
+    title: 'Getting Started',
+    snippet: 'Welcome to the app...',
+    path: '/getting-started',
+    score: 2.5,
+    matchType: 'title',
+  },
+  {
+    pageId: 'p2',
+    title: 'API Reference',
+    snippet: 'The API provides endpoints for...',
+    path: '/api',
+    score: 1.8,
+    matchType: 'content',
+  },
 ];
 
 function createMockSearch(results: SearchResult[] = mockResults) {
@@ -15,21 +29,36 @@ function createMockSearch(results: SearchResult[] = mockResults) {
 describe('SearchPanel', () => {
   it('renders nothing when not open', () => {
     const { container } = render(
-      <SearchPanel isOpen={false} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={false}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
     expect(container.innerHTML).toBe('');
   });
 
   it('renders when open', () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
     expect(screen.getByTestId('search-panel')).toBeDefined();
   });
 
   it('renders search input', () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
     expect(screen.getByTestId('search-input')).toBeDefined();
   });
@@ -49,7 +78,12 @@ describe('SearchPanel', () => {
 
   it('renders search results', async () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });
@@ -62,7 +96,12 @@ describe('SearchPanel', () => {
 
   it('shows empty state when no results', async () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch([])} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch([])}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'nonexistent' } });
@@ -75,7 +114,12 @@ describe('SearchPanel', () => {
   it('calls onClose on Escape', () => {
     const onClose = vi.fn();
     render(
-      <SearchPanel isOpen={true} onClose={onClose} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={onClose}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.keyDown(screen.getByTestId('search-input'), { key: 'Escape' });
@@ -85,7 +129,12 @@ describe('SearchPanel', () => {
   it('calls onClose on overlay click', () => {
     const onClose = vi.fn();
     render(
-      <SearchPanel isOpen={true} onClose={onClose} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={onClose}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.click(screen.getByTestId('search-overlay'));
@@ -96,7 +145,12 @@ describe('SearchPanel', () => {
     const onResultSelect = vi.fn();
     const onClose = vi.fn();
     render(
-      <SearchPanel isOpen={true} onClose={onClose} onSearch={createMockSearch()} onResultSelect={onResultSelect} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={onClose}
+        onSearch={createMockSearch()}
+        onResultSelect={onResultSelect}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });
@@ -114,7 +168,12 @@ describe('SearchPanel', () => {
     const onResultSelect = vi.fn();
     const onClose = vi.fn();
     render(
-      <SearchPanel isOpen={true} onClose={onClose} onSearch={createMockSearch()} onResultSelect={onResultSelect} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={onClose}
+        onSearch={createMockSearch()}
+        onResultSelect={onResultSelect}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });
@@ -130,7 +189,12 @@ describe('SearchPanel', () => {
 
   it('navigates with arrow keys', async () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });
@@ -149,7 +213,12 @@ describe('SearchPanel', () => {
 
   it('displays result snippets', async () => {
     render(
-      <SearchPanel isOpen={true} onClose={vi.fn()} onSearch={createMockSearch()} onResultSelect={vi.fn()} />,
+      <SearchPanel
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={createMockSearch()}
+        onResultSelect={vi.fn()}
+      />,
     );
 
     fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });

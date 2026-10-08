@@ -50,39 +50,27 @@ function TestWrapper({
     }
   }, [autoShow, pos]);
 
-  return (
-    <BlockActionsMenu
-      ref={ref}
-      editor={mockEditor as never}
-      actions={actions}
-    />
-  );
+  return <BlockActionsMenu ref={ref} editor={mockEditor as never} actions={actions} />;
 }
 
 describe('BlockActionsMenu', () => {
   it('is hidden by default', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} />,
-    );
+    render(<TestWrapper actions={actions} />);
 
     expect(screen.queryByTestId('block-actions-menu')).toBeNull();
   });
 
   it('shows menu when show() is called', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} autoShow />,
-    );
+    render(<TestWrapper actions={actions} autoShow />);
 
     expect(screen.getByTestId('block-actions-menu')).toBeDefined();
   });
 
   it('shows main actions (Delete, Duplicate, Turn into)', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} autoShow />,
-    );
+    render(<TestWrapper actions={actions} autoShow />);
 
     expect(screen.getByText('Delete')).toBeDefined();
     expect(screen.getByText('Duplicate')).toBeDefined();
@@ -91,9 +79,7 @@ describe('BlockActionsMenu', () => {
 
   it('navigates to turn-into submenu', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} autoShow />,
-    );
+    render(<TestWrapper actions={actions} autoShow />);
 
     fireEvent.click(screen.getByTestId('block-action-turn-into'));
 
@@ -106,9 +92,7 @@ describe('BlockActionsMenu', () => {
 
   it('navigates back from turn-into submenu', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} autoShow />,
-    );
+    render(<TestWrapper actions={actions} autoShow />);
 
     fireEvent.click(screen.getByTestId('block-action-turn-into'));
     expect(screen.getByText('Back')).toBeDefined();
@@ -126,9 +110,7 @@ describe('BlockActionsMenu', () => {
       action: vi.fn(),
     };
 
-    render(
-      <TestWrapper actions={[deleteAction]} autoShow pos={5} />,
-    );
+    render(<TestWrapper actions={[deleteAction]} autoShow pos={5} />);
 
     fireEvent.click(screen.getByTestId('block-action-delete'));
     expect(deleteAction.action).toHaveBeenCalledWith(mockEditor, 5);
@@ -142,9 +124,7 @@ describe('BlockActionsMenu', () => {
       action: vi.fn(),
     };
 
-    render(
-      <TestWrapper actions={[deleteAction]} autoShow />,
-    );
+    render(<TestWrapper actions={[deleteAction]} autoShow />);
 
     fireEvent.click(screen.getByTestId('block-action-delete'));
     expect(screen.queryByTestId('block-actions-menu')).toBeNull();
@@ -167,9 +147,7 @@ describe('BlockActionsMenu', () => {
 
   it('renders with correct test ids', () => {
     const actions = getDefaultBlockActions();
-    render(
-      <TestWrapper actions={actions} autoShow />,
-    );
+    render(<TestWrapper actions={actions} autoShow />);
 
     expect(screen.getByTestId('block-action-delete')).toBeDefined();
     expect(screen.getByTestId('block-action-duplicate')).toBeDefined();

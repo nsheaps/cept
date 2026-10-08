@@ -43,16 +43,12 @@ describe('EmptyState', () => {
   });
 
   it('renders description', () => {
-    const { container } = render(
-      <EmptyState title="Empty" description="Create your first item" />,
-    );
+    const { container } = render(<EmptyState title="Empty" description="Create your first item" />);
     expect(container.textContent).toContain('Create your first item');
   });
 
   it('renders icon', () => {
-    const { container } = render(
-      <EmptyState title="Empty" icon="📭" />,
-    );
+    const { container } = render(<EmptyState title="Empty" icon="📭" />);
     expect(container.textContent).toContain('📭');
   });
 

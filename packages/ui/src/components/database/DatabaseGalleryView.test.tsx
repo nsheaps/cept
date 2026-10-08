@@ -13,8 +13,26 @@ const properties: SchemaProperty[] = [
 ];
 
 const rows: DatabaseRow[] = [
-  { id: 'r1', properties: { Name: 'Item A', Cover: 'https://example.com/a.jpg', Status: 'Active', Priority: 1, Tags: ['design', 'ui'] } },
-  { id: 'r2', properties: { Name: 'Item B', Cover: 'https://example.com/b.jpg', Status: 'Draft', Priority: 2, Tags: [] } },
+  {
+    id: 'r1',
+    properties: {
+      Name: 'Item A',
+      Cover: 'https://example.com/a.jpg',
+      Status: 'Active',
+      Priority: 1,
+      Tags: ['design', 'ui'],
+    },
+  },
+  {
+    id: 'r2',
+    properties: {
+      Name: 'Item B',
+      Cover: 'https://example.com/b.jpg',
+      Status: 'Draft',
+      Priority: 2,
+      Tags: [],
+    },
+  },
   { id: 'r3', properties: { Name: 'Item C', Status: 'Active', Priority: 3, Tags: ['dev'] } },
 ];
 
@@ -92,11 +110,7 @@ describe('DatabaseGalleryView', () => {
 
   it('formats array values as comma-separated', () => {
     render(
-      <DatabaseGalleryView
-        properties={properties}
-        rows={rows}
-        visibleProperties={['Tags']}
-      />,
+      <DatabaseGalleryView properties={properties} rows={rows} visibleProperties={['Tags']} />,
     );
     expect(screen.getByTestId('gallery-prop-r1-Tags').textContent).toContain('design, ui');
   });
@@ -128,7 +142,13 @@ describe('DatabaseGalleryView', () => {
 
   it('handles cover from array value', () => {
     const rowsWithArrayCover: DatabaseRow[] = [
-      { id: 'r1', properties: { Name: 'Arr', Cover: ['https://example.com/first.jpg', 'https://example.com/second.jpg'] } },
+      {
+        id: 'r1',
+        properties: {
+          Name: 'Arr',
+          Cover: ['https://example.com/first.jpg', 'https://example.com/second.jpg'],
+        },
+      },
     ];
     render(
       <DatabaseGalleryView

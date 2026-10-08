@@ -78,7 +78,7 @@ describe('DatabaseTableView', () => {
         rows={rows}
         sort={[{ property: 'Name', direction: 'asc' }]}
         onSortChange={onSortChange}
-      />
+      />,
     );
     fireEvent.click(screen.getByTestId('table-header-Name'));
     expect(onSortChange).toHaveBeenCalledWith([{ property: 'Name', direction: 'desc' }]);
@@ -92,7 +92,7 @@ describe('DatabaseTableView', () => {
         rows={rows}
         sort={[{ property: 'Name', direction: 'desc' }]}
         onSortChange={onSortChange}
-      />
+      />,
     );
     fireEvent.click(screen.getByTestId('table-header-Name'));
     expect(onSortChange).toHaveBeenCalledWith([]);
@@ -104,7 +104,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rows}
         sort={[{ property: 'Priority', direction: 'asc' }]}
-      />
+      />,
     );
     const tableRows = screen.getAllByTestId(/^table-row-r/);
     expect(tableRows[0].getAttribute('data-testid')).toBe('table-row-r2'); // Priority 1
@@ -118,7 +118,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rows}
         sort={[{ property: 'Priority', direction: 'asc' }]}
-      />
+      />,
     );
     expect(screen.getByTestId('table-header-Priority').textContent).toContain('\u2191');
   });
@@ -133,11 +133,7 @@ describe('DatabaseTableView', () => {
   it('applies filter', () => {
     const onFilterChange = vi.fn();
     render(
-      <DatabaseTableView
-        properties={properties}
-        rows={rows}
-        onFilterChange={onFilterChange}
-      />
+      <DatabaseTableView properties={properties} rows={rows} onFilterChange={onFilterChange} />,
     );
     fireEvent.click(screen.getByTestId('table-filter-toggle'));
     fireEvent.change(screen.getByTestId('table-filter-value'), { target: { value: 'Task' } });
@@ -155,7 +151,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rows}
         filter={{ property: 'Status', operator: 'equals', value: 'Done' }}
-      />
+      />,
     );
     expect(screen.getByTestId('table-row-count').textContent).toBe('1 rows');
     expect(screen.getByTestId('table-row-r2')).toBeDefined();
@@ -168,7 +164,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rows}
         filter={{ property: 'Status', operator: 'contains', value: 'Done' }}
-      />
+      />,
     );
     expect(screen.getByTestId('table-active-filter')).toBeDefined();
   });
@@ -181,7 +177,7 @@ describe('DatabaseTableView', () => {
         rows={rows}
         filter={{ property: 'Status', operator: 'equals', value: 'Done' }}
         onFilterChange={onFilterChange}
-      />
+      />,
     );
     fireEvent.click(screen.getByTestId('table-clear-filter'));
     expect(onFilterChange).toHaveBeenCalledWith(null);
@@ -216,7 +212,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rows}
         filter={{ property: 'Status', operator: 'contains', value: 'progress' }}
-      />
+      />,
     );
     expect(screen.getByTestId('table-row-count').textContent).toBe('1 rows');
     expect(screen.getByTestId('table-row-r1')).toBeDefined();
@@ -232,7 +228,7 @@ describe('DatabaseTableView', () => {
         properties={properties}
         rows={rowsWithEmpty}
         filter={{ property: 'Name', operator: 'is_empty', value: '' }}
-      />
+      />,
     );
     expect(screen.getByTestId('table-row-count').textContent).toBe('1 rows');
   });

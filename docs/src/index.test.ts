@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getDocPages,
-  getDocPagesByCategory,
-  getDocPage,
-  getDocNavigation,
-} from './index.js';
+import { getDocPages, getDocPagesByCategory, getDocPage, getDocNavigation } from './index.js';
 
 describe('getDocPages', () => {
   it('returns all documentation pages', () => {

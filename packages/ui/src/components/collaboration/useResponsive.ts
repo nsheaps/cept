@@ -52,10 +52,7 @@ function detectTouch(): boolean {
 }
 
 export function useResponsive(config?: Partial<BreakpointConfig>): ResponsiveState {
-  const breakpoints = useMemo(
-    () => ({ ...DEFAULT_BREAKPOINTS, ...config }),
-    [config],
-  );
+  const breakpoints = useMemo(() => ({ ...DEFAULT_BREAKPOINTS, ...config }), [config]);
 
   const [state, setState] = useState<ResponsiveState>(() => {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1024;

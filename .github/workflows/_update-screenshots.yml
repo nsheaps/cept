@@ -4,7 +4,7 @@ on:
   workflow_call:
     outputs:
       changed:
-        description: "Whether any screenshots had pixel-level changes"
+        description: 'Whether any screenshots had pixel-level changes'
         value: ${{ jobs.screenshots.outputs.changed }}
 
 jobs:

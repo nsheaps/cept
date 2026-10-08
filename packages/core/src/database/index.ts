@@ -73,9 +73,4 @@ export {
   addReverseRelation,
   removeReverseRelation,
 } from './relations.js';
-export type {
-  RelationValue,
-  RollupFunction,
-  RelationConfig,
-  RollupConfig,
-} from './relations.js';
+export type { RelationValue, RollupFunction, RelationConfig, RollupConfig } from './relations.js';

@@ -7,11 +7,7 @@ export interface EmbedOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     embed: {
-      setEmbed: (attrs: {
-        src: string;
-        width?: string;
-        height?: string;
-      }) => ReturnType;
+      setEmbed: (attrs: { src: string; width?: string; height?: string }) => ReturnType;
     };
   }
 }
@@ -57,32 +53,28 @@ export const Embed = Node.create<EmbedOptions>({
     return {
       src: {
         default: null,
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-src'),
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-src'),
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-src': attributes.src as string,
         }),
       },
       provider: {
         default: 'generic',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-provider') || 'generic',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-provider') || 'generic',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-provider': attributes.provider as string,
         }),
       },
       width: {
         default: '100%',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-width') || '100%',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-width') || '100%',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-width': attributes.width as string,
         }),
       },
       height: {
         default: '400px',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-height') || '400px',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-height') || '400px',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-height': attributes.height as string,
         }),

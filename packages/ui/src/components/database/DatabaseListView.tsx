@@ -55,10 +55,7 @@ export function DatabaseListView({
               className={`cept-list-item${isExpanded ? ' is-expanded' : ''}`}
               data-testid={`list-item-${row.id}`}
             >
-              <div
-                className="cept-list-item-header"
-                data-testid={`list-header-${row.id}`}
-              >
+              <div className="cept-list-item-header" data-testid={`list-header-${row.id}`}>
                 <button
                   className="cept-list-item-toggle"
                   onClick={() => handleToggle(row.id)}
@@ -75,10 +72,7 @@ export function DatabaseListView({
                 </span>
               </div>
               {isExpanded && (
-                <div
-                  className="cept-list-item-details"
-                  data-testid={`list-details-${row.id}`}
-                >
+                <div className="cept-list-item-details" data-testid={`list-details-${row.id}`}>
                   {detailProperties.map((prop) => (
                     <div
                       key={prop.name}
@@ -99,11 +93,7 @@ export function DatabaseListView({
       </div>
 
       {onAddRow && (
-        <button
-          className="cept-list-add"
-          onClick={onAddRow}
-          data-testid="list-add-item"
-        >
+        <button className="cept-list-add" onClick={onAddRow} data-testid="list-add-item">
           + New
         </button>
       )}

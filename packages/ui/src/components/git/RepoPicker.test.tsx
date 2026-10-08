@@ -129,14 +129,18 @@ describe('RepoPicker', () => {
 
     it('filters repos by description', () => {
       render(<RepoPicker user={mockUser} repos={mockRepos} />);
-      fireEvent.change(screen.getByTestId('repo-picker-search'), { target: { value: 'documentation' } });
+      fireEvent.change(screen.getByTestId('repo-picker-search'), {
+        target: { value: 'documentation' },
+      });
       expect(screen.getByTestId('repo-picker-item-octocat/private-docs')).toBeDefined();
       expect(screen.queryByTestId('repo-picker-item-octocat/notes')).toBeNull();
     });
 
     it('shows empty state when no matches', () => {
       render(<RepoPicker user={mockUser} repos={mockRepos} />);
-      fireEvent.change(screen.getByTestId('repo-picker-search'), { target: { value: 'zzz-nothing' } });
+      fireEvent.change(screen.getByTestId('repo-picker-search'), {
+        target: { value: 'zzz-nothing' },
+      });
       expect(screen.getByTestId('repo-picker-empty')).toBeDefined();
     });
   });
@@ -259,9 +263,9 @@ describe('RepoPicker', () => {
     it('disables submit when name empty', () => {
       render(<RepoPicker user={mockUser} repos={mockRepos} onCreateRepo={() => {}} />);
       fireEvent.click(screen.getByTestId('repo-picker-new'));
-      expect(
-        (screen.getByTestId('repo-picker-create-submit') as HTMLButtonElement).disabled,
-      ).toBe(true);
+      expect((screen.getByTestId('repo-picker-create-submit') as HTMLButtonElement).disabled).toBe(
+        true,
+      );
     });
 
     it('toggles private checkbox', () => {
@@ -294,7 +298,9 @@ describe('RepoPicker', () => {
   describe('empty state', () => {
     it('shows empty message when no repos', () => {
       render(<RepoPicker user={mockUser} repos={[]} />);
-      expect(screen.getByTestId('repo-picker-empty').textContent).toContain('No repositories found');
+      expect(screen.getByTestId('repo-picker-empty').textContent).toContain(
+        'No repositories found',
+      );
     });
   });
 });

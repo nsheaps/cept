@@ -1,5 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { PropertyDefinition, SortConfig, SortDirection, FilterConfig, FilterOperator, DatabaseRow } from '@cept/core';
+import type {
+  PropertyDefinition,
+  SortConfig,
+  SortDirection,
+  FilterConfig,
+  FilterOperator,
+  DatabaseRow,
+} from '@cept/core';
 import type { SchemaProperty } from './DatabaseSchemaEditor.js';
 
 export interface DatabaseTableViewProps {
@@ -107,18 +114,21 @@ export function DatabaseTableView({
   const [filterOperator, setFilterOperator] = useState<FilterOperator>('contains');
   const [filterValue, setFilterValue] = useState('');
 
-  const handleSort = useCallback((propertyName: string) => {
-    const existing = sort.find((s) => s.property === propertyName);
-    let newSort: SortConfig[];
-    if (!existing) {
-      newSort = [{ property: propertyName, direction: 'asc' }];
-    } else if (existing.direction === 'asc') {
-      newSort = [{ property: propertyName, direction: 'desc' }];
-    } else {
-      newSort = [];
-    }
-    onSortChange?.(newSort);
-  }, [sort, onSortChange]);
+  const handleSort = useCallback(
+    (propertyName: string) => {
+      const existing = sort.find((s) => s.property === propertyName);
+      let newSort: SortConfig[];
+      if (!existing) {
+        newSort = [{ property: propertyName, direction: 'asc' }];
+      } else if (existing.direction === 'asc') {
+        newSort = [{ property: propertyName, direction: 'desc' }];
+      } else {
+        newSort = [];
+      }
+      onSortChange?.(newSort);
+    },
+    [sort, onSortChange],
+  );
 
   const handleApplyFilter = useCallback(() => {
     onFilterChange?.({
@@ -174,7 +184,8 @@ export function DatabaseTableView({
         </button>
         {filter && (
           <span className="cept-table-active-filter" data-testid="table-active-filter">
-            {filter.property} {FILTER_OPERATORS.find((o) => o.value === filter.operator)?.label ?? filter.operator}
+            {filter.property}{' '}
+            {FILTER_OPERATORS.find((o) => o.value === filter.operator)?.label ?? filter.operator}
             {filter.value != null && filter.value !== '' ? ` "${filter.value}"` : ''}
             <button
               className="cept-table-clear-filter"
@@ -198,7 +209,9 @@ export function DatabaseTableView({
             data-testid="table-filter-property"
           >
             {properties.map((p) => (
-              <option key={p.name} value={p.name}>{p.name}</option>
+              <option key={p.name} value={p.name}>
+                {p.name}
+              </option>
             ))}
           </select>
           <select
@@ -207,7 +220,9 @@ export function DatabaseTableView({
             data-testid="table-filter-operator"
           >
             {FILTER_OPERATORS.map((op) => (
-              <option key={op.value} value={op.value}>{op.label}</option>
+              <option key={op.value} value={op.value}>
+                {op.label}
+              </option>
             ))}
           </select>
           <input
@@ -216,10 +231,7 @@ export function DatabaseTableView({
             placeholder="Value"
             data-testid="table-filter-value"
           />
-          <button
-            onClick={handleApplyFilter}
-            data-testid="table-filter-apply"
-          >
+          <button onClick={handleApplyFilter} data-testid="table-filter-apply">
             Apply
           </button>
         </div>
@@ -237,9 +249,7 @@ export function DatabaseTableView({
                   data-testid={`table-header-${prop.name}`}
                 >
                   <span>{prop.name}</span>
-                  <span className="cept-table-sort-indicator">
-                    {getSortIndicator(prop.name)}
-                  </span>
+                  <span className="cept-table-sort-indicator">{getSortIndicator(prop.name)}</span>
                 </th>
               ))}
             </tr>
@@ -268,11 +278,7 @@ export function DatabaseTableView({
       </div>
 
       {onAddRow && (
-        <button
-          className="cept-table-add-row"
-          onClick={onAddRow}
-          data-testid="table-add-row"
-        >
+        <button className="cept-table-add-row" onClick={onAddRow} data-testid="table-add-row">
           + New row
         </button>
       )}

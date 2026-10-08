@@ -129,15 +129,18 @@ export function SettingsModal({
     }
   }, [isOpen, initialTab]);
 
-  const handleRefreshSpace = useCallback(async (spaceId: string) => {
-    if (!onRefreshSpace || refreshingSpaceId) return;
-    setRefreshingSpaceId(spaceId);
-    try {
-      await onRefreshSpace(spaceId);
-    } finally {
-      setRefreshingSpaceId(null);
-    }
-  }, [onRefreshSpace, refreshingSpaceId]);
+  const handleRefreshSpace = useCallback(
+    async (spaceId: string) => {
+      if (!onRefreshSpace || refreshingSpaceId) return;
+      setRefreshingSpaceId(spaceId);
+      try {
+        await onRefreshSpace(spaceId);
+      } finally {
+        setRefreshingSpaceId(null);
+      }
+    },
+    [onRefreshSpace, refreshingSpaceId],
+  );
 
   const flashSaved = useCallback(() => {
     setSavedIndicator(true);
@@ -156,9 +159,7 @@ export function SettingsModal({
 
   if (!isOpen) return null;
 
-  const selectedSpace = selectedSpaceId
-    ? spaces.find((s) => s.id === selectedSpaceId)
-    : null;
+  const selectedSpace = selectedSpaceId ? spaces.find((s) => s.id === selectedSpaceId) : null;
 
   return (
     <div className="cept-settings-overlay" onClick={onClose} data-testid="settings-modal">
@@ -167,7 +168,14 @@ export function SettingsModal({
           <h2>Settings</h2>
           {savedIndicator && (
             <span className="cept-settings-saved" data-testid="settings-saved-indicator">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="3,8 7,12 13,4" />
               </svg>
               Saved
@@ -179,7 +187,14 @@ export function SettingsModal({
             data-testid="settings-close"
             title="Close"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M4 4l8 8M12 4l-8 8" />
             </svg>
           </button>
@@ -189,10 +204,20 @@ export function SettingsModal({
           <nav className="cept-settings-tabs" data-testid="settings-tabs">
             <button
               className={`cept-settings-tab ${activeTab === 'settings' ? 'is-active' : ''}`}
-              onClick={() => { setActiveTab('settings'); setSelectedSpaceId(null); }}
+              onClick={() => {
+                setActiveTab('settings');
+                setSelectedSpaceId(null);
+              }}
               data-testid="settings-tab-settings"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <circle cx="8" cy="8" r="2.5" />
                 <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
               </svg>
@@ -200,10 +225,20 @@ export function SettingsModal({
             </button>
             <button
               className={`cept-settings-tab ${activeTab === 'spaces' ? 'is-active' : ''}`}
-              onClick={() => { setActiveTab('spaces'); setSelectedSpaceId(null); }}
+              onClick={() => {
+                setActiveTab('spaces');
+                setSelectedSpaceId(null);
+              }}
               data-testid="settings-tab-spaces"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <rect x="2" y="2" width="5" height="5" rx="1" />
                 <rect x="9" y="2" width="5" height="5" rx="1" />
                 <rect x="2" y="9" width="5" height="5" rx="1" />
@@ -213,10 +248,20 @@ export function SettingsModal({
             </button>
             <button
               className={`cept-settings-tab ${activeTab === 'about' ? 'is-active' : ''}`}
-              onClick={() => { setActiveTab('about'); setSelectedSpaceId(null); }}
+              onClick={() => {
+                setActiveTab('about');
+                setSelectedSpaceId(null);
+              }}
               data-testid="settings-tab-about"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <circle cx="8" cy="8" r="6.5" />
                 <path d="M8 7v4M8 4.5v.5" />
               </svg>
@@ -265,12 +310,15 @@ export function SettingsModal({
                   <div className="cept-settings-toggle-label">
                     <span className="cept-settings-toggle-name">Shareable git URLs</span>
                     <span className="cept-settings-toggle-desc">
-                      Use /g/ URLs for git-backed spaces so shared links auto-create the space for recipients
+                      Use /g/ URLs for git-backed spaces so shared links auto-create the space for
+                      recipients
                     </span>
                   </div>
                   <button
                     className={`cept-settings-switch ${settings.redirectToGitUrl ? 'is-on' : ''}`}
-                    onClick={() => handleSettingChange('redirectToGitUrl', !settings.redirectToGitUrl)}
+                    onClick={() =>
+                      handleSettingChange('redirectToGitUrl', !settings.redirectToGitUrl)
+                    }
                     role="switch"
                     aria-checked={settings.redirectToGitUrl}
                     data-testid="setting-redirect-git-url-toggle"
@@ -290,7 +338,9 @@ export function SettingsModal({
                   </div>
                   <button
                     className={`cept-settings-switch ${settings.showDemoContent ? 'is-on' : ''}`}
-                    onClick={() => handleSettingChange('showDemoContent', !settings.showDemoContent)}
+                    onClick={() =>
+                      handleSettingChange('showDemoContent', !settings.showDemoContent)
+                    }
                     role="switch"
                     aria-checked={settings.showDemoContent}
                     data-testid="setting-show-demo-toggle"
@@ -308,7 +358,14 @@ export function SettingsModal({
                   }}
                   data-testid="reset-settings-btn"
                 >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
                     <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
                     <polyline points="2,3 2,6.5 5.5,6.5" />
                     <polyline points="14,13 14,9.5 10.5,9.5" />
@@ -326,19 +383,43 @@ export function SettingsModal({
                 ) : (
                   <div className="cept-settings-space-list">
                     {spaces.map((space) => (
-                      <div key={space.id} className="cept-settings-space-row" data-testid={`space-item-${space.id}`}>
-                        <div className={`cept-settings-space-info-block ${space.id === activeSpaceId ? 'is-active' : ''}`}>
+                      <div
+                        key={space.id}
+                        className="cept-settings-space-row"
+                        data-testid={`space-item-${space.id}`}
+                      >
+                        <div
+                          className={`cept-settings-space-info-block ${space.id === activeSpaceId ? 'is-active' : ''}`}
+                        >
                           <div className="cept-settings-space-info">
                             <span className="cept-settings-space-name">
                               {space.name}
                               {space.id === activeSpaceId && (
-                                <span className="cept-settings-space-badge" data-testid="active-space-badge"> (active)</span>
+                                <span
+                                  className="cept-settings-space-badge"
+                                  data-testid="active-space-badge"
+                                >
+                                  {' '}
+                                  (active)
+                                </span>
                               )}
                             </span>
                             <span className="cept-settings-space-meta">
                               {space.source}
-                              {space.branch && <> &middot; <span className="cept-settings-space-branch" data-testid={`space-branch-${space.id}`}>{space.branch}</span></>}
-                              {' '}&middot; {space.pageCount} pages &middot; {formatBytes(space.contentSize)}
+                              {space.branch && (
+                                <>
+                                  {' '}
+                                  &middot;{' '}
+                                  <span
+                                    className="cept-settings-space-branch"
+                                    data-testid={`space-branch-${space.id}`}
+                                  >
+                                    {space.branch}
+                                  </span>
+                                </>
+                              )}{' '}
+                              &middot; {space.pageCount} pages &middot;{' '}
+                              {formatBytes(space.contentSize)}
                             </span>
                           </div>
                         </div>
@@ -346,11 +427,21 @@ export function SettingsModal({
                           {space.id !== activeSpaceId && (
                             <button
                               className="cept-settings-icon-btn"
-                              onClick={() => { onSwitchSpace(space.id); onClose(); }}
+                              onClick={() => {
+                                onSwitchSpace(space.id);
+                                onClose();
+                              }}
                               title="Switch to this space"
                               data-testid={`switch-space-${space.id}`}
                             >
-                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                              >
                                 <path d="M6 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6" />
                                 <path d="M2 8h8M7 5l3 3-3 3" />
                               </svg>
@@ -361,7 +452,11 @@ export function SettingsModal({
                               className="cept-settings-icon-btn"
                               onClick={() => handleRefreshSpace(space.id)}
                               disabled={refreshingSpaceId === space.id}
-                              title={refreshingSpaceId === space.id ? 'Syncing...' : 'Refresh from remote'}
+                              title={
+                                refreshingSpaceId === space.id
+                                  ? 'Syncing...'
+                                  : 'Refresh from remote'
+                              }
                               data-testid={`refresh-space-${space.id}`}
                             >
                               <svg
@@ -385,7 +480,14 @@ export function SettingsModal({
                               title="Delete space"
                               data-testid={`delete-space-${space.id}`}
                             >
-                              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                              >
                                 <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
                               </svg>
                             </button>
@@ -396,7 +498,14 @@ export function SettingsModal({
                             title="Space settings"
                             data-testid={`space-settings-${space.id}`}
                           >
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
                               <path d="M6 4l4 4-4 4" />
                             </svg>
                           </button>
@@ -412,7 +521,14 @@ export function SettingsModal({
                   onClick={onOpenAddSpaceWizard}
                   data-testid="create-space-btn"
                 >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M8 3v10M3 8h10" />
                   </svg>
                   Create new space
@@ -446,7 +562,10 @@ export function SettingsModal({
                       {onExport && (
                         <button
                           className="cept-settings-action-btn"
-                          onClick={() => { onExport(); onClose(); }}
+                          onClick={() => {
+                            onExport();
+                            onClose();
+                          }}
                           data-testid="export-page-btn"
                         >
                           Export current page
@@ -465,7 +584,14 @@ export function SettingsModal({
                       onClick={onRecreateDemoSpace}
                       data-testid="recreate-demo-btn"
                     >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
                         <path d="M2 8a6 6 0 0111.46-2.46M14 8a6 6 0 01-11.46 2.46" />
                         <polyline points="2,3 2,6.5 5.5,6.5" />
                         <polyline points="14,13 14,9.5 10.5,9.5" />
@@ -478,7 +604,14 @@ export function SettingsModal({
                     onClick={onClearAllData}
                     data-testid="clear-all-data-btn"
                   >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
                       <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
                     </svg>
                     Clear all data (includes settings)
@@ -496,8 +629,16 @@ export function SettingsModal({
                   onDeleteSpace(selectedSpace.id);
                   setSelectedSpaceId(null);
                 }}
-                onBrowseFiles={backend && selectedSpace.id !== 'cept-docs' ? () => setBrowsingSpaceId(selectedSpace.id) : undefined}
-                onRefresh={selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs' ? () => handleRefreshSpace(selectedSpace.id) : undefined}
+                onBrowseFiles={
+                  backend && selectedSpace.id !== 'cept-docs'
+                    ? () => setBrowsingSpaceId(selectedSpace.id)
+                    : undefined
+                }
+                onRefresh={
+                  selectedSpace.remoteUrl && onRefreshSpace && selectedSpace.id !== 'cept-docs'
+                    ? () => handleRefreshSpace(selectedSpace.id)
+                    : undefined
+                }
                 isRefreshing={refreshingSpaceId === selectedSpace.id}
               />
             )}
@@ -510,7 +651,6 @@ export function SettingsModal({
               />
             )}
 
-
             {activeTab === 'about' && (
               <div className="cept-settings-about" data-testid="settings-panel-about">
                 <div className="cept-settings-about-logo">C</div>
@@ -519,13 +659,22 @@ export function SettingsModal({
                 <p className="cept-settings-about-version" data-testid="about-version">
                   Version {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0-dev'}
                   {typeof __COMMIT_SHA__ !== 'undefined' && __COMMIT_SHA__ && (
-                    <span className="cept-settings-about-commit"> (<a href={`https://github.com/nsheaps/cept/commit/${__COMMIT_SHA__}`} target="_blank" rel="noopener noreferrer">{__COMMIT_SHA__.slice(0, 7)}</a>)</span>
+                    <span className="cept-settings-about-commit">
+                      {' '}
+                      (
+                      <a
+                        href={`https://github.com/nsheaps/cept/commit/${__COMMIT_SHA__}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {__COMMIT_SHA__.slice(0, 7)}
+                      </a>
+                      )
+                    </span>
                   )}
                 </p>
                 <div className="cept-settings-section-divider" />
-                <p className="cept-settings-about-footer">
-                  Built with React, TipTap, and love.
-                </p>
+                <p className="cept-settings-about-footer">Built with React, TipTap, and love.</p>
               </div>
             )}
           </div>
@@ -557,12 +706,15 @@ function SpaceDetails({
 
   return (
     <div data-testid={`space-details-${space.id}`}>
-      <button
-        className="cept-settings-back-btn"
-        onClick={onBack}
-        data-testid="space-details-back"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+      <button className="cept-settings-back-btn" onClick={onBack} data-testid="space-details-back">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M10 4l-4 4 4 4" />
         </svg>
         Back
@@ -607,7 +759,14 @@ function SpaceDetails({
           data-testid="space-details-name"
         >
           {space.name}
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M11.5 1.5l3 3L5 14H2v-3z" />
           </svg>
         </h3>
@@ -628,19 +787,25 @@ function SpaceDetails({
         {space.remoteUrl && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Remote</span>
-            <span className="cept-settings-detail-value" data-testid="space-detail-remote">{space.remoteUrl}</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-remote">
+              {space.remoteUrl}
+            </span>
           </div>
         )}
         {space.branch && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Branch</span>
-            <span className="cept-settings-detail-value" data-testid="space-detail-branch">{space.branch}</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-branch">
+              {space.branch}
+            </span>
           </div>
         )}
         {space.subPath && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Path</span>
-            <span className="cept-settings-detail-value" data-testid="space-detail-subpath">{space.subPath}</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-subpath">
+              {space.subPath}
+            </span>
           </div>
         )}
         {space.createdAt && (
@@ -652,7 +817,9 @@ function SpaceDetails({
         {space.lastSyncedAt && (
           <div className="cept-settings-detail-row">
             <span className="cept-settings-detail-label">Last synced</span>
-            <span className="cept-settings-detail-value" data-testid="space-detail-last-synced">{formatTimestamp(space.lastSyncedAt)}</span>
+            <span className="cept-settings-detail-value" data-testid="space-detail-last-synced">
+              {formatTimestamp(space.lastSyncedAt)}
+            </span>
           </div>
         )}
       </div>
@@ -689,7 +856,14 @@ function SpaceDetails({
             onClick={onBrowseFiles}
             data-testid="space-browse-files"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M2 3h4l2 2h6v8H2z" />
             </svg>
             Browse files
@@ -702,7 +876,14 @@ function SpaceDetails({
         onClick={onDelete}
         data-testid="space-details-delete"
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
           <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
         </svg>
         Delete this space

@@ -10,7 +10,12 @@ describe('CeptSearchIndex', () => {
 
   describe('indexPage', () => {
     it('indexes a page and makes it searchable', async () => {
-      await index.indexPage('p1', 'Getting Started', 'Welcome to Cept, a Notion clone.', '/getting-started');
+      await index.indexPage(
+        'p1',
+        'Getting Started',
+        'Welcome to Cept, a Notion clone.',
+        '/getting-started',
+      );
       const results = await index.search('cept');
       expect(results).toHaveLength(1);
       expect(results[0].pageId).toBe('p1');
@@ -57,9 +62,24 @@ describe('CeptSearchIndex', () => {
 
   describe('search', () => {
     beforeEach(async () => {
-      await index.indexPage('p1', 'Getting Started Guide', 'Welcome to Cept. This guide helps you get started.', '/getting-started');
-      await index.indexPage('p2', 'Advanced Features', 'Learn about databases, graphs, and collaboration.', '/advanced');
-      await index.indexPage('p3', 'Database Tutorial', 'Create your first database with tables and views.', '/database-tutorial');
+      await index.indexPage(
+        'p1',
+        'Getting Started Guide',
+        'Welcome to Cept. This guide helps you get started.',
+        '/getting-started',
+      );
+      await index.indexPage(
+        'p2',
+        'Advanced Features',
+        'Learn about databases, graphs, and collaboration.',
+        '/advanced',
+      );
+      await index.indexPage(
+        'p3',
+        'Database Tutorial',
+        'Create your first database with tables and views.',
+        '/database-tutorial',
+      );
       await index.indexDatabase('db1', { title: 'Tasks', description: 'Task tracking database' });
     });
 

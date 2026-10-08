@@ -14,12 +14,7 @@ export interface BuiltInTemplate extends TemplateMeta {
 }
 
 export type TemplateCategory =
-  | 'personal'
-  | 'work'
-  | 'education'
-  | 'project'
-  | 'engineering'
-  | 'blank';
+  'personal' | 'work' | 'education' | 'project' | 'engineering' | 'blank';
 
 const PAGE: TemplateType = 'page';
 const DB: TemplateType = 'database';

@@ -130,9 +130,7 @@ properties: {}
     });
 
     it('should parse mermaid blocks', () => {
-      const blocks = parser.parseBlocks(
-        '```mermaid\nflowchart TD\n    A --> B\n```',
-      );
+      const blocks = parser.parseBlocks('```mermaid\nflowchart TD\n    A --> B\n```');
       expect(blocks[0].type).toBe('mermaid');
       expect(blocks[0].content).toContain('flowchart TD');
     });
@@ -621,9 +619,7 @@ Important note here.
       const blocks = parser.parseBlocks(md);
       expect(blocks[0].type).toBe('toggle');
       expect(blocks[0].attrs.summary).toBe('Outer toggle');
-      const inner = blocks[0].children.find(
-        (c: { type: string }) => c.type === 'toggle',
-      );
+      const inner = blocks[0].children.find((c: { type: string }) => c.type === 'toggle');
       expect(inner).toBeDefined();
       expect(inner!.attrs.summary).toBe('Inner toggle');
     });
@@ -641,7 +637,10 @@ Important note here.
       const blocks = parser.parseBlocks(md);
       expect(blocks[0].type).toBe('bulletList');
       // Find the toggle in the nested structure
-      const findToggle = (block: { type: string; children: { type: string; children: unknown[]; attrs: Record<string, unknown> }[] }): { type: string; attrs: Record<string, unknown>; children: unknown[] } | null => {
+      const findToggle = (block: {
+        type: string;
+        children: { type: string; children: unknown[]; attrs: Record<string, unknown> }[];
+      }): { type: string; attrs: Record<string, unknown>; children: unknown[] } | null => {
         if (block.type === 'toggle') return block;
         for (const child of block.children) {
           const found = findToggle(child as typeof block);

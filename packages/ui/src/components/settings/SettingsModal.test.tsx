@@ -48,7 +48,9 @@ describe('SettingsModal', () => {
     const onSettingsChange = vi.fn();
     render(<SettingsModal {...defaultProps} onSettingsChange={onSettingsChange} />);
     screen.getByTestId('setting-auto-save-toggle').click();
-    expect(onSettingsChange).toHaveBeenCalledWith(expect.objectContaining({ autoSave: !DEFAULT_SETTINGS.autoSave }));
+    expect(onSettingsChange).toHaveBeenCalledWith(
+      expect.objectContaining({ autoSave: !DEFAULT_SETTINGS.autoSave }),
+    );
   });
 
   it('calls onClose when close button clicked', () => {
@@ -70,7 +72,15 @@ describe('SettingsModal', () => {
 
   it('shows branch badge in space listing when branch is set', () => {
     const spaces: SpaceInfo[] = [
-      { id: 'docs', name: 'Cept Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'github.com/nsheaps/cept' },
+      {
+        id: 'docs',
+        name: 'Cept Docs',
+        source: 'Git',
+        pageCount: 5,
+        contentSize: 1024,
+        branch: 'main',
+        remoteUrl: 'github.com/nsheaps/cept',
+      },
     ];
     render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
     expect(screen.getByTestId('space-branch-docs')).toBeDefined();
@@ -89,7 +99,14 @@ describe('SettingsModal', () => {
     const spaces: SpaceInfo[] = [
       { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
     ];
-    render(<SettingsModal {...defaultProps} spaces={spaces} activeSpaceId="default" initialTab="spaces" />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        activeSpaceId="default"
+        initialTab="spaces"
+      />,
+    );
     expect(screen.getByTestId('active-space-badge')).toBeDefined();
   });
 
@@ -98,7 +115,14 @@ describe('SettingsModal', () => {
       { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
       { id: 'work', name: 'Work', source: 'Browser', pageCount: 5, contentSize: 2048 },
     ];
-    render(<SettingsModal {...defaultProps} spaces={spaces} activeSpaceId="default" initialTab="spaces" />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        activeSpaceId="default"
+        initialTab="spaces"
+      />,
+    );
     expect(screen.getByTestId('switch-space-work')).toBeDefined();
     expect(screen.queryByTestId('switch-space-default')).toBeNull();
   });
@@ -110,7 +134,16 @@ describe('SettingsModal', () => {
       { id: 'default', name: 'My Space', source: 'Browser', pageCount: 3, contentSize: 1024 },
       { id: 'work', name: 'Work', source: 'Browser', pageCount: 5, contentSize: 2048 },
     ];
-    render(<SettingsModal {...defaultProps} spaces={spaces} activeSpaceId="default" initialTab="spaces" onSwitchSpace={onSwitchSpace} onClose={onClose} />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        activeSpaceId="default"
+        initialTab="spaces"
+        onSwitchSpace={onSwitchSpace}
+        onClose={onClose}
+      />,
+    );
     screen.getByTestId('switch-space-work').click();
     expect(onSwitchSpace).toHaveBeenCalledWith('work');
     expect(onClose).toHaveBeenCalled();
@@ -118,7 +151,13 @@ describe('SettingsModal', () => {
 
   it('calls onOpenAddSpaceWizard when create space button clicked', () => {
     const onOpenAddSpaceWizard = vi.fn();
-    render(<SettingsModal {...defaultProps} initialTab="spaces" onOpenAddSpaceWizard={onOpenAddSpaceWizard} />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        initialTab="spaces"
+        onOpenAddSpaceWizard={onOpenAddSpaceWizard}
+      />,
+    );
     screen.getByTestId('create-space-btn').click();
     expect(onOpenAddSpaceWizard).toHaveBeenCalled();
   });
@@ -156,25 +195,63 @@ describe('SettingsModal', () => {
 
   it('shows refresh button for git spaces in listing when onRefreshSpace provided', () => {
     const spaces: SpaceInfo[] = [
-      { id: 'git-space', name: 'Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'https://github.com/user/repo' },
+      {
+        id: 'git-space',
+        name: 'Docs',
+        source: 'Git',
+        pageCount: 5,
+        contentSize: 1024,
+        branch: 'main',
+        remoteUrl: 'https://github.com/user/repo',
+      },
       { id: 'local', name: 'Local', source: 'Browser', pageCount: 3, contentSize: 512 },
     ];
-    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" onRefreshSpace={vi.fn()} />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        initialTab="spaces"
+        onRefreshSpace={vi.fn()}
+      />,
+    );
     expect(screen.getByTestId('refresh-space-git-space')).toBeDefined();
     expect(screen.queryByTestId('refresh-space-local')).toBeNull();
   });
 
   it('does not show refresh button for cept-docs space', () => {
     const spaces: SpaceInfo[] = [
-      { id: 'cept-docs', name: 'Cept Docs', source: 'Git (read-only)', pageCount: 19, contentSize: 1024, branch: 'main', remoteUrl: 'github.com/nsheaps/cept' },
+      {
+        id: 'cept-docs',
+        name: 'Cept Docs',
+        source: 'Git (read-only)',
+        pageCount: 19,
+        contentSize: 1024,
+        branch: 'main',
+        remoteUrl: 'github.com/nsheaps/cept',
+      },
     ];
-    render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" onRefreshSpace={vi.fn()} />);
+    render(
+      <SettingsModal
+        {...defaultProps}
+        spaces={spaces}
+        initialTab="spaces"
+        onRefreshSpace={vi.fn()}
+      />,
+    );
     expect(screen.queryByTestId('refresh-space-cept-docs')).toBeNull();
   });
 
   it('does not show refresh button when onRefreshSpace not provided', () => {
     const spaces: SpaceInfo[] = [
-      { id: 'git-space', name: 'Docs', source: 'Git', pageCount: 5, contentSize: 1024, branch: 'main', remoteUrl: 'https://github.com/user/repo' },
+      {
+        id: 'git-space',
+        name: 'Docs',
+        source: 'Git',
+        pageCount: 5,
+        contentSize: 1024,
+        branch: 'main',
+        remoteUrl: 'https://github.com/user/repo',
+      },
     ];
     render(<SettingsModal {...defaultProps} spaces={spaces} initialTab="spaces" />);
     expect(screen.queryByTestId('refresh-space-git-space')).toBeNull();

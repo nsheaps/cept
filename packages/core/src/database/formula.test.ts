@@ -134,9 +134,7 @@ describe('Formula Evaluator', () => {
     });
 
     it('should handle concat()', () => {
-      expect(evaluateFormula('concat("hello", " ", "world")', row, schema)).toBe(
-        'hello world',
-      );
+      expect(evaluateFormula('concat("hello", " ", "world")', row, schema)).toBe('hello world');
     });
 
     it('should handle contains()', () => {
@@ -187,20 +185,12 @@ describe('Formula Evaluator', () => {
 
   describe('complex expressions', () => {
     it('should evaluate nested function calls', () => {
-      const result = evaluateFormula(
-        'if(prop("price") > 20, "expensive", "cheap")',
-        row,
-        schema,
-      );
+      const result = evaluateFormula('if(prop("price") > 20, "expensive", "cheap")', row, schema);
       expect(result).toBe('expensive');
     });
 
     it('should evaluate prop arithmetic with function', () => {
-      const result = evaluateFormula(
-        'round(prop("price") * prop("quantity") * 1.1)',
-        row,
-        schema,
-      );
+      const result = evaluateFormula('round(prop("price") * prop("quantity") * 1.1)', row, schema);
       expect(result).toBe(281); // 25.5 * 10 * 1.1 = 280.5, rounded = 281
     });
 

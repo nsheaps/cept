@@ -19,16 +19,12 @@ describe('UpdateToast', () => {
   });
 
   it('shows the version when visible', () => {
-    render(
-      <UpdateToast version="1.2.3" visible={true} onDismiss={() => {}} />,
-    );
+    render(<UpdateToast version="1.2.3" visible={true} onDismiss={() => {}} />);
     expect(screen.getByText('App updated to v1.2.3')).toBeTruthy();
   });
 
   it('has an accessible role and aria-live', () => {
-    render(
-      <UpdateToast version="1.0.0" visible={true} onDismiss={() => {}} />,
-    );
+    render(<UpdateToast version="1.0.0" visible={true} onDismiss={() => {}} />);
     const el = screen.getByRole('status');
     expect(el.getAttribute('aria-live')).toBe('polite');
   });
@@ -36,9 +32,7 @@ describe('UpdateToast', () => {
   it('calls onDismiss when dismiss button is clicked', () => {
     const onDismiss = vi.fn();
 
-    render(
-      <UpdateToast version="1.0.0" visible={true} onDismiss={onDismiss} />,
-    );
+    render(<UpdateToast version="1.0.0" visible={true} onDismiss={onDismiss} />);
 
     const button = screen.getByLabelText('Dismiss notification');
     fireEvent.click(button);
@@ -54,9 +48,7 @@ describe('UpdateToast', () => {
   it('auto-dismisses after timeout', () => {
     const onDismiss = vi.fn();
 
-    render(
-      <UpdateToast version="1.0.0" visible={true} onDismiss={onDismiss} />,
-    );
+    render(<UpdateToast version="1.0.0" visible={true} onDismiss={onDismiss} />);
 
     // Advance past the auto-dismiss timeout (6000ms) + exit animation (300ms)
     act(() => {

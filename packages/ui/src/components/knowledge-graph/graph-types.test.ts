@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { buildGraphData, filterByDepth, getGroups, getLinkTypes, filterGraph } from './graph-types.js';
+import {
+  buildGraphData,
+  filterByDepth,
+  getGroups,
+  getLinkTypes,
+  filterGraph,
+} from './graph-types.js';
 import type { GraphData } from './graph-types.js';
 
 const pages = [
@@ -43,16 +49,12 @@ describe('buildGraphData', () => {
   });
 
   it('ignores links to non-existent nodes', () => {
-    const data = buildGraphData([
-      { id: 'x', title: 'X', links: ['nonexistent'] },
-    ]);
+    const data = buildGraphData([{ id: 'x', title: 'X', links: ['nonexistent'] }]);
     expect(data.links).toHaveLength(0);
   });
 
   it('ignores self-links', () => {
-    const data = buildGraphData([
-      { id: 'x', title: 'X', links: ['x'] },
-    ]);
+    const data = buildGraphData([{ id: 'x', title: 'X', links: ['x'] }]);
     expect(data.links).toHaveLength(0);
   });
 

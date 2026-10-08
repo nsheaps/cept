@@ -5,11 +5,7 @@ import { CeptEditor } from './CeptEditor.js';
 describe('CeptEditor — text blocks', () => {
   describe('Code block', () => {
     it('renders code block with language', async () => {
-      render(
-        <CeptEditor
-          content={'```javascript\nconst x = 1;\n```'}
-        />
-      );
+      render(<CeptEditor content={'```javascript\nconst x = 1;\n```'} />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         expect(editor.querySelector('pre')).toBeTruthy();
@@ -18,11 +14,7 @@ describe('CeptEditor — text blocks', () => {
     });
 
     it('renders code block without language', async () => {
-      render(
-        <CeptEditor
-          content={'```\nplain code\n```'}
-        />
-      );
+      render(<CeptEditor content={'```\nplain code\n```'} />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         expect(editor.querySelector('pre')).toBeTruthy();
@@ -33,9 +25,7 @@ describe('CeptEditor — text blocks', () => {
 
   describe('Blockquote', () => {
     it('renders blockquote content', async () => {
-      render(
-        <CeptEditor content={"> A wise quote"} />
-      );
+      render(<CeptEditor content={'> A wise quote'} />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         expect(editor.querySelector('blockquote')).toBeTruthy();
@@ -44,9 +34,7 @@ describe('CeptEditor — text blocks', () => {
     });
 
     it('renders nested blockquote content', async () => {
-      render(
-        <CeptEditor content={"> Line one\n>\n> Line two"} />
-      );
+      render(<CeptEditor content={'> Line one\n>\n> Line two'} />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         const bq = editor.querySelector('blockquote');
@@ -60,9 +48,7 @@ describe('CeptEditor — text blocks', () => {
   describe('Callout', () => {
     it('renders callout block with icon and content', async () => {
       render(
-        <CeptEditor
-          content='<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="blue"><p>Important info</p></div>'
-        />
+        <CeptEditor content='<div data-type="callout" data-icon="\uD83D\uDCA1" data-color="blue"><p>Important info</p></div>' />,
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
@@ -73,11 +59,7 @@ describe('CeptEditor — text blocks', () => {
     });
 
     it('renders callout with default icon', async () => {
-      render(
-        <CeptEditor
-          content='<div data-type="callout"><p>Default callout</p></div>'
-        />
-      );
+      render(<CeptEditor content='<div data-type="callout"><p>Default callout</p></div>' />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         const callout = editor.querySelector('[data-type="callout"]');
@@ -90,9 +72,7 @@ describe('CeptEditor — text blocks', () => {
   describe('Toggle', () => {
     it('renders toggle block with summary', async () => {
       render(
-        <CeptEditor
-          content='<details data-type="toggle"><summary>Click me</summary><div><p>Hidden content</p></div></details>'
-        />
+        <CeptEditor content='<details data-type="toggle"><summary>Click me</summary><div><p>Hidden content</p></div></details>' />,
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
@@ -105,9 +85,7 @@ describe('CeptEditor — text blocks', () => {
 
   describe('Horizontal rule / divider', () => {
     it('renders horizontal rule between paragraphs', async () => {
-      render(
-        <CeptEditor content={"Above\n\n---\n\nBelow"} />
-      );
+      render(<CeptEditor content={'Above\n\n---\n\nBelow'} />);
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');
         expect(editor.querySelector('hr')).toBeTruthy();
@@ -134,7 +112,7 @@ const y: number = 42;
 ---
 
 Conclusion.`}
-        />
+        />,
       );
       await waitFor(() => {
         const editor = screen.getByTestId('cept-editor');

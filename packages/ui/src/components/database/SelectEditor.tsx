@@ -18,8 +18,16 @@ export interface MultiSelectEditorProps {
 }
 
 const DEFAULT_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#6b7280', '#14b8a6', '#f43f5e',
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+  '#6b7280',
+  '#14b8a6',
+  '#f43f5e',
 ];
 
 export function SelectEditor({
@@ -37,15 +45,18 @@ export function SelectEditor({
     opt.value.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const canCreate = search.trim() !== '' && !options.some(
-    (opt) => opt.value.toLowerCase() === search.trim().toLowerCase(),
-  );
+  const canCreate =
+    search.trim() !== '' &&
+    !options.some((opt) => opt.value.toLowerCase() === search.trim().toLowerCase());
 
-  const handleSelect = useCallback((optValue: string) => {
-    onChange(optValue);
-    setOpen(false);
-    setSearch('');
-  }, [onChange]);
+  const handleSelect = useCallback(
+    (optValue: string) => {
+      onChange(optValue);
+      setOpen(false);
+      setSearch('');
+    },
+    [onChange],
+  );
 
   const handleClear = useCallback(() => {
     onChange(null);
@@ -83,14 +94,14 @@ export function SelectEditor({
       >
         {selectedOption ? (
           <span className="cept-select-tag" data-testid="select-value">
-            <span
-              className="cept-select-color"
-              style={{ backgroundColor: selectedOption.color }}
-            />
+            <span className="cept-select-color" style={{ backgroundColor: selectedOption.color }} />
             {selectedOption.value}
             <button
               className="cept-select-clear"
-              onClick={(e) => { e.stopPropagation(); handleClear(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClear();
+              }}
               data-testid="select-clear"
             >
               {'\u2715'}
@@ -121,10 +132,7 @@ export function SelectEditor({
                 onClick={() => handleSelect(opt.value)}
                 data-testid={`select-option-${opt.value}`}
               >
-                <span
-                  className="cept-select-color"
-                  style={{ backgroundColor: opt.color }}
-                />
+                <span className="cept-select-color" style={{ backgroundColor: opt.color }} />
                 {opt.value}
               </div>
             ))}
@@ -164,21 +172,27 @@ export function MultiSelectEditor({
     opt.value.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const canCreate = search.trim() !== '' && !options.some(
-    (opt) => opt.value.toLowerCase() === search.trim().toLowerCase(),
+  const canCreate =
+    search.trim() !== '' &&
+    !options.some((opt) => opt.value.toLowerCase() === search.trim().toLowerCase());
+
+  const handleToggle = useCallback(
+    (optValue: string) => {
+      if (values.includes(optValue)) {
+        onChange(values.filter((v) => v !== optValue));
+      } else {
+        onChange([...values, optValue]);
+      }
+    },
+    [values, onChange],
   );
 
-  const handleToggle = useCallback((optValue: string) => {
-    if (values.includes(optValue)) {
+  const handleRemove = useCallback(
+    (optValue: string) => {
       onChange(values.filter((v) => v !== optValue));
-    } else {
-      onChange([...values, optValue]);
-    }
-  }, [values, onChange]);
-
-  const handleRemove = useCallback((optValue: string) => {
-    onChange(values.filter((v) => v !== optValue));
-  }, [values, onChange]);
+    },
+    [values, onChange],
+  );
 
   const handleCreate = useCallback(() => {
     if (canCreate && onCreateOption) {
@@ -220,7 +234,10 @@ export function MultiSelectEditor({
                   {v}
                   <button
                     className="cept-select-clear"
-                    onClick={(e) => { e.stopPropagation(); handleRemove(v); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(v);
+                    }}
                     data-testid={`multiselect-remove-${v}`}
                   >
                     {'\u2715'}
@@ -254,10 +271,7 @@ export function MultiSelectEditor({
                 onClick={() => handleToggle(opt.value)}
                 data-testid={`multiselect-option-${opt.value}`}
               >
-                <span
-                  className="cept-select-color"
-                  style={{ backgroundColor: opt.color }}
-                />
+                <span className="cept-select-color" style={{ backgroundColor: opt.color }} />
                 {opt.value}
                 {values.includes(opt.value) && (
                   <span className="cept-select-check">{'\u2713'}</span>

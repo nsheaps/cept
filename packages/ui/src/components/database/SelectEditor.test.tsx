@@ -111,7 +111,9 @@ describe('SelectEditor', () => {
   });
 
   it('custom placeholder', () => {
-    render(<SelectEditor value={null} options={options} onChange={() => {}} placeholder="Pick one" />);
+    render(
+      <SelectEditor value={null} options={options} onChange={() => {}} placeholder="Pick one" />,
+    );
     expect(screen.getByTestId('select-placeholder').textContent).toBe('Pick one');
   });
 });

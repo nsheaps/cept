@@ -16,14 +16,7 @@
 import type { DatabaseRow, DatabaseSchema } from '../models/index.js';
 
 /** Token types for the formula lexer */
-type TokenType =
-  | 'number'
-  | 'string'
-  | 'boolean'
-  | 'identifier'
-  | 'operator'
-  | 'paren'
-  | 'comma';
+type TokenType = 'number' | 'string' | 'boolean' | 'identifier' | 'operator' | 'paren' | 'comma';
 
 interface Token {
   type: TokenType;
@@ -45,7 +38,10 @@ function tokenize(expression: string): Token[] {
     }
 
     // Numbers
-    if (/\d/.test(ch) || (ch === '.' && i + 1 < expression.length && /\d/.test(expression[i + 1]))) {
+    if (
+      /\d/.test(ch) ||
+      (ch === '.' && i + 1 < expression.length && /\d/.test(expression[i + 1]))
+    ) {
       let num = '';
       while (i < expression.length && (/\d/.test(expression[i]) || expression[i] === '.')) {
         num += expression[i++];
@@ -154,8 +150,7 @@ const FUNCTIONS: Record<
   length: (args) => String(args[0] ?? '').length,
   lower: (args) => String(args[0] ?? '').toLowerCase(),
   upper: (args) => String(args[0] ?? '').toUpperCase(),
-  replace: (args) =>
-    String(args[0] ?? '').replace(String(args[1] ?? ''), String(args[2] ?? '')),
+  replace: (args) => String(args[0] ?? '').replace(String(args[1] ?? ''), String(args[2] ?? '')),
   slice: (args) => String(args[0] ?? '').slice(Number(args[1] ?? 0), Number(args[2] ?? undefined)),
   trim: (args) => String(args[0] ?? '').trim(),
 
@@ -416,7 +411,11 @@ class FormulaEvaluator {
       // Bare identifier — treat as property reference
       const propVal = this.row.properties[name];
       if (propVal === undefined || propVal === null) return null;
-      if (typeof propVal === 'string' || typeof propVal === 'number' || typeof propVal === 'boolean') {
+      if (
+        typeof propVal === 'string' ||
+        typeof propVal === 'number' ||
+        typeof propVal === 'boolean'
+      ) {
         return propVal;
       }
       return String(propVal);

@@ -242,10 +242,7 @@ describe('BrowserFsBackend', () => {
     });
 
     it('should not overwrite existing root page', async () => {
-      await backend.writeFile(
-        'pages/index.md',
-        new TextEncoder().encode('# Existing Content'),
-      );
+      await backend.writeFile('pages/index.md', new TextEncoder().encode('# Existing Content'));
       await backend.initialize({ name: 'New Name' });
 
       const page = await backend.readFile('pages/index.md');

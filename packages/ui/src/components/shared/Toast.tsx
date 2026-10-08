@@ -23,7 +23,13 @@ export function Toast({ messages, onDismiss }: ToastProps) {
   );
 }
 
-function ToastItem({ message, onDismiss }: { message: ToastMessage; onDismiss: (id: string) => void }) {
+function ToastItem({
+  message,
+  onDismiss,
+}: {
+  message: ToastMessage;
+  onDismiss: (id: string) => void;
+}) {
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -43,7 +49,14 @@ function ToastItem({ message, onDismiss }: { message: ToastMessage; onDismiss: (
         onClick={() => onDismiss(message.id)}
         aria-label="Dismiss"
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M4 4l8 8M12 4l-8 8" />
         </svg>
       </button>

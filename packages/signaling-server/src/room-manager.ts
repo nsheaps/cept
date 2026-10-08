@@ -10,10 +10,7 @@
  */
 
 import type { AwarenessUser } from '@cept/core';
-import type {
-  ClientMessage,
-  ServerMessage,
-} from './protocol.js';
+import type { ClientMessage, ServerMessage } from './protocol.js';
 
 /** Abstract connection — could be a WebSocket, test mock, etc. */
 export interface ClientConnection {
@@ -27,11 +24,7 @@ interface Room {
   clients: Map<string, { connection: ClientConnection; user: AwarenessUser }>;
 }
 
-export type RoomEventType =
-  | 'room-created'
-  | 'room-destroyed'
-  | 'client-joined'
-  | 'client-left';
+export type RoomEventType = 'room-created' | 'room-destroyed' | 'client-joined' | 'client-left';
 
 export interface RoomEvent {
   type: RoomEventType;
@@ -114,11 +107,7 @@ export class RoomManager {
     this.listeners = [];
   }
 
-  private joinRoom(
-    connection: ClientConnection,
-    documentId: string,
-    user: AwarenessUser,
-  ): void {
+  private joinRoom(connection: ClientConnection, documentId: string, user: AwarenessUser): void {
     let room = this.rooms.get(documentId);
     if (!room) {
       room = { documentId, clients: new Map() };
@@ -200,11 +189,7 @@ export class RoomManager {
     }
   }
 
-  private updateAwareness(
-    connectionId: string,
-    documentId: string,
-    user: AwarenessUser,
-  ): void {
+  private updateAwareness(connectionId: string, documentId: string, user: AwarenessUser): void {
     const room = this.rooms.get(documentId);
     if (!room) return;
 
@@ -229,11 +214,7 @@ export class RoomManager {
     }
   }
 
-  private broadcastSync(
-    senderId: string,
-    documentId: string,
-    payload: string,
-  ): void {
+  private broadcastSync(senderId: string, documentId: string, payload: string): void {
     const room = this.rooms.get(documentId);
     if (!room) return;
 

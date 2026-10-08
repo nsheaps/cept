@@ -109,9 +109,7 @@ describe('computeRollup', () => {
   });
 
   it('sum returns null for no numeric values', () => {
-    const rows: DatabaseRow[] = [
-      { id: 'r1', properties: { Val: 'text' } },
-    ];
+    const rows: DatabaseRow[] = [{ id: 'r1', properties: { Val: 'text' } }];
     expect(computeRollup(rows, 'Val', 'sum')).toBe(null);
   });
 

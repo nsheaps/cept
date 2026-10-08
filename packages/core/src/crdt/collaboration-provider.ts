@@ -28,11 +28,7 @@ export interface CollaborationConfig {
 
 /** State of the collaboration provider */
 export type CollaborationState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+  'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 
 /** State of a single collaborative document */
 export interface DocumentState {

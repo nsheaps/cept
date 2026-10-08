@@ -9,7 +9,14 @@ export interface AppMenuProps {
   onDelete?: (id: string) => void;
 }
 
-export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDuplicate, onDelete }: AppMenuProps) {
+export function AppMenu({
+  pageId,
+  isFavorite,
+  onToggleFavorite,
+  onRename,
+  onDuplicate,
+  onDelete,
+}: AppMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +57,14 @@ export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDupl
             }}
             data-testid="page-menu-favorite"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M8 1l2.1 4.3 4.7.7-3.4 3.3.8 4.7L8 11.8 3.8 14l.8-4.7L1.2 6l4.7-.7z" />
             </svg>
             {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -63,7 +77,14 @@ export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDupl
             }}
             data-testid="page-menu-rename"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M11.5 1.5l3 3L5 14H2v-3z" />
             </svg>
             Rename
@@ -76,7 +97,14 @@ export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDupl
             }}
             data-testid="page-menu-duplicate"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <rect x="5" y="5" width="9" height="9" rx="1" />
               <path d="M3 11V3a1 1 0 011-1h8" />
             </svg>
@@ -91,7 +119,14 @@ export function AppMenu({ pageId, isFavorite, onToggleFavorite, onRename, onDupl
             }}
             data-testid="page-menu-delete"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="M3 4h10M5.5 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6 7v5M10 7v5M4.5 4l.5 9a1 1 0 001 1h4a1 1 0 001-1l.5-9" />
             </svg>
             Delete

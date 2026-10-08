@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseRoute, buildPath, restoreRoute, setBasePath, isRemoteSpaceId, setUseGitPrefix } from './router.js';
+import {
+  parseRoute,
+  buildPath,
+  restoreRoute,
+  setBasePath,
+  isRemoteSpaceId,
+  setUseGitPrefix,
+} from './router.js';
 
 afterEach(() => {
   setBasePath(null);
@@ -67,7 +74,9 @@ describe('buildPath (base=/)', () => {
   });
 
   it('builds default space + page path', () => {
-    expect(buildPath({ space: 'user', spaceId: 'default', pageId: 'page-1' })).toBe('/s/default/page-1');
+    expect(buildPath({ space: 'user', spaceId: 'default', pageId: 'page-1' })).toBe(
+      '/s/default/page-1',
+    );
   });
 
   it('builds docs root', () => {
@@ -157,7 +166,11 @@ describe('restoreRoute', () => {
       },
     });
     const route = restoreRoute();
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: undefined });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: undefined,
+    });
     expect(window.history.replaceState).toHaveBeenCalled();
   });
 });
@@ -190,7 +203,9 @@ describe('buildPath with /cept/app/ base', () => {
   beforeEach(() => setBasePath('/cept/app/'));
 
   it('builds space + page path with base', () => {
-    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe('/cept/app/s/work/page-1');
+    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe(
+      '/cept/app/s/work/page-1',
+    );
   });
 
   it('builds docs path with base', () => {
@@ -225,7 +240,9 @@ describe('buildPath with /cept/pr-42/ base (preview)', () => {
   beforeEach(() => setBasePath('/cept/pr-42/'));
 
   it('builds space + page path with preview base', () => {
-    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe('/cept/pr-42/s/work/page-1');
+    expect(buildPath({ space: 'user', spaceId: 'work', pageId: 'page-1' })).toBe(
+      '/cept/pr-42/s/work/page-1',
+    );
   });
 
   it('builds docs path with preview base', () => {
@@ -250,22 +267,38 @@ describe('git space URL parsing with /g/ prefix (base=/)', () => {
 
   it('parses git space root (no subpath)', () => {
     const route = parseRoute('/g/github.com/nsheaps/cept/blob/main');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main', pageId: undefined });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main',
+      pageId: undefined,
+    });
   });
 
   it('parses git space root with subpath', () => {
     const route = parseRoute('/g/github.com/nsheaps/cept/blob/main/docs');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: undefined });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: undefined,
+    });
   });
 
   it('parses git space with page (no subpath)', () => {
     const route = parseRoute('/g/github.com/nsheaps/cept/blob/main/git-getting-started');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main', pageId: 'git-getting-started' });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main',
+      pageId: 'git-getting-started',
+    });
   });
 
   it('parses git space with subpath and page', () => {
     const route = parseRoute('/g/github.com/nsheaps/cept/blob/main/docs/git-getting-started');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-getting-started' });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: 'git-getting-started',
+    });
   });
 });
 
@@ -274,12 +307,20 @@ describe('legacy /s/ git space URL parsing (base=/)', () => {
 
   it('still parses legacy /s/ git space root', () => {
     const route = parseRoute('/s/github.com/nsheaps/cept/blob/main');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main', pageId: undefined });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main',
+      pageId: undefined,
+    });
   });
 
   it('still parses legacy /s/ git space with subpath and page', () => {
     const route = parseRoute('/s/github.com/nsheaps/cept/blob/main/docs/git-getting-started');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-getting-started' });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: 'git-getting-started',
+    });
   });
 });
 
@@ -287,19 +328,31 @@ describe('git space URL building with /g/ prefix (base=/)', () => {
   beforeEach(() => setBasePath('/'));
 
   it('builds git space root URL', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main' })).toBe('/g/github.com/nsheaps/cept/blob/main');
+    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main' })).toBe(
+      '/g/github.com/nsheaps/cept/blob/main',
+    );
   });
 
   it('builds git space root URL with subpath', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs' })).toBe('/g/github.com/nsheaps/cept/blob/main/docs');
+    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs' })).toBe(
+      '/g/github.com/nsheaps/cept/blob/main/docs',
+    );
   });
 
   it('builds git space page URL', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main', pageId: 'git-readme' })).toBe('/g/github.com/nsheaps/cept/blob/main/git-readme');
+    expect(
+      buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main', pageId: 'git-readme' }),
+    ).toBe('/g/github.com/nsheaps/cept/blob/main/git-readme');
   });
 
   it('builds git space page URL with subpath', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-getting-started' })).toBe('/g/github.com/nsheaps/cept/blob/main/docs/git-getting-started');
+    expect(
+      buildPath({
+        space: 'user',
+        spaceId: 'github.com/nsheaps/cept@main/docs',
+        pageId: 'git-getting-started',
+      }),
+    ).toBe('/g/github.com/nsheaps/cept/blob/main/docs/git-getting-started');
   });
 });
 
@@ -328,17 +381,31 @@ describe('git space URLs with /cept/pr-42/ base', () => {
   beforeEach(() => setBasePath('/cept/pr-42/'));
 
   it('builds git space URL with preview base', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-readme' })).toBe('/cept/pr-42/g/github.com/nsheaps/cept/blob/main/docs/git-readme');
+    expect(
+      buildPath({
+        space: 'user',
+        spaceId: 'github.com/nsheaps/cept@main/docs',
+        pageId: 'git-readme',
+      }),
+    ).toBe('/cept/pr-42/g/github.com/nsheaps/cept/blob/main/docs/git-readme');
   });
 
   it('parses git space URL with preview base', () => {
     const route = parseRoute('/cept/pr-42/g/github.com/nsheaps/cept/blob/main/docs/git-readme');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-readme' });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: 'git-readme',
+    });
   });
 
   it('still parses legacy /s/ git space URL with preview base', () => {
     const route = parseRoute('/cept/pr-42/s/github.com/nsheaps/cept/blob/main/docs/git-readme');
-    expect(route).toEqual({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-readme' });
+    expect(route).toEqual({
+      space: 'user',
+      spaceId: 'github.com/nsheaps/cept@main/docs',
+      pageId: 'git-readme',
+    });
   });
 });
 
@@ -349,11 +416,19 @@ describe('setUseGitPrefix(false) builds /s/ URLs for git spaces', () => {
   });
 
   it('builds git space URL with /s/ when git prefix disabled', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main' })).toBe('/s/github.com/nsheaps/cept/blob/main');
+    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main' })).toBe(
+      '/s/github.com/nsheaps/cept/blob/main',
+    );
   });
 
   it('builds git space page URL with /s/ when git prefix disabled', () => {
-    expect(buildPath({ space: 'user', spaceId: 'github.com/nsheaps/cept@main/docs', pageId: 'git-readme' })).toBe('/s/github.com/nsheaps/cept/blob/main/docs/git-readme');
+    expect(
+      buildPath({
+        space: 'user',
+        spaceId: 'github.com/nsheaps/cept@main/docs',
+        pageId: 'git-readme',
+      }),
+    ).toBe('/s/github.com/nsheaps/cept/blob/main/docs/git-readme');
   });
 
   it('local space URLs are unaffected', () => {

@@ -72,9 +72,7 @@ export class WebFsBackend implements StorageBackend {
   async readFile(path: string): Promise<Uint8Array | null> {
     try {
       const { dir, name } = splitPath(path);
-      const parent = dir
-        ? await getDirectoryHandle(this.root, dir, false)
-        : this.root;
+      const parent = dir ? await getDirectoryHandle(this.root, dir, false) : this.root;
       if (!parent) return null;
       const fileHandle = await parent.getFileHandle(name);
       const file = await fileHandle.getFile();
@@ -87,9 +85,7 @@ export class WebFsBackend implements StorageBackend {
 
   async writeFile(path: string, data: Uint8Array): Promise<void> {
     const { dir, name } = splitPath(path);
-    const parent = dir
-      ? await getDirectoryHandle(this.root, dir, true)
-      : this.root;
+    const parent = dir ? await getDirectoryHandle(this.root, dir, true) : this.root;
     if (!parent) throw new Error(`Cannot create directory: ${dir}`);
     const fileHandle = await parent.getFileHandle(name, { create: true });
     const writable = await fileHandle.createWritable();
@@ -100,9 +96,7 @@ export class WebFsBackend implements StorageBackend {
   async deleteFile(path: string): Promise<void> {
     try {
       const { dir, name } = splitPath(path);
-      const parent = dir
-        ? await getDirectoryHandle(this.root, dir, false)
-        : this.root;
+      const parent = dir ? await getDirectoryHandle(this.root, dir, false) : this.root;
       if (!parent) return;
       await parent.removeEntry(name, { recursive: true });
     } catch {
@@ -119,7 +113,9 @@ export class WebFsBackend implements StorageBackend {
       if (!handle) return [];
 
       const entries: DirEntry[] = [];
-      for await (const [name, entry] of (handle as unknown as AsyncIterable<[string, FileSystemHandle]>)) {
+      for await (const [name, entry] of handle as unknown as AsyncIterable<
+        [string, FileSystemHandle]
+      >) {
         entries.push({
           name,
           isDirectory: entry.kind === 'directory',
@@ -135,9 +131,7 @@ export class WebFsBackend implements StorageBackend {
   async exists(path: string): Promise<boolean> {
     try {
       const { dir, name } = splitPath(path);
-      const parent = dir
-        ? await getDirectoryHandle(this.root, dir, false)
-        : this.root;
+      const parent = dir ? await getDirectoryHandle(this.root, dir, false) : this.root;
       if (!parent) return false;
       // Try as file first, then as directory
       try {
@@ -165,9 +159,7 @@ export class WebFsBackend implements StorageBackend {
   async stat(path: string): Promise<FileStat | null> {
     try {
       const { dir, name } = splitPath(path);
-      const parent = dir
-        ? await getDirectoryHandle(this.root, dir, false)
-        : this.root;
+      const parent = dir ? await getDirectoryHandle(this.root, dir, false) : this.root;
       if (!parent) return null;
 
       // Try as file
@@ -253,7 +245,9 @@ export async function pickDirectory(): Promise<FileSystemDirectoryHandle | null>
     return null;
   }
   try {
-    return await (window as unknown as { showDirectoryPicker(): Promise<FileSystemDirectoryHandle> }).showDirectoryPicker();
+    return await (
+      window as unknown as { showDirectoryPicker(): Promise<FileSystemDirectoryHandle> }
+    ).showDirectoryPicker();
   } catch {
     return null; // User cancelled
   }

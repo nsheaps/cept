@@ -31,10 +31,7 @@ export interface CursorOverlayProps {
   currentUserId?: string;
 }
 
-export function CursorOverlay({
-  cursors,
-  currentUserId,
-}: CursorOverlayProps): React.ReactElement {
+export function CursorOverlay({ cursors, currentUserId }: CursorOverlayProps): React.ReactElement {
   const remoteCursors = useMemo(
     () => cursors.filter((c) => c.user.id !== currentUserId),
     [cursors, currentUserId],

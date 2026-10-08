@@ -46,8 +46,7 @@ export const PageMention = Mention.extend({ name: 'pageMention' }).configure({
   },
   suggestion: {
     char: '@',
-    items: ({ query }: { query: string }) =>
-      filterMentionItems([], query),
+    items: ({ query }: { query: string }) => filterMentionItems([], query),
   } as Partial<SuggestionOptions>,
 });
 
@@ -58,8 +57,7 @@ export const PersonMention = Mention.extend({ name: 'personMention' }).configure
   },
   suggestion: {
     char: '@',
-    items: ({ query }: { query: string }) =>
-      filterMentionItems([], query),
+    items: ({ query }: { query: string }) => filterMentionItems([], query),
   } as Partial<SuggestionOptions>,
 });
 
@@ -73,7 +71,6 @@ export const DateMention = Mention.extend({ name: 'dateMention' }).configure({
   },
   suggestion: {
     char: '@',
-    items: ({ query }: { query: string }) =>
-      filterMentionItems(getDefaultDateSuggestions(), query),
+    items: ({ query }: { query: string }) => filterMentionItems(getDefaultDateSuggestions(), query),
   } as Partial<SuggestionOptions>,
 });

@@ -52,10 +52,7 @@ export function resolveRelation(
 /**
  * Gets the values of a specific property from an array of rows.
  */
-export function getRelatedValues(
-  rows: DatabaseRow[],
-  propertyName: string,
-): unknown[] {
+export function getRelatedValues(rows: DatabaseRow[], propertyName: string): unknown[] {
   return rows.map((row) => row.properties[propertyName]).filter((v) => v != null);
 }
 

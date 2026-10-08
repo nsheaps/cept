@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CollaborationProvider } from './collaboration-provider.js';
-import type {
-  CollaborationConfig,
-  CollaborationEvent,
-} from './collaboration-provider.js';
+import type { CollaborationConfig, CollaborationEvent } from './collaboration-provider.js';
 import type { AwarenessUser, SyncTransport } from './index.js';
 
 function createMockTransport(): SyncTransport {
@@ -26,9 +23,7 @@ function createMockTransport(): SyncTransport {
   } as SyncTransport & { _triggerUsersChange: (users: AwarenessUser[]) => void };
 }
 
-function createConfig(
-  overrides?: Partial<CollaborationConfig>,
-): CollaborationConfig {
+function createConfig(overrides?: Partial<CollaborationConfig>): CollaborationConfig {
   return {
     serverUrl: 'ws://localhost:4444',
     user: { id: 'user-1', name: 'Alice', color: '#ff0000' },
@@ -56,9 +51,7 @@ describe('CollaborationProvider', () => {
 
   it('opens a document and connects', async () => {
     const transport = createMockTransport();
-    const provider = new CollaborationProvider(
-      createConfig({ createTransport: () => transport }),
-    );
+    const provider = new CollaborationProvider(createConfig({ createTransport: () => transport }));
 
     const docState = await provider.openDocument('doc-1');
 
@@ -89,9 +82,7 @@ describe('CollaborationProvider', () => {
 
   it('closes a document and disconnects transport', async () => {
     const transport = createMockTransport();
-    const provider = new CollaborationProvider(
-      createConfig({ createTransport: () => transport }),
-    );
+    const provider = new CollaborationProvider(createConfig({ createTransport: () => transport }));
 
     await provider.openDocument('doc-1');
     await provider.closeDocument('doc-1');
@@ -162,9 +153,7 @@ describe('CollaborationProvider', () => {
     ];
     (transport.getUsers as ReturnType<typeof vi.fn>).mockReturnValue(users);
 
-    const provider = new CollaborationProvider(
-      createConfig({ createTransport: () => transport }),
-    );
+    const provider = new CollaborationProvider(createConfig({ createTransport: () => transport }));
     const docState = await provider.openDocument('doc-1');
 
     expect(docState.users).toHaveLength(2);
@@ -175,9 +164,7 @@ describe('CollaborationProvider', () => {
     const transport = createMockTransport() as SyncTransport & {
       _triggerUsersChange: (users: AwarenessUser[]) => void;
     };
-    const provider = new CollaborationProvider(
-      createConfig({ createTransport: () => transport }),
-    );
+    const provider = new CollaborationProvider(createConfig({ createTransport: () => transport }));
     const events: CollaborationEvent[] = [];
     provider.on((e) => events.push(e));
 
@@ -185,9 +172,7 @@ describe('CollaborationProvider', () => {
     events.length = 0;
 
     // New user joins
-    transport._triggerUsersChange([
-      { id: 'u1', name: 'Alice', color: '#f00' },
-    ]);
+    transport._triggerUsersChange([{ id: 'u1', name: 'Alice', color: '#f00' }]);
 
     expect(events.some((e) => e.type === 'user-joined')).toBe(true);
     expect(events.some((e) => e.type === 'users-changed')).toBe(true);
@@ -265,9 +250,7 @@ describe('CollaborationProvider', () => {
   it('stops reconnecting after max attempts', async () => {
     vi.useFakeTimers();
     const transport = createMockTransport();
-    (transport.connect as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('fail'),
-    );
+    (transport.connect as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('fail'));
 
     const provider = new CollaborationProvider(
       createConfig({
@@ -301,9 +284,7 @@ describe('CollaborationProvider', () => {
 
   it('dispose closes all documents and clears listeners', async () => {
     const transport = createMockTransport();
-    const provider = new CollaborationProvider(
-      createConfig({ createTransport: () => transport }),
-    );
+    const provider = new CollaborationProvider(createConfig({ createTransport: () => transport }));
     const events: CollaborationEvent[] = [];
     provider.on((e) => events.push(e));
 

@@ -49,8 +49,7 @@ export const MathBlock = Node.create<MathBlockOptions>({
     return {
       content: {
         default: '',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-math') ?? '',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-math') ?? '',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-math': attributes.content as string,
         }),
@@ -114,8 +113,7 @@ export const InlineMath = Node.create<InlineMathOptions>({
     return {
       content: {
         default: '',
-        parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-math') ?? '',
+        parseHTML: (element: HTMLElement) => element.getAttribute('data-math') ?? '',
         renderHTML: (attributes: Record<string, unknown>) => ({
           'data-math': attributes.content as string,
         }),

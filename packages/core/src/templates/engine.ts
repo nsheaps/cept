@@ -124,7 +124,11 @@ export class CeptTemplateEngine implements TemplateEngine {
     }
 
     const vars: Record<string, string> = {
-      title: targetPath.split('/').pop()?.replace(/\.\w+$/, '') ?? 'Untitled',
+      title:
+        targetPath
+          .split('/')
+          .pop()
+          ?.replace(/\.\w+$/, '') ?? 'Untitled',
       date: new Date().toISOString().split('T')[0],
       id: generateId(),
       datetime: new Date().toISOString(),

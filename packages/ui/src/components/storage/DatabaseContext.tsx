@@ -20,11 +20,7 @@ export function DatabaseProvider({
   children: ReactNode;
 }) {
   const engine = useMemo(() => new CeptDatabaseEngine(backend), [backend]);
-  return (
-    <DatabaseEngineContext.Provider value={engine}>
-      {children}
-    </DatabaseEngineContext.Provider>
-  );
+  return <DatabaseEngineContext.Provider value={engine}>{children}</DatabaseEngineContext.Provider>;
 }
 
 export function useDatabaseEngine(): CeptDatabaseEngine {

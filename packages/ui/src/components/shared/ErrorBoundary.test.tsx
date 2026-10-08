@@ -10,8 +10,12 @@ function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
 
 // Suppress console.error for expected errors in tests
 const originalError = console.error;
-beforeEach(() => { console.error = vi.fn(); });
-afterEach(() => { console.error = originalError; });
+beforeEach(() => {
+  console.error = vi.fn();
+});
+afterEach(() => {
+  console.error = originalError;
+});
 
 describe('ErrorBoundary', () => {
   it('renders children when no error', () => {

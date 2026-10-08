@@ -21,13 +21,7 @@ export interface UpdateInfo {
 }
 
 export type UpdateState =
-  | 'idle'
-  | 'checking'
-  | 'available'
-  | 'downloading'
-  | 'ready'
-  | 'error'
-  | 'up-to-date';
+  'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error' | 'up-to-date';
 
 export interface UpdateEvent {
   type: 'state-change' | 'progress' | 'error';
@@ -148,10 +142,7 @@ export class AutoUpdater {
   startAutoCheck(): void {
     this.stopAutoCheck();
     this.checkForUpdates();
-    this.checkTimer = setInterval(
-      () => this.checkForUpdates(),
-      this.config.checkIntervalMs,
-    );
+    this.checkTimer = setInterval(() => this.checkForUpdates(), this.config.checkIntervalMs);
   }
 
   /** Stop periodic update checks */

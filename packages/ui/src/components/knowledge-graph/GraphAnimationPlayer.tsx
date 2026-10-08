@@ -39,9 +39,7 @@ export function GraphAnimationPlayer({
   const displayData = useMemo(() => {
     if (frames.length === 0) return { nodes: [], links: [] };
     const frameData = frames[Math.min(currentFrame, frames.length - 1)].data;
-    return performanceOptions
-      ? optimizeForPerformance(frameData, performanceOptions)
-      : frameData;
+    return performanceOptions ? optimizeForPerformance(frameData, performanceOptions) : frameData;
   }, [frames, currentFrame, performanceOptions]);
 
   const play = useCallback(() => {
@@ -97,11 +95,7 @@ export function GraphAnimationPlayer({
         >
           {isPlaying ? 'Pause' : 'Play'}
         </button>
-        <button
-          className="cept-graph-mode-btn"
-          onClick={reset}
-          data-testid="graph-animation-reset"
-        >
+        <button className="cept-graph-mode-btn" onClick={reset} data-testid="graph-animation-reset">
           Reset
         </button>
         <input

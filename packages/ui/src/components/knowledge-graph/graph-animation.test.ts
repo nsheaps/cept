@@ -59,10 +59,7 @@ describe('buildAnimationFrames', () => {
   });
 
   it('includes undated nodes in all frames', () => {
-    const withUndated: TimestampedNode[] = [
-      ...nodes,
-      { id: 'u', title: 'Undated' },
-    ];
+    const withUndated: TimestampedNode[] = [...nodes, { id: 'u', title: 'Undated' }];
     const frames = buildAnimationFrames(withUndated, links, 3);
     for (const frame of frames) {
       expect(frame.data.nodes.some((n) => n.id === 'u')).toBe(true);
@@ -113,7 +110,10 @@ describe('optimizeForPerformance', () => {
 
   it('trims links to maxLinks', () => {
     const data: GraphData = {
-      nodes: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }],
+      nodes: [
+        { id: 'a', title: 'A' },
+        { id: 'b', title: 'B' },
+      ],
       links: Array.from({ length: 5 }, () => ({ source: 'a', target: 'b', type: 'parent' })),
     };
     const result = optimizeForPerformance(data, { maxLinks: 2 });

@@ -38,10 +38,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'integration',
-          include: [
-            'features/step-definitions/**/*.steps.ts',
-            'tools/**/*.integration.test.ts',
-          ],
+          include: ['features/step-definitions/**/*.steps.ts', 'tools/**/*.integration.test.ts'],
           exclude: ['node_modules', 'dist', 'e2e'],
         },
       },

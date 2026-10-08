@@ -32,9 +32,7 @@ describe('AvatarStack', () => {
   });
 
   it('limits visible avatars to maxVisible', () => {
-    const users = Array.from({ length: 8 }, (_, i) =>
-      makeUser(`u${i}`, `User ${i}`),
-    );
+    const users = Array.from({ length: 8 }, (_, i) => makeUser(`u${i}`, `User ${i}`));
     render(<AvatarStack users={users} maxVisible={3} />);
 
     expect(screen.getByTestId('avatar-u0')).toBeDefined();
@@ -44,9 +42,7 @@ describe('AvatarStack', () => {
   });
 
   it('shows overflow indicator', () => {
-    const users = Array.from({ length: 8 }, (_, i) =>
-      makeUser(`u${i}`, `User ${i}`),
-    );
+    const users = Array.from({ length: 8 }, (_, i) => makeUser(`u${i}`, `User ${i}`));
     render(<AvatarStack users={users} maxVisible={3} />);
 
     const overflow = screen.getByTestId('avatar-overflow');

@@ -87,10 +87,10 @@ describe('ElectronBridge', () => {
     const ipc = createMockIPC();
     const bridge = new ElectronBridge(ipc);
     bridge.showNotification({ title: 'Sync', body: 'Complete' });
-    expect(ipc.send).toHaveBeenCalledWith(
-      IPC_CHANNELS.SHOW_NOTIFICATION,
-      { title: 'Sync', body: 'Complete' },
-    );
+    expect(ipc.send).toHaveBeenCalledWith(IPC_CHANNELS.SHOW_NOTIFICATION, {
+      title: 'Sync',
+      body: 'Complete',
+    });
   });
 
   it('readClipboard invokes IPC', async () => {
@@ -122,10 +122,7 @@ describe('ElectronBridge', () => {
     const ipc = createMockIPC();
     const bridge = new ElectronBridge(ipc);
     bridge.onWindowStateChange(vi.fn());
-    expect(ipc.on).toHaveBeenCalledWith(
-      IPC_CHANNELS.WINDOW_STATE_CHANGE,
-      expect.any(Function),
-    );
+    expect(ipc.on).toHaveBeenCalledWith(IPC_CHANNELS.WINDOW_STATE_CHANGE, expect.any(Function));
   });
 
   it('dispose cleans up subscriptions', async () => {

@@ -66,7 +66,13 @@ test.describe('Demo Mode', () => {
   test('loads demo content with all block types', async ({ page }) => {
     await openDemoEditor(page);
     // Welcome page should show a blockquote (the demo content uses > with emoji)
-    await expect(page.locator('.cept-editor-content blockquote, .cept-editor-content .cept-blockquote, .cept-editor-content .cept-callout').first()).toBeVisible();
+    await expect(
+      page
+        .locator(
+          '.cept-editor-content blockquote, .cept-editor-content .cept-blockquote, .cept-editor-content .cept-callout',
+        )
+        .first(),
+    ).toBeVisible();
     await captureScreenshot(page, { name: 'demo-welcome', category: 'demo' });
   });
 
@@ -135,7 +141,9 @@ test.describe('Slash Commands', () => {
     await page.keyboard.type('/');
     await page.waitForTimeout(300);
     // The tippy popup should appear with slash command items
-    await expect(page.locator('.tippy-content').or(page.locator('[role="listbox"]')).first()).toBeVisible();
+    await expect(
+      page.locator('.tippy-content').or(page.locator('[role="listbox"]')).first(),
+    ).toBeVisible();
     await captureScreenshot(page, { name: 'slash-menu-open', category: 'slash-commands' });
   });
 

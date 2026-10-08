@@ -73,8 +73,7 @@ export function PreviewToast({
         backgroundColor: '#1a2e1a',
         color: '#e0e0e0',
         fontSize: '0.875rem',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         pointerEvents: 'auto',
         opacity: fading ? 0 : 1,
@@ -155,9 +154,7 @@ export function PreviewToast({
             strokeDasharray={CIRCLE_CIRCUMFERENCE}
             strokeDashoffset={animating ? CIRCLE_CIRCUMFERENCE : 0}
             style={{
-              transition: animating
-                ? `stroke-dashoffset ${dismissMs}ms linear`
-                : 'none',
+              transition: animating ? `stroke-dashoffset ${dismissMs}ms linear` : 'none',
             }}
           />
         </svg>

@@ -9,6 +9,7 @@ When the user identifies something that needs to be done that isn't in TASKS.md:
 5. Ask if the user wants to work on it now or continue with the current sequence
 
 Format in TASKS.md:
+
 ```
 - [ ] T<X>.<Y>: <description> *(added ad-hoc YYYY-MM-DD)*
 ```

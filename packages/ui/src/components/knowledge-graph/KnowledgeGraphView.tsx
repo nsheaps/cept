@@ -46,13 +46,16 @@ export function KnowledgeGraphView({
     });
   }, [data, activeGroups, activeLinkTypes]);
 
-  const handleNodeClick = useCallback((nodeId: string) => {
-    if (mode === 'global') {
-      setFocusNodeId(nodeId);
-      setMode('local');
-    }
-    onNodeClick?.(nodeId);
-  }, [mode, onNodeClick]);
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      if (mode === 'global') {
+        setFocusNodeId(nodeId);
+        setMode('local');
+      }
+      onNodeClick?.(nodeId);
+    },
+    [mode, onNodeClick],
+  );
 
   const handleModeToggle = useCallback(() => {
     setMode((prev) => (prev === 'global' ? 'local' : 'global'));
@@ -82,13 +85,16 @@ export function KnowledgeGraphView({
     });
   }, []);
 
-  const options: Partial<GraphViewOptions> = useMemo(() => ({
-    mode,
-    focusNodeId,
-    depth,
-    colorGroups,
-    showLabels,
-  }), [mode, focusNodeId, depth, colorGroups, showLabels]);
+  const options: Partial<GraphViewOptions> = useMemo(
+    () => ({
+      mode,
+      focusNodeId,
+      depth,
+      colorGroups,
+      showLabels,
+    }),
+    [mode, focusNodeId, depth, colorGroups, showLabels],
+  );
 
   const focusNodeTitle = useMemo(() => {
     if (!focusNodeId) return undefined;

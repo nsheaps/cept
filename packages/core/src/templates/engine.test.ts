@@ -39,10 +39,16 @@ describe('CeptTemplateEngine', () => {
     });
 
     it('lists templates with metadata', async () => {
-      await writeText(backend, '.cept/templates/meeting-notes/meta.yaml',
-        'name: Meeting Notes\ndescription: Template for meeting notes\ntype: page\nicon: notes\ncategory: work\n');
-      await writeText(backend, '.cept/templates/meeting-notes/content.md',
-        '# {{title}}\n\n**Date:** {{date}}\n\n## Attendees\n\n## Action Items\n');
+      await writeText(
+        backend,
+        '.cept/templates/meeting-notes/meta.yaml',
+        'name: Meeting Notes\ndescription: Template for meeting notes\ntype: page\nicon: notes\ncategory: work\n',
+      );
+      await writeText(
+        backend,
+        '.cept/templates/meeting-notes/content.md',
+        '# {{title}}\n\n**Date:** {{date}}\n\n## Attendees\n\n## Action Items\n',
+      );
 
       const templates = await engine.listTemplates();
       expect(templates).toHaveLength(1);
@@ -62,8 +68,11 @@ describe('CeptTemplateEngine', () => {
     });
 
     it('returns template metadata', async () => {
-      await writeText(backend, '.cept/templates/daily-log/meta.yaml',
-        'name: Daily Log\ndescription: Daily journal entry\ntype: page\n');
+      await writeText(
+        backend,
+        '.cept/templates/daily-log/meta.yaml',
+        'name: Daily Log\ndescription: Daily journal entry\ntype: page\n',
+      );
       await writeText(backend, '.cept/templates/daily-log/content.md', '# {{date}} Log\n');
 
       const template = await engine.getTemplate('daily-log');
@@ -75,10 +84,16 @@ describe('CeptTemplateEngine', () => {
 
   describe('applyTemplate', () => {
     it('creates a page from a page template with variable substitution', async () => {
-      await writeText(backend, '.cept/templates/note/meta.yaml',
-        'name: Note\ndescription: Simple note\ntype: page\n');
-      await writeText(backend, '.cept/templates/note/content.md',
-        '---\ntitle: {{title}}\ncreated: {{datetime}}\n---\n\n# {{title}}\n\nCreated on {{date}}.\n');
+      await writeText(
+        backend,
+        '.cept/templates/note/meta.yaml',
+        'name: Note\ndescription: Simple note\ntype: page\n',
+      );
+      await writeText(
+        backend,
+        '.cept/templates/note/content.md',
+        '---\ntitle: {{title}}\ncreated: {{datetime}}\n---\n\n# {{title}}\n\nCreated on {{date}}.\n',
+      );
 
       await engine.applyTemplate('note', 'pages/my-note.md');
 
@@ -90,10 +105,16 @@ describe('CeptTemplateEngine', () => {
     });
 
     it('creates a database from a database template', async () => {
-      await writeText(backend, '.cept/templates/task-db/meta.yaml',
-        'name: Task Tracker\ndescription: Project tasks\ntype: database\n');
-      await writeText(backend, '.cept/templates/task-db/schema.yaml',
-        'id: {{id}}\ntitle: {{title}}\nproperties:\n  status:\n    type: select\n');
+      await writeText(
+        backend,
+        '.cept/templates/task-db/meta.yaml',
+        'name: Task Tracker\ndescription: Project tasks\ntype: database\n',
+      );
+      await writeText(
+        backend,
+        '.cept/templates/task-db/schema.yaml',
+        'id: {{id}}\ntitle: {{title}}\nproperties:\n  status:\n    type: select\n',
+      );
 
       await engine.applyTemplate('task-db', '.cept/databases/tasks.yaml');
 
@@ -103,15 +124,19 @@ describe('CeptTemplateEngine', () => {
     });
 
     it('throws for non-existent template', async () => {
-      await expect(engine.applyTemplate('nonexistent', 'pages/test.md'))
-        .rejects.toThrow('Template not found');
+      await expect(engine.applyTemplate('nonexistent', 'pages/test.md')).rejects.toThrow(
+        'Template not found',
+      );
     });
   });
 
   describe('saveAsTemplate', () => {
     it('saves a page as a template and returns the ID', async () => {
-      await writeText(backend, 'pages/my-page.md',
-        '---\ntitle: My Page\n---\n\n# My Page\n\nSome content here.\n');
+      await writeText(
+        backend,
+        'pages/my-page.md',
+        '---\ntitle: My Page\n---\n\n# My Page\n\nSome content here.\n',
+      );
 
       const id = await engine.saveAsTemplate('pages/my-page.md', {
         name: 'My Template',
@@ -130,8 +155,11 @@ describe('CeptTemplateEngine', () => {
     });
 
     it('saves a database schema as a template', async () => {
-      await writeText(backend, '.cept/databases/projects.yaml',
-        'id: proj-db\ntitle: Projects\nproperties:\n  name:\n    type: title\n');
+      await writeText(
+        backend,
+        '.cept/databases/projects.yaml',
+        'id: proj-db\ntitle: Projects\nproperties:\n  name:\n    type: title\n',
+      );
 
       const id = await engine.saveAsTemplate('.cept/databases/projects.yaml', {
         name: 'Projects DB',
@@ -151,8 +179,11 @@ describe('CeptTemplateEngine', () => {
 
   describe('deleteTemplate', () => {
     it('deletes an existing template', async () => {
-      await writeText(backend, '.cept/templates/to-delete/meta.yaml',
-        'name: Temp\ndescription: Will be deleted\ntype: page\n');
+      await writeText(
+        backend,
+        '.cept/templates/to-delete/meta.yaml',
+        'name: Temp\ndescription: Will be deleted\ntype: page\n',
+      );
       await writeText(backend, '.cept/templates/to-delete/content.md', '# Temp\n');
 
       await engine.deleteTemplate('to-delete');

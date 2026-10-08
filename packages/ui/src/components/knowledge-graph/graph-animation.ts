@@ -81,8 +81,10 @@ export function optimizeForPerformance(
     connectionCount.set(node.id, 0);
   }
   for (const link of data.links) {
-    const s = typeof link.source === 'string' ? link.source : (link.source as unknown as GraphNode).id;
-    const t = typeof link.target === 'string' ? link.target : (link.target as unknown as GraphNode).id;
+    const s =
+      typeof link.source === 'string' ? link.source : (link.source as unknown as GraphNode).id;
+    const t =
+      typeof link.target === 'string' ? link.target : (link.target as unknown as GraphNode).id;
     connectionCount.set(s, (connectionCount.get(s) ?? 0) + 1);
     connectionCount.set(t, (connectionCount.get(t) ?? 0) + 1);
   }
@@ -94,11 +96,13 @@ export function optimizeForPerformance(
   const keptNodes = sortedNodes.slice(0, maxNodes);
   const keptIds = new Set(keptNodes.map((n) => n.id));
 
-  const keptLinks = data.links.filter((l) => {
-    const s = typeof l.source === 'string' ? l.source : (l.source as unknown as GraphNode).id;
-    const t = typeof l.target === 'string' ? l.target : (l.target as unknown as GraphNode).id;
-    return keptIds.has(s) && keptIds.has(t);
-  }).slice(0, maxLinks);
+  const keptLinks = data.links
+    .filter((l) => {
+      const s = typeof l.source === 'string' ? l.source : (l.source as unknown as GraphNode).id;
+      const t = typeof l.target === 'string' ? l.target : (l.target as unknown as GraphNode).id;
+      return keptIds.has(s) && keptIds.has(t);
+    })
+    .slice(0, maxLinks);
 
   return { nodes: keptNodes, links: keptLinks };
 }

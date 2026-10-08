@@ -15,7 +15,9 @@ describe('normalizeRepoUrl', () => {
   });
 
   it('should strip trailing .git', () => {
-    expect(normalizeRepoUrl('https://github.com/user/repo.git')).toBe('https://github.com/user/repo');
+    expect(normalizeRepoUrl('https://github.com/user/repo.git')).toBe(
+      'https://github.com/user/repo',
+    );
   });
 
   it('should trim whitespace', () => {

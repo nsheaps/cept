@@ -76,11 +76,7 @@ export const Toggle = Node.create<ToggleOptions>({
         'data-type': 'toggle',
         class: 'cept-toggle',
       }),
-      [
-        'summary',
-        { class: 'cept-toggle-summary' },
-        node.attrs.summary as string,
-      ],
+      ['summary', { class: 'cept-toggle-summary' }, node.attrs.summary as string],
       ['div', { class: 'cept-toggle-content' }, 0],
     ];
   },

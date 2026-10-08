@@ -104,7 +104,9 @@ async function walkMarkdownFiles(
 
   // Sort: directories first, then files alphabetically
   const dirs = entries.filter((e) => e.isDirectory && !e.name.startsWith('.'));
-  const files = entries.filter((e) => e.isFile && (e.name.endsWith('.md') || e.name.endsWith('.markdown')));
+  const files = entries.filter(
+    (e) => e.isFile && (e.name.endsWith('.md') || e.name.endsWith('.markdown')),
+  );
 
   dirs.sort((a, b) => a.name.localeCompare(b.name));
   files.sort((a, b) => a.name.localeCompare(b.name));
@@ -112,7 +114,10 @@ async function walkMarkdownFiles(
   // Process markdown files
   for (const file of files) {
     const filePath = relativePath ? `${relativePath}/${file.name}` : file.name;
-    const pageId = `git-${filePath.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+    const pageId = `git-${filePath
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')}`;
     const title = extractTitleFromFilename(file.name);
 
     // Read the file content
@@ -137,7 +142,10 @@ async function walkMarkdownFiles(
   // Process subdirectories (creating folder-style parent pages)
   for (const dir of dirs) {
     const dirPath = relativePath ? `${relativePath}/${dir.name}` : dir.name;
-    const folderId = `git-${dirPath.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+    const folderId = `git-${dirPath
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')}`;
     const folderTitle = dir.name.charAt(0).toUpperCase() + dir.name.slice(1).replace(/-/g, ' ');
 
     const children: PageTreeNode[] = [];
@@ -169,9 +177,7 @@ function stripYamlFrontMatter(md: string): string {
 function extractTitleFromFilename(filename: string): string {
   const name = filename.replace(/\.(md|markdown)$/, '');
   if (name === 'index' || name === 'README') return 'Index';
-  return name
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Extract title from the first H1 heading in markdown content */

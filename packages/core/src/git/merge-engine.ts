@@ -18,11 +18,7 @@ export interface MergeConflict {
 }
 
 /** Resolution strategy for a conflict */
-export type ResolutionStrategy =
-  | 'ours'
-  | 'theirs'
-  | 'merge'
-  | 'manual';
+export type ResolutionStrategy = 'ours' | 'theirs' | 'merge' | 'manual';
 
 /** A resolved conflict with the chosen resolution */
 export interface ResolvedConflict {
@@ -145,8 +141,8 @@ export function autoResolve(
 
   for (const conflict of conflicts) {
     // Check pattern-specific strategies
-    const patternMatch = config?.patternStrategies?.find((ps) =>
-      conflict.path.endsWith(ps.pattern) || conflict.path.includes(ps.pattern),
+    const patternMatch = config?.patternStrategies?.find(
+      (ps) => conflict.path.endsWith(ps.pattern) || conflict.path.includes(ps.pattern),
     );
 
     if (patternMatch) {
@@ -212,11 +208,7 @@ export function autoResolve(
         resolvedContent: conflict.theirs ?? '',
       });
     } else if (defaultStrategy === 'merge' && conflict.base !== null) {
-      const mergeResult = threeWayMerge(
-        conflict.base,
-        conflict.ours ?? '',
-        conflict.theirs ?? '',
-      );
+      const mergeResult = threeWayMerge(conflict.base, conflict.ours ?? '', conflict.theirs ?? '');
       if (!mergeResult.hasConflicts) {
         autoResolved.push({
           path: conflict.path,
@@ -256,7 +248,12 @@ function resolveWithStrategy(
       resolvedContent: conflict.theirs ?? '',
     };
   }
-  if (strategy === 'merge' && conflict.base !== null && conflict.ours !== null && conflict.theirs !== null) {
+  if (
+    strategy === 'merge' &&
+    conflict.base !== null &&
+    conflict.ours !== null &&
+    conflict.theirs !== null
+  ) {
     const result = threeWayMerge(conflict.base, conflict.ours, conflict.theirs);
     if (!result.hasConflicts) {
       return {

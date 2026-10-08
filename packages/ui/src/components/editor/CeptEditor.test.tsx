@@ -25,9 +25,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders bullet list content', async () => {
-    render(
-      <CeptEditor content="<ul><li>Item 1</li><li>Item 2</li></ul>" />
-    );
+    render(<CeptEditor content="<ul><li>Item 1</li><li>Item 2</li></ul>" />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.textContent).toContain('Item 1');
@@ -36,9 +34,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders ordered list content', async () => {
-    render(
-      <CeptEditor content="<ol><li>First</li><li>Second</li></ol>" />
-    );
+    render(<CeptEditor content="<ol><li>First</li><li>Second</li></ol>" />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.textContent).toContain('First');
@@ -48,9 +44,7 @@ describe('CeptEditor', () => {
 
   it('renders task list content', async () => {
     render(
-      <CeptEditor
-        content='<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p>Unchecked task</p></li><li data-type="taskItem" data-checked="true"><p>Checked task</p></li></ul>'
-      />
+      <CeptEditor content='<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p>Unchecked task</p></li><li data-type="taskItem" data-checked="true"><p>Checked task</p></li></ul>' />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
@@ -78,11 +72,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders multiple heading levels', async () => {
-    render(
-      <CeptEditor
-        content="<h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3</h3>"
-      />
-    );
+    render(<CeptEditor content="<h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3</h3>" />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       const h1 = editor.querySelector('h1');
@@ -96,9 +86,7 @@ describe('CeptEditor', () => {
 
   it('renders inline formatting', async () => {
     render(
-      <CeptEditor
-        content="<p><strong>bold</strong> and <em>italic</em> and <s>strike</s></p>"
-      />
+      <CeptEditor content="<p><strong>bold</strong> and <em>italic</em> and <s>strike</s></p>" />,
     );
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');

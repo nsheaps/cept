@@ -53,22 +53,22 @@ nx graph              # Visualize project dependency graph
 
 Cept is a monorepo with the following packages:
 
-| Package | Description |
-|---|---|
-| `@cept/core` | Business logic, storage backends, database engine, parsers |
-| `@cept/ui` | Shared React components, hooks, stores |
-| `@cept/web` | Vite SPA + PWA |
-| `@cept/desktop` | Electrobun (macOS) + Electron (Win/Linux) |
-| `@cept/mobile` | Capacitor (iOS/Android) |
-| `@cept/signaling` | WebSocket signaling server for real-time collaboration |
+| Package           | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `@cept/core`      | Business logic, storage backends, database engine, parsers |
+| `@cept/ui`        | Shared React components, hooks, stores                     |
+| `@cept/web`       | Vite SPA + PWA                                             |
+| `@cept/desktop`   | Electrobun (macOS) + Electron (Win/Linux)                  |
+| `@cept/mobile`    | Capacitor (iOS/Android)                                    |
+| `@cept/signaling` | WebSocket signaling server for real-time collaboration     |
 
 ## Storage Backends
 
-| Backend | Persistence | Collaboration | History | Sync |
-|---|---|---|---|---|
-| **Browser** | IndexedDB | No | No | No |
-| **Local Folder** | Filesystem | No | No | No |
-| **Git** | Git repo | Yes (CRDTs) | Yes (Git log) | Yes (push/pull) |
+| Backend          | Persistence | Collaboration | History       | Sync            |
+| ---------------- | ----------- | ------------- | ------------- | --------------- |
+| **Browser**      | IndexedDB   | No            | No            | No              |
+| **Local Folder** | Filesystem  | No            | No            | No              |
+| **Git**          | Git repo    | Yes (CRDTs)   | Yes (Git log) | Yes (push/pull) |
 
 All backends support the complete editing, database, graph, and template experience. Git adds collaboration, history, and sync as additive capabilities.
 

@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { findAncestorIds, expandToNode, getBreadcrumbs, renameNode, removeNode, moveNode, findNode, addChild } from './page-tree-utils.js';
+import {
+  findAncestorIds,
+  expandToNode,
+  getBreadcrumbs,
+  renameNode,
+  removeNode,
+  moveNode,
+  findNode,
+  addChild,
+} from './page-tree-utils.js';
 import type { PageTreeNode } from './PageTreeItem.js';
 
 const tree: PageTreeNode[] = [

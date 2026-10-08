@@ -154,26 +154,26 @@ describe('exportPage', () => {
 
   it('exports markdown without front matter', () => {
     const file = exportPage(page, { format: 'markdown', includeFrontMatter: false });
-    expect((file.content as string)).not.toContain('---');
+    expect(file.content as string).not.toContain('---');
   });
 
   it('exports to HTML', () => {
     const file = exportPage(page, { format: 'html' });
     expect(file.filename).toBe('My Note.html');
     expect(file.mimeType).toBe('text/html');
-    expect((file.content as string)).toContain('<!DOCTYPE html>');
-    expect((file.content as string)).toContain('<h1>My Note</h1>');
+    expect(file.content as string).toContain('<!DOCTYPE html>');
+    expect(file.content as string).toContain('<h1>My Note</h1>');
   });
 
   it('exports to PDF (HTML for printing)', () => {
     const file = exportPage(page, { format: 'pdf' });
     expect(file.filename).toBe('My Note.html');
-    expect((file.content as string)).toContain('@media print');
+    expect(file.content as string).toContain('@media print');
   });
 
   it('uses custom CSS for HTML export', () => {
     const file = exportPage(page, { format: 'html', customCss: '.test {}' });
-    expect((file.content as string)).toContain('.test {}');
+    expect(file.content as string).toContain('.test {}');
   });
 
   it('uses title override', () => {
@@ -204,9 +204,7 @@ describe('exportPages', () => {
 
   it('collects errors from individual pages', () => {
     // Create a page that will cause an error when exported
-    const pages = [
-      { title: 'Good', markdown: '# Good', path: '/good.md' },
-    ];
+    const pages = [{ title: 'Good', markdown: '# Good', path: '/good.md' }];
     const result = exportPages(pages, { format: 'markdown' });
     expect(result.files.length).toBe(1);
   });

@@ -60,9 +60,7 @@ export function InlineToolbar({ editor }: InlineToolbarProps) {
   }
 
   return (
-    <BubbleMenu
-      editor={editor}
-    >
+    <BubbleMenu editor={editor}>
       <div className="cept-inline-toolbar" data-testid="inline-toolbar">
         {showLinkInput ? (
           <div className="cept-inline-toolbar-link" data-testid="link-input-group">
