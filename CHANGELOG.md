@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.29.0](https://github.com/nsheaps/cept/compare/v0.28.0...v0.29.0) (2026-10-08)
+
+### Features
+
+* **sync:** keep a queued push across reloads and push on reconnect ([#405](https://github.com/nsheaps/cept/issues/405)) ([875d5e7](https://github.com/nsheaps/cept/commit/875d5e72949ff16e689a2ce8440c8b53dbe93388))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1d1f3ee](https://github.com/nsheaps/cept/commit/1d1f3eed889ff107e2db904b360c9479a73e2798))
+
 ## [0.28.0](https://github.com/nsheaps/cept/compare/v0.27.0...v0.28.0) (2026-10-08)
 
 ### Features
