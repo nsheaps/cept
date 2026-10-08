@@ -157,6 +157,19 @@ describe('electSyncLeader (REQ-WS-027)', () => {
     expect(heard).toHaveBeenCalledOnce();
   });
 
+  it('does not post on its channel once it has left', async () => {
+    const posted = vi.fn();
+    const channel = (): ChannelLike => ({
+      postMessage: posted,
+      addEventListener: () => undefined,
+      close: () => undefined,
+    });
+    const fg = electSyncLeader('space-a', { locks: fakeLocks(), channel, fallback });
+    fg.dispose?.();
+    expect(() => fg.announceSynced?.()).not.toThrow();
+    expect(posted).not.toHaveBeenCalled();
+  });
+
   it('falls back to the page being visible without Web Locks', () => {
     const visible = { ...fallback, isActive: () => true };
     const fg = electSyncLeader('space-a', { locks: null, channel: null, fallback: visible });

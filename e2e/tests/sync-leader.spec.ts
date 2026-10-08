@@ -155,6 +155,10 @@ test.describe('Sync leader election', () => {
     await tabB.goto('/');
     await expect(tabB.getByTestId('breadcrumbs')).toContainText('intro', { timeout: 20000 });
     await expect(tabB.getByTestId('sync-indicator')).toBeVisible({ timeout: 20000 });
+    // "Sync now" is enabled only once tab B's session is open and its status
+    // read; by then the hook has joined the election and, had tab B been
+    // granted the lead, started its loop (whose first act is a fetch).
+    await expect(tabB.getByTestId('sync-now')).toBeEnabled({ timeout: 20000 });
     await expect(tabB.getByTestId('sync-indicator')).not.toHaveAttribute('data-state', 'error');
 
     // "Only one tab syncs": a session starts its automatic loop with an
@@ -164,7 +168,7 @@ test.describe('Sync leader election', () => {
     // sits open, whereas a tab that is the leader makes one on starting. This
     // avoids timing a periodic interval (slow, and flaky around the tick). The
     // window below only lets a wrongly started loop in tab B show itself.
-    await tabB.waitForTimeout(3000);
+    await tabB.waitForTimeout(5000);
     expect(b.count(), 'tab B (follower) must not sync automatically').toBe(0);
     const aBeforeHandover = a.count();
     expect(aBeforeHandover, 'tab A (leader) synced on starting').toBeGreaterThan(0);

@@ -1,10 +1,14 @@
 /**
  * One sync leader per space across the tabs of an origin (REQ-WS-027): the
- * tab holding a Web Lock named after the space runs the automatic sync loop,
- * and the others wait in the lock's queue. When the leader closes (or leaves
- * the space) the browser hands the lock to the next tab in line. Tabs tell
- * each other about finished syncs over a BroadcastChannel of the same name, so
- * a follower's indicator catches up with the leader's pulls and pushes.
+ * tab holding a Web Lock named after the session key runs the automatic sync
+ * loop, and the others wait in the lock's queue. The session key is
+ * `<space id>|<login>`, so strictly the election is per (space, account); the
+ * sign-in is shared by the origin's tabs, so in practice that is per space,
+ * and signing in as another account starts a new election. When the leader
+ * closes (or leaves the space) the browser hands the lock to the next tab in
+ * line. Tabs tell each other about finished syncs over a BroadcastChannel of
+ * the same name, so a follower's indicator catches up with the leader's pulls
+ * and pushes.
  *
  * Without Web Locks (older browsers) the page falls back to running automatic
  * syncs only while it is visible.
@@ -97,11 +101,15 @@ export function electSyncLeader(
   const name = syncLeaderName(sessionKey);
   const channel = env.channel?.(name) ?? null;
   const peerListeners = new Set<() => void>();
+  /** Set once the channel is closed; posting on a closed channel throws. */
+  let closed = false;
   channel?.addEventListener('message', (event) => {
     if (event.data === SYNCED) for (const listener of peerListeners) listener();
   });
   const peers = {
-    announceSynced: () => channel?.postMessage(SYNCED),
+    announceSynced: () => {
+      if (!closed) channel?.postMessage(SYNCED);
+    },
     onPeerSynced(listener: () => void) {
       peerListeners.add(listener);
       return () => void peerListeners.delete(listener);
@@ -109,12 +117,16 @@ export function electSyncLeader(
   };
 
   if (!env.locks) {
+    // No election without Web Locks: every visible tab runs the loop, so two
+    // visible tabs on one space both sync. The "one leader" rule holds only
+    // with Web Locks.
     return {
       ...peers,
       isActive: () => env.fallback.isActive(),
       subscribe: (onChange) => env.fallback.subscribe(onChange),
       onOnline: (onOnline) => env.fallback.onOnline(onOnline),
       dispose: () => {
+        closed = true;
         peerListeners.clear();
         channel?.close();
       },
@@ -152,6 +164,7 @@ export function electSyncLeader(
     dispose() {
       if (disposed) return;
       disposed = true;
+      closed = true;
       abort.abort();
       const wasLeader = leader;
       leader = false;
