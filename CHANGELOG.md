@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0](https://github.com/nsheaps/cept/compare/v0.9.1...v0.10.0) (2026-10-08)
+
+### Features
+
+* **core:** discover spaces and .git in a backend tree ([#378](https://github.com/nsheaps/cept/issues/378)) ([b79591e](https://github.com/nsheaps/cept/commit/b79591ebdad57ea37b45aeb9e65265473331e3b2))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([b7b00b5](https://github.com/nsheaps/cept/commit/b7b00b5393f14d91aebee62f42d7afdefb06fc0c))
+
 ## [0.9.1](https://github.com/nsheaps/cept/compare/v0.9.0...v0.9.1) (2026-10-08)
 
 ### Bug Fixes
