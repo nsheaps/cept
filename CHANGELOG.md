@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.24.0](https://github.com/nsheaps/cept/compare/v0.23.1...v0.24.0) (2026-10-08)
+
+### Features
+
+* **core:** git sync policy for author, messages and branch ([#400](https://github.com/nsheaps/cept/issues/400)) ([3aa9338](https://github.com/nsheaps/cept/commit/3aa9338dc10f0854c154700ae43104b9cc74a27d))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([ffe54cd](https://github.com/nsheaps/cept/commit/ffe54cd6cfe4aa65258d6c953b20ac529067fd59))
+
 ## [0.23.1](https://github.com/nsheaps/cept/compare/v0.23.0...v0.23.1) (2026-10-08)
 
 ### Documentation
