@@ -33,7 +33,9 @@ bun run dev          # Dev mode (all packages)
 bun run dev:web      # Dev mode (web only)
 bun run build        # Production build
 bun run test         # All tests
-bun run lint         # ESLint + Prettier
+bun run lint         # ESLint
+mise run lint        # ESLint, workflow lint and prettier --check
+mise run format      # Apply Prettier formatting
 bun run typecheck    # TypeScript check
 bun run validate     # Full quality gate (lint + typecheck + test)
 ```
@@ -69,7 +71,7 @@ These rules are enforced in code review and CI:
 ### Code Style
 
 - TypeScript strict mode
-- ESLint + Prettier for formatting
+- ESLint, and Prettier for formatting: `mise run lint` fails on unformatted files. On pull requests from this repo, the Format workflow commits `mise run format` fixes to your branch; on fork PRs, run `mise run format` yourself
 - Prefer functional patterns where appropriate
 - Write tests for all new code
 
