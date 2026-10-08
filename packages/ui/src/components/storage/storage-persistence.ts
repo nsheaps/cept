@@ -29,8 +29,9 @@ export function browserStorageManager(): StorageManagerLike | null {
 
 /**
  * Ask for persistent storage unless it is already granted, and report what
- * the user should hear about. A call the browser refuses or does not have is
- * treated as unknown, which warns about nothing.
+ * the user should hear about. A `persist()` that throws counts as a refusal;
+ * any other call that throws, or that the browser lacks, is treated as
+ * unknown and warns about nothing.
  */
 export async function checkStoragePersistence(
   storage: StorageManagerLike | null = browserStorageManager(),
@@ -38,13 +39,21 @@ export async function checkStoragePersistence(
   if (!storage) return [];
   const warnings: StorageWarning[] = [];
 
+  let persistent: boolean | undefined;
   try {
-    let persistent = storage.persisted ? await storage.persisted() : undefined;
-    if (persistent !== true && storage.persist) persistent = await storage.persist();
-    if (persistent === false) warnings.push({ kind: 'not-persistent' });
+    persistent = storage.persisted ? await storage.persisted() : undefined;
   } catch {
-    // Unknown: say nothing.
+    // Unknown; still ask below.
   }
+  if (persistent !== true && storage.persist) {
+    try {
+      persistent = await storage.persist();
+    } catch {
+      // A request that throws is as good as a refusal.
+      persistent = false;
+    }
+  }
+  if (persistent === false) warnings.push({ kind: 'not-persistent' });
 
   try {
     const estimate = storage.estimate ? await storage.estimate() : undefined;

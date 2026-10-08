@@ -73,12 +73,18 @@ describe('checkStoragePersistence (REQ-WEB-004)', () => {
     expect(await checkStoragePersistence(s)).toEqual([]);
   });
 
-  it('stays quiet when the storage calls fail', async () => {
+  it('treats a persist() that throws as a refusal', async () => {
     const s = storage({
-      persisted: vi.fn(async () => {
+      persist: vi.fn(async () => {
         throw new Error('denied');
       }),
-      persist: vi.fn(async () => {
+    });
+    expect(await checkStoragePersistence(s)).toEqual([{ kind: 'not-persistent' }]);
+  });
+
+  it('still asks when persisted() throws, and stays quiet when the estimate fails', async () => {
+    const s = storage({
+      persisted: vi.fn(async () => {
         throw new Error('denied');
       }),
       estimate: vi.fn(async () => {
@@ -86,6 +92,7 @@ describe('checkStoragePersistence (REQ-WEB-004)', () => {
       }),
     });
     expect(await checkStoragePersistence(s)).toEqual([]);
+    expect(s.persist).toHaveBeenCalledOnce();
   });
 });
 
