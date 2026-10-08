@@ -65,7 +65,7 @@ env = { NX_DAEMON = "false" }
 
 [tasks."test:e2e"]
 description = "Run Playwright end-to-end tests (skipped when NX_BASE is set and e2e is not affected)"
-run = "bun scripts/ci/nx-targets.ts test --projects=@cept/e2e"
+run = "bun scripts/ci/nx-targets.ts test:e2e"
 
 [tasks.build]
 description = "Build every project (affected ones when NX_BASE is set)"

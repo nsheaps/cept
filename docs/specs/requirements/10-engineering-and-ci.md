@@ -45,7 +45,7 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 | [REQ-ENG-005](#req-eng-005--reusable-workflow-structure)                             | Reusable `_*.yml` workflow structure                               | SHOULD   | implemented | documented-differently | stale         |
 | [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci)                        | Automated formatting fixes committed by CI                         | MUST     | partial     | documented             | current       |
 | [REQ-ENG-007](#req-eng-007--lint-covers-every-auto-checkable-file-type)              | Lint covers every auto-checkable file type                         | SHOULD   | partial     | undocumented           | n/a           |
-| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | partial     | documented             | current       |
 | [REQ-ENG-009](#req-eng-009--typecheck-and-build-per-project)                         | Typecheck and build per project with real artifacts                | MUST     | partial     | documented-differently | stale         |
 | [REQ-ENG-010](#req-eng-010--base-implementation-in-bun-and-typescript-strict)        | Bun + TypeScript strict baseline                                   | MUST     | implemented | documented-as-desired  | accurate      |
 | [REQ-ENG-011](#req-eng-011--dependencies-declared-per-package)                       | Dependencies declared per package                                  | SHOULD   | partial     | documented             | current       |
@@ -140,7 +140,7 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 
 - `nx show projects` lists core, ui, web, desktop, mobile, signaling, docs, e2e and `cept-workspace` (the root [project.json](../../../project.json): repo scripts' unit tests, every integration test, and a typecheck of `scripts/`, `tools/`, `features/` and the root configs via [tsconfig.scripts.json](../../../tsconfig.scripts.json)).
 - Every package has `typecheck` and `test:unit` (`vitest run --root <repo> --project unit <package dir>`, so the root Vitest config and aliases still apply). core, ui, web and desktop have a real `build`; docs no longer has `echo` targets.
-- A project that has no build or unit tests records why in `package.json` `cept.skipTargets` (mobile: Capacitor is later, D-43; signaling: co-editing is later; docs: the site build is Phase 2, REQ-ENG-016; e2e: Playwright specs run through `test`; the root: nothing to build). `mise run check:targets` ([scripts/ci/check-targets.ts](../../../scripts/ci/check-targets.ts), part of `mise run lint`) fails when a project lacks `build`, `typecheck` or `test:unit` with no reason, both skips and defines one, or skips a target that is not required (a typo).
+- A project that has no build or unit tests records why in `package.json` `cept.skipTargets` (mobile: Capacitor is later, D-43; signaling: co-editing is later; docs: the site build is Phase 2, REQ-ENG-016; e2e: Playwright specs run through `test:e2e`; the root: nothing to build). `mise run check:targets` ([scripts/ci/check-targets.ts](../../../scripts/ci/check-targets.ts), part of `mise run lint`) fails when a project lacks `build`, `typecheck` or `test:unit` with no reason, both skips and defines one, or skips a target that is not required (a typo).
 - Root `test`, `test:unit`, `test:integration`, `build`, `lint` and `typecheck` scripts go through `nx run-many`.
 
 **Docs state:** documented, current ([CLAUDE.md](../../../CLAUDE.md) Key Commands, [CONTRIBUTING.md](../../../CONTRIBUTING.md)). [TASKS.md](../../../TASKS.md) T0.1 is now accurate.
@@ -293,11 +293,22 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - Nx caching is enabled in CI (local or remote cache) so unchanged targets are skipped.
 - `main` runs `nx run-many -t test:unit` for every project.
 
-**Current state:** partial. Every project now has its own `test:unit` target (REQ-ENG-001), and root `bun run test:unit` is `nx run-many -t test:unit`. CI still runs every project. [\_test-unit.yml](../../../.github/workflows/_test-unit.yml) runs root `bun run test:unit` (`nx run-many`), so every project runs every time. Checkouts use the default `fetch-depth: 1`. No workflow uses `nx affected`. E2E also always runs the full suite ([\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml)).
+**Current state:** partial (all but CI caching; plan PR 9).
 
-**Docs state:** documented-as-desired, stale. [CLAUDE.md](../../../CLAUDE.md) lists `nx affected -t test` and `nx affected -t build` as working commands, and [SPECIFICATION.md](../../SPECIFICATION.md) (around line 1298) implies the same. With most packages lacking test targets, `nx affected -t test` skips most code.
+- The lint, typecheck, unit, integration, e2e and build jobs check out full history (`fetch-depth: 0`) and set `NX_BASE` to the pull request's base SHA. Their mise tasks run through [scripts/ci/nx-targets.ts](../../../scripts/ci/nx-targets.ts), which runs `nx affected -t <target> --base=$NX_BASE` when `NX_BASE` is set. Otherwise (pushes to `main`, `mise run check` locally) it runs `nx run-many -t <target>`.
+- Root config files (`nx.json`, `package.json`, `bun.lock`, `bunfig.toml`, `.mise.toml`, `tsconfig.json`, `tsconfig.base.json`, `vitest.config.ts`) are the `sharedGlobals` named input in [nx.json](../../../nx.json). They are part of every target's `default` inputs and of `lint`'s inputs, so changing one affects every project.
+- `@cept/e2e` has an implicit dependency on `@cept/web` (Playwright serves the web app), so UI changes run E2E. Its Playwright target is `test:e2e`.
+- `cept-workspace` has an implicit dependency on every `@cept/*` project, because its integration tests lint and read package sources.
+- [scripts/ci/affected.integration.test.ts](../../../scripts/ci/affected.integration.test.ts) proves the following:
+  - A signaling-server change does not affect `@cept/ui`.
+  - A ui change affects `@cept/e2e`.
+  - A core change affects `cept-workspace`.
+  - Each root config file affects every project.
+- Nx's cache is local to each CI run; nothing restores it between runs.
 
-**Gap:** Add per-project test targets, affected scoping on PRs with full runs on main, and CI caching.
+**Docs state:** documented, current. [CLAUDE.md](../../../CLAUDE.md) CI Conventions describe the `NX_BASE` switch.
+
+**Gap:** Nx caching across CI runs (local cache restored by `actions/cache`, or a remote cache).
 
 ### REQ-ENG-009 — Typecheck and build per project
 
@@ -584,7 +595,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 | [docs/SPECIFICATION.md](../../SPECIFICATION.md) §9.6                                                         | `.mise.toml` bun 1.x / node 22.x                                                                 | `bun = "1"`, `node = "24"` (and both should be exact)                                                          |
 | [docs/SPECIFICATION.md](../../SPECIFICATION.md) around line 1731; [CLAUDE.md](../../../CLAUDE.md) Repository | Commit directly to `main`, no PRs                                                                | PR-required rulesets are active                                                                                |
 | [CLAUDE.md](../../../CLAUDE.md) Key Commands; [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 36            | `bun run lint  # ESLint + Prettier`                                                              | Fixed (plan PR 6): both now say `mise run lint` checks Prettier                                                |
-| [CLAUDE.md](../../../CLAUDE.md) Key Commands                                                                 | `nx affected -t test` / `-t build` presented as working                                          | Most packages have no test or build target                                                                     |
+| [CLAUDE.md](../../../CLAUDE.md) Key Commands                                                                 | `nx affected -t test` / `-t build` presented as working                                          | Fixed (plan PR 9): both now say `nx affected -t test:unit` / `-t build`, which CI uses on PRs                  |
 | [CLAUDE.md](../../../CLAUDE.md) package table                                                                | `@cept/docs` is a "Starlight/VitePress documentation site"                                       | `docs/package.json` targets are `echo` placeholders                                                            |
 | [CONTRIBUTING.md](../../../CONTRIBUTING.md) line 59                                                          | Architecture rules "enforced in code review and CI"                                              | No CI enforcement exists                                                                                       |
 | [TASKS.md](../../../TASKS.md) T0.1                                                                           | Monorepo with mise, bun and Nx done                                                              | Nx targets incomplete, no mise tasks                                                                           |

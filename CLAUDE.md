@@ -48,13 +48,13 @@ mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Pl
 mise run ci:version-check       # Release-version outputs for the PR comment (writes $GITHUB_OUTPUT)
 PR_TITLE="feat: x" mise run ci:pr-title  # Check a PR title is a Conventional Commit (types from .release-it.json)
 nx graph                        # Visualize project dependency graph
-nx affected -t test             # Test only affected packages
+nx affected -t test:unit        # Unit-test only affected packages
 nx affected -t build            # Build only affected packages
 ```
 
 ## CI Conventions
 
-Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`).
+Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`). On pull requests the lint, typecheck, unit, integration, e2e and build jobs set `NX_BASE` to the PR base, and their mise tasks (via `scripts/ci/nx-targets.ts`) run `nx affected`; on `main` and locally they run every project. Root config files are the `sharedGlobals` input in `nx.json`, so changing one runs everything; add a new root config file there.
 
 ## Nx Targets
 

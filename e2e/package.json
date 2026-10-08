@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test --config playwright.config.ts",
+    "test:e2e": "playwright test --config playwright.config.ts",
     "test:screenshots": "playwright test --config playwright.config.ts --update-snapshots",
     "typecheck": "tsc --noEmit"
   },
   "cept": {
     "skipTargets": {
       "build": "Playwright specs are run, not built.",
-      "test:unit": "E2E specs run through the test target (Playwright), not Vitest."
+      "test:unit": "E2E specs run through the test:e2e target (Playwright), not Vitest."
     }
   },
   "nx": {

@@ -31,17 +31,6 @@ describe('nxArgs', () => {
     expect(nxArgs(['build'], { NX_BASE: '' })).toEqual(['run-many', '-t', 'build']);
   });
 
-  it('passes --projects through', () => {
-    expect(nxArgs(['test', '--projects=@cept/e2e'], { NX_BASE: 'abc' })).toEqual([
-      'affected',
-      '-t',
-      'test',
-      '--projects=@cept/e2e',
-      '--base=abc',
-      '--head=HEAD',
-    ]);
-  });
-
   it('rejects a call with no target', () => {
     expect(() => nxArgs([], {})).toThrow(/target/);
   });
