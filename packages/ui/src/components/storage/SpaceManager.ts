@@ -41,6 +41,7 @@ import {
   finishInterruptedUndo,
   hasMigrationBackup,
   migrateFlatSpace,
+  migratedPageId,
   undoFlatMigration,
 } from './legacy-migration.js';
 import { isRemoteSpaceId } from '../../router.js';
@@ -621,6 +622,11 @@ export class SpaceManager {
   async undoConversion(id: string): Promise<void> {
     await undoFlatMigration(this.store(id));
     this.layouts.set(id, false);
+  }
+
+  /** Where a page of a space's old flat layout moved when it was converted; null if unknown. */
+  movedPageId(id: string, oldId: string): Promise<string | null> {
+    return migratedPageId(this.store(id).backend, oldId);
   }
 
   readPage(id: string, pageId: string): Promise<string | null> {

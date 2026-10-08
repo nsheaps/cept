@@ -9,6 +9,7 @@ import {
   finishInterruptedUndo,
   hasMigrationBackup,
   migrateFlatSpace,
+  migratedPageId,
   MIGRATION_MAP_FILE,
   undoFlatMigration,
 } from './legacy-migration.js';
@@ -175,6 +176,19 @@ describe('migrateFlatSpace', () => {
     backend.seedFile('.cept/workspace-state.json', { pages: [], favorites: [], recentPages: [] });
     await migrateFlatSpace(ownSpaceStore(backend), 'Fallback');
     expect(backend.readText('space.cept.yaml')).toContain('name: Fallback');
+  });
+});
+
+describe('migratedPageId', () => {
+  it('finds where an old page id moved, even after the backup is gone', async () => {
+    const backend = new MemoryBackend();
+    seedFlat(backend, '.cept/workspace-state.json');
+    await migrateFlatSpace(ownSpaceStore(backend), 'Fallback');
+    await confirmFlatMigration(backend);
+
+    expect(await migratedPageId(backend, 'page-4')).toBe('README 2.md');
+    expect(await migratedPageId(backend, 'page-99')).toBeNull();
+    expect(await migratedPageId(new MemoryBackend(), 'page-4')).toBeNull();
   });
 });
 
