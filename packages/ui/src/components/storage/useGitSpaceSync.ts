@@ -4,13 +4,15 @@
  * indicator, syncs on demand, and closes the session when the space, the
  * account or the component goes away.
  *
- * Automatic syncs run only while the page is in the foreground (visible), so
- * two tabs left open do not both push (until one sync leader is elected per
- * origin, PR 38). A manual sync always runs. The browser events are wired here
- * rather than in `@cept/core`, which knows nothing of documents and windows.
+ * Automatic syncs run only in the tab elected sync leader for the space
+ * (`sync-leader.ts`), so two tabs left open do not both push; a manual sync
+ * always runs. The browser APIs are used here rather than in `@cept/core`,
+ * which knows nothing of documents and windows.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { electSyncLeader } from './sync-leader.js';
+import type { Foreground } from './sync-leader.js';
 import type {
   ConflictResolution,
   GitSpaceLocalChanges,
@@ -76,29 +78,8 @@ export function syncStateOf(state: SyncState): GitSyncState {
   return state === 'pulling' || state === 'pushing' ? 'syncing' : state;
 }
 
-/** Whether automatic syncs may run now, and how to hear when that changes. */
-export interface Foreground {
-  isActive(): boolean;
-  /** Call `onChange` whenever the answer may have changed; returns an unsubscribe. */
-  subscribe(onChange: () => void): () => void;
-  /** Call `onOnline` when the network comes back; returns an unsubscribe. */
-  onOnline(onOnline: () => void): () => void;
-}
-
-/** The page is in the foreground while it is visible. */
-export const documentForeground: Foreground = {
-  isActive: () => typeof document === 'undefined' || document.visibilityState === 'visible',
-  subscribe(onChange) {
-    if (typeof document === 'undefined') return () => undefined;
-    document.addEventListener('visibilitychange', onChange);
-    return () => document.removeEventListener('visibilitychange', onChange);
-  },
-  onOnline(onOnline) {
-    if (typeof window === 'undefined') return () => undefined;
-    window.addEventListener('online', onOnline);
-    return () => window.removeEventListener('online', onOnline);
-  },
-};
+export type { Foreground } from './sync-leader.js';
+export { documentForeground } from './sync-leader.js';
 
 export interface UseGitSpaceSyncOptions {
   /**
@@ -120,7 +101,12 @@ export interface UseGitSpaceSyncOptions {
   onSynced: (result: GitSpaceSyncResult, manual: boolean) => void;
   /** The session could not be opened, or `onClosed` failed while it was closing. */
   onError?: (err: unknown, phase: 'open' | 'close') => void;
-  foreground?: Foreground;
+  /**
+   * When automatic syncs may run: a fixed `Foreground`, or one made per
+   * session key (and disposed with the session). Defaults to electing one
+   * sync leader per space across the origin's tabs.
+   */
+  foreground?: Foreground | ((key: string) => Foreground);
 }
 
 export interface GitSpaceSync {
@@ -153,11 +139,14 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
   const closeRef = useRef<(() => Promise<void>) | null>(null);
   /** The close in progress, so the next session waits for it. */
   const closingRef = useRef<Promise<void>>(Promise.resolve());
+  /** The open session's foreground, so manual syncs reach the other tabs too. */
+  const foregroundRef = useRef<Foreground | null>(null);
 
   useEffect(() => {
     if (!sessionKey) return;
     const key = sessionKey;
-    const foreground = latest.current.foreground ?? documentForeground;
+    const choice = latest.current.foreground ?? electSyncLeader;
+    const foreground = typeof choice === 'function' ? choice(key) : choice;
     let cancelled = false;
     let opened: SpaceSyncSession | null = null;
     const unsubscribe: (() => void)[] = [];
@@ -180,6 +169,8 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
     const close = async () => {
       cancelled = true;
       for (const off of unsubscribe.splice(0)) off();
+      // Leave the election first, so another tab can take over the loop.
+      if (foreground !== latest.current.foreground) foreground.dispose?.();
       const s = opened;
       opened = null;
       if (!s) return;
@@ -187,6 +178,7 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       if (sessionRef.current === s) {
         sessionRef.current = null;
         closeRef.current = null;
+        foregroundRef.current = null;
         setSession(null);
         setStatus(null);
         setSyncing(false);
@@ -215,6 +207,7 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       opened = s;
       sessionRef.current = s;
       closeRef.current = close;
+      foregroundRef.current = foreground;
       latest.current.onOpened(s, key);
       setSession(s);
       void refresh(s);
@@ -222,8 +215,11 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       unsubscribe.push(s.sync.on(() => void refresh(s)));
       unsubscribe.push(s.autoCommit.on(() => void refresh(s)));
       const onAuto = (result: GitSpaceSyncResult) => {
+        foreground.announceSynced?.();
         if (!cancelled) latest.current.onSynced(result, false);
       };
+      // Another tab synced this space: catch up with what it pulled or pushed.
+      if (foreground.onPeerSynced) unsubscribe.push(foreground.onPeerSynced(() => void refresh(s)));
       const follow = () => {
         if (cancelled) return;
         if (foreground.isActive()) s.start(onAuto);
@@ -255,6 +251,7 @@ export function useGitSpaceSync(options: UseGitSpaceSyncOptions): GitSpaceSync {
       setSyncing(true);
       try {
         const result = await run(s);
+        foregroundRef.current?.announceSynced?.();
         if (sessionRef.current === s) latest.current.onSynced(syncOf(result), true);
         return result;
       } finally {
