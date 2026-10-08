@@ -3,6 +3,14 @@ import { SyncEngine } from './sync-engine.js';
 import type { SyncEvent } from './sync-engine.js';
 import type { GitStorageBackend } from '../storage/backend.js';
 
+/** An HTTP failure shaped like isomorphic-git's HttpError. */
+function httpError(statusCode: number): Error {
+  return Object.assign(new Error(`HTTP Error: ${statusCode}`), {
+    code: 'HttpError',
+    data: { statusCode },
+  });
+}
+
 function createMockBackend(): GitStorageBackend {
   return {
     type: 'git',
@@ -119,11 +127,76 @@ describe('SyncEngine', () => {
     const status = await engine.sync();
 
     expect(status.state).toBe('error');
+    expect(status.lastErrorKind).toBe('rejected');
     expect(status.pendingPush).toBe(true);
   });
 
-  it('handles network errors', async () => {
+  it('classifies a push refused as a protected branch', async () => {
+    (backend.push as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      refs: { 'refs/heads/main': { ok: false, error: 'protected branch hook declined' } },
+    });
+
+    const engine = new SyncEngine(backend);
+    const events: SyncEvent[] = [];
+    engine.on((e) => events.push(e));
+    const status = await engine.sync();
+
+    expect(status.state).toBe('error');
+    expect(status.lastErrorKind).toBe('protected-branch');
+    expect(status.lastError).toContain('refs/heads/main');
+    expect(events.find((e) => e.type === 'error')?.errorKind).toBe('protected-branch');
+  });
+
+  it('reports quota errors as quota', async () => {
+    (backend.push as ReturnType<typeof vi.fn>).mockRejectedValue(httpError(413));
+
+    const status = await new SyncEngine(backend).sync();
+
+    expect(status.state).toBe('error');
+    expect(status.lastErrorKind).toBe('quota');
+    expect(backend.push).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a thrown merge conflict as a conflict with its files', async () => {
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(
+      Object.assign(new Error('conflict'), {
+        code: 'MergeConflictError',
+        data: { filepaths: ['a.md', 'b.md'] },
+      }),
+    );
+
+    const status = await new SyncEngine(backend).sync();
+
+    expect(status.state).toBe('conflict');
+    expect(status.conflicts).toEqual(['a.md', 'b.md']);
+    expect(backend.push).not.toHaveBeenCalled();
+  });
+
+  it('does not treat an unclassified error whose text says network as offline', async () => {
     (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network timeout'));
+
+    const status = await new SyncEngine(backend, { maxRetries: 3 }).sync();
+
+    expect(status.state).toBe('error');
+    expect(status.lastErrorKind).toBe('unknown');
+    expect(backend.pull).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a temporary server failure', async () => {
+    (backend.pull as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(httpError(503))
+      .mockResolvedValue({ ok: true, conflicts: [] });
+
+    const status = await new SyncEngine(backend, { maxRetries: 3 }).sync();
+
+    expect(status.state).toBe('synced');
+    expect(status.lastErrorKind).toBeNull();
+    expect(backend.pull).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles network errors', async () => {
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new TypeError('Failed to fetch'));
 
     const engine = new SyncEngine(backend, { maxRetries: 1 });
     const events: SyncEvent[] = [];
@@ -137,7 +210,7 @@ describe('SyncEngine', () => {
 
   it('retries on network error', async () => {
     (backend.pull as ReturnType<typeof vi.fn>)
-      .mockRejectedValueOnce(new Error('network error'))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValue({ ok: true, conflicts: [] });
 
     const engine = new SyncEngine(backend, { maxRetries: 3 });
@@ -148,7 +221,7 @@ describe('SyncEngine', () => {
   });
 
   it('does not retry on non-retryable error', async () => {
-    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('auth failed'));
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(httpError(401));
 
     const engine = new SyncEngine(backend, { maxRetries: 3 });
     await engine.sync();
@@ -202,7 +275,7 @@ describe('SyncEngine', () => {
   });
 
   it('reportOnline transitions from offline to idle', async () => {
-    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network offline'));
+    (backend.pull as ReturnType<typeof vi.fn>).mockRejectedValue(new TypeError('Failed to fetch'));
     const engine = new SyncEngine(backend, { maxRetries: 1 });
 
     await engine.sync();

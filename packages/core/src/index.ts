@@ -157,7 +157,12 @@ export type { MarkdownParser, ParsedPage } from './markdown/index.js';
 export { CeptMarkdownParser } from './markdown/index.js';
 
 // Git
-export { AutoCommitEngine, generateCommitMessage, matchesPattern } from './git/index.js';
+export {
+  AutoCommitEngine,
+  commitPathName,
+  generateCommitMessage,
+  matchesPattern,
+} from './git/index.js';
 export type {
   AutoCommitConfig,
   FileChange,
@@ -184,6 +189,30 @@ export type {
   AutoMergeConfig,
 } from './git/index.js';
 export { SyncEngine } from './git/index.js';
+export {
+  SyncError,
+  classifyPushReason,
+  classifyPushReasons,
+  classifySyncError,
+  conflictPaths,
+  isRetryableSyncError,
+  DEFAULT_SYNC_SETTINGS,
+  SYNC_SETTINGS_EXCLUDE,
+  SYNC_SETTINGS_PATH,
+  commitIdentityFor,
+  loadSyncSettings,
+  parseSyncSettings,
+  saveSyncSettings,
+  serializeSyncSettings,
+  trackedBranch,
+  withExcludeLine,
+} from './git/index.js';
+export type {
+  SyncErrorKind,
+  CommitIdentity,
+  GitHubUserIdentity,
+  SyncSettings,
+} from './git/index.js';
 export type {
   SyncConfig,
   SyncState,

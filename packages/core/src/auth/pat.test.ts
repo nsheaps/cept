@@ -41,6 +41,15 @@ afterEach(() => {
 });
 
 describe('PatAuthProvider.signIn', () => {
+  it('keeps the account id GitHub sends, for the commit noreply address', async () => {
+    const fetch = fetchReplying({ status: 200, body: { ...USER, id: 583231 } });
+    const provider = new PatAuthProvider({ tokenStore: new MemoryTokenStore(), fetch });
+
+    const account = await provider.signIn(CLASSIC);
+
+    expect(account.id).toBe(583231);
+  });
+
   it('validates a classic token with GET /user and reports its scopes and expiry', async () => {
     const fetch = fetchReplying({
       status: 200,

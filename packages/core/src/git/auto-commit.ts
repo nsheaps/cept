@@ -13,7 +13,7 @@ export interface AutoCommitConfig {
   debounceMs?: number;
   /** Maximum number of changes to batch before forcing a commit. Default: 50 */
   maxBatchSize?: number;
-  /** File patterns to exclude from auto-commit (glob-style). Default: ['.git/**'] */
+  /** File patterns to exclude from auto-commit (glob-style). Default: `.git/**` and the per-device sync settings */
   excludePatterns?: string[];
   /** Whether auto-commit is enabled. Default: true */
   enabled?: boolean;
@@ -45,7 +45,7 @@ export interface AutoCommitEvent {
 
 const DEFAULT_DEBOUNCE_MS = 5000;
 const DEFAULT_MAX_BATCH_SIZE = 50;
-const DEFAULT_EXCLUDE = ['.git/**'];
+const DEFAULT_EXCLUDE = ['.git/**', '.cept/sync.local.json', '**/.cept/sync.local.json'];
 
 /**
  * Checks if a path matches a simple glob pattern.
@@ -61,43 +61,51 @@ export function matchesPattern(path: string, pattern: string): boolean {
 }
 
 /**
- * Generates a human-readable commit message from file changes.
+ * The name a commit subject uses for a path: a page's file name without `.md`,
+ * or its folder's name for an `index.md`; other files keep their file name.
+ */
+export function commitPathName(path: string): string {
+  const parts = path.split('/').filter(Boolean);
+  const file = parts.at(-1) ?? path;
+  if (file === 'index.md' && parts.length > 1) return parts[parts.length - 2];
+  return file.endsWith('.md') ? file.slice(0, -3) : file;
+}
+
+const VERBS: Record<FileChange['type'], string> = {
+  add: 'Add',
+  modify: 'Update',
+  delete: 'Delete',
+};
+const LETTERS: Record<FileChange['type'], string> = { add: 'A', modify: 'M', delete: 'D' };
+
+/**
+ * The commit message template (REQ-WS-027).
+ *
+ * Subject: for each kind of change, in the order add, update, delete, either
+ * `<Verb> <name>` for one path or `<Verb> <n> pages` (`files` when any path is
+ * not a Markdown page), joined with `, `. The verbs are Add, Update and Delete.
+ *
+ * Body: after a blank line, one line per path, sorted, as `A <path>`,
+ * `M <path>` or `D <path>`.
  */
 export function generateCommitMessage(changes: FileChange[]): string {
   if (changes.length === 0) return 'Empty commit';
 
-  const adds = changes.filter((c) => c.type === 'add');
-  const modifies = changes.filter((c) => c.type === 'modify');
-  const deletes = changes.filter((c) => c.type === 'delete');
-
   const parts: string[] = [];
-
-  if (adds.length === 1) {
-    parts.push(`Add ${getShortPath(adds[0].path)}`);
-  } else if (adds.length > 1) {
-    parts.push(`Add ${adds.length} files`);
+  for (const type of ['add', 'modify', 'delete'] as const) {
+    const ofType = changes.filter((c) => c.type === type);
+    if (ofType.length === 1) {
+      parts.push(`${VERBS[type]} ${commitPathName(ofType[0].path)}`);
+    } else if (ofType.length > 1) {
+      const noun = ofType.every((c) => c.path.endsWith('.md')) ? 'pages' : 'files';
+      parts.push(`${VERBS[type]} ${ofType.length} ${noun}`);
+    }
   }
 
-  if (modifies.length === 1) {
-    parts.push(`Update ${getShortPath(modifies[0].path)}`);
-  } else if (modifies.length > 1) {
-    parts.push(`Update ${modifies.length} files`);
-  }
-
-  if (deletes.length === 1) {
-    parts.push(`Delete ${getShortPath(deletes[0].path)}`);
-  } else if (deletes.length > 1) {
-    parts.push(`Delete ${deletes.length} files`);
-  }
-
-  if (parts.length === 0) return 'Auto-save changes';
-
-  return parts.join(', ');
-}
-
-function getShortPath(path: string): string {
-  const parts = path.split('/');
-  return parts.length > 2 ? `${parts[parts.length - 2]}/${parts[parts.length - 1]}` : path;
+  const body = [...changes]
+    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+    .map((c) => `${LETTERS[c.type]} ${c.path}`);
+  return `${parts.join(', ')}\n\n${body.join('\n')}`;
 }
 
 export class AutoCommitEngine {

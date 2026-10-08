@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AutoCommitEngine, generateCommitMessage, matchesPattern } from './auto-commit.js';
+import {
+  AutoCommitEngine,
+  commitPathName,
+  generateCommitMessage,
+  matchesPattern,
+} from './auto-commit.js';
 import type { AutoCommitEvent } from './auto-commit.js';
 import type { GitStorageBackend } from '../storage/backend.js';
 
@@ -69,47 +74,54 @@ describe('matchesPattern', () => {
 });
 
 describe('generateCommitMessage', () => {
+  const change = (path: string, type: 'add' | 'modify' | 'delete') => ({
+    path,
+    type,
+    timestamp: 0,
+  });
+
   it('handles empty changes', () => {
     expect(generateCommitMessage([])).toBe('Empty commit');
   });
 
-  it('single add', () => {
-    const msg = generateCommitMessage([{ path: 'pages/hello.md', type: 'add', timestamp: 0 }]);
-    expect(msg).toBe('Add pages/hello.md');
+  it('names a single page in the subject and lists its path in the body', () => {
+    expect(generateCommitMessage([change('pages/hello.md', 'add')])).toBe(
+      'Add hello\n\nA pages/hello.md',
+    );
+    expect(generateCommitMessage([change('pages/about.md', 'modify')])).toBe(
+      'Update about\n\nM pages/about.md',
+    );
+    expect(generateCommitMessage([change('old/file.md', 'delete')])).toBe(
+      'Delete file\n\nD old/file.md',
+    );
   });
 
-  it('multiple adds', () => {
-    const msg = generateCommitMessage([
-      { path: 'a.md', type: 'add', timestamp: 0 },
-      { path: 'b.md', type: 'add', timestamp: 0 },
-    ]);
-    expect(msg).toBe('Add 2 files');
+  it('counts pages, or files when any is not a page', () => {
+    expect(generateCommitMessage([change('a.md', 'modify'), change('b.md', 'modify')])).toBe(
+      'Update 2 pages\n\nM a.md\nM b.md',
+    );
+    expect(generateCommitMessage([change('a.md', 'add'), change('img.png', 'add')])).toBe(
+      'Add 2 files\n\nA a.md\nA img.png',
+    );
   });
 
-  it('single modify', () => {
-    const msg = generateCommitMessage([{ path: 'pages/about.md', type: 'modify', timestamp: 0 }]);
-    expect(msg).toBe('Update pages/about.md');
+  it('joins kinds in add, update, delete order with a sorted body', () => {
+    expect(
+      generateCommitMessage([
+        change('c.md', 'delete'),
+        change('b.md', 'modify'),
+        change('a.md', 'add'),
+      ]),
+    ).toBe('Add a, Update b, Delete c\n\nA a.md\nM b.md\nD c.md');
   });
+});
 
-  it('single delete', () => {
-    const msg = generateCommitMessage([{ path: 'old/file.md', type: 'delete', timestamp: 0 }]);
-    expect(msg).toBe('Delete old/file.md');
-  });
-
-  it('mixed changes', () => {
-    const msg = generateCommitMessage([
-      { path: 'a.md', type: 'add', timestamp: 0 },
-      { path: 'b.md', type: 'modify', timestamp: 0 },
-      { path: 'c.md', type: 'delete', timestamp: 0 },
-    ]);
-    expect(msg).toBe('Add a.md, Update b.md, Delete c.md');
-  });
-
-  it('shortens deep paths', () => {
-    const msg = generateCommitMessage([
-      { path: 'workspace/pages/deep/nested/file.md', type: 'modify', timestamp: 0 },
-    ]);
-    expect(msg).toBe('Update nested/file.md');
+describe('commitPathName', () => {
+  it('uses a folder page name for index.md and keeps other file names', () => {
+    expect(commitPathName('Projects/Roadmap/index.md')).toBe('Roadmap');
+    expect(commitPathName('workspace/pages/deep/nested/file.md')).toBe('file');
+    expect(commitPathName('index.md')).toBe('index');
+    expect(commitPathName('assets/logo.png')).toBe('logo.png');
   });
 });
 
@@ -148,9 +160,11 @@ describe('AutoCommitEngine', () => {
     expect(engine.getPendingChanges()[0].type).toBe('modify');
   });
 
-  it('excludes .git paths', () => {
+  it('excludes .git paths and the per-device sync settings', () => {
     const engine = new AutoCommitEngine(backend);
     engine.recordChange('.git/HEAD', 'modify');
+    engine.recordChange('.cept/sync.local.json', 'modify');
+    engine.recordChange('notes/.cept/sync.local.json', 'modify');
     expect(engine.getStatus().pendingChanges).toBe(0);
   });
 
@@ -234,10 +248,10 @@ describe('AutoCommitEngine', () => {
     engine.recordChange('pages/world.md', 'modify');
 
     await engine.flushNow();
-    expect(backend.commit).toHaveBeenCalledWith('Add pages/hello.md, Update pages/world.md', [
-      'pages/hello.md',
-      'pages/world.md',
-    ]);
+    expect(backend.commit).toHaveBeenCalledWith(
+      'Add hello, Update world\n\nA pages/hello.md\nM pages/world.md',
+      ['pages/hello.md', 'pages/world.md'],
+    );
   });
 
   it('uses custom message generator', async () => {

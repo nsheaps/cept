@@ -6,6 +6,14 @@
  */
 
 import type { GitStorageBackend, PushResult, MergeResult } from '../storage/backend.js';
+import {
+  SyncError,
+  classifyPushReasons,
+  classifySyncError,
+  conflictPaths,
+  isRetryableSyncError,
+} from './sync-errors.js';
+import type { SyncErrorKind } from './sync-errors.js';
 
 export interface SyncConfig {
   /** Sync interval in milliseconds. Default: 30000 (30s) */
@@ -28,6 +36,8 @@ export interface SyncStatus {
   enabled: boolean;
   lastSyncTime: number | null;
   lastError: string | null;
+  /** The kind of the last error (REQ-WS-027), or `null` after a clean sync. */
+  lastErrorKind: SyncErrorKind | null;
   pendingPush: boolean;
   conflicts: string[];
 }
@@ -47,6 +57,7 @@ export type SyncEventType =
 export interface SyncEvent {
   type: SyncEventType;
   error?: Error;
+  errorKind?: SyncErrorKind;
   conflicts?: string[];
   pushResult?: PushResult;
   mergeResult?: MergeResult;
@@ -65,6 +76,7 @@ export class SyncEngine {
   private _state: SyncState = 'idle';
   private _lastSyncTime: number | null = null;
   private _lastError: string | null = null;
+  private _lastErrorKind: SyncErrorKind | null = null;
   private _pendingPush = false;
   private _conflicts: string[] = [];
   private _syncing = false;
@@ -133,30 +145,31 @@ export class SyncEngine {
 
         this.emit({ type: 'push-complete', pushResult });
 
-        if (!pushResult.ok) {
-          this._lastError = 'Push failed';
-          this.setState('error');
-          this.emit({ type: 'error', error: new Error('Push failed') });
-          this._syncing = false;
-          return this.getStatus();
-        }
+        if (!pushResult.ok) throw pushFailure(pushResult);
       }
 
       this._lastSyncTime = Date.now();
       this._lastError = null;
+      this._lastErrorKind = null;
       this._conflicts = [];
       this.setState('synced');
       this.emit({ type: 'sync-complete' });
     } catch (e) {
-      const error = e as Error;
+      const error = e instanceof Error ? e : new Error(String(e));
+      const kind = classifySyncError(e);
       this._lastError = error.message;
+      this._lastErrorKind = kind;
 
-      if (this.isNetworkError(error)) {
+      if (kind === 'offline') {
         this.setState('offline');
-        this.emit({ type: 'offline', error });
+        this.emit({ type: 'offline', error, errorKind: kind });
+      } else if (kind === 'conflict') {
+        this._conflicts = conflictPaths(e);
+        this.setState('conflict');
+        this.emit({ type: 'conflict', conflicts: [...this._conflicts], error, errorKind: kind });
       } else {
         this.setState('error');
-        this.emit({ type: 'error', error });
+        this.emit({ type: 'error', error, errorKind: kind });
       }
     } finally {
       this._syncing = false;
@@ -193,6 +206,7 @@ export class SyncEngine {
       enabled: this.config.enabled,
       lastSyncTime: this._lastSyncTime,
       lastError: this._lastError,
+      lastErrorKind: this._lastErrorKind,
       pendingPush: this._pendingPush,
       conflicts: [...this._conflicts],
     };
@@ -256,18 +270,18 @@ export class SyncEngine {
     throw lastError ?? new Error('Push failed after retries');
   }
 
-  private isNetworkError(error: Error): boolean {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes('network') ||
-      msg.includes('fetch') ||
-      msg.includes('econnrefused') ||
-      msg.includes('timeout') ||
-      msg.includes('offline')
-    );
-  }
-
   private isRetryable(error: Error): boolean {
-    return this.isNetworkError(error) || error.message.includes('503');
+    return isRetryableSyncError(classifySyncError(error));
   }
+}
+
+/** A failed push result as a classified error, from each ref's server reason. */
+function pushFailure(result: PushResult): SyncError {
+  const failed = Object.entries(result.refs).filter(([, r]) => !r.ok);
+  const reasons = failed.map(([ref, r]) => `${ref}: ${r.error ?? 'rejected'}`);
+  const kind = classifyPushReasons(failed.map(([, r]) => r.error));
+  return new SyncError(
+    kind,
+    reasons.length ? `Push failed (${reasons.join('; ')})` : 'Push failed',
+  );
 }
