@@ -25,8 +25,11 @@ export { ScopedBackend } from './scoped.js';
 export {
   WebFsBackend,
   pickDirectory,
-  persistDirectoryHandle,
-  loadDirectoryHandle,
+  folderPermission,
+  createFolderHandleStore,
+  restoreFolders,
+  reconnectFolder,
 } from './web-fs.js';
+export type { FolderPermission, FolderHandleStore, RestoredFolder } from './web-fs.js';
 export { GitBackend } from './git-backend.js';
 export type { GitAuth, GitHttp, GitFs } from './git-backend.js';

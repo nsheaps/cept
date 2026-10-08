@@ -37,6 +37,15 @@ export { BrowserFsBackend } from './storage/index.js';
 export { MemoryBackend } from './storage/index.js';
 export { ScopedBackend } from './storage/index.js';
 export { GitBackend } from './storage/index.js';
+export {
+  WebFsBackend,
+  pickDirectory,
+  folderPermission,
+  createFolderHandleStore,
+  restoreFolders,
+  reconnectFolder,
+} from './storage/index.js';
+export type { FolderPermission, FolderHandleStore, RestoredFolder } from './storage/index.js';
 export type { GitAuth, GitHttp, GitFs } from './storage/index.js';
 
 // Auth

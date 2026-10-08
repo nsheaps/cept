@@ -46,7 +46,7 @@ export const GROUPS = [
     id: 'concrete-backend',
     files: ['packages/ui/src/'],
     modules: /^@cept\/core$/,
-    names: ['BrowserFsBackend', 'GitBackend', 'LocalFsBackend'],
+    names: ['BrowserFsBackend', 'GitBackend', 'LocalFsBackend', 'WebFsBackend'],
     message: 'ui depends on StorageBackend, never a concrete backend (CLAUDE.md rule 3)',
   },
 ];

@@ -6,7 +6,7 @@
  * then reads/writes files through the handle.
  *
  * The handle can be persisted to IndexedDB so the user doesn't
- * need to re-pick the folder on every visit.
+ * need to re-pick the folder on every visit (`createFolderHandleStore`).
  */
 
 import type {
@@ -253,57 +253,160 @@ export async function pickDirectory(): Promise<FileSystemDirectoryHandle | null>
   }
 }
 
-/** IDB key for persisting the directory handle */
-const IDB_STORE = 'cept-fs-handles';
-const IDB_KEY = 'directory-handle';
+/** Whether the app may read and write a folder, as the File System Access API reports it. */
+export type FolderPermission = 'granted' | 'prompt' | 'denied';
 
-/**
- * Persist a FileSystemDirectoryHandle to IndexedDB so the user
- * doesn't have to re-pick on every visit.
- */
-export async function persistDirectoryHandle(handle: FileSystemDirectoryHandle): Promise<void> {
-  const db = await openHandleDB();
-  const tx = db.transaction(IDB_STORE, 'readwrite');
-  const store = tx.objectStore(IDB_STORE);
-  store.put(handle, IDB_KEY);
-  await new Promise<void>((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-  db.close();
+/** The permission calls Chromium adds to a handle; other browsers may lack them. */
+interface PermissionHandle {
+  queryPermission?(descriptor: { mode: 'readwrite' }): Promise<FolderPermission>;
+  requestPermission?(descriptor: { mode: 'readwrite' }): Promise<FolderPermission>;
 }
 
 /**
- * Retrieve a previously-persisted FileSystemDirectoryHandle from IndexedDB.
- * Returns null if none was stored.
+ * Check, and optionally ask for, read-write access to a folder. A handle
+ * restored after a reload usually reports `prompt`: the browser asks again,
+ * and only from a user gesture (a click), so pass `request: true` only from
+ * one. Without the permission API the handle is usable as is.
  */
-export async function loadDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+export async function folderPermission(
+  handle: FileSystemDirectoryHandle,
+  { request = false }: { request?: boolean } = {},
+): Promise<FolderPermission> {
+  const api = handle as unknown as PermissionHandle;
+  if (typeof api.queryPermission !== 'function') return 'granted';
   try {
-    const db = await openHandleDB();
-    const tx = db.transaction(IDB_STORE, 'readonly');
-    const store = tx.objectStore(IDB_STORE);
-    const req = store.get(IDB_KEY);
-    const handle = await new Promise<FileSystemDirectoryHandle | undefined>((resolve, reject) => {
-      req.onsuccess = () => resolve(req.result as FileSystemDirectoryHandle | undefined);
-      req.onerror = () => reject(req.error);
-    });
-    db.close();
-    return handle ?? null;
+    const current = await api.queryPermission({ mode: 'readwrite' });
+    if (current !== 'prompt' || !request || typeof api.requestPermission !== 'function') {
+      return current;
+    }
+    return await api.requestPermission({ mode: 'readwrite' });
   } catch {
-    return null;
+    // requestPermission throws outside a user gesture; the browser can still ask later.
+    return 'prompt';
   }
 }
 
-function openHandleDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('cept-handles', 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) {
-        db.createObjectStore(IDB_STORE);
+/** Folder handles kept across reloads, keyed by the id of the space they open. */
+export interface FolderHandleStore {
+  save(id: string, handle: FileSystemDirectoryHandle): Promise<void>;
+  load(id: string): Promise<FileSystemDirectoryHandle | null>;
+  list(): Promise<{ id: string; handle: FileSystemDirectoryHandle }[]>;
+  remove(id: string): Promise<void>;
+}
+
+const HANDLE_STORE = 'cept-fs-handles';
+
+/**
+ * A FolderHandleStore in IndexedDB, which can hold handles (they are
+ * structured-cloneable). Pass a per-deploy `dbName` so previews and
+ * production keep separate handles.
+ */
+export function createFolderHandleStore(
+  dbName = 'cept-handles',
+  idb: IDBFactory = globalThis.indexedDB,
+): FolderHandleStore {
+  const open = (): Promise<IDBDatabase> =>
+    new Promise((resolve, reject) => {
+      const req = idb.open(dbName, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(HANDLE_STORE)) {
+          req.result.createObjectStore(HANDLE_STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+  const run = async <T>(
+    mode: IDBTransactionMode,
+    action: (store: IDBObjectStore) => IDBRequest,
+    read: (request: IDBRequest) => T,
+  ): Promise<T> => {
+    const db = await open();
+    try {
+      const tx = db.transaction(HANDLE_STORE, mode);
+      const request = action(tx.objectStore(HANDLE_STORE));
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+      return read(request);
+    } finally {
+      db.close();
+    }
+  };
+
+  return {
+    save: (id, handle) =>
+      run(
+        'readwrite',
+        (store) => store.put(handle, id),
+        () => undefined,
+      ),
+    load: (id) =>
+      run(
+        'readonly',
+        (store) => store.get(id),
+        (request) => (request.result as FileSystemDirectoryHandle | undefined) ?? null,
+      ),
+    list: async () => {
+      const db = await open();
+      try {
+        const tx = db.transaction(HANDLE_STORE, 'readonly');
+        const store = tx.objectStore(HANDLE_STORE);
+        const keys = store.getAllKeys();
+        const values = store.getAll();
+        await new Promise<void>((resolve, reject) => {
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+        return (keys.result as IDBValidKey[]).map((key, i) => ({
+          id: String(key),
+          handle: values.result[i] as FileSystemDirectoryHandle,
+        }));
+      } finally {
+        db.close();
       }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+    },
+    remove: (id) =>
+      run(
+        'readwrite',
+        (store) => store.delete(id),
+        () => undefined,
+      ),
+  };
+}
+
+/** A folder space restored after a reload, and whether it can be opened yet. */
+export interface RestoredFolder {
+  id: string;
+  handle: FileSystemDirectoryHandle;
+  /** `granted`: open it now; `prompt`: ask with `reconnectFolder` from a click; `denied`: the user refused. */
+  permission: FolderPermission;
+}
+
+/**
+ * Restore every saved folder on startup. Only queries permission (no prompt),
+ * so it is safe to call before the user has clicked anything.
+ */
+export async function restoreFolders(store: FolderHandleStore): Promise<RestoredFolder[]> {
+  let saved: { id: string; handle: FileSystemDirectoryHandle }[];
+  try {
+    saved = await store.list();
+  } catch {
+    return [];
+  }
+  return Promise.all(
+    saved.map(async ({ id, handle }) => ({
+      id,
+      handle,
+      permission: await folderPermission(handle),
+    })),
+  );
+}
+
+/** Ask again for access to a restored folder. Call from a click; true when granted. */
+export async function reconnectFolder(handle: FileSystemDirectoryHandle): Promise<boolean> {
+  return (await folderPermission(handle, { request: true })) === 'granted';
 }
