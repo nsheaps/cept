@@ -154,6 +154,18 @@ describe('discoverSpaces edge cases', () => {
     expect(result.spaces[0]?.errors.join(' ')).toMatch(/version/i);
   });
 
+  it('keeps the cause when a marker cannot be read', async () => {
+    const backend = new MemoryBackend();
+    await backend.writeFile('a/space.cept.yaml', marker('A', 'a'));
+    const failing: StorageBackend = Object.create(backend) as StorageBackend;
+    failing.readFile = () => Promise.reject(new Error('EACCES: permission denied'));
+    const result = await discoverSpaces(failing);
+    expect(result.spaces[0]?.config).toBeNull();
+    expect(result.spaces[0]?.errors).toEqual([
+      'could not read a/space.cept.yaml: EACCES: permission denied',
+    ]);
+  });
+
   it('carries the .yaml-over-.yml warning onto the space', async () => {
     const backend = new MemoryBackend();
     await backend.writeFile('a/space.cept.yaml', marker('A', 'a'));
@@ -206,6 +218,7 @@ describe('discoverSpaces edge cases', () => {
       expect(event).toMatchObject({ kind: 'space', space: { path: 'a' } });
       break;
     }
+    expect(listed).not.toContain('/b');
     expect(listed).not.toContain('/b/c');
   });
 });

@@ -81,6 +81,9 @@ async function list(backend: DiscoveryBackend, dir: string): Promise<Listing> {
   try {
     entries = await backend.listDirectory(toBackendPath(dir));
   } catch {
+    // Discovery is best-effort and read-only (REQ-WS-019): an unreadable folder
+    // is treated as empty. Callers that must tell "missing" from "unreadable"
+    // probe the folder themselves.
     entries = [];
   }
   const files: string[] = [];
@@ -127,13 +130,15 @@ async function readSpace(
 ): Promise<Omit<DiscoveredSpace, 'gitRoot'>> {
   const file = joinPath(path, marker);
   let data: Uint8Array | null;
+  let cause = '';
   try {
     data = await backend.readFile(toBackendPath(file));
-  } catch {
+  } catch (err) {
     data = null;
+    cause = `: ${err instanceof Error ? err.message : String(err)}`;
   }
   if (data === null) {
-    return { path, marker, config: null, errors: [`could not read ${file}`], warnings };
+    return { path, marker, config: null, errors: [`could not read ${file}${cause}`], warnings };
   }
   const parsed = parseSpaceConfig(new TextDecoder().decode(data));
   return parsed.ok
