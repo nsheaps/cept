@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.1](https://github.com/nsheaps/cept/compare/v0.10.0...v0.10.1) (2026-10-08)
+
+### Refactoring
+
+* **ui:** extract space manager and dedupe path helpers ([#379](https://github.com/nsheaps/cept/issues/379)) ([9447399](https://github.com/nsheaps/cept/commit/94473997f6815200877198fc5ce66c5fec73125c))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([2642462](https://github.com/nsheaps/cept/commit/26424627f72f5baeedf0051660e7eaa216cf7ed2))
+
 ## [0.10.0](https://github.com/nsheaps/cept/compare/v0.9.1...v0.10.0) (2026-10-08)
 
 ### Features
