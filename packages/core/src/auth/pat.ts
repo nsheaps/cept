@@ -149,21 +149,33 @@ export class PatAuthProvider implements AuthProvider {
     while (url) {
       const response = await this.get(url, accessToken);
       const page = (await response.json()) as GitHubRepo[];
-      for (const repo of page) {
-        repos.push({
-          name: repo.name,
-          fullName: repo.full_name,
-          url: repo.html_url,
-          httpsUrl: repo.clone_url,
-          sshUrl: repo.ssh_url,
-          private: repo.private,
-          description: repo.description ?? undefined,
-          defaultBranch: repo.default_branch,
-        });
-      }
+      for (const repo of page) repos.push(repoInfo(repo));
       url = nextLink(response.headers.get('Link'));
     }
     return repos;
+  }
+
+  /**
+   * Create a repository owned by the signed-in account, with a first commit
+   * (GitHub's README), so it can be cloned at once. Needs a token allowed to
+   * create repositories (classic `repo`, or fine-grained "Administration").
+   */
+  async createRepo(options: {
+    name: string;
+    description?: string;
+    private?: boolean;
+  }): Promise<RepoInfo> {
+    const { accessToken } = await this.requireToken();
+    const response = await this.request(`${this.apiBase}/user/repos`, accessToken, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: options.name,
+        description: options.description ?? '',
+        private: options.private ?? true,
+        auto_init: true,
+      }),
+    });
+    return repoInfo((await response.json()) as GitHubRepo);
   }
 
   /** Basic auth for Git over HTTPS: GitHub takes the token as the password. */
@@ -214,14 +226,25 @@ export class PatAuthProvider implements AuthProvider {
   }
 
   /** A GET with the token. Failures carry only the status, never response text. */
-  private async get(url: string, accessToken: string): Promise<Response> {
+  private get(url: string, accessToken: string): Promise<Response> {
+    return this.request(url, accessToken);
+  }
+
+  /** A request with the token. Failures carry only the status, never response text. */
+  private async request(
+    url: string,
+    accessToken: string,
+    init: { method?: string; body?: string } = {},
+  ): Promise<Response> {
     let response: Response;
     try {
       response = await this.fetchFn(url, {
+        ...init,
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
+          ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         },
       });
     } catch (err) {
@@ -243,6 +266,19 @@ export class PatAuthProvider implements AuthProvider {
     }
     return response;
   }
+}
+
+function repoInfo(repo: GitHubRepo): RepoInfo {
+  return {
+    name: repo.name,
+    fullName: repo.full_name,
+    url: repo.html_url,
+    httpsUrl: repo.clone_url,
+    sshUrl: repo.ssh_url,
+    private: repo.private,
+    description: repo.description ?? undefined,
+    defaultBranch: repo.default_branch,
+  };
 }
 
 function grantsOf(token: string, headers: Headers): PatGrants {

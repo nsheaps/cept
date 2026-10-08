@@ -36,6 +36,7 @@ export type { GitAuth, GitHttp, GitFs } from './git-backend.js';
 export {
   GIT_REPOS_DIR,
   GitAuthRequiredError,
+  countUnpushedCommits,
   remoteCloneDir,
   syncRemoteClone,
 } from './git-clone.js';

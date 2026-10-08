@@ -110,6 +110,21 @@ export async function syncRemoteClone(options: RemoteCloneOptions): Promise<Remo
   }
 }
 
+/**
+ * How many commits in the kept clone at `dir` are not on its remote yet (see
+ * `GitBackend.unpushedCommits`); 0 when there is no finished clone there. Reads
+ * only: nothing is fetched.
+ */
+export async function countUnpushedCommits(options: {
+  host: StorageBackend;
+  fs: GitFs;
+  dir: string;
+}): Promise<number> {
+  if (!(await isClone(options.host, options.dir))) return 0;
+  const git = new GitBackend({ underlying: options.host, dir: options.dir, fs: options.fs });
+  return git.unpushedCommits();
+}
+
 /** Whether `dir` holds a finished clone: the index is written by the checkout that ends a clone. */
 async function isClone(host: StorageBackend, dir: string): Promise<boolean> {
   return (await host.exists(`${dir}/.git/HEAD`)) && (await host.exists(`${dir}/.git/index`));

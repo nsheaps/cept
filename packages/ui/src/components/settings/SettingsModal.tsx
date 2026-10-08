@@ -80,6 +80,11 @@ export interface SpaceInfo {
   lastSyncedAt?: string;
   /** The space was converted from the flat layout and its backup is still kept. */
   conversionBackup?: boolean;
+  /**
+   * Edits and commits of a GitHub space that are not on GitHub yet (REQ-WS-027);
+   * absent when not known or not a GitHub space that can be edited.
+   */
+  unsyncedChanges?: number;
 }
 
 export interface SettingsModalProps {
@@ -104,6 +109,8 @@ export interface SettingsModalProps {
   onClearAllData: () => void;
   onRecreateDemoSpace: () => void;
   onOpenAddSpaceWizard?: () => void;
+  /** Start a space in a GitHub repository (shown when signed in to GitHub). */
+  onStartRepoSpace?: () => void;
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
@@ -136,6 +143,7 @@ export function SettingsModal({
   onClearAllData,
   onRecreateDemoSpace,
   onOpenAddSpaceWizard,
+  onStartRepoSpace,
   onImportNotion,
   onImportObsidian,
   onExport,
@@ -583,6 +591,16 @@ export function SettingsModal({
                   </svg>
                   Create new space
                 </button>
+
+                {onStartRepoSpace && (
+                  <button
+                    className="cept-settings-action-btn"
+                    onClick={onStartRepoSpace}
+                    data-testid="start-repo-space-btn"
+                  >
+                    Start a space in a GitHub repository
+                  </button>
+                )}
 
                 {discovered && (
                   <DiscoveredSpacesSection
@@ -1155,6 +1173,14 @@ function RemoveSpaceConfirm({
       <p className="cept-settings-wizard-desc" data-testid="space-remove-explanation">
         {explanation}
       </p>
+      {space.unsyncedChanges ? (
+        <p className="cept-settings-wizard-desc" data-testid="space-remove-unsynced">
+          {space.unsyncedChanges === 1
+            ? '1 change made on this device is not on GitHub yet and will be lost.'
+            : `${space.unsyncedChanges} changes made on this device are not on GitHub yet and will be lost.`}{' '}
+          Sync the space first to keep them.
+        </p>
+      ) : null}
       {isLast && (
         <p className="cept-settings-wizard-desc" data-testid="space-remove-last">
           It is your only space, so a new, empty space named My Space takes its place.

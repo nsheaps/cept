@@ -103,7 +103,10 @@ export class RecordingBackend implements StorageBackend {
 export interface GitSpaceSessionOptions {
   /** The app's backend, which holds the clone. */
   host: StorageBackend;
-  /** The raw filesystem under `host`, for isomorphic-git. */
+  /**
+   * The raw filesystem under `host`, for isomorphic-git. Must be the raw
+   * filesystem of `host` (e.g. `host.getRawFs()`).
+   */
   fs: GitFs;
   /** The clone's folder in `host`. */
   dir: string;
@@ -125,8 +128,21 @@ export interface GitSpaceSyncResult {
   changed: boolean;
 }
 
+/** Local work not on the remote yet. */
+export interface GitSpaceLocalChanges {
+  /** Edited files not committed yet. */
+  pending: number;
+  /** Commits not pushed yet. */
+  unpushed: number;
+}
+
 export class GitSpaceSession {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Bumped by `stop()`, so a loop whose sync is still running does not schedule another. */
+  private loop = 0;
+  private disposed = false;
+  /** The last sync queued, settled or not: syncs run one at a time, in order. */
+  private tail: Promise<unknown> = Promise.resolve();
 
   private constructor(
     readonly git: GitBackend,
@@ -169,8 +185,18 @@ export class GitSpaceSession {
     return new GitSpaceSession(git, backend, autoCommit, sync, settings);
   }
 
-  /** Commit what is pending, pull, then push (when auto-push is on). */
-  async syncNow(): Promise<GitSpaceSyncResult> {
+  /**
+   * Run `task` after every sync queued before it has settled. Rejects once the
+   * session is disposed.
+   */
+  private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    if (this.disposed) return Promise.reject(new Error('The git space session is closed.'));
+    const run = this.tail.then(task);
+    this.tail = run.catch(() => undefined);
+    return run;
+  }
+
+  private async runSync(): Promise<GitSpaceSyncResult> {
     await this.autoCommit.flushNow();
     const before = await this.git.head().catch(() => null);
     const status = await this.sync.sync();
@@ -178,32 +204,65 @@ export class GitSpaceSession {
     return { status, changed: before !== after && status.state !== 'conflict' };
   }
 
-  /** Commit what is pending, pull, then push even when auto-push is off. */
-  async pushNow(): Promise<GitSpaceSyncResult> {
-    await this.autoCommit.flushNow();
-    this.sync.markDirty();
-    return this.syncNow();
+  /** Commit what is pending, pull, then push (when auto-push is on). */
+  syncNow(): Promise<GitSpaceSyncResult> {
+    return this.enqueue(() => this.runSync());
   }
 
-  /** Sync now and then every `intervalMs`, calling `onSynced` after each sync. */
+  /** Commit what is pending, pull, then push even when auto-push is off. */
+  pushNow(): Promise<GitSpaceSyncResult> {
+    return this.enqueue(async () => {
+      await this.autoCommit.flushNow();
+      this.sync.markDirty();
+      return this.runSync();
+    });
+  }
+
+  /**
+   * Sync now, and again `intervalMs` after each sync settles, calling
+   * `onSynced` after each one. The next sync is scheduled only once the
+   * current one is done, so a slow sync never piles up behind another.
+   */
   start(onSynced?: (result: GitSpaceSyncResult) => void): void {
     this.stop();
-    const run = () => {
-      void this.syncNow().then(onSynced, () => undefined);
+    if (this.disposed) return;
+    const loop = this.loop;
+    const tick = () => {
+      this.timer = null;
+      void this.syncNow()
+        .then((result) => onSynced?.(result))
+        .catch(() => undefined)
+        .finally(() => {
+          if (loop !== this.loop || this.disposed) return;
+          this.timer = setTimeout(tick, this.settings.intervalMs);
+        });
     };
-    run();
-    this.timer = setInterval(run, this.settings.intervalMs);
+    tick();
   }
 
+  /** Stop the automatic syncs; one already running finishes. */
   stop(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.loop += 1;
+    if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   }
 
-  /** Stop syncing and commit what is pending. */
+  /** Edited files not committed yet, and commits not pushed yet. */
+  async localChanges(): Promise<GitSpaceLocalChanges> {
+    const unpushed = await this.git.unpushedCommits().catch(() => 0);
+    return { pending: this.autoCommit.getPendingChanges().length, unpushed };
+  }
+
+  /**
+   * Stop syncing, wait for a sync that is running to finish, then commit what
+   * is pending. Safe to call more than once.
+   */
   async dispose(): Promise<void> {
+    if (this.disposed) return;
     this.stop();
-    await this.autoCommit.flushNow();
+    this.disposed = true;
+    await this.tail;
+    await this.autoCommit.flushNow().catch(() => null);
     this.autoCommit.dispose();
     this.sync.dispose();
   }

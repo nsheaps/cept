@@ -274,7 +274,10 @@ export function AddSpaceWizardModal({
 
           {step === 'add-git' && (
             <div data-testid="wizard-git-form">
-              <p className="cept-wizard-desc">Add a read-only space from a Git repository.</p>
+              <p className="cept-wizard-desc">
+                Add a space from a Git repository. It is editable when you are signed in to GitHub
+                and the folder has a space.cept.yaml; otherwise it is read-only.
+              </p>
               <div className="cept-wizard-form-row">
                 <label className="cept-wizard-label" htmlFor="wizard-remote-url">
                   Repository URL

@@ -7,9 +7,26 @@
  * lives in `@cept/core`; this module turns the cloned Markdown into pages.
  */
 
-import { GitAuthRequiredError, remoteCloneDir, syncRemoteClone } from '@cept/core';
-import type { GitAuth, GitFs, StorageBackend } from '@cept/core';
+import {
+  countUnpushedCommits,
+  findSpaceMarker,
+  GitAuthRequiredError,
+  GitSpaceSession,
+  createGitHttp,
+  remoteCloneDir,
+  ScopedBackend,
+  syncRemoteClone,
+} from '@cept/core';
+import type {
+  CommitIdentity,
+  GitAuth,
+  GitFs,
+  GitHttp,
+  GitSpaceSyncResult,
+  StorageBackend,
+} from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
+import { initFolderSpace } from './folder-space.js';
 
 /**
  * A backend that can hand isomorphic-git its raw filesystem, which a clone
@@ -30,6 +47,11 @@ export interface ClonedSpaceData {
   pageContents: Record<string, string>;
   /** `token` when the clone used the GitHub sign-in, which makes the space writable-capable (D-42). */
   access: 'anonymous' | 'token';
+  /**
+   * Whether the space can be edited: cloned with the GitHub sign-in, and its
+   * root in the clone holds `space.cept.yaml` (see {@link isWritableClone}).
+   */
+  writable: boolean;
 }
 
 export interface CloneRemoteOptions {
@@ -45,6 +67,8 @@ export interface CloneRemoteOptions {
   corsProxy?: string;
   /** The GitHub sign-in; sent only to github.com. */
   auth?: GitAuth;
+  /** HTTP client; the browser client when omitted. */
+  http?: GitHttp;
 }
 
 /**
@@ -114,14 +138,149 @@ export async function cloneRemoteRepo(
     ref: options.branch ?? 'main',
     corsProxy: options.corsProxy,
     auth,
-    // Remote spaces are read-only, so a rewritten branch just replaces the files.
+    http: options.http,
+    // Only read-only spaces come through here (writable ones sync through their
+    // session), so a rewritten branch just replaces the files.
     resetOnDivergence: true,
   });
   const pages: PageTreeNode[] = [];
   const pageContents: Record<string, string> = {};
   const scanDir = prefix ? `${dir}/${prefix}` : dir;
   await walkMarkdownFiles(backend, scanDir, '', pages, pageContents);
-  return { pages, pageContents, access: auth ? 'token' : 'anonymous' };
+  const access = auth ? 'token' : 'anonymous';
+  const writable = access === 'token' && (await hasCloneMarker(backend, options.spaceId, prefix));
+  return { pages, pageContents, access, writable };
+}
+
+/** Where a remote space's files are: its folder in the space's kept clone. */
+export function cloneSpaceRoot(spaceId: string, subPath?: string): string {
+  const inner = (subPath ?? '').split('/').filter(Boolean).join('/');
+  return inner ? `${remoteCloneDir(spaceId)}/${inner}` : remoteCloneDir(spaceId);
+}
+
+/**
+ * Whether a remote space is edited in place: it was cloned with the GitHub
+ * sign-in and has a `space.cept.yaml` (REQ-WS-027). Its pages are then the
+ * files of its kept clone, and edits are committed and pushed. Every other
+ * remote space (anonymous clones above all) is read-only.
+ */
+export function isWritableRemote(space: { remoteUrl?: string; readOnly?: boolean }): boolean {
+  return Boolean(space.remoteUrl) && space.readOnly === false;
+}
+
+/** Whether the space's folder in its kept clone holds a space marker. */
+export async function hasCloneMarker(
+  host: StorageBackend,
+  spaceId: string,
+  subPath?: string,
+): Promise<boolean> {
+  const root = new ScopedBackend(host, cloneSpaceRoot(spaceId, subPath));
+  return (await findSpaceMarker(root, '').catch(() => null)) !== null;
+}
+
+/**
+ * Whether a remote space synced with `access` can be edited: only with the
+ * GitHub sign-in, and only when its root in the clone holds a space marker.
+ */
+export async function isWritableClone(
+  host: StorageBackend,
+  space: { id: string; subPath?: string; access?: 'anonymous' | 'token' },
+): Promise<boolean> {
+  return space.access === 'token' && hasCloneMarker(host, space.id, space.subPath);
+}
+
+export interface GitSpaceSessionRequest {
+  spaceId: string;
+  subPath?: string;
+  /** The GitHub sign-in. */
+  auth?: GitAuth;
+  /** Who commits are attributed to (`commitIdentityFor` of the signed-in account). */
+  identity: CommitIdentity;
+  corsProxy?: string;
+  /** HTTP client; the browser client when omitted. */
+  http?: GitHttp;
+}
+
+/** Open the editing session of a writable remote space over its kept clone. */
+export async function openGitSpaceSession(
+  host: GitCloneHost,
+  request: GitSpaceSessionRequest,
+): Promise<GitSpaceSession> {
+  return GitSpaceSession.open({
+    host,
+    fs: host.getRawFs() as GitFs,
+    dir: remoteCloneDir(request.spaceId),
+    subPath: request.subPath,
+    http: request.http ?? (await createGitHttp()),
+    corsProxy: request.corsProxy,
+    auth: request.auth,
+    identity: request.identity,
+  });
+}
+
+/** Commits in a remote space's kept clone that are not pushed yet (0 without a clone). */
+export function unpushedCommitsOf(host: GitCloneHost, spaceId: string): Promise<number> {
+  return countUnpushedCommits({
+    host,
+    fs: host.getRawFs() as GitFs,
+    dir: remoteCloneDir(spaceId),
+  }).catch(() => 0);
+}
+
+/** Starting a space in a repository: where, and as whom. */
+export interface StartRepoSpaceRequest extends GitSpaceSessionRequest {
+  /** Repository URL. */
+  url: string;
+  branch: string;
+  /** The new space's name, written to its `space.cept.yaml`. */
+  name: string;
+}
+
+/**
+ * Start a space in a repository that has none at `subPath`: clone it with the
+ * GitHub sign-in, write `space.cept.yaml` there through an editing session (so
+ * it is committed), and push. When the folder already holds a space, nothing
+ * is written. Rejects when the push does not go through, leaving the commit in
+ * the clone for the next sync.
+ */
+export async function startSpaceInRepo(
+  host: GitCloneHost,
+  request: StartRepoSpaceRequest,
+): Promise<{ created: boolean }> {
+  const url = normalizeRepoUrl(request.url);
+  // Like cloneRemoteRepo: the token only goes to github.com, and without it nothing is writable.
+  if (!request.auth || !isGitHubUrl(url)) {
+    throw new Error(
+      'Starting a space in a repository needs the GitHub sign-in and a github.com repository.',
+    );
+  }
+  await syncRemoteClone({
+    host,
+    fs: host.getRawFs() as GitFs,
+    dir: remoteCloneDir(request.spaceId),
+    url,
+    ref: request.branch,
+    corsProxy: request.corsProxy,
+    auth: request.auth,
+    http: request.http,
+  });
+  if (await hasCloneMarker(host, request.spaceId, request.subPath)) return { created: false };
+  const session = await openGitSpaceSession(host, request);
+  let result: GitSpaceSyncResult;
+  try {
+    await initFolderSpace(session.backend, request.name);
+    result = await session.pushNow();
+  } finally {
+    await session.dispose();
+  }
+  if (result.status.state !== 'synced') {
+    throw new Error(
+      `The space was created on this device but could not be pushed: ${
+        result.status.lastError ?? result.status.state
+      }`,
+    );
+  }
+  return { created: true };
 }
 
 /** What to tell the user when cloning or refreshing a remote space failed. */

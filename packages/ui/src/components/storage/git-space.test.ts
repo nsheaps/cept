@@ -4,7 +4,11 @@ import type { RemoteCloneOptions } from '@cept/core';
 import {
   cloneErrorMessage,
   cloneRemoteRepo,
+  cloneSpaceRoot,
+  hasCloneMarker,
   isGitHubUrl,
+  isWritableClone,
+  isWritableRemote,
   normalizeRepoUrl,
   remoteWebUrl,
 } from './git-space.js';
@@ -195,5 +199,34 @@ describe('remoteWebUrl', () => {
   it('is null for hosts other than github.com', () => {
     expect(remoteWebUrl({ remoteUrl: 'https://gitlab.com/o/r', branch: 'main' })).toBeNull();
     expect(remoteWebUrl({ remoteUrl: 'https://github.com.evil.test/o/r' }, 'a.md')).toBeNull();
+  });
+});
+
+describe('writable remote spaces (REQ-WS-027)', () => {
+  it('finds a space in its folder of the kept clone', () => {
+    expect(cloneSpaceRoot(SPACE_ID)).toBe(CLONE_DIR);
+    expect(cloneSpaceRoot(SPACE_ID, '/docs/team/')).toBe(`${CLONE_DIR}/docs/team`);
+  });
+
+  it('is writable only when marked so: read-only stays the default', () => {
+    expect(isWritableRemote({ remoteUrl: 'https://github.com/u/r', readOnly: false })).toBe(true);
+    expect(isWritableRemote({ remoteUrl: 'https://github.com/u/r', readOnly: true })).toBe(false);
+    expect(isWritableRemote({ remoteUrl: 'https://github.com/u/r' })).toBe(false);
+    expect(isWritableRemote({ readOnly: false })).toBe(false);
+  });
+
+  it('needs the sign-in and a space marker in the clone', async () => {
+    const host = new MemoryBackend();
+    const marker = new TextEncoder().encode('name: R\n');
+    await host.writeFile(`${cloneSpaceRoot(SPACE_ID, 'docs')}/space.cept.yaml`, marker);
+    expect(await hasCloneMarker(host, SPACE_ID, 'docs')).toBe(true);
+    expect(await hasCloneMarker(host, SPACE_ID)).toBe(false);
+    expect(await isWritableClone(host, { id: SPACE_ID, subPath: 'docs', access: 'token' })).toBe(
+      true,
+    );
+    expect(
+      await isWritableClone(host, { id: SPACE_ID, subPath: 'docs', access: 'anonymous' }),
+    ).toBe(false);
+    expect(await isWritableClone(host, { id: SPACE_ID, subPath: 'docs' })).toBe(false);
   });
 });

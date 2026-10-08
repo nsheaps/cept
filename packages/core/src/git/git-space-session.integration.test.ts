@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import 'fake-indexeddb/auto';
 import { BrowserFsBackend } from '../storage/browser-fs.js';
 import type { GitFs, GitHttp } from '../storage/git-backend.js';
-import { remoteCloneDir, syncRemoteClone } from '../storage/git-clone.js';
+import { countUnpushedCommits, remoteCloneDir, syncRemoteClone } from '../storage/git-clone.js';
 import { GitSpaceSession } from './git-space-session.js';
 import type { GitSpaceSessionOptions } from './git-space-session.js';
 import { commitIdentityFor, DEFAULT_SYNC_SETTINGS, SYNC_SETTINGS_PATH } from './sync-policy.js';
@@ -277,5 +277,38 @@ describe('GitSpaceSession', () => {
     await session.syncNow();
     await session.dispose();
     expect(git(bare, 'rev-parse', 'main')).toBe(before);
+  });
+
+  it('counts commits not pushed yet, in the session and in the clone left behind', async () => {
+    makeRepo('ahead');
+    const { session, host, fs, dir } = await openSession('ahead', { autoPush: false });
+
+    expect(await session.localChanges()).toEqual({ pending: 0, unpushed: 0 });
+    await session.backend.writeFile('README.md', encode('# One\n'));
+    expect(await session.localChanges()).toEqual({ pending: 1, unpushed: 0 });
+    await session.syncNow();
+    await session.backend.writeFile('README.md', encode('# Two\n'));
+    await session.syncNow();
+    expect(await session.localChanges()).toEqual({ pending: 0, unpushed: 2 });
+    await session.dispose();
+    expect(await countUnpushedCommits({ host, fs, dir })).toBe(2);
+
+    const pushing = await GitSpaceSession.open({ host, fs, dir, http, identity });
+    await pushing.pushNow();
+    await pushing.dispose();
+    expect(await countUnpushedCommits({ host, fs, dir })).toBe(0);
+    expect(await countUnpushedCommits({ host, fs, dir: `${dir}-missing` })).toBe(0);
+  });
+
+  it('starts a space in a repository without one by committing its marker', async () => {
+    const { bare } = makeRepo('start');
+    const { session } = await openSession('start', {}, { subPath: 'docs' });
+
+    await session.backend.writeFile('space.cept.yaml', encode('version: 1\nname: Docs\n'));
+    const { status } = await session.pushNow();
+    await session.dispose();
+
+    expect(status.state).toBe('synced');
+    expect(git(bare, 'show', 'main:docs/space.cept.yaml')).toBe('version: 1\nname: Docs');
   });
 });

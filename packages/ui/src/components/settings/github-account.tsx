@@ -18,7 +18,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { GitAuth, HttpAuth, PatAccount } from '@cept/core';
+import type { GitAuth, HttpAuth, PatAccount, RepoInfo } from '@cept/core';
 
 /** The part of `PatAuthProvider` the UI uses. */
 export interface PatAuth {
@@ -28,6 +28,14 @@ export interface PatAuth {
   logout(): Promise<void>;
   /** Git-over-HTTPS credentials for the saved token. Rejects when none is saved. */
   getHttpAuth(): Promise<HttpAuth>;
+  /** The signed-in account's repositories (for starting a space in one). */
+  getRepos?(): Promise<RepoInfo[]>;
+  /** Create a repository owned by the signed-in account, with a first commit. */
+  createRepo?(options: {
+    name: string;
+    description?: string;
+    private?: boolean;
+  }): Promise<RepoInfo>;
 }
 
 /**
@@ -48,6 +56,14 @@ export interface GitHubAccountState {
    * undefined when signed out (an anonymous clone).
    */
   gitAuth(): Promise<GitAuth | undefined>;
+  /** The account's repositories; absent when the host auth cannot list them. */
+  listRepos?(): Promise<RepoInfo[]>;
+  /** Create a repository; absent when the host auth cannot create one. */
+  createRepo?(options: {
+    name: string;
+    description?: string;
+    private?: boolean;
+  }): Promise<RepoInfo>;
 }
 
 const GitHubAccountContext = createContext<GitHubAccountState | null>(null);
@@ -111,10 +127,15 @@ export function GitHubAccountProvider({
       : undefined;
   }, [auth]);
 
-  const value = useMemo(
-    () => (auth ? { status, account, signIn, signOut, gitAuth } : null),
-    [auth, status, account, signIn, signOut, gitAuth],
-  );
+  const value = useMemo((): GitHubAccountState | null => {
+    if (!auth) return null;
+    const state: GitHubAccountState = { status, account, signIn, signOut, gitAuth };
+    const list = auth.getRepos?.bind(auth);
+    if (list) state.listRepos = () => list();
+    const create = auth.createRepo?.bind(auth);
+    if (create) state.createRepo = (options) => create(options);
+    return state;
+  }, [auth, status, account, signIn, signOut, gitAuth]);
   return <GitHubAccountContext.Provider value={value}>{children}</GitHubAccountContext.Provider>;
 }
 

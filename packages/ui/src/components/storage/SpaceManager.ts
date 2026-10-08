@@ -55,6 +55,12 @@ import {
   undoFlatMigration,
 } from './legacy-migration.js';
 import { isRemoteSpaceId } from '../../router.js';
+import { ReadOnlyBackend } from './read-only-backend.js';
+import { cloneSpaceRoot } from './git-space.js';
+
+/** Why a GitHub space cannot be edited while it has no editing session. */
+export const GIT_SPACE_LOCKED =
+  'Sign in to GitHub under Settings → GitHub to edit this space and sync it.';
 
 /**
  * Where a space's data lives:
@@ -77,7 +83,12 @@ export interface SpaceMeta {
   branch?: string;
   /** Sub-path within the repo (or the opened folder) to scope the space to (e.g., "docs/") */
   subPath?: string;
-  /** Whether this space is read-only (true for cloned remote spaces) */
+  /**
+   * Whether this remote space is read-only. `false` only for a space cloned
+   * with the GitHub sign-in whose root has a `space.cept.yaml`: its pages are
+   * then the files of its kept clone, and edits are committed and pushed
+   * (REQ-WS-027). Anonymous clones stay read-only.
+   */
   readOnly?: boolean;
   /** ISO timestamp of the last successful sync/clone from the remote */
   lastSyncedAt?: string;
@@ -233,6 +244,7 @@ async function addRemoteSpace(
   subPath?: string,
   access?: RemoteAccess,
   activate = true,
+  writable = false,
 ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
@@ -243,7 +255,8 @@ async function addRemoteSpace(
     remoteUrl,
     branch,
     subPath,
-    readOnly: true,
+    // Only a space cloned with the sign-in can be writable.
+    readOnly: !(writable && access === 'token'),
     lastSyncedAt: new Date().toISOString(),
   };
   if (access) newSpace.access = access;
@@ -408,6 +421,8 @@ export class SpaceManager {
   private readonly folders = new Set<string>();
   /** The state last read or written per space, so an unchanged state is not written again. */
   private readonly savedState = new Map<string, string>();
+  /** Writable GitHub spaces seen in the manifest: their pages are the files of their kept clone. */
+  private readonly gitClones = new Map<string, string | undefined>();
 
   constructor(readonly backend: StorageBackend) {}
 
@@ -419,6 +434,23 @@ export class SpaceManager {
   /** Use `backend` as the store for space `id` from now on. */
   bind(id: string, backend: StorageBackend): void {
     this.bound.set(id, backend);
+  }
+
+  /** Stop using the backend bound to space `id`; it goes back to its default store. */
+  unbind(id: string): void {
+    this.bound.delete(id);
+  }
+
+  /** Whether `id` is a writable GitHub space (see {@link SpaceMeta.readOnly}). */
+  isGitSpace(id: string): boolean {
+    return this.gitClones.has(id);
+  }
+
+  /** Remember the writable GitHub spaces of `manifest` (by id, with their sub-path). */
+  private noteGitSpaces(manifest: SpacesManifest): void {
+    for (const s of manifest.spaces)
+      if (s.remoteUrl && s.readOnly === false) this.gitClones.set(s.id, s.subPath);
+      else this.gitClones.delete(s.id);
   }
 
   /**
@@ -435,10 +467,20 @@ export class SpaceManager {
     return !this.folders.has(id) || this.bound.has(id);
   }
 
-  /** The backend and state file a space is read and written through. */
+  /**
+   * The backend and state file a space is read and written through. A
+   * writable GitHub space is its folder in its kept clone: through its editing
+   * session once one is bound, and read-only until then, so nothing changes
+   * the clone without being committed.
+   */
   store(id: string): SpaceStore {
     const own = this.bound.get(id);
-    return own ? ownSpaceStore(own) : appSpaceStore(this.backend, id);
+    if (own) return ownSpaceStore(own);
+    if (this.gitClones.has(id)) {
+      const root = new ScopedBackend(this.backend, cloneSpaceRoot(id, this.gitClones.get(id)));
+      return ownSpaceStore(new ReadOnlyBackend(root, GIT_SPACE_LOCKED));
+    }
+    return appSpaceStore(this.backend, id);
   }
 
   /**
@@ -450,6 +492,7 @@ export class SpaceManager {
    */
   private visible(manifest: SpacesManifest): SpacesManifest {
     for (const s of manifest.spaces) if (this.kindOf(s) === 'folder') this.folders.add(s.id);
+    this.noteGitSpaces(manifest);
     const saved = manifest.spaces.filter(
       (s) => !this.session.has(s.id) && (this.kindOf(s) !== 'memory' || this.bound.has(s.id)),
     );
@@ -551,7 +594,7 @@ export class SpaceManager {
     branch: string,
     subPath?: string,
     access?: RemoteAccess,
-    options: { activate?: boolean } = {},
+    options: { activate?: boolean; writable?: boolean } = {},
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
     const activate = options.activate ?? true;
     if (activate) this.sessionActive = null;
@@ -563,8 +606,29 @@ export class SpaceManager {
       subPath,
       access,
       activate,
+      options.writable ?? false,
     );
+    this.layouts.delete(space.id);
+    this.savedState.delete(space.id);
     return { space, manifest: this.visible(manifest) };
+  }
+
+  /**
+   * Make a remote space synced with the GitHub sign-in writable, once its
+   * clone is found to hold a space marker: from now on its pages are read
+   * from (and, through its editing session, written to) the clone's files.
+   */
+  async markWritable(id: string): Promise<SpacesManifest> {
+    const manifest = await loadSpaces(this.backend);
+    const space = manifest.spaces.find((s) => s.id === id);
+    if (!space?.remoteUrl) throw new Error(`Not a remote space: ${id}`);
+    if (space.access !== 'token')
+      throw new Error('Only spaces synced with the GitHub sign-in can be edited');
+    space.readOnly = false;
+    await saveSpaces(this.backend, manifest);
+    this.layouts.delete(id);
+    this.savedState.delete(id);
+    return this.visible(manifest);
   }
 
   /** Make `id` the active space. Throws if there is no such space. */
@@ -673,6 +737,7 @@ export class SpaceManager {
     if (this.sessionActive === id) this.sessionActive = null;
     this.bound.delete(id);
     this.folders.delete(id);
+    this.gitClones.delete(id);
     this.layouts.delete(id);
     this.savedState.delete(id);
     const manifest = inSession
@@ -707,12 +772,14 @@ export class SpaceManager {
   /**
    * Where a space's snapshot is saved. A space in a folder on this device
    * keeps it in the app's backend, so looking around (recent pages, expanded
-   * folders) adds no files to the user's folder (REQ-WS-019). Any other space
-   * in the folder layout keeps it under its own `.cept/`, which the folder
-   * reader leaves out of the page tree.
+   * folders) adds no files to the user's folder (REQ-WS-019). A writable
+   * GitHub space keeps it there too, so browsing never makes a commit. Any
+   * other space in the folder layout keeps it under its own `.cept/`, which
+   * the folder reader leaves out of the page tree.
    */
   private stateStore(id: string): SpaceStore {
-    if (this.folders.has(id)) return { backend: this.backend, stateFile: spaceWorkspaceFile(id) };
+    if (this.folders.has(id) || this.gitClones.has(id))
+      return { backend: this.backend, stateFile: spaceWorkspaceFile(id) };
     const store = this.store(id);
     return this.isFolder(id) ? { backend: store.backend, stateFile: SPACE_STATE_FILE } : store;
   }

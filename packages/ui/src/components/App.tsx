@@ -46,9 +46,25 @@ import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
-import { applyMoves, CeptSearchIndex, MemoryBackend, reconnectFolder } from '@cept/core';
-import type { ImportedPage, PageContent, RemoteSpace, StorageBackend } from '@cept/core';
-import { generateRemoteSpaceId, parseRemoteSpaceId } from './storage/SpaceManager.js';
+import {
+  applyMoves,
+  CeptSearchIndex,
+  commitIdentityFor,
+  MemoryBackend,
+  reconnectFolder,
+} from '@cept/core';
+import type {
+  GitSpaceSyncResult,
+  ImportedPage,
+  PageContent,
+  RemoteSpace,
+  StorageBackend,
+} from '@cept/core';
+import {
+  GIT_SPACE_LOCKED,
+  generateRemoteSpaceId,
+  parseRemoteSpaceId,
+} from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpaceStats, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
 import type { FolderChange } from './storage/folder-space.js';
@@ -65,9 +81,18 @@ import {
   canHostGitClone,
   cloneErrorMessage,
   cloneRemoteRepo,
+  isWritableClone,
+  isWritableRemote,
   normalizeRepoUrl,
+  openGitSpaceSession,
   remoteWebUrl,
+  startSpaceInRepo,
+  unpushedCommitsOf,
 } from './storage/git-space.js';
+import { useGitSpaceSync } from './storage/useGitSpaceSync.js';
+import { SyncIndicator } from './git/SyncIndicator.js';
+import { StartRepoSpaceDialog } from './git/StartRepoSpaceDialog.js';
+import type { StartRepoSpaceRequest } from './git/StartRepoSpaceDialog.js';
 import { useGitHubAccount } from './settings/github-account.js';
 import { useDiscoveredSpaces } from './settings/discovered-spaces.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
@@ -219,7 +244,10 @@ export function App() {
     setActiveId: setUserSpaceId,
   } = useSpaces(backend);
   // The GitHub sign-in, for cloning private repositories (null without a host sign-in).
-  const gitAuth = useGitHubAccount()?.gitAuth;
+  const githubAccount = useGitHubAccount();
+  const gitAuth = githubAccount?.gitAuth;
+  /** The signed-in GitHub account, who edits of GitHub spaces are committed as. */
+  const signedInAccount = githubAccount?.status === 'signed-in' ? githubAccount.account : null;
   // Spaces in the signed-in account's repositories (null when not signed in).
   const discovered = useDiscoveredSpaces();
   const [cloneStatus, setCloneStatus] = useState<{
@@ -260,6 +288,13 @@ export function App() {
   /** Page counts, sizes and slugs of the listed spaces, read while settings are open. */
   const [spaceStats, setSpaceStats] = useState<Record<string, SpaceStats | null>>({});
   const { messages: toastMessages, addToast, dismissToast } = useToast();
+  /** The writable GitHub space whose editing session is open (REQ-WS-027), or null. */
+  const [gitSessionSpaceId, setGitSessionSpaceId] = useState<string | null>(null);
+  /** Bumped when the open page is read again from its file after a sync, to show it. */
+  const [editorVersion, setEditorVersion] = useState(0);
+  /** Edits and commits of writable GitHub spaces not on GitHub yet, read while settings are open. */
+  const [unsyncedChanges, setUnsyncedChanges] = useState<Record<string, number>>({});
+  const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
@@ -339,14 +374,37 @@ export function App() {
     [flushPendingWrite, addToast, spaces, userSpaceId],
   );
 
+  /** The last save of a space's state and contents, so closing its editing session waits for it. */
+  const spaceSaveRef = useRef<Promise<unknown>>(Promise.resolve());
+
   /** Save the active space's state and in-memory page contents to its own files */
   const saveActiveSpace = useCallback(() => {
-    void spaces.saveState(
-      userSpaceId,
-      { pages, favorites, recentPages, selectedPageId, spaceName },
-      pageContents,
-    );
-  }, [spaces, userSpaceId, pages, favorites, recentPages, selectedPageId, spaceName, pageContents]);
+    // The contents saved here include the edit waiting on the save debounce.
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    pendingWriteRef.current = undefined;
+    spaceSaveRef.current = spaces
+      .saveState(
+        userSpaceId,
+        { pages, favorites, recentPages, selectedPageId, spaceName },
+        pageContents,
+      )
+      .catch((err: unknown) => {
+        addToast(
+          `Could not save "${spaceName}": ${err instanceof Error ? err.message : String(err)}`,
+          'error',
+        );
+      });
+  }, [
+    spaces,
+    userSpaceId,
+    pages,
+    favorites,
+    recentPages,
+    selectedPageId,
+    spaceName,
+    pageContents,
+    addToast,
+  ]);
 
   /** Show a space: replace the page tree, sidebar lists and loaded contents */
   const applySpace = useCallback(
@@ -375,6 +433,21 @@ export function App() {
         return [];
       }
       try {
+        // A GitHub space synced with the sign-in whose folder became a space is edited in place.
+        const meta = (await spaces.load()).spaces.find((s) => s.id === spaceId);
+        if (
+          meta?.remoteUrl &&
+          meta.access === 'token' &&
+          !isWritableRemote(meta) &&
+          canHostGitClone(backend) &&
+          (await isWritableClone(backend, meta))
+        ) {
+          setSpacesManifest(await spaces.markWritable(spaceId));
+        }
+      } catch {
+        // It stays read-only.
+      }
+      try {
         const { snapshot, selectedContent, converted, backupKept } = await spaces.open(
           spaceId,
           name,
@@ -391,8 +464,8 @@ export function App() {
             'info',
           );
         }
-        if (!snapshot?.pages.length && isRemoteSpaceId(spaceId)) {
-          // Remote space with no persisted content
+        if (!snapshot?.pages.length && isRemoteSpaceId(spaceId) && !spaces.isGitSpace(spaceId)) {
+          // A read-only remote space with no persisted content (a writable one may have no pages yet)
           setSpaceLoadError(
             `Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`,
           );
@@ -405,7 +478,7 @@ export function App() {
         return [];
       }
     },
-    [spaces, applySpace, addToast],
+    [spaces, backend, applySpace, addToast, setSpacesManifest],
   );
 
   /** Show a freshly cloned remote space and save it as that space's state */
@@ -633,6 +706,7 @@ export function App() {
                     pages: clonedPages,
                     pageContents: clonedContents,
                     access,
+                    writable,
                   } = await cloneRemoteRepo(backend, {
                     spaceId: generateRemoteSpaceId(remoteUrl, parsed.branch, subPath),
                     url: parsed.repo,
@@ -648,16 +722,22 @@ export function App() {
                     parsed.branch,
                     subPath,
                     access,
+                    { writable },
                   );
 
                   setSpacesManifest(updatedManifest);
                   setUserSpaceId(newSpace.id);
                   setActiveSpace('user');
-                  await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
+                  // A writable space's pages are the files of its clone; nothing is copied.
+                  const tree = writable
+                    ? await loadAndApplySpaceState(newSpace.id, displayName)
+                    : clonedPages;
+                  if (!writable)
+                    await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
 
                   setCloneStatus({ active: false });
 
-                  if (route.pageId) void showRoutePage(newSpace.id, route.pageId, clonedPages);
+                  if (route.pageId) void showRoutePage(newSpace.id, route.pageId, tree);
                   else routeDone();
                 } catch (err) {
                   routeDone();
@@ -706,6 +786,8 @@ export function App() {
 
     const spaceMeta = spacesManifest.spaces.find((s) => s.id === userSpaceId);
     if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
+    // A writable space syncs through its editing session; a refresh here would replace its files.
+    if (isWritableRemote(spaceMeta)) return;
 
     // Check if we've synced recently enough
     const lastCheck = lastSyncCheckRef.current[userSpaceId] ?? 0;
@@ -836,6 +918,136 @@ export function App() {
       persistSaveRef.current = spaces.saveState(userSpaceId, state).catch(() => undefined);
     }, 300);
   }, [pages, favorites, recentPages, selectedPageId, spaceName, spaces, userSpaceId]);
+
+  // Writable GitHub spaces (REQ-WS-027): one editing session for the active
+  // space while signed in, which commits edits and syncs them with GitHub.
+  const userSpaceMeta = spacesManifest?.spaces.find((s) => s.id === userSpaceId);
+  const userSpaceWritable = userSpaceMeta ? isWritableRemote(userSpaceMeta) : false;
+  const gitSessionKey =
+    hasStarted && userSpaceWritable && signedInAccount && canHostGitClone(backend)
+      ? `${userSpaceId}|${signedInAccount.login}`
+      : null;
+  /** The open space can be read but not edited: a writable GitHub space with no session (yet). */
+  const editLocked =
+    activeSpace === 'user' && userSpaceWritable && gitSessionSpaceId !== userSpaceId;
+
+  const userSpaceIdRef = useRef(userSpaceId);
+  userSpaceIdRef.current = userSpaceId;
+  const selectedPageIdRef = useRef(selectedPageId);
+  selectedPageIdRef.current = selectedPageId;
+  const pageContentsRef = useRef(pageContents);
+  pageContentsRef.current = pageContents;
+
+  /** After a sync of the active GitHub space: show what the pull brought in. */
+  const handleGitSynced = useCallback(
+    async (spaceId: string, result: GitSpaceSyncResult, manual: boolean) => {
+      if (spaceId !== userSpaceIdRef.current) return;
+      const { state, lastError } = result.status;
+      if (result.changed) {
+        const hidden = new Set(trashRef.current.map((t) => t.id));
+        const next = await spaces.pageTree(spaceId, pagesRef.current, hidden).catch(() => null);
+        if (next && spaceId === userSpaceIdRef.current) {
+          const ids = new Set(flattenPages(next).map((p) => p.id));
+          const selected = selectedPageIdRef.current;
+          const pending = pendingWriteRef.current?.pageId;
+          // The open page is read again unless it is being edited.
+          const editing = pending === selected || editorHasFocus();
+          const reloaded =
+            selected && ids.has(selected) && !editing
+              ? await spaces.readPage(spaceId, selected).catch(() => null)
+              : null;
+          if (spaceId !== userSpaceIdRef.current) return;
+          setPages(next);
+          // Other pages are read again from their files when they are opened.
+          const previous = pageContentsRef.current;
+          const kept: Record<string, string> = {};
+          for (const id of [selected, pending]) {
+            if (id && ids.has(id) && previous[id] !== undefined) kept[id] = previous[id];
+          }
+          if (selected && reloaded !== null && reloaded !== previous[selected]) {
+            kept[selected] = reloaded;
+            setEditorVersion((v) => v + 1);
+          }
+          setPageContents(kept);
+          if (selected && !ids.has(selected)) setSelectedPageId(undefined);
+          setFavorites((prev) => prev.filter((f) => ids.has(f.id)));
+          setRecentPages((prev) => prev.filter((r) => ids.has(r.id)));
+        }
+      }
+      if (state === 'synced' && (manual || result.changed)) {
+        setSpacesManifest(await spaces.markSynced(spaceId, 'token'));
+      }
+      if (!manual) return;
+      if (state === 'synced') addToast('Synced with GitHub.', 'success');
+      else if (state === 'offline')
+        addToast('Offline: your changes stay on this device and sync once you are online.', 'info');
+      else if (state === 'conflict')
+        addToast(`Sync stopped on a conflict: ${lastError ?? 'resolve it to continue'}`, 'error');
+      else if (state === 'error') addToast(`Sync failed: ${lastError ?? 'unknown error'}`, 'error');
+    },
+    [spaces, setSpacesManifest, addToast],
+  );
+
+  const gitSync = useGitSpaceSync({
+    sessionKey: gitSessionKey,
+    open: async (key) => {
+      const spaceId = spaceIdOfSessionKey(key);
+      const meta = (await spaces.load()).spaces.find((s) => s.id === spaceId);
+      if (!meta || !signedInAccount || !canHostGitClone(backend)) {
+        throw new Error(GIT_SPACE_LOCKED);
+      }
+      return openGitSpaceSession(backend, {
+        spaceId,
+        subPath: meta.subPath,
+        auth: await gitAuth?.(),
+        identity: commitIdentityFor(signedInAccount),
+        corsProxy: gitCorsProxy(),
+      });
+    },
+    onOpened: (session, key) => {
+      const spaceId = spaceIdOfSessionKey(key);
+      spaces.bind(spaceId, session.backend);
+      setGitSessionSpaceId(spaceId);
+    },
+    onClosed: async (key) => {
+      const spaceId = spaceIdOfSessionKey(key);
+      setGitSessionSpaceId((prev) => (prev === spaceId ? null : prev));
+      // Writes started before the session closes still go through it, so they are committed.
+      await spaceSaveRef.current;
+      await persistSaveRef.current;
+      spaces.unbind(spaceId);
+    },
+    onSynced: (result, manual) => {
+      if (gitSessionKey) void handleGitSynced(spaceIdOfSessionKey(gitSessionKey), result, manual);
+    },
+    onError: (err) => {
+      addToast(
+        `"${userSpaceMeta?.name ?? 'This space'}" cannot be edited now: ${cloneErrorMessage(err, 'its copy on this device could not be opened')}`,
+        'error',
+      );
+    },
+  });
+
+  const { syncNow: gitSyncNow, close: closeGitSession } = gitSync;
+
+  /** "Sync now": commit what is pending, pull, then push. */
+  const handleSyncNow = useCallback(async () => {
+    try {
+      await gitSyncNow();
+    } catch (err) {
+      addToast(`Sync failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  }, [gitSyncNow, addToast]);
+
+  /** Tell the user why the open space cannot be edited. */
+  const explainLocked = useCallback(() => {
+    addToast(
+      signedInAccount
+        ? 'This space is still opening for editing; try again in a moment.'
+        : GIT_SPACE_LOCKED,
+      'info',
+    );
+  }, [signedInAccount, addToast]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -1079,10 +1291,15 @@ export function App() {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       pendingWriteRef.current = { pageId: selectedPageId, content: markdown };
       saveTimeoutRef.current = setTimeout(() => {
-        void flushPendingWrite();
+        flushPendingWrite().catch((err: unknown) => {
+          addToast(
+            `Could not save the page: ${err instanceof Error ? err.message : String(err)}`,
+            'error',
+          );
+        });
       }, 500);
     },
-    [selectedPageId, flushPendingWrite],
+    [selectedPageId, flushPendingWrite, addToast],
   );
 
   // Keep search index in sync with page content
@@ -1214,8 +1431,9 @@ export function App() {
     (id: string) => {
       waitingFoldersRef.current.delete(id);
       void folderHost?.handles.remove(id).catch(() => undefined);
-      void spaces
-        .delete(id)
+      // A GitHub space's editing session is closed first; only the copy on this device goes.
+      void (id === gitSessionSpaceId ? closeGitSession() : Promise.resolve())
+        .then(() => spaces.delete(id))
         .then(({ manifest, active }) => {
           setSpacesManifest(manifest);
           if (id === userSpaceId) {
@@ -1234,6 +1452,8 @@ export function App() {
       spaces,
       folderHost,
       userSpaceId,
+      gitSessionSpaceId,
+      closeGitSession,
       setSpacesManifest,
       setUserSpaceId,
       loadAndApplySpaceState,
@@ -1610,6 +1830,22 @@ export function App() {
         return;
       }
 
+      const branch = config.branch || 'main';
+      const remoteUrl = normalizeRepoUrl(config.url);
+      const subPath = config.subPath.trim() || undefined;
+      const spaceId = generateRemoteSpaceId(remoteUrl, branch, subPath);
+      // A space edited on this device is never cloned over: open it as it is.
+      const existing = (await spaces.load()).spaces.find((s) => s.id === spaceId);
+      if (existing && isWritableRemote(existing)) {
+        if (options.activate) {
+          setActiveSpace('user');
+          handleSwitchSpace(spaceId);
+        } else {
+          addToast(`"${existing.name}" is already in your spaces.`, 'info');
+        }
+        return;
+      }
+
       if (options.activate)
         setCloneStatus({ active: true, message: `Cloning ${normalizedUrl}...` });
 
@@ -1621,15 +1857,13 @@ export function App() {
         }
 
         // Clone the remote repo and extract pages
-        const branch = config.branch || 'main';
-        const remoteUrl = normalizeRepoUrl(config.url);
-        const subPath = config.subPath.trim() || undefined;
         const {
           pages: clonedPages,
           pageContents: clonedContents,
           access,
+          writable,
         } = await cloneRemoteRepo(backend, {
-          spaceId: generateRemoteSpaceId(remoteUrl, branch, subPath),
+          spaceId,
           url: config.url,
           branch,
           subPath,
@@ -1644,15 +1878,18 @@ export function App() {
           branch,
           subPath,
           access,
-          { activate: options.activate },
+          { activate: options.activate, writable },
         );
         setSpacesManifest(manifest);
 
         if (options.activate) {
           setUserSpaceId(newSpace.id);
-          // Show the cloned pages and persist them to the space's storage
-          await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
+          // A writable space's pages are the files of its clone; a read-only one keeps a copy.
+          if (writable) await loadAndApplySpaceState(newSpace.id, displayName);
+          else await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
           setCloneStatus({ active: false });
+        } else if (writable) {
+          addToast(`"${displayName}" is pinned to your spaces.`, 'success');
         } else {
           try {
             await spaces.saveState(
@@ -1685,10 +1922,73 @@ export function App() {
       gitAuth,
       addToast,
       handleCreateSpace,
+      handleSwitchSpace,
       saveActiveSpace,
       setSpacesManifest,
       setUserSpaceId,
       applyClonedSpace,
+      loadAndApplySpaceState,
+    ],
+  );
+
+  /**
+   * Start a space in one of the signed-in account's repositories: commit and
+   * push its `space.cept.yaml`, then open it for editing (REQ-WS-027).
+   * Rejects with the reason, which the dialog shows.
+   */
+  const handleStartRepoSpace = useCallback(
+    async ({ repo, name, folder }: StartRepoSpaceRequest) => {
+      const auth = await gitAuth?.();
+      if (!signedInAccount || !auth || !canHostGitClone(backend)) throw new Error(GIT_SPACE_LOCKED);
+      const remoteUrl = normalizeRepoUrl(repo.url);
+      const branch = repo.defaultBranch || 'main';
+      const subPath = folder || undefined;
+      const spaceId = generateRemoteSpaceId(remoteUrl, branch, subPath);
+      const existing = (await spaces.load()).spaces.find((s) => s.id === spaceId);
+      if (existing && !isWritableRemote(existing)) {
+        throw new Error(
+          `"${existing.name}" is already added from this folder of the repository. Remove it first to start a space there.`,
+        );
+      }
+      if (!existing) {
+        await startSpaceInRepo(backend, {
+          spaceId,
+          subPath,
+          url: remoteUrl,
+          branch,
+          name,
+          auth,
+          identity: commitIdentityFor(signedInAccount),
+          corsProxy: gitCorsProxy(),
+        });
+      }
+      setStartRepoSpaceOpen(false);
+      setSettingsOpen(false);
+      setActiveSpace('user');
+      if (existing) {
+        handleSwitchSpace(spaceId);
+        return;
+      }
+      saveActiveSpace();
+      const created = await spaces.createRemote(name, remoteUrl, branch, subPath, 'token', {
+        writable: true,
+      });
+      setSpacesManifest(created.manifest);
+      setUserSpaceId(created.space.id);
+      await loadAndApplySpaceState(created.space.id, name);
+      addToast(`"${name}" is ready. Your edits are committed and synced with GitHub.`, 'success');
+    },
+    [
+      gitAuth,
+      signedInAccount,
+      backend,
+      spaces,
+      handleSwitchSpace,
+      saveActiveSpace,
+      setSpacesManifest,
+      setUserSpaceId,
+      loadAndApplySpaceState,
+      addToast,
     ],
   );
 
@@ -1721,6 +2021,14 @@ export function App() {
       const spaceMeta = manifest.spaces.find((s) => s.id === spaceId);
       if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
 
+      // A writable space syncs through its editing session, keeping what was edited here.
+      if (isWritableRemote(spaceMeta)) {
+        if (spaceId === gitSessionSpaceId) await handleSyncNow();
+        else if (!signedInAccount) addToast(GIT_SPACE_LOCKED, 'info');
+        else addToast(`Open "${spaceMeta.name}" to sync it.`, 'info');
+        return;
+      }
+
       // Fetch into the space's clone (cloning it first if it is not kept yet)
       let cloned;
       try {
@@ -1744,6 +2052,14 @@ export function App() {
       // Update the sync timestamp
       const updatedManifest = await spaces.markSynced(spaceId, access);
 
+      if (cloned.writable) {
+        // Its folder is a space now: from here on it is edited in place.
+        setSpacesManifest(await spaces.markWritable(spaceId));
+        if (spaceId === userSpaceId) await loadAndApplySpaceState(spaceId, spaceMeta.name);
+        addToast(`"${spaceMeta.name}" is refreshed and can now be edited.`, 'success');
+        return;
+      }
+
       // Persist the refreshed pages
       await spaces.saveState(spaceId, clonedSnapshot(clonedPages, spaceMeta.name), clonedContents);
 
@@ -1762,7 +2078,18 @@ export function App() {
       setSpacesManifest(updatedManifest);
       addToast(`"${spaceMeta.name}" is refreshed from its remote.`, 'success');
     },
-    [backend, spaces, userSpaceId, setSpacesManifest, gitAuth, addToast],
+    [
+      backend,
+      spaces,
+      userSpaceId,
+      gitSessionSpaceId,
+      signedInAccount,
+      handleSyncNow,
+      loadAndApplySpaceState,
+      setSpacesManifest,
+      gitAuth,
+      addToast,
+    ],
   );
 
   const handleDocsPageSelect = useCallback((id: string) => {
@@ -1796,6 +2123,28 @@ export function App() {
     };
   }, [settingsOpen, spacesManifest, spaces]);
 
+  // What writable GitHub spaces hold that is not on GitHub yet, so removing one can warn.
+  const gitSession = gitSync.session;
+  useEffect(() => {
+    if (!settingsOpen || !spacesManifest || !canHostGitClone(backend)) return;
+    let cancelled = false;
+    const host = backend;
+    void Promise.all(
+      spacesManifest.spaces.filter(isWritableRemote).map(async (s) => {
+        if (s.id === gitSessionSpaceId && gitSession) {
+          const local = await gitSession.localChanges().catch(() => ({ pending: 0, unpushed: 0 }));
+          return [s.id, local.pending + local.unpushed] as const;
+        }
+        return [s.id, await unpushedCommitsOf(host, s.id)] as const;
+      }),
+    ).then((entries) => {
+      if (!cancelled) setUnsyncedChanges(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [settingsOpen, spacesManifest, backend, gitSessionSpaceId, gitSession]);
+
   // The open space's entry, and where its open page lives on GitHub (remote spaces only).
   const activeSpaceMeta =
     activeSpace === 'user' ? spacesManifest?.spaces.find((s) => s.id === userSpaceId) : undefined;
@@ -1821,7 +2170,7 @@ export function App() {
         const kind = space.remoteUrl ? 'remote' : spaces.kindOf(space);
         const spaceSource =
           kind === 'remote'
-            ? `Git (${space.readOnly ? 'read-only' : 'sync'})`
+            ? `Git (${isWritableRemote(space) ? 'sync' : 'read-only'})`
             : kind === 'folder'
               ? 'Folder on this device'
               : defaultSource;
@@ -1846,6 +2195,9 @@ export function App() {
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
             conversionBackup: conversionBackups[space.id] ?? false,
+            ...(unsyncedChanges[space.id] !== undefined
+              ? { unsyncedChanges: unsyncedChanges[space.id] }
+              : {}),
           });
         } else {
           list.push({
@@ -1862,6 +2214,9 @@ export function App() {
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
             conversionBackup: conversionBackups[space.id] ?? false,
+            ...(unsyncedChanges[space.id] !== undefined
+              ? { unsyncedChanges: unsyncedChanges[space.id] }
+              : {}),
           });
         }
       }
@@ -1888,6 +2243,7 @@ export function App() {
     backend.type,
     conversionBackups,
     spaceStats,
+    unsyncedChanges,
     spaces,
   ]);
 
@@ -2009,6 +2365,15 @@ export function App() {
           <Breadcrumbs items={breadcrumbItems} onNavigate={handlePageSelect} />
         )}
         <div className="ml-auto" />
+        {activeSpace === 'user' && userSpaceWritable && (
+          <SyncIndicator
+            status={gitSessionSpaceId === userSpaceId ? gitSync.status : null}
+            locked={!signedInAccount}
+            syncing={gitSync.syncing}
+            onSyncNow={() => void handleSyncNow()}
+            onSignIn={() => handleOpenSettings('settings')}
+          />
+        )}
         <AppMenu
           pageId={activeSpace === 'user' ? selectedPageId : undefined}
           isFavorite={selectedPageId ? favorites.some((f) => f.id === selectedPageId) : false}
@@ -2017,8 +2382,8 @@ export function App() {
             const titleEl = document.querySelector('[data-testid="page-title"]') as HTMLElement;
             titleEl?.click();
           }}
-          onDuplicate={handlePageDuplicate}
-          onDelete={handlePageDelete}
+          onDuplicate={editLocked ? explainLocked : handlePageDuplicate}
+          onDelete={editLocked ? explainLocked : handlePageDelete}
           remoteLink={activeRemoteLink}
           onRefreshSpace={
             activeSpaceMeta?.remoteUrl ? () => void handleRefreshSpace(userSpaceId) : undefined
@@ -2047,15 +2412,16 @@ export function App() {
             selectedPageId={selectedPageId}
             onPageSelect={handlePageSelect}
             onPageToggle={handlePageToggle}
-            onPageAdd={handlePageAdd}
-            onPageRename={handlePageRename}
-            onPageDuplicate={handlePageDuplicate}
-            onPageDelete={handlePageDelete}
-            onPageMoveToRoot={handlePageMoveToRoot}
+            onPageAdd={editLocked ? explainLocked : handlePageAdd}
+            onPageRename={editLocked ? explainLocked : handlePageRename}
+            onPageDuplicate={editLocked ? explainLocked : handlePageDuplicate}
+            onPageDelete={editLocked ? explainLocked : handlePageDelete}
+            onPageMoveToRoot={editLocked ? explainLocked : handlePageMoveToRoot}
             onToggleFavorite={handleToggleFavorite}
-            onRestoreFromTrash={handleRestoreFromTrash}
-            onPermanentDelete={handlePermanentDelete}
-            onEmptyTrash={handleEmptyTrash}
+            onRestoreFromTrash={editLocked ? explainLocked : handleRestoreFromTrash}
+            onPermanentDelete={editLocked ? explainLocked : handlePermanentDelete}
+            onEmptyTrash={editLocked ? explainLocked : handleEmptyTrash}
+            readOnly={editLocked}
             onSearch={() => setSearchOpen(true)}
             onOpenSettings={handleOpenSettings}
             onOpenDocs={handleOpenDocs}
@@ -2362,17 +2728,19 @@ export function App() {
                 icon={selectedNode.icon}
                 cover={selectedNode.cover}
                 isFavorite={favorites.some((f) => f.id === selectedPageId)}
-                onRename={handlePageRename}
-                onDuplicate={handlePageDuplicate}
-                onDelete={handlePageDelete}
+                onRename={editLocked ? explainLocked : handlePageRename}
+                onDuplicate={editLocked ? explainLocked : handlePageDuplicate}
+                onDelete={editLocked ? explainLocked : handlePageDelete}
                 onToggleFavorite={handleToggleFavorite}
               />
               {contentLoaded ? (
                 <CeptEditor
-                  key={selectedPageId}
+                  // Remounted when the page is read again after a sync, or is locked or unlocked.
+                  key={`${selectedPageId}:${editorVersion}:${editLocked ? 'locked' : 'open'}`}
                   content={currentContent}
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
+                  editable={!editLocked}
                 />
               ) : (
                 <div className="text-center text-gray-400 mt-8" data-testid="page-loading">
@@ -2389,7 +2757,7 @@ export function App() {
                 Select a page from the sidebar, or{' '}
                 <button
                   className="cept-empty-state-link"
-                  onClick={() => handlePageAdd()}
+                  onClick={() => (editLocked ? explainLocked() : handlePageAdd())}
                   data-testid="empty-state-create"
                 >
                   start typing to create a new one
@@ -2431,6 +2799,11 @@ export function App() {
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
         onOpenAddSpaceWizard={() => setAddSpaceWizardOpen(true)}
+        onStartRepoSpace={
+          signedInAccount && githubAccount?.listRepos && canHostGitClone(backend)
+            ? () => setStartRepoSpaceOpen(true)
+            : undefined
+        }
         onImportNotion={() => handleOpenImport('notion')}
         onImportObsidian={() => handleOpenImport('obsidian')}
         onExport={handleOpenExport}
@@ -2472,6 +2845,19 @@ export function App() {
             : undefined
         }
       />
+      {startRepoSpaceOpen && githubAccount?.listRepos && (
+        <StartRepoSpaceDialog
+          user={signedInAccount}
+          listRepos={githubAccount.listRepos}
+          createRepo={githubAccount.createRepo}
+          onStart={handleStartRepoSpace}
+          onSignIn={() => {
+            setStartRepoSpaceOpen(false);
+            handleOpenSettings('settings');
+          }}
+          onClose={() => setStartRepoSpaceOpen(false)}
+        />
+      )}
       {pickedFolder && (
         <OpenFolderDialog
           folderName={pickedFolder.handle.name}
@@ -2709,3 +3095,14 @@ Cept supports multiple storage backends:
 
 To manage spaces, open **Settings** (gear icon) and go to the **Data & Cache** tab.
 `;
+
+/** The space a git session key (`<space id>|<login>`) is for. */
+function spaceIdOfSessionKey(key: string): string {
+  return key.slice(0, key.lastIndexOf('|'));
+}
+
+/** Whether the user is typing in the page editor. */
+function editorHasFocus(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.activeElement?.closest('[data-testid="cept-editor"]') != null;
+}

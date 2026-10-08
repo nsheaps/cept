@@ -399,6 +399,32 @@ export class GitBackend implements GitStorageBackend {
     return 'updated';
   }
 
+  /**
+   * How many commits the current branch has that `origin`'s copy of it (as
+   * last fetched, pulled or pushed) does not: local work that is not on the
+   * remote yet. A branch with no remote-tracking ref counts every commit. In
+   * a shallow clone only the commits it holds are counted.
+   */
+  async unpushedCommits(): Promise<number> {
+    const branch = await this.branchCurrent();
+    let remote: string | null = null;
+    try {
+      remote = await git.resolveRef({
+        fs: this.fs,
+        dir: this.dir,
+        ref: `refs/remotes/origin/${branch}`,
+      });
+    } catch {
+      remote = null;
+    }
+    const ours = await git.log({ fs: this.fs, dir: this.dir, ref: 'HEAD' });
+    if (!remote) return ours.length;
+    const theirs = new Set(
+      (await git.log({ fs: this.fs, dir: this.dir, ref: remote })).map((e) => e.oid),
+    );
+    return ours.filter((e) => !theirs.has(e.oid)).length;
+  }
+
   /** The commit the current branch points at. */
   async head(): Promise<CommitHash> {
     return git.resolveRef({ fs: this.fs, dir: this.dir, ref: 'HEAD' });
