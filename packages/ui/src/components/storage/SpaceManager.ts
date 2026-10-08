@@ -21,6 +21,21 @@ import {
   writeStorePage,
 } from './space-store.js';
 import type { SpaceStore } from './space-store.js';
+import { SPACE_STATE_FILE } from './space-store.js';
+import {
+  addFolderPage,
+  deleteFolderPage,
+  duplicateFolderPage,
+  initFolderSpace,
+  isFolderSpace,
+  moveFolderPageToRoot,
+  readFolderPage,
+  readFolderTree,
+  renameFolderPage,
+  toPageTree,
+  writeFolderPage,
+} from './folder-space.js';
+import type { FolderChange } from './folder-space.js';
 
 /**
  * Where a space's data lives:
@@ -306,6 +321,8 @@ export class SpaceManager {
   private readonly session = new Map<string, SpaceMeta>();
   /** The active space when it is a session space; the saved manifest keeps its own. */
   private sessionActive: string | null = null;
+  /** Whether each space opened or created so far uses the folder layout. */
+  private readonly layouts = new Map<string, boolean>();
 
   constructor(readonly backend: StorageBackend) {}
 
@@ -397,6 +414,8 @@ export class SpaceManager {
       return { space, manifest: await this.load() };
     }
     const { space, manifest } = await addSpace(this.backend, name, icon);
+    await initFolderSpace(this.store(space.id).backend, name);
+    this.layouts.set(space.id, true);
     this.sessionActive = null;
     return { space, manifest: this.visible(manifest) };
   }
@@ -452,6 +471,7 @@ export class SpaceManager {
     const inSession = this.session.delete(id);
     if (this.sessionActive === id) this.sessionActive = null;
     this.bound.delete(id);
+    this.layouts.delete(id);
     const manifest = inSession
       ? await this.load()
       : this.visible(await deleteSpace(this.backend, id));
@@ -465,13 +485,37 @@ export class SpaceManager {
     return this.visible(await updateSpaceSyncTimestamp(this.backend, id));
   }
 
+  /**
+   * Whether a space uses the folder layout, as found when it was last opened
+   * or created. Spaces not yet opened count as flat.
+   */
+  isFolder(id: string): boolean {
+    return this.layouts.get(id) ?? false;
+  }
+
+  /** Look for the space marker and remember the layout. */
+  private async detectLayout(id: string): Promise<boolean> {
+    const folder = await isFolderSpace(this.store(id).backend);
+    this.layouts.set(id, folder);
+    return folder;
+  }
+
+  /**
+   * Where a space's snapshot is saved. A folder space keeps it under its own
+   * `.cept/`, which the folder reader leaves out of the page tree.
+   */
+  private stateStore(id: string): SpaceStore {
+    const store = this.store(id);
+    return this.isFolder(id) ? { backend: store.backend, stateFile: SPACE_STATE_FILE } : store;
+  }
+
   /** Save a space's snapshot and any page contents held in memory. */
   async saveState(
     id: string,
     snapshot: SpaceSnapshot,
     pageContents: Record<string, string> = {},
   ): Promise<void> {
-    await saveStoreState(this.store(id), snapshot);
+    await saveStoreState(this.stateStore(id), snapshot);
     await Promise.all(
       Object.entries(pageContents)
         .filter(([, content]) => content)
@@ -479,32 +523,94 @@ export class SpaceManager {
     );
   }
 
-  /** Read a space's saved snapshot and the content of its selected page. */
+  /**
+   * Read a space's saved snapshot and the content of its selected page. A
+   * folder space's pages come from its files; the snapshot only adds what
+   * files do not hold (icons, covers, expanded folders, sidebar lists), and
+   * entries for pages no longer on disk are dropped.
+   */
   async open(id: string, fallbackName: string): Promise<OpenedSpace> {
-    const state = await loadStoreState(this.store(id));
-    if (!state) return { snapshot: null, selectedContent: null };
-    const snapshot: SpaceSnapshot = {
-      pages: state.pages,
-      favorites: state.favorites ?? [],
-      recentPages: state.recentPages ?? [],
-      selectedPageId: state.selectedPageId,
-      spaceName: state.spaceName ?? fallbackName,
+    const folder = await this.detectLayout(id);
+    const state = await loadStoreState(this.stateStore(id));
+    if (!state && !folder) return { snapshot: null, selectedContent: null };
+    let snapshot: SpaceSnapshot = {
+      pages: state?.pages ?? [],
+      favorites: state?.favorites ?? [],
+      recentPages: state?.recentPages ?? [],
+      selectedPageId: state?.selectedPageId,
+      spaceName: state?.spaceName ?? fallbackName,
     };
-    const selectedContent = state.selectedPageId
-      ? await this.readPage(id, state.selectedPageId)
+    if (folder) {
+      const pages = toPageTree(await readFolderTree(this.store(id).backend), snapshot.pages);
+      const titles = new Map<string, string>();
+      const collect = (nodes: typeof pages) =>
+        nodes.forEach((n) => {
+          titles.set(n.id, n.title);
+          collect(n.children);
+        });
+      collect(pages);
+      const present = <T extends { id: string }>(refs: T[]) =>
+        refs.filter((r) => titles.has(r.id)).map((r) => ({ ...r, title: titles.get(r.id)! }));
+      snapshot = {
+        ...snapshot,
+        pages,
+        favorites: present(snapshot.favorites),
+        recentPages: present(snapshot.recentPages),
+        selectedPageId:
+          snapshot.selectedPageId && titles.has(snapshot.selectedPageId)
+            ? snapshot.selectedPageId
+            : undefined,
+      };
+    }
+    const selectedContent = snapshot.selectedPageId
+      ? await this.readPage(id, snapshot.selectedPageId)
       : null;
     return { snapshot, selectedContent };
   }
 
   readPage(id: string, pageId: string): Promise<string | null> {
-    return readStorePage(this.store(id), pageId);
+    return this.isFolder(id)
+      ? readFolderPage(this.store(id).backend, pageId)
+      : readStorePage(this.store(id), pageId);
   }
 
   writePage(id: string, pageId: string, content: string): Promise<void> {
-    return writeStorePage(this.store(id), pageId, content);
+    return this.isFolder(id)
+      ? writeFolderPage(this.store(id).backend, pageId, content)
+      : writeStorePage(this.store(id), pageId, content);
   }
 
   deletePage(id: string, pageId: string): Promise<void> {
-    return deleteStorePage(this.store(id), pageId);
+    return this.isFolder(id)
+      ? deleteFolderPage(this.store(id).backend, pageId)
+      : deleteStorePage(this.store(id), pageId);
+  }
+
+  // Page operations on a folder space. Each renames or creates files and
+  // returns the page's id afterwards with the paths that moved.
+
+  /** A folder space's sidebar tree, keeping icons and expanded state from `previous`. */
+  async pageTree(
+    id: string,
+    previous: readonly PageTreeNode[] = [],
+    hidden: ReadonlySet<string> = new Set(),
+  ): Promise<PageTreeNode[]> {
+    return toPageTree(await readFolderTree(this.store(id).backend), previous, hidden);
+  }
+
+  addPage(id: string, parentId?: string, title?: string, text?: string): Promise<FolderChange> {
+    return addFolderPage(this.store(id).backend, parentId, title, text);
+  }
+
+  renamePage(id: string, pageId: string, title: string): Promise<FolderChange> {
+    return renameFolderPage(this.store(id).backend, pageId, title);
+  }
+
+  movePageToRoot(id: string, pageId: string): Promise<FolderChange> {
+    return moveFolderPageToRoot(this.store(id).backend, pageId);
+  }
+
+  duplicatePage(id: string, pageId: string): Promise<FolderChange> {
+    return duplicateFolderPage(this.store(id).backend, pageId);
   }
 }

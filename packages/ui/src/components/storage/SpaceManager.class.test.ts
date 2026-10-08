@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryBackend } from './test-helpers.js';
-import { SpaceManager } from './SpaceManager.js';
+import { SpaceManager, createSpace } from './SpaceManager.js';
 import type { SpaceSnapshot } from './SpaceManager.js';
 
 function snapshot(name: string, ids: string[], selected?: string): SpaceSnapshot {
@@ -68,8 +68,8 @@ describe('SpaceManager class', () => {
     await expect(spaces.delete('default')).rejects.toThrow(/last space/);
   });
 
-  it('saves and reopens a space with its selected page content', async () => {
-    const { space } = await spaces.create('Work');
+  it('flat layout: saves and reopens a space with its selected page content', async () => {
+    const space = await createSpace(backend, 'Work');
     await spaces.saveState(space.id, snapshot('Work', ['a', 'b'], 'b'), {
       a: '# A',
       b: '# B',
@@ -82,13 +82,13 @@ describe('SpaceManager class', () => {
     expect(await spaces.readPage(space.id, 'c')).toBeNull();
   });
 
-  it('opens a space that was never saved as null', async () => {
-    const { space } = await spaces.create('Empty');
+  it('flat layout: opens a space that was never saved as null', async () => {
+    const space = await createSpace(backend, 'Empty');
     expect(await spaces.open(space.id, 'Empty')).toEqual({ snapshot: null, selectedContent: null });
   });
 
-  it('opens a saved space with no pages, keeping its name and sidebar lists', async () => {
-    const { space } = await spaces.create('Work');
+  it('flat layout: opens a saved space with no pages, keeping its name and sidebar lists', async () => {
+    const space = await createSpace(backend, 'Work');
     const fav = { id: 'gone', title: 'Gone' };
     await spaces.saveState(space.id, {
       pages: [],
@@ -101,8 +101,8 @@ describe('SpaceManager class', () => {
     expect(opened?.spaceName).toBe('Renamed');
   });
 
-  it('keeps each space’s pages apart, and the default space uses the root pages folder', async () => {
-    const { space } = await spaces.create('Work');
+  it('flat layout: keeps each space’s pages apart, and the default space uses the root pages folder', async () => {
+    const space = await createSpace(backend, 'Work');
     await spaces.writePage('default', 'p', 'default text');
     await spaces.writePage(space.id, 'p', 'work text');
     expect(backend.readText('pages/p.md')).toBe('default text');
@@ -110,6 +110,55 @@ describe('SpaceManager class', () => {
     await spaces.deletePage(space.id, 'p');
     expect(await spaces.readPage(space.id, 'p')).toBeNull();
     expect(await spaces.readPage('default', 'p')).toBe('default text');
+  });
+
+  it('opens a folder space from its files, keeping saved icons and sidebar lists', async () => {
+    const { space } = await spaces.create('Notes');
+    const root = `.cept/spaces/${space.id}`;
+    backend.seedText(`${root}/guides/index.md`, '# Guides');
+    backend.seedText(`${root}/guides/setup.md`, '# Setup');
+    await spaces.saveState(space.id, {
+      pages: [{ id: 'guides', title: 'x', icon: '📘', children: [] }],
+      favorites: [
+        { id: 'guides/setup.md', title: 'old' },
+        { id: 'gone.md', title: 'Gone' },
+      ],
+      recentPages: [],
+      selectedPageId: 'guides',
+      spaceName: 'Notes',
+    });
+    const reopened = new SpaceManager(backend);
+    const { snapshot: opened, selectedContent } = await reopened.open(space.id, 'Notes');
+    expect(opened?.pages).toEqual([
+      {
+        id: 'guides',
+        title: 'guides',
+        icon: '📘',
+        children: [{ id: 'guides/setup.md', title: 'setup', children: [] }],
+      },
+    ]);
+    expect(opened?.favorites).toEqual([{ id: 'guides/setup.md', title: 'setup' }]);
+    expect(selectedContent).toBe('# Guides');
+  });
+
+  it('creates, renames and moves folder space pages as files at their paths', async () => {
+    const { space } = await spaces.create('Notes');
+    const root = `.cept/spaces/${space.id}`;
+    const added = await spaces.addPage(space.id);
+    expect(added.pageId).toBe('Untitled.md');
+    const child = await spaces.addPage(space.id, added.pageId);
+    expect(child).toEqual({
+      pageId: 'Untitled/Untitled.md',
+      moved: [{ from: 'Untitled.md', to: 'Untitled' }],
+    });
+    await spaces.writePage(space.id, child.pageId, '# Child');
+    const renamed = await spaces.renamePage(space.id, 'Untitled', 'Plans');
+    expect(renamed.pageId).toBe('Plans');
+    const moved = await spaces.movePageToRoot(space.id, 'Plans/Untitled.md');
+    expect(moved.pageId).toBe('Untitled.md');
+    expect(backend.readText(`${root}/Untitled.md`)).toBe('# Child');
+    expect(backend.hasFile(`${root}/Plans/index.md`)).toBe(true);
+    expect((await spaces.pageTree(space.id)).map((p) => p.id)).toEqual(['Plans', 'Untitled.md']);
   });
 
   it('records a sync time', async () => {

@@ -5,6 +5,8 @@
  *   /{base}/                                                      — landing / onboarding
  *   /{base}/s/{spaceId}                                           — local space root
  *   /{base}/s/{spaceId}/{pageId}                                  — page in a local space
+ *                                                                   (pageId URI-encoded: folder
+ *                                                                   space ids are paths)
  *   /{base}/g/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]     — git space root
  *   /{base}/g/{host}/{owner}/{repo}/blob/{branch}[/{subpath}]/{pageId} — page in a git space
  *   /{base}/docs                                                  — docs space index
@@ -177,6 +179,15 @@ function parseGitSpaceUrl(segments: string[]): { spaceId: string; pageId: string
   return { spaceId: `${repo}@${branch}/${subPath}`, pageId: undefined };
 }
 
+/** Decode one URL segment; a malformed escape is kept as it is. */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 /**
  * Parse the current URL into an AppRoute.
  */
@@ -219,7 +230,7 @@ export function parseRoute(pathname?: string): AppRoute {
     return {
       space: 'user',
       spaceId: spaceSegments[0],
-      pageId: spaceSegments[1] ?? undefined,
+      pageId: spaceSegments[1] === undefined ? undefined : decodeSegment(spaceSegments[1]),
     };
   }
 
@@ -261,9 +272,9 @@ export function buildPath(route: Partial<AppRoute>): string {
     return `${base}${prefix}/${urlPath}`;
   }
 
-  // Local space
+  // Local space. Folder space page ids are paths, so the id is one encoded segment.
   if (route.pageId) {
-    return `${base}s/${spaceId}/${route.pageId}`;
+    return `${base}s/${spaceId}/${encodeURIComponent(route.pageId)}`;
   }
   if (spaceId !== 'default') {
     return `${base}s/${spaceId}`;

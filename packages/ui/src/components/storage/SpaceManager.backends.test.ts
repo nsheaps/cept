@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryBackend } from './test-helpers.js';
-import { SpaceManager } from './SpaceManager.js';
+import { SpaceManager, createSpace } from './SpaceManager.js';
 import type { SpaceSnapshot } from './SpaceManager.js';
 
 function snapshot(name: string, ids: string[]): SpaceSnapshot {
@@ -54,13 +54,23 @@ describe('SpaceManager per-space backends', () => {
     expect(spaces.kindOf(local)).toBe('app');
   });
 
-  it('keeps the default and app spaces on the paths they used before', async () => {
-    const { space } = await spaces.create('Work');
+  it('keeps the default and flat app spaces on the paths they used before', async () => {
+    const space = await createSpace(app, 'Work');
     await spaces.writePage('default', 'p', 'default');
     await spaces.saveState(space.id, snapshot('Work', ['p']), { p: 'work' });
     expect(app.readText('pages/p.md')).toBe('default');
     expect(app.readText(`.cept/spaces/${space.id}/pages/p.md`)).toBe('work');
     expect(app.hasFile(`.cept/spaces/${space.id}/workspace-state.json`)).toBe(true);
+  });
+
+  it('creates app spaces as folder spaces with their state under .cept', async () => {
+    const { space } = await spaces.create('Work');
+    const root = `.cept/spaces/${space.id}`;
+    expect(app.readText(`${root}/space.cept.yaml`)).toContain('name: Work');
+    expect(spaces.isFolder(space.id)).toBe(true);
+    await spaces.saveState(space.id, snapshot('Work', []));
+    expect(app.hasFile(`${root}/.cept/workspace-state.json`)).toBe(true);
+    expect(app.hasFile(`${root}/workspace-state.json`)).toBe(false);
   });
 
   it('drops a memory space whose backend is gone after a reload', async () => {

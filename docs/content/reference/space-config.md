@@ -89,3 +89,11 @@ When you add a page inside a page that is a single file, such as `guides/setup.m
 
 - **Reserved names.** A page cannot be named `index` or `readme` (with or without `.md`, in any case), because those files hold a folder's own content. To change a folder page, edit the folder page itself.
 - **Extensions.** A new page is saved as `<name>.md`. A renamed page keeps its extension unless the new name ends in `.md` or `.markdown`, so renaming `notes.md` to `notes.txt` gives `notes.txt.md`.
+
+### Which spaces are read this way
+
+A space created with **New space** gets a `space.cept.yaml` at its root, so it is read as a folder as described above. The space's own settings that files do not hold (page icons, covers, expanded folders, favorites and recent pages) are kept in its `.cept/workspace-state.json`, which is not a page.
+
+The default space, the demo and spaces created before this change have no `space.cept.yaml`. They keep the older layout, where pages are stored as `pages/<id>.md` and the page tree is kept in `.cept/workspace-state.json`, until they are converted.
+
+In a folder space, deleting a page moves it to the trash, but its file stays on disk until you empty the trash or delete the page for good. The trash lasts only until you reload, so a page still in the trash then shows again in the sidebar.
