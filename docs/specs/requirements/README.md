@@ -584,6 +584,7 @@ These are deduplicated across the area files. The requirement IDs record what is
 | D-46 | **Boundary baseline** | Module-boundary gate | Existing violations block landing the gate in one small PR. | **Decided:** A checked-in, shrinking list of known violations; the gate fails on any new one and on stale entries. | REQ-WEB-001, 002 |
 | D-47 | **Key casing** | `space.cept.yaml`, `.cept.yaml`, front matter | WS open question 10: snake_case or camelCase. | **Decided:** camelCase. Front matter is YAML, and YAML follows JSON conventions; snake_case appears only for compatibility with other tools. | REQ-WS, REQ-EDT front matter |
 | D-48 | **Merge policy** | Functional PRs | D-21: functional PRs wait for the owner. | **Decided:** A functional PR may be merged once Henry (the review agent) approves it and CI is green; the owner's review is not required. Docs-only changes still go to `main` directly. Amends D-21. | REQ-ENG-019 |
+| D-49 | **Markdown pipeline (D-15)** | One parser and serializer | Option A (remark/mdast) or option B (markdown-it with per-node serializers). | **Decided:** Option A. remark/mdast (unified, remark-gfm, remark-frontmatter, js-yaml) is the single parser and serializer, bridged to ProseMirror JSON by a custom mapper; `tiptap-markdown` and the exporter's own converter are retired. PR 47 starts with a spike that checks lossless round-trips, including unknown HTML. | REQ-EDT-005, 023; REQ-SSG-004 |
 
 ## 7. Stale documentation
 
