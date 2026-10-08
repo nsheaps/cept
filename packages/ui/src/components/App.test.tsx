@@ -64,6 +64,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    window.history.replaceState({}, '', '/');
   });
 
   it('renders landing page when showDemoContent is false and no persisted data', async () => {
@@ -542,6 +543,148 @@ describe('App', () => {
       });
       expect(backend.hasFile(`${root}/Plans.md`)).toBe(true);
       expect(backend.hasFile(`${root}/Untitled.md`)).toBe(false);
+    });
+  });
+
+  describe('deep links (D-42)', () => {
+    const root = '.cept/spaces/space-f';
+
+    function seedFolderSpace(): MemoryBackend {
+      const backend = new MemoryBackend();
+      backend.seedFile('.cept/spaces.json', {
+        activeSpaceId: 'space-f',
+        spaces: [
+          { id: 'default', name: 'My Space', createdAt: '2026-01-01T00:00:00.000Z' },
+          { id: 'space-f', name: 'Notes', createdAt: '2026-01-01T00:00:00.000Z' },
+        ],
+      });
+      backend.seedText(`${root}/space.cept.yaml`, 'version: "1"\nname: Notes\nslug: notes\n');
+      backend.seedText(`${root}/guides/index.md`, '# Guides');
+      backend.seedText(`${root}/guides/set up.md`, '# Set up');
+      backend.seedText(`${root}/todo.md`, '# Todo');
+      backend.seedFile(`${root}/.cept/workspace-state.json`, {
+        pages: [],
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'todo.md',
+        spaceName: 'Notes',
+      });
+      return backend;
+    }
+
+    function visit(path: string) {
+      window.history.replaceState({}, '', path);
+    }
+
+    beforeEach(() => visit('/'));
+
+    it('opens a nested page from its path', async () => {
+      visit('/s/space-f/guides/set%20up.md');
+      renderApp(seedFolderSpace());
+      await waitFor(() => {
+        expect(screen.getByTestId('breadcrumbs').textContent).toContain('set up');
+      });
+      expect(screen.queryByTestId('not-found')).toBeNull();
+      expect(window.location.pathname).toBe('/s/space-f/guides/set%20up.md');
+    });
+
+    it('still resolves a deep link when loading the spaces at startup fails', async () => {
+      visit('/s/space-f/todo.md');
+      const backend = seedFolderSpace();
+      // A saved default space, so the app has state to start from.
+      backend.seedFile('.cept/workspace-state.json', {
+        pages: [{ id: 'mine', title: 'Mine', children: [] }],
+        favorites: [],
+        recentPages: [],
+        spaceName: 'My Space',
+      });
+      const readFile = backend.readFile.bind(backend);
+      let failed = false;
+      vi.spyOn(backend, 'readFile').mockImplementation(async (path) => {
+        if (path === '.cept/spaces.json' && !failed) {
+          failed = true;
+          throw new Error('storage unavailable');
+        }
+        return readFile(path);
+      });
+      renderApp(backend);
+      await waitFor(() => {
+        expect(screen.getByTestId('breadcrumbs').textContent).toContain('todo');
+      });
+      expect(failed).toBe(true);
+      expect(window.location.pathname).toBe('/s/space-f/todo.md');
+    });
+
+    it('shows the not-found page for a missing page and keeps its URL', async () => {
+      visit('/s/space-f/guides/gone.md');
+      renderApp(seedFolderSpace());
+      await waitFor(() => expect(screen.getByTestId('not-found')).toBeDefined());
+      expect(screen.getByTestId('not-found-path').textContent).toBe('/s/space-f/guides/gone.md');
+      expect(window.location.pathname).toBe('/s/space-f/guides/gone.md');
+
+      fireEvent.click(screen.getByTestId('not-found-home'));
+      await waitFor(() => expect(screen.queryByTestId('not-found')).toBeNull());
+      await waitFor(() => expect(window.location.pathname).toBe('/s/space-f/todo.md'));
+    });
+
+    it('shows the not-found page for a space that does not exist', async () => {
+      visit('/s/no-such-space/todo.md');
+      renderApp(seedFolderSpace());
+      await waitFor(() => expect(screen.getByTestId('not-found')).toBeDefined());
+    });
+
+    it('opens a fresh demo at the linked page after a reload', async () => {
+      visit('/s/demo/features');
+      renderApp(seedFolderSpace());
+      await waitFor(() => {
+        expect(screen.getByTestId('breadcrumbs').textContent).toContain('Features');
+      });
+      expect(screen.queryByTestId('not-found')).toBeNull();
+      expect(window.location.pathname).toBe('/s/demo/features');
+    });
+
+    it('shows the not-found page for a path that is no route', async () => {
+      visit('/nowhere/at/all');
+      renderApp(seedFolderSpace());
+      await waitFor(() => expect(screen.getByTestId('not-found')).toBeDefined());
+    });
+
+    it('sends an old flat page URL to where the page moved', async () => {
+      const backend = new MemoryBackend();
+      seedWorkspace(backend, {
+        pages: [
+          { id: 'page-1', title: 'Notes', children: [] },
+          { id: 'page-2', title: 'Ideas', children: [] },
+        ],
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'page-1',
+        spaceName: 'Mine',
+      });
+      seedPageContent(backend, 'page-1', '<p>Notes words</p>');
+      seedPageContent(backend, 'page-2', '<p>Ideas words</p>');
+      visit('/s/default/page-2');
+      renderApp(backend);
+
+      await waitFor(() => expect(window.location.pathname).toBe('/s/default/Ideas.md'));
+      expect(screen.queryByTestId('not-found')).toBeNull();
+    });
+
+    it('opens a default-space link while another space is active', async () => {
+      const backend = seedFolderSpace();
+      seedWorkspace(backend, {
+        pages: [{ id: 'page-2', title: 'Ideas', children: [] }],
+        favorites: [],
+        recentPages: [],
+        selectedPageId: 'page-2',
+        spaceName: 'My Space',
+      });
+      seedPageContent(backend, 'page-2', '<p>Ideas words</p>');
+      visit('/s/default/page-2');
+      renderApp(backend);
+
+      await waitFor(() => expect(window.location.pathname).toBe('/s/default/Ideas.md'));
+      expect(screen.queryByTestId('not-found')).toBeNull();
     });
   });
 

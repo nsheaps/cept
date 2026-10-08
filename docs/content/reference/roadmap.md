@@ -45,7 +45,7 @@ Full storage backend implementation and data management.
 | Import from Notion (ZIP) | Done | — |
 | Import from Obsidian (vault directory) | Done | — |
 | Export to Markdown/HTML/PDF | Done | — |
-| Deep linking (hash-based page URLs) | Done | — |
+| Deep linking (path-based page URLs, not-found page) | Done | [space-config](space-config.md#page-links) |
 | TF-IDF search index (replacing substring search) | Done | [search](../../specs/search.md) |
 | Database persistence (DatabaseContext + CeptDatabaseEngine) | Done | — |
 

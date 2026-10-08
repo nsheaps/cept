@@ -223,6 +223,15 @@ export function hasMigrationBackup(backend: StorageBackend): Promise<boolean> {
   return backend.exists(BACKUP_MANIFEST);
 }
 
+/** Where a page of the flat layout moved to, from the migration map; null if it is not there. */
+export async function migratedPageId(
+  backend: StorageBackend,
+  oldId: string,
+): Promise<string | null> {
+  const map = await readJson<MigrationMap>(backend, MIGRATION_MAP_FILE);
+  return map?.pages[oldId] ?? null;
+}
+
 /** Keep the migration: delete its backup. The migration map stays. */
 export async function confirmFlatMigration(backend: StorageBackend): Promise<void> {
   await backend.deleteFile(BACKUP_DIR);

@@ -55,12 +55,16 @@ import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/gi
 import type { GitHttp } from '@cept/core';
 import {
   restoreRoute,
+  peekRoute,
   replaceRoute,
   pushRoute,
   parseRoute,
+  resolveRoute,
   isRemoteSpaceId,
   setUseGitPrefix,
 } from '../router.js';
+import type { AppRoute } from '../router.js';
+import { NotFoundPage } from './shared/NotFoundPage.js';
 
 const DEMO_PAGES: PageTreeNode[] = [
   {
@@ -102,10 +106,14 @@ function demoPageContents(): Record<string, string> {
   };
 }
 
-/** Whether the page URL asks for the demo (`?demo`). */
+/** Whether the page URL asks for the demo (`?demo`, or a link to a page in it). */
 function demoRequestedByUrl(): boolean {
   try {
-    return new URLSearchParams(window.location.search).has('demo');
+    // `?demo`, or a link into the demo (it lives in memory, so it is opened fresh).
+    return (
+      new URLSearchParams(window.location.search).has('demo') ||
+      peekRoute().spaceId === DEMO_SPACE_ID
+    );
   } catch {
     return false;
   }
@@ -171,6 +179,8 @@ export function App() {
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  // The URL named a page or space that does not exist.
+  const [notFound, setNotFound] = useState<{ path: string } | undefined>(undefined);
   const {
     manager: spaces,
     manifest: spacesManifest,
@@ -317,10 +327,12 @@ export function App() {
             `Content for "${name}" could not be loaded. Try refreshing the space from Settings > Spaces.`,
           );
         }
+        return snapshot?.pages ?? [];
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load space';
         applySpace(emptySnapshot(name));
         setSpaceLoadError(`Error loading "${name}": ${message}`);
+        return [];
       }
     },
     [spaces, applySpace, addToast],
@@ -357,9 +369,12 @@ export function App() {
 
   // Apply loaded state once backend is ready
   const initializedRef = useRef(false);
+  // Set once the startup space has loaded, so a deep link is resolved against its pages.
+  const [startupDone, setStartupDone] = useState(false);
   useEffect(() => {
     if (!ready || initializedRef.current) return;
     initializedRef.current = true;
+    const done = () => setStartupDone(true);
 
     setSettings(initialSettings);
 
@@ -371,7 +386,7 @@ export function App() {
 
       // `?demo` opens the demo whatever is saved; the saved spaces stay as they are.
       if (demoRequestedByUrl()) {
-        void openDemoSpace();
+        void openDemoSpace().finally(done);
         return;
       }
 
@@ -379,11 +394,13 @@ export function App() {
       // one included) is converted to folders as it opens (REQ-WS-025).
       if (activeId !== 'default' || persisted) {
         const space = manifest.spaces.find((s) => s.id === activeId);
-        void loadAndApplySpaceState(activeId, space?.name ?? 'My Space');
+        void loadAndApplySpaceState(activeId, space?.name ?? 'My Space').finally(done);
       } else if (shouldShowDemo) {
-        void openDemoSpace();
+        void openDemoSpace().finally(done);
+      } else {
+        done();
       }
-    });
+    }, done);
   }, [
     ready,
     persisted,
@@ -415,102 +432,169 @@ export function App() {
   // Deep linking: restore route from URL on load (handles 404 redirect + legacy hash)
   // Runs exactly once after initialization has populated pages.
   const routeRestoredRef = useRef(false);
+  // True while a deep link is still being resolved, so the URL is not replaced before then.
+  const routeResolvingRef = useRef(false);
   useEffect(() => {
-    if (!initializedRef.current || routeRestoredRef.current) return;
+    if (!initializedRef.current || routeRestoredRef.current || !startupDone) return;
     // Wait until pages are actually populated (or we confirmed there are none)
     if (!hasStarted && !persisted) return;
     routeRestoredRef.current = true;
+    routeResolvingRef.current = true;
+    const routeDone = () => {
+      routeResolvingRef.current = false;
+    };
 
-    const route = restoreRoute();
-    if (route.space === 'docs') {
-      setActiveSpace('docs');
-      if (route.pageId) setDocsSelectedPageId(route.pageId);
-    } else if (route.spaceId && route.spaceId !== 'default' && route.spaceId !== userSpaceId) {
-      // URL points to a different space — try to switch to it
-      const switchToExistingSpace = (manifest: SpacesManifest, spaceId: string) => {
-        const space = manifest.spaces.find((s) => s.id === spaceId);
-        if (!space) return;
-        void spaces.switch(spaceId).then(({ manifest: switched }) => {
-          setUserSpaceId(spaceId);
-          setSpacesManifest(switched);
-          void loadAndApplySpaceState(spaceId, space.name).then(() => {
-            if (route.pageId) {
-              setSelectedPageId(route.pageId);
-              setPages((prev) => expandToNode(prev, route.pageId!));
-            }
-          });
-        });
-      };
+    const parsed = restoreRoute();
+    // Read after restoring, so a link that came through the 404 redirect shows its own path.
+    const requestedPath = window.location.pathname;
 
-      void spaces.load().then((manifest) => {
-        // Check if this exact space ID exists
-        const existingSpace = manifest.spaces.find((s) => s.id === route.spaceId);
-        if (existingSpace) {
-          switchToExistingSpace(manifest, route.spaceId);
+    /** Show the route's page, following the migration map for a page of an old flat space. */
+    const showRoutePage = async (spaceId: string, pageId: string, tree: PageTreeNode[]) => {
+      let id: string | null = pageId;
+      if (!findNode(tree, id)) {
+        id = await spaces.movedPageId(spaceId, pageId).catch(() => null);
+        if (!id || !findNode(tree, id)) {
+          routeDone();
+          setNotFound({ path: requestedPath });
           return;
         }
-
-        // Space not found — if it's a remote space ID, auto-create it by cloning
-        if (isRemoteSpaceId(route.spaceId) && canHostGitClone(backend)) {
-          const parsed = parseRemoteSpaceId(route.spaceId);
-          if (parsed) {
-            const autoSetupGitSpace = async () => {
-              const repoName = parsed.repo.split('/').pop() ?? 'Remote';
-              const name = parsed.subPath
-                ? `${repoName}/${parsed.subPath.replace(/\/$/, '')}`
-                : repoName;
-              const displayName = `${name} (${parsed.branch})`;
-
-              setCloneStatus({ active: true, message: `Cloning ${parsed.repo}...` });
-              try {
-                const httpModule = await import('isomorphic-git/http/web');
-                const gitHttp = httpModule.default as GitHttp;
-
-                const { pages: clonedPages, pageContents: clonedContents } = await cloneRemoteRepo(
-                  backend,
-                  gitHttp,
-                  parsed.repo,
-                  parsed.branch,
-                  parsed.subPath || undefined,
-                  'https://cors.isomorphic-git.org',
-                );
-
-                const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
-                  displayName,
-                  normalizeRepoUrl(parsed.repo),
-                  parsed.branch,
-                  parsed.subPath || undefined,
-                );
-
-                setSpacesManifest(updatedManifest);
-                setUserSpaceId(newSpace.id);
-                setActiveSpace('user');
-                await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
-
-                setCloneStatus({ active: false });
-
-                if (route.pageId) {
-                  setSelectedPageId(route.pageId);
-                  setPages((prev) => expandToNode(prev, route.pageId!));
-                }
-              } catch (err) {
-                const message = err instanceof Error ? err.message : 'Clone failed';
-                setCloneStatus({ active: false, error: message });
-              }
-            };
-            void autoSetupGitSpace();
-          }
-        }
-        // Non-remote space not found — stay on current space
-      });
-    } else if (route.pageId) {
-      const node = findNode(pages, route.pageId);
-      if (node) {
-        setSelectedPageId(route.pageId);
-        setPages((prev) => expandToNode(prev, route.pageId!));
       }
+      routeDone();
+      const found = id;
+      setSelectedPageId(found);
+      setPages((prev) => expandToNode(prev, found));
+    };
+
+    if (parsed.notFound) {
+      routeDone();
+      setNotFound({ path: requestedPath });
+    } else if (parsed.space === 'docs') {
+      routeDone();
+      setActiveSpace('docs');
+      if (parsed.pageId) setDocsSelectedPageId(parsed.pageId);
+    } else if (
+      parsed.spaceId &&
+      parsed.spaceId !== userSpaceId &&
+      // A bare `/` names the default space but no page, so it stays in the current space.
+      (parsed.spaceId !== 'default' || parsed.pageId)
+    ) {
+      // URL points to a different space — try to switch to it
+      const switchToExistingSpace = (manifest: SpacesManifest, route: AppRoute) => {
+        const space = manifest.spaces.find((s) => s.id === route.spaceId);
+        if (!space) {
+          routeDone();
+          return;
+        }
+        void spaces
+          .switch(route.spaceId)
+          .then(async ({ manifest: switched }) => {
+            setUserSpaceId(route.spaceId);
+            setSpacesManifest(switched);
+            const tree = await loadAndApplySpaceState(route.spaceId, space.name);
+            if (route.pageId) await showRoutePage(route.spaceId, route.pageId, tree);
+            else routeDone();
+          })
+          .catch(routeDone);
+      };
+
+      void spaces
+        .load()
+        .then((manifest) => {
+          // A git URL's path is split between an existing space's subpath and the page.
+          const route = resolveRoute(
+            parsed,
+            manifest.spaces.map((s) => s.id),
+          );
+          if (route.spaceId === userSpaceId) {
+            if (route.pageId) void showRoutePage(route.spaceId, route.pageId, pages);
+            else routeDone();
+            return;
+          }
+          const existingSpace = manifest.spaces.find((s) => s.id === route.spaceId);
+          if (existingSpace) {
+            switchToExistingSpace(manifest, route);
+            return;
+          }
+          // The demo lives in memory, so a reload opens a fresh one at the linked page.
+          if (route.spaceId === DEMO_SPACE_ID) {
+            void openDemoSpace()
+              .then(async () => {
+                if (route.pageId)
+                  await showRoutePage(DEMO_SPACE_ID, route.pageId, DEMO_SNAPSHOT.pages);
+                else routeDone();
+              })
+              .catch(routeDone);
+            return;
+          }
+
+          // Space not found — if it's a remote space ID, auto-create it by cloning
+          if (isRemoteSpaceId(route.spaceId) && canHostGitClone(backend)) {
+            const parsed = parseRemoteSpaceId(route.spaceId);
+            if (parsed) {
+              const autoSetupGitSpace = async () => {
+                const repoName = parsed.repo.split('/').pop() ?? 'Remote';
+                const name = parsed.subPath
+                  ? `${repoName}/${parsed.subPath.replace(/\/$/, '')}`
+                  : repoName;
+                const displayName = `${name} (${parsed.branch})`;
+
+                setCloneStatus({ active: true, message: `Cloning ${parsed.repo}...` });
+                try {
+                  const httpModule = await import('isomorphic-git/http/web');
+                  const gitHttp = httpModule.default as GitHttp;
+
+                  const { pages: clonedPages, pageContents: clonedContents } =
+                    await cloneRemoteRepo(
+                      backend,
+                      gitHttp,
+                      parsed.repo,
+                      parsed.branch,
+                      parsed.subPath || undefined,
+                      'https://cors.isomorphic-git.org',
+                    );
+
+                  const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
+                    displayName,
+                    normalizeRepoUrl(parsed.repo),
+                    parsed.branch,
+                    parsed.subPath || undefined,
+                  );
+
+                  setSpacesManifest(updatedManifest);
+                  setUserSpaceId(newSpace.id);
+                  setActiveSpace('user');
+                  await applyClonedSpace(newSpace.id, displayName, clonedPages, clonedContents);
+
+                  setCloneStatus({ active: false });
+
+                  if (route.pageId) void showRoutePage(newSpace.id, route.pageId, clonedPages);
+                  else routeDone();
+                } catch (err) {
+                  routeDone();
+                  const message = err instanceof Error ? err.message : 'Clone failed';
+                  setCloneStatus({ active: false, error: message });
+                }
+              };
+              void autoSetupGitSpace();
+            } else {
+              routeDone();
+            }
+          } else if (!isRemoteSpaceId(route.spaceId)) {
+            // A local space that does not exist here.
+            routeDone();
+            setNotFound({ path: requestedPath });
+          } else {
+            routeDone();
+          }
+        })
+        .catch(routeDone);
+    } else if (parsed.pageId && parsed.spaceId === userSpaceId) {
+      void showRoutePage(userSpaceId, parsed.pageId, pages);
+    } else {
+      routeDone();
     }
   }, [
+    startupDone,
     hasStarted,
     pages,
     persisted,
@@ -521,6 +605,7 @@ export function App() {
     setUserSpaceId,
     loadAndApplySpaceState,
     applyClonedSpace,
+    openDemoSpace,
   ]);
 
   // Background sync: auto-refresh remote spaces every 5 minutes
@@ -610,6 +695,8 @@ export function App() {
   useEffect(() => {
     if (!initializedRef.current || !routeRestoredRef.current) return;
     if (!hasStarted) return;
+    // Keep the URL that was not found in the address bar, and leave a deep link alone until it resolves.
+    if (notFound || routeResolvingRef.current) return;
 
     if (activeSpace === 'docs') {
       replaceRoute({ space: 'docs', pageId: docsSelectedPageId });
@@ -620,7 +707,7 @@ export function App() {
     } else {
       replaceRoute({ space: 'user', spaceId: 'default' });
     }
-  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId, hasStarted]);
+  }, [selectedPageId, activeSpace, userSpaceId, docsSelectedPageId, hasStarted, notFound]);
 
   // Listen for back/forward navigation (popstate)
   useEffect(() => {
@@ -634,6 +721,7 @@ export function App() {
         if (route.pageId && route.pageId !== selectedPageId) {
           const node = findNode(pages, route.pageId);
           if (node) {
+            setNotFound(undefined);
             setSelectedPageId(route.pageId);
             setPages((prev) => expandToNode(prev, route.pageId!));
           }
@@ -672,6 +760,8 @@ export function App() {
 
   const handlePageSelect = useCallback(
     (id: string) => {
+      routeResolvingRef.current = false;
+      setNotFound(undefined);
       setSelectedPageId(id);
       setShowTrash(false);
       setPages((prev) => expandToNode(prev, id));
@@ -1095,6 +1185,8 @@ export function App() {
     (id: string) => {
       saveActiveSpace();
       setSpaceLoadError(undefined);
+      routeResolvingRef.current = false;
+      setNotFound(undefined);
       void spaces.switch(id).then(({ space, manifest }) => {
         setUserSpaceId(id);
         setSpacesManifest(manifest);
@@ -1146,6 +1238,7 @@ export function App() {
   }, []);
 
   const handleOpenDocs = useCallback(() => {
+    setNotFound(undefined);
     setActiveSpace('docs');
     setDocsSelectedPageId('docs-index');
     setDocsPages(DOCS_PAGES);
@@ -1648,6 +1741,14 @@ export function App() {
                 <p>Select a documentation page from the sidebar</p>
               </div>
             )
+          ) : notFound ? (
+            <NotFoundPage
+              path={notFound.path}
+              onGoHome={() => {
+                setNotFound(undefined);
+                setShowTrash(false);
+              }}
+            />
           ) : spaceLoadError ? (
             <div className="cept-space-error" data-testid="space-load-error">
               <svg

@@ -103,6 +103,18 @@ The old files are kept in `.cept/migration-backup/` until you choose, in **Setti
 
 Cept never deletes the backup on its own. `.cept/migration-map.json` lists each page's old id and new path.
 
-Spaces cloned from a Git remote and the demo keep the older layout for now.
+Spaces cloned from a Git remote and the demo keep the older layout for now, but their page ids are the files' paths too.
 
 In a folder space, deleting a page moves it to the trash, but its file stays on disk until you empty the trash or delete the page for good. The trash lasts only until you reload, so a page still in the trash then shows again in the sidebar.
+
+## Page links
+
+Every page has its own address, so you can bookmark it or share it, and opening the link shows that page. The address is the space followed by the page's path, with each part of the path encoded as in any web address:
+
+- **A page in one of your spaces:** `/s/<space>/<path>`, such as `/s/space-1/guides/set%20up.md`. The default space is `default`.
+- **A page in a space cloned from GitHub:** `/g/github.com/<owner>/<repo>/blob/<branch>/<path>`, the same path the file has on GitHub. If the path falls inside a space you already have for that repository and branch, that space opens, the one with the longest matching folder if there are several. Otherwise the last part of the path is the page when it is a Markdown file, and the rest is the folder the new space is cloned from.
+- **A page of the demo:** `/s/demo/<page>`. The demo lives only in memory, so the link opens a fresh demo at that page.
+
+If the page or space in a link does not exist, Cept shows a **Page not found** view and keeps the link in the address bar. **Back to my pages** goes back to your space.
+
+Links to pages of a space saved in the older layout (`/s/<space>/<id>`) keep working: Cept looks the old id up in `.cept/migration-map.json` and opens the page where it moved to.
