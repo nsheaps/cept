@@ -873,17 +873,18 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 - A space cloned without a sign-in stays read-only and never commits.
 - Unit tests cover the author, the message template, branch selection, the settings file and error classification.
 
-**Current state: partial.** The policy is in `@cept/core` but nothing in the app runs sync yet (Phase 1 plan PR 36):
+**Current state: partial.** The policy and a session that runs it are in `@cept/core`, but the app does not use them yet (Phase 1 plan PR 36b):
 
 - [sync-policy.ts](../../../packages/core/src/git/sync-policy.ts): `commitIdentityFor` (author from `GET /user`; `PatAccount` now carries the account `id`), `trackedBranch`, and the per-device settings in `.cept/sync.local.json` (`loadSyncSettings`, `saveSyncSettings`).
-- `GitBackend.ensureExcluded` adds that file to `.git/info/exclude`, and `AutoCommitEngine` skips it.
+- `GitBackend.ensureExcluded` adds that file to `.git/info/exclude` as `**/.cept/sync.local.json`, so spaces in sub-folders are covered too, and `AutoCommitEngine` skips it.
 - [auto-commit.ts](../../../packages/core/src/git/auto-commit.ts) `generateCommitMessage` writes the message template.
 - [sync-errors.ts](../../../packages/core/src/git/sync-errors.ts) `classifySyncError` classifies errors from isomorphic-git's `code` and `data`, HTTP statuses and push results. `SyncEngine` reports the result as `lastErrorKind`, retries only offline and server errors, and treats a thrown merge conflict as a conflict. `GitBackend.pull` reads conflicting files from the error instead of its message.
-- Tests: `sync-policy.test.ts`, `sync-errors.test.ts`, `auto-commit.test.ts`, `sync-engine.test.ts`, `git-backend.test.ts` and `pat.test.ts`.
+- [git-space-session.ts](../../../packages/core/src/git/git-space-session.ts) `GitSpaceSession` opens a kept clone for editing. It gives the app a backend rooted at the space (`RecordingBackend`) that reports each write and delete to `AutoCommitEngine`, commits as the signed-in account, and syncs by committing what is pending, pulling, then pushing (`syncNow`, `pushNow`, `start` every `intervalMs`). It follows the per-device settings: with auto-commit off, edits are committed on the next sync; with auto-push off, only `pushNow` pushes. `GitBackend.commit` now stages deleted paths as removals.
+- Tests: `sync-policy.test.ts`, `sync-errors.test.ts`, `auto-commit.test.ts`, `sync-engine.test.ts`, `git-backend.test.ts`, `pat.test.ts`, `git-space-session.test.ts`, and `git-space-session.integration.test.ts`, which pushes to a bare repository served by `git http-backend`, pulls into a second clone, and merges a remote edit with a local one.
 
 **Docs state: undocumented.**
 
-**Gap.** Using the policy in the app: one sync owner per space, creating a declared branch on its first push, queuing offline commits, and showing each error kind to the user (PRs 36-38).
+**Gap.** Using the session in the app (PR 36b), one sync owner per space (PR 38), creating a declared branch on its first push, queuing offline commits (PR 39), and showing each error kind to the user.
 
 **Related:** REQ-WS-014, REQ-WS-026, [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app), D-4, D-5, D-30, D-34, D-37.
 

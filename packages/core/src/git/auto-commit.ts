@@ -17,6 +17,11 @@ export interface AutoCommitConfig {
   excludePatterns?: string[];
   /** Whether auto-commit is enabled. Default: true */
   enabled?: boolean;
+  /**
+   * Commit by itself after `debounceMs` and when a batch is full. When false,
+   * changes are kept until `flushNow()`. Default: true
+   */
+  autoFlush?: boolean;
   /** Custom commit message generator */
   messageGenerator?: (changes: FileChange[]) => string;
 }
@@ -120,6 +125,8 @@ export class AutoCommitEngine {
   private lastCommitHash: string | null = null;
   private lastCommitTime: number | null = null;
   private _enabled: boolean;
+  /** The flush in progress, if any; the next one waits for it. */
+  private flushing: Promise<CommitHash | null> = Promise.resolve(null);
 
   constructor(backend: GitStorageBackend, config?: AutoCommitConfig) {
     this.backend = backend;
@@ -129,6 +136,7 @@ export class AutoCommitEngine {
       maxBatchSize: config?.maxBatchSize ?? DEFAULT_MAX_BATCH_SIZE,
       excludePatterns: config?.excludePatterns ?? DEFAULT_EXCLUDE,
       enabled: this._enabled,
+      autoFlush: config?.autoFlush ?? true,
       messageGenerator: config?.messageGenerator ?? generateCommitMessage,
     };
   }
@@ -149,6 +157,8 @@ export class AutoCommitEngine {
 
     this.emit({ type: 'change-detected', changes: [{ path, type, timestamp: Date.now() }] });
 
+    if (!this.config.autoFlush) return;
+
     if (this.pendingChanges.length >= this.config.maxBatchSize) {
       this.emit({ type: 'batch-full', changes: [...this.pendingChanges] });
       this.flushNow();
@@ -158,10 +168,18 @@ export class AutoCommitEngine {
     this.scheduleCommit();
   }
 
-  /** Force an immediate commit of pending changes */
-  async flushNow(): Promise<CommitHash | null> {
+  /**
+   * Force an immediate commit of pending changes. Flushes run one at a time,
+   * so two commits never stage into the index together.
+   */
+  flushNow(): Promise<CommitHash | null> {
     this.cancelTimer();
+    const run = this.flushing.then(() => this.flushPending());
+    this.flushing = run.catch(() => null);
+    return run;
+  }
 
+  private async flushPending(): Promise<CommitHash | null> {
     if (this.pendingChanges.length === 0) return null;
 
     const changes = [...this.pendingChanges];

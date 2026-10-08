@@ -439,6 +439,8 @@ Each entry gives: **Changes** (packages and files), **Red** (the failing test wr
 
 **PR 36 — `feat(ui): edit github spaces with auto-commit and sync`**
 
+Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-commit and sync`) adds `GitSpaceSession` in `@cept/core` (a backend rooted at the space that records edits, auto-commit, and pull-then-push under the PR 35 settings) and the bare-repo integration test below. **PR 36b** wires it into the app (the rest of the list). The UI half is large on its own, and the session is testable without it.
+
 - Changes: instantiate `GitBackend`, `AutoCommitEngine` and `SyncEngine` for PAT-backed spaces; remove `readOnly: true` for them (`SpaceManager.ts:147`); sync status indicator; manual push and pull; GitHub space delete as a commit; wires the existing `RepoPicker` (moved from PR 34) to start a space in a repository without one.
 - Red: integration test with a local bare repo: edit, commit, push, and a second clone pulls the change.
 - Accept: tests green; anonymous clones stay read-only.

@@ -203,9 +203,7 @@ export class GitBackend implements GitStorageBackend {
 
   async commit(message: string, paths?: string[]): Promise<CommitHash> {
     if (paths && paths.length > 0) {
-      for (const filepath of paths) {
-        await git.add({ fs: this.fs, dir: this.dir, filepath });
-      }
+      for (const filepath of paths) await this.stagePath(filepath);
     } else {
       // Stage all changes
       await this.stageAll();
@@ -295,7 +293,10 @@ export class GitBackend implements GitStorageBackend {
   }
 
   /** Call the injected fs, through its `promises` namespace or its callback API. */
-  private fsCall(name: 'readFile' | 'writeFile' | 'mkdir', ...args: unknown[]): Promise<unknown> {
+  private fsCall(
+    name: 'readFile' | 'writeFile' | 'mkdir' | 'lstat',
+    ...args: unknown[]
+  ): Promise<unknown> {
     const promises = this.fs.promises;
     if (promises) return promises[name](...args);
     return new Promise((resolve, reject) => {
@@ -553,6 +554,17 @@ export class GitBackend implements GitStorageBackend {
       return { username: this.auth.token, password: 'x-oauth-basic' };
     }
     return { username: this.auth.username, password: this.auth.password };
+  }
+
+  /** Stage one path: add it, or record its removal when the file is gone. */
+  private async stagePath(filepath: string): Promise<void> {
+    try {
+      await this.fsCall('lstat', `${this.dir.replace(/\/+$/, '')}/${filepath}`);
+    } catch {
+      await git.remove({ fs: this.fs, dir: this.dir, filepath });
+      return;
+    }
+    await git.add({ fs: this.fs, dir: this.dir, filepath });
   }
 
   private async stageAll(): Promise<void> {
