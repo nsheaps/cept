@@ -799,8 +799,18 @@ export function App() {
       setTrash((prev) => prev.filter((t) => t.id !== id));
       if (spaces.isFolder(userSpaceId)) {
         // The page never left the disk: show the tree again without hiding it.
+        // The deleted node left `pages`, so pass its icon back in from the trash entry.
         const hidden = new Set(trash.filter((t) => t.id !== id).map((t) => t.id));
-        void spaces.pageTree(userSpaceId, pagesRef.current, hidden).then(setPages);
+        const previous: PageTreeNode[] = [
+          ...pagesRef.current,
+          {
+            id: item.id,
+            title: item.title,
+            ...(item.icon ? { icon: item.icon } : {}),
+            children: [],
+          },
+        ];
+        void spaces.pageTree(userSpaceId, previous, hidden).then(setPages);
         return;
       }
       const restoredPage: PageTreeNode = {
