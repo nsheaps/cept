@@ -276,6 +276,33 @@ test.describe('Feature Screenshots', () => {
     }
   });
 
+  test('github account', async ({ page }) => {
+    await page.route('https://api.github.com/user', (route) =>
+      route.fulfill({
+        status: 200,
+        json: { login: 'octocat', name: 'The Octocat', avatar_url: '' },
+        headers: { 'X-OAuth-Scopes': 'repo', 'Access-Control-Expose-Headers': 'X-OAuth-Scopes' },
+      }),
+    );
+    const menu = page.getByTestId('sidebar-app-menu-trigger');
+    if (!(await menu.isVisible())) await page.getByTestId('sidebar-toggle').click();
+    await menu.click();
+    await page.getByTestId('sidebar-app-menu-settings').click();
+    await captureScreenshot(page, {
+      name: 'github-sign-in',
+      category: 'features',
+      selector: '[data-testid="github-account"]',
+    });
+    await page.getByTestId('github-token-input').fill('ghp_screenshot');
+    await page.getByTestId('github-sign-in-btn').click();
+    await expect(page.getByTestId('github-signed-in')).toBeVisible();
+    await captureScreenshot(page, {
+      name: 'github-account',
+      category: 'features',
+      selector: '[data-testid="github-account"]',
+    });
+  });
+
   test('docs space', async ({ page }) => {
     const settingsBtn = page.getByTestId('settings-btn');
     if (await settingsBtn.isVisible()) {

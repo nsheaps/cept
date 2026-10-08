@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
+import { GitHubAccountSection } from './GitHubAccountSection.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
 
 export type ThemeMode = 'dark' | 'system' | 'light';
@@ -367,6 +368,8 @@ export function SettingsModal({
                     <span className="cept-settings-switch-thumb" />
                   </button>
                 </label>
+
+                <GitHubAccountSection />
 
                 <div className="cept-settings-section-divider" />
                 <button
