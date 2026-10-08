@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.1](https://github.com/nsheaps/cept/compare/v0.22.0...v0.22.1) (2026-10-08)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([74d6e45](https://github.com/nsheaps/cept/commit/74d6e4547369780bce99639b0aee4e453f88e4e0))
+* **spec:** add REQ-WS-023 space autodiscovery from account access ([e828617](https://github.com/nsheaps/cept/commit/e8286171927dc525f976f2f7f90d21c8388524b4))
+
 ## [0.22.0](https://github.com/nsheaps/cept/compare/v0.21.0...v0.22.0) (2026-10-08)
 
 ### Features
