@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.22.0](https://github.com/nsheaps/cept/compare/v0.21.0...v0.22.0) (2026-10-08)
+
+### Features
+
+* **storage:** authenticated incremental clone and fetch ([#396](https://github.com/nsheaps/cept/issues/396)) ([d54844f](https://github.com/nsheaps/cept/commit/d54844fbc41483e3526296bc4dc7a9a5f0059db7))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([3548069](https://github.com/nsheaps/cept/commit/35480698d9061e935c02ff85ce5fc9822ef9c69d))
+
 ## [0.21.0](https://github.com/nsheaps/cept/compare/v0.20.0...v0.21.0) (2026-10-08)
 
 ### Features
