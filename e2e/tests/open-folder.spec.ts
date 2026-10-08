@@ -4,8 +4,10 @@ import type { Page } from '@playwright/test';
 /**
  * REQ-WS-012, REQ-WEB-023, REQ-WS-019: open a folder on this device as a
  * space. The folder picker is mocked with a folder in the origin private file
- * system, whose handles behave like picked ones (they persist in IndexedDB and
- * keep their permission), so the reload restores the space.
+ * system. Restoring a folder after a reload is covered by App.folders.test.tsx
+ * instead: Chromium 153's headless shell aborts (SIGTRAP) when it reads an
+ * origin-private directory handle back from IndexedDB, which the restore does.
+ * Folders from the real picker are not origin-private handles.
  */
 
 const FILES: Record<string, string> = {
@@ -72,9 +74,7 @@ test.describe('Open a local folder as a space', () => {
     test.skip(testInfo.project.name !== 'Desktop Chrome', 'Desktop Chrome only');
   });
 
-  test('opens a space folder, writes nothing to it, and restores it after a reload', async ({
-    page,
-  }) => {
+  test('opens a space folder and writes nothing to it', async ({ page }) => {
     await mockPicker(page);
     await page.goto('/');
     await seedFolder(page);
@@ -93,11 +93,11 @@ test.describe('Open a local folder as a space', () => {
     await page.waitForTimeout(1000);
     expect(await folderFiles(page)).toEqual(FILES);
 
-    // The browser file system saves the app's own state shortly after a change.
-    await page.waitForTimeout(1500);
-    await page.reload();
+    // Browsing to another page and back still writes nothing.
+    await tree.filter({ hasText: 'Guides' }).click();
+    await tree.filter({ hasText: 'Welcome' }).click();
     await expect(editor).toContainText('Notes kept as plain files.', { timeout: 10000 });
-    await expect(tree.filter({ hasText: 'Guides' })).toBeVisible();
+    await page.waitForTimeout(1500); // the app's autosave runs
     expect(await folderFiles(page)).toEqual(FILES);
   });
 
