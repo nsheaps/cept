@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import {readFileSync} from "node:fs"
 
 /** Longest title accepted; GitHub truncates longer squash-commit subjects in most views. */
 export const MAX_LENGTH = 100;
