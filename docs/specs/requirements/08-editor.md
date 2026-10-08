@@ -62,6 +62,8 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | partial     | undocumented           | n/a           |
 | [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | divergent   | documented-differently | stale         |
 | [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running)                      | Editor-area acceptance tests bound and running                           | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-EDT-026](#req-edt-026--page-front-matter-schema)                                            | Page front matter schema                                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-027](#req-edt-027--standard-links-assets-and-foreign-files)                             | Standard links, assets and foreign files                                 | MUST     | not-started | undocumented           | n/a           |
 
 Priority is MUST for items the owner named directly and for their direct prerequisites. Derived refinements are SHOULD.
 
@@ -628,6 +630,21 @@ flowchart TD
 
 **Source:** derived (GFM plus the HTML fallback).
 
+**Encoding (decided in D3):** a toggle is a `<details>` element with a `<summary>`, with blank lines around the body so GitHub renders the body as Markdown:
+
+```markdown
+<details>
+<summary>Summary text</summary>
+
+Body Markdown, any blocks, including nested toggles.
+
+</details>
+```
+
+- An open toggle is written `<details open>`; Cept keeps whichever state the file has and writes the state the user leaves it in.
+- On load, any `<details>` whose first child is a `<summary>` is a toggle, with or without the older `data-type="toggle"` attribute. Cept writes it without the attribute.
+- The older `> summary` syntax is a blockquote and loads as one. Docs that use it move to `<details>`.
+
 **Acceptance criteria**
 
 - A saved toggle renders as collapsible content on GitHub.
@@ -662,14 +679,110 @@ flowchart TD
 
 **Related:** none.
 
+### REQ-EDT-026 — Page front matter schema
+
+> **Scope: Phase 1 (D-33, D-47).** Written in D3 of the [Phase 1 plan](../phase-1-plan.md); implemented in PR 46.
+
+**Statement:** A page MAY start with a YAML front matter block. Cept MUST read a fixed set of reserved keys from it into typed page metadata. It MUST keep everything else (unknown keys, key order, comments, quoting, blank lines) exactly as written, and it MUST NOT add or rewrite front matter in a file the user has not edited in Cept.
+
+**Source:** owner ("full markdown file support with the frontmatter for metadata"); derived from [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip) and CLAUDE.md rule 11.
+
+**Format**
+
+- Front matter opens with `---` on the first line of the file (after an optional UTF-8 byte order mark, which is preserved). It closes with `---` or `...` on a line of its own. Anything else is page body.
+- Keys are camelCase (D-47). The reserved keys are:
+
+  | Key           | Type                                    | Meaning                                                                                      |
+  | ------------- | --------------------------------------- | -------------------------------------------------------------------------------------------- |
+  | `title`       | string                                  | Page title.                                                                                  |
+  | `icon`        | string                                  | An emoji, or a relative path or URL to an image.                                             |
+  | `cover`       | string                                  | A relative path or URL to a cover image.                                                     |
+  | `tags`        | list of strings (a single string = one) | Tags, as in Obsidian.                                                                        |
+  | `aliases`     | list of strings (a single string = one) | Other names for the page, used by search and the link picker.                                |
+  | `description` | string                                  | Short summary, shown in search results and link previews.                                    |
+  | `created`     | ISO 8601 date or date-time              | When the page was created.                                                                   |
+  | `updated`     | ISO 8601 date or date-time              | When the page was last changed in a meaningful way.                                          |
+  | `order`       | number                                  | Sort position among sibling pages; pages without it sort after those with it, then by title. |
+  | `id`          | string                                  | Optional stable id; pages are identified by path when it is absent.                          |
+
+- Compatibility aliases are read but never written: `date` is read as `created` and `lastmod` or `modified` as `updated` when the reserved key is absent (Jekyll, Hugo). Every other key, including Obsidian's `cssclasses` and Hugo's `draft`, is an unknown key.
+- A value of the wrong type is ignored for metadata (with a warning on the page) and kept in the file as written.
+
+**Title**
+
+The title is `title` from front matter, else the text of the first level-1 heading, else the file name without `.md`. For a folder page (`README.md` or `index.md`), the file name fallback is the folder name.
+
+**Writing**
+
+- Opening and saving a page without editing its metadata leaves the front matter bytes unchanged. Unknown keys survive every save.
+- When the user changes a reserved key in Cept, only that key's lines change. A new key is appended at the end of the block. Clearing a key removes its lines.
+- A file with no front matter gets a block only when the user sets a metadata value in Cept, and the block holds only the keys set.
+- A page created in Cept is written with `title` and `created`. Cept does not update `updated` on every save; it changes it only when the user sets it, so saves do not produce noisy diffs.
+- Front matter that is not valid YAML is kept verbatim and never rewritten. The page loads with fallback metadata and shows a warning.
+
+**Acceptance criteria**
+
+- Round-trip corpus fixtures with Obsidian, Jekyll and Hugo front matter (comments, unknown keys, odd quoting, `...` terminator, BOM) survive load and save byte for byte.
+- Unit tests cover the title fallbacks, the compatibility aliases, wrong types, invalid YAML and a minimal edit of one reserved key.
+- The editor body never contains the raw front matter text.
+
+**Current state:** not-started. `PageMeta` in [models/index.ts](../../../packages/core/src/models/index.ts) has `id`, `title`, `icon`, `cover`, `parent`, `created`, `modified`, `template`, `tags`, `properties` and `locked`; the core parser re-dumps front matter with js-yaml, which loses comments, order and quoting. The app passes raw front matter into the editor.
+
+**Docs:** undocumented.
+
+**Gap:** A front matter splitter and minimal-edit writer in core (PR 46), a reference page in `docs/content/reference/`, and the corpus fixtures (PR 45).
+
+**Related:** [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip), [REQ-WS-019](03-spaces-and-storage.md#req-ws-019--opening-an-existing-folder-is-non-destructive).
+
+### REQ-EDT-027 — Standard links, assets and foreign files
+
+> **Scope: Phase 1 (D-32, D-41).** Written in D3 of the [Phase 1 plan](../phase-1-plan.md); implemented in PRs 54 and 55.
+
+**Statement:** Links between pages and to assets MUST be standard Markdown links with paths relative to the file, so a space reads the same on GitHub as in Cept. Cept MUST resolve them through the space's `StorageBackend`, and MUST show files it does not edit without changing them.
+
+**Source:** owner (D-32: standard GFM links only; "full space functionality").
+
+**Page links**
+
+- A page link is `[text](relative/path.md)` with an optional `#anchor`. Anchors use GitHub's heading slugs (lowercase, punctuation removed, spaces to `-`, `-1`, `-2` for repeats).
+- Paths are relative to the linking file. A path starting with `/` is relative to the space root (the folder holding `space.cept.yaml`); Cept reads these but writes relative paths. Paths may be percent-encoded or written in angle brackets (`<my page.md>`); Cept writes percent-encoding (`my%20page.md`).
+- A link to a folder (`guides/` or `guides`) resolves to its folder page, `README.md` then `index.md`. Cept writes the link to the file (`guides/README.md`), which GitHub also resolves.
+- A link whose target does not exist is shown as broken and kept as written. Links outside the space root are treated as external.
+- `http:`, `https:` and `mailto:` links and bare GFM autolinks are external and never rewritten.
+
+**Assets**
+
+- Images are `![alt](relative/path.png)` and other files are plain links, resolved like page links.
+- A file added in Cept (paste, drop, upload) is stored in an `assets/` folder next to the page, keeping its file name; a name already taken gets `-1`, `-2` and so on before the extension.
+- Moving or renaming a page or asset in Cept rewrites the links to it in every page of the space, and the relative links inside a moved page, each as a minimal edit. Links in ignored files (D-41) are not touched.
+
+**Foreign files**
+
+- Every file in the space that is not a `.md` page and not ignored (D-41) is a foreign file. It appears in the page tree under its folder.
+- Opening a foreign file shows a read-only preview for images, PDFs and plain text, and otherwise a download. Cept never modifies a foreign file except to move, rename or delete it at the user's request.
+
+**Acceptance criteria**
+
+- Resolution tests cover relative, root-relative, percent-encoded, angle-bracket, folder and anchor links, and broken targets.
+- A move test rewrites inbound and outbound links and leaves external links and ignored files unchanged.
+- A space opened in Cept and the same space on GitHub show the same links and images.
+
+**Current state:** not-started. Page ids are already space-relative paths ([space/tree.ts](../../../packages/core/src/space/tree.ts)), but relative links and images in a page body are not resolved through the backend, images can only be inserted by URL, and non-Markdown files are not listed.
+
+**Docs:** undocumented.
+
+**Gap:** Link and asset resolution (PR 54), rewrite on move (PR 55), foreign-file previews, and a guide page.
+
+**Related:** [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files), [REQ-EDT-021](#req-edt-021--backlinks-panel), [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem).
+
 ## Conflicts and open questions
 
 Items marked **Decided** have owner direction recorded. Remaining items still need a decision.
 
 1. **Canonical block encoding.** [SPECIFICATION.md](../../SPECIFICATION.md) §4.2 and [CLAUDE.md](../../../CLAUDE.md) rule 9 require `<!-- cept:block {...} -->` comments. [markdown-extensions.md](../../content/guides/markdown-extensions.md) and [content-formatting.md](../../../.claude/rules/content-formatting.md) specify `data-type` HTML elements. The running editor emits `data-type` HTML, and the unused core parser emits comments. The handler's "Fallback to HTML" matches the docs and the running editor. **Proposal:** adopt GFM, then fenced annotations, then `data-type` HTML, and retire `cept:block` comments (keeping a reader for migration).
 2. **Answered (D-33).** **Mermaid and math encoding.** SPEC §5.9 says to wrap the fence in a `cept:block` comment. The docs say a plain fence. The code likely emits a `data-type` div and cannot parse a fence. The handler wants fence-style annotations.
-3. **Toggle encoding.** SPEC §4.2 uses a comment. The editor and [toggle-syntax.md](../../content/guides/toggle-syntax.md) use `> summary` with indented content, which GFM renders as a blockquote. Should toggles use `<details>`?
-4. **Answered in part (D-33):** one pipeline is Phase 1 (D-14, D-15). **One Markdown implementation.** Keep tiptap-markdown, or wire `CeptMarkdownParser` in? Today [markdown-parser.md](../markdown-parser.md) and TASKS P2.2 describe a parser the app does not use.
+3. **Decided (D3):** toggles are `<details>`/`<summary>`; see [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible). **Toggle encoding.** SPEC §4.2 uses a comment. The editor and [toggle-syntax.md](../../content/guides/toggle-syntax.md) use `> summary` with indented content, which GFM renders as a blockquote. Should toggles use `<details>`?
+4. **Decided (D-49):** remark/mdast is the one pipeline; `tiptap-markdown` and `CeptMarkdownParser`'s block model are retired when PR 49 routes the editor through it. **One Markdown implementation.** Keep tiptap-markdown, or wire `CeptMarkdownParser` in? Today [markdown-parser.md](../markdown-parser.md) and TASKS P2.2 describe a parser the app does not use.
 5. **Two graph data models.** Core (`edges`, link/mention/tag/relation) and UI (`links`, parent/mention/backlink) differ. Should the UI unify on core?
 6. **Deferred (D-26, D-36):** databases are Phase 2. **Database storage formats.** The handler requires multiple formats, but SPEC §4.3, [database-engine.md](../database-engine.md) and CLAUDE.md rule 10 mandate YAML only. Which formats are required (CSV, JSON, Markdown table, folder of pages)?
 7. **Property type count.** The docs say 18, and [models/index.ts](../../../packages/core/src/models/index.ts) defines 20 (adding files and location).

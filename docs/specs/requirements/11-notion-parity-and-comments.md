@@ -45,25 +45,25 @@ Cept aims to support Notion's features as far as its file-based design allows. T
 
 ## 2. Requirements summary
 
-| ID                                                                            | Requirement                                      | Priority    | Impl status | Docs status            | Docs accurate |
-| ----------------------------------------------------------------------------- | ------------------------------------------------ | ----------- | ----------- | ---------------------- | ------------- |
-| [REQ-NTN-001](#req-ntn-001--notion-parity-is-tracked-feature-by-feature)      | Notion parity is tracked feature by feature      | MUST        | partial     | documented-differently | stale         |
-| [REQ-NTN-002](#req-ntn-002--comment-threads-anchored-to-text-in-a-page)       | Comment threads anchored to text in a page       | MUST (next) | not-started | documented-differently | stale         |
-| [REQ-NTN-003](#req-ntn-003--page-level-comment-threads)                       | Page-level comment threads                       | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-004](#req-ntn-004--replies-edits-resolve-and-reopen)                 | Replies, edits, resolve and reopen               | MUST (next) | not-started | documented-as-desired  | n/a           |
-| [REQ-NTN-005](#req-ntn-005--comments-stored-as-plain-yaml-files-in-the-space) | Comments stored as plain YAML files in the space | MUST (next) | not-started | documented-differently | stale         |
-| [REQ-NTN-006](#req-ntn-006--agent-readable-comment-format-and-workflow)       | Agent-readable comment format and workflow       | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-007](#req-ntn-007--comment-author-identity)                          | Comment author identity                          | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-008](#req-ntn-008--comments-ui-in-the-editor)                        | Comments UI in the editor                        | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-009](#req-ntn-009--comments-in-static-and-read-only-views)           | Comments in static and read-only views           | SHOULD      | not-started | undocumented           | n/a           |
-| [REQ-NTN-010](#req-ntn-010--comments-sync-and-merge-cleanly)                  | Comments sync and merge cleanly                  | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-011](#req-ntn-011--comment-tests)                                    | Comment tests                                    | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-012](#req-ntn-012--move-and-reorder-pages-in-the-sidebar)            | Move and reorder pages in the sidebar            | SHOULD      | partial     | documented-as-desired  | n/a           |
-| [REQ-NTN-013](#req-ntn-013--page-icon-and-cover-can-be-set-in-the-ui)         | Page icon and cover can be set in the UI         | SHOULD      | partial     | documented-as-desired  | n/a           |
-| [REQ-NTN-014](#req-ntn-014--templates-usable-from-the-ui)                     | Templates usable from the UI                     | SHOULD      | stubbed     | documented-as-desired  | stale         |
-| [REQ-NTN-015](#req-ntn-015--synced-blocks)                                    | Synced blocks                                    | MAY         | stubbed     | documented-as-desired  | n/a           |
-| [REQ-NTN-016](#req-ntn-016--page-history-ui)                                  | Page history UI                                  | SHOULD      | partial     | documented-as-desired  | accurate      |
-| [REQ-NTN-017](#req-ntn-017--import-from-notion)                               | Import from Notion                               | SHOULD      | partial     | documented-as-desired  | n/a           |
+| ID                                                                       | Requirement                                 | Priority    | Impl status | Docs status            | Docs accurate |
+| ------------------------------------------------------------------------ | ------------------------------------------- | ----------- | ----------- | ---------------------- | ------------- |
+| [REQ-NTN-001](#req-ntn-001--notion-parity-is-tracked-feature-by-feature) | Notion parity is tracked feature by feature | MUST        | partial     | documented-differently | stale         |
+| [REQ-NTN-002](#req-ntn-002--comment-threads-anchored-to-text-in-a-page)  | Comment threads anchored to text in a page  | MUST (next) | not-started | documented-differently | stale         |
+| [REQ-NTN-003](#req-ntn-003--page-level-comment-threads)                  | Page-level comment threads                  | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-004](#req-ntn-004--replies-edits-resolve-and-reopen)            | Replies, edits, resolve and reopen          | MUST (next) | not-started | documented-as-desired  | n/a           |
+| [REQ-NTN-005](#req-ntn-005--comments-stored-inline-in-the-page)          | Comments stored inline in the page          | MUST (next) | not-started | documented-differently | stale         |
+| [REQ-NTN-006](#req-ntn-006--agent-readable-comment-format-and-workflow)  | Agent-readable comment format and workflow  | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-007](#req-ntn-007--comment-author-identity)                     | Comment author identity                     | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-008](#req-ntn-008--comments-ui-in-the-editor)                   | Comments UI in the editor                   | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-009](#req-ntn-009--comments-in-static-and-read-only-views)      | Comments in static and read-only views      | SHOULD      | not-started | undocumented           | n/a           |
+| [REQ-NTN-010](#req-ntn-010--comments-sync-and-merge-cleanly)             | Comments sync and merge cleanly             | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-011](#req-ntn-011--comment-tests)                               | Comment tests                               | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-012](#req-ntn-012--move-and-reorder-pages-in-the-sidebar)       | Move and reorder pages in the sidebar       | SHOULD      | partial     | documented-as-desired  | n/a           |
+| [REQ-NTN-013](#req-ntn-013--page-icon-and-cover-can-be-set-in-the-ui)    | Page icon and cover can be set in the UI    | SHOULD      | partial     | documented-as-desired  | n/a           |
+| [REQ-NTN-014](#req-ntn-014--templates-usable-from-the-ui)                | Templates usable from the UI                | SHOULD      | stubbed     | documented-as-desired  | stale         |
+| [REQ-NTN-015](#req-ntn-015--synced-blocks)                               | Synced blocks                               | MAY         | stubbed     | documented-as-desired  | n/a           |
+| [REQ-NTN-016](#req-ntn-016--page-history-ui)                             | Page history UI                             | SHOULD      | partial     | documented-as-desired  | accurate      |
+| [REQ-NTN-017](#req-ntn-017--import-from-notion)                          | Import from Notion                          | SHOULD      | partial     | documented-as-desired  | n/a           |
 
 "MUST (next)" marks the comment work the owner wants implemented next. Status vocabulary: see [README §1](README.md#status-vocabulary).
 
@@ -201,48 +201,44 @@ stateDiagram-v2
 - **Docs state:** documented-as-desired (SPECIFICATION §5, one line).
 - **Gap:** All of it.
 
-### REQ-NTN-005 — Comments stored as plain YAML files in the space
+### REQ-NTN-005 — Comments stored inline in the page
 
-> **Decided (D-34).** Comments are stored inline in the page as structured HTML comments, e.g. `<!-- cept:comment {"id":...,"author":...,"created":...,"anchor":...,"body":"markdown"} -->` (exact format to be specified), not in a sidecar file. A later version may reference a separate file. Scope: Phase 1.
+> **Decided (D-34, D-44).** Comments are stored inline in the page as `cept:comment` HTML comments, not in a sidecar file. The format below is the D3 spec. A later version may reference a separate file. Scope: Phase 1.
 
-- **Statement:** Comments MUST be stored inline in the page's Markdown file as structured HTML comments (`<!-- cept:comment {...} -->` with a JSON payload holding `id`, `author`, `created`, `anchor` and `body`; exact format to be specified), through the `StorageBackend`, so they travel with the page on every backend (browser, local folder, git). There is no sidecar file (D-34).
+- **Statement:** Comments MUST be stored inline in the page's Markdown file as `<!-- cept:comment {...} -->` markers with a JSON payload, through the `StorageBackend`, so they travel with the page on every backend (browser, local folder, git). There is no sidecar file (D-34).
 - **Priority:** MUST (next)
 - **Source:** owner use case (comments readable from a git checkout); [REQ-WS-008](03-spaces-and-storage.md#req-ws-008--common-extensible-storagebackend-interface).
-- **Proposed layout (superseded by D-34, kept for reference):** a sidecar next to each page: `guides/setup.md` → `guides/setup.comments.cept.yaml`. The `.cept.yaml` suffix matches `space.cept.yaml` (D-1). Moving or renaming a page in Cept moves its sidecar too. An alternative is `.cept/comments/<page-id>.yaml` as in SPECIFICATION §4.6; see §6 question 1.
-- **Proposed format (superseded by D-34; the inline marker carries the same fields):**
+- **Format (version 1):** one marker per comment, on a line of its own:
 
-  ```yaml
-  version: 1
-  page: setup.md
-  threads:
-    - id: t-01hz3k
-      status: open # open | resolved
-      anchor:
-        quote: 'run mise install'
-        prefix: 'First, '
-        suffix: ' in the repo root'
-        headings: ['Setup', 'Tools']
-      comments:
-        - id: c-01hz3m
-          author: { name: Nate Heaps, id: 'github:nsheaps' }
-          created: 2026-10-06T21:04:00Z
-          body: |
-            Should this mention `mise trust` first?
-        - id: c-01hz4a
-          author: { name: Claude, id: 'agent:claude' }
-          created: 2026-10-06T21:30:00Z
-          body: Yes, added a step before it.
+  ```markdown
+  <!-- cept:comment {"v":1,"id":"c-k2x9w4qmt7","author":{"id":"github:nsheaps","name":"Nate Heaps"},"created":"2026-10-06T21:04:00Z","anchor":{"quote":"run mise install","prefix":"First, ","suffix":" in the repo root"},"body":"Should this mention `mise trust` first?"} -->
   ```
 
+  | Field     | Required | Meaning                                                                                                                                                    |
+  | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `v`       | yes      | Format version, `1`.                                                                                                                                       |
+  | `id`      | yes      | Unique within the page: `c-` and 10 or more lowercase letters and digits.                                                                                  |
+  | `author`  | yes      | `{"id", "name"}`; see [REQ-NTN-007](#req-ntn-007--comment-author-identity).                                                                                |
+  | `created` | yes      | ISO 8601 date-time in UTC.                                                                                                                                 |
+  | `body`    | yes      | The comment as a Markdown string.                                                                                                                          |
+  | `anchor`  | no       | Text-quote selector `{"quote", "prefix"?, "suffix"?}`: the commented text and up to 32 characters of context either side. Absent for a page-level comment. |
+  | `edited`  | no       | ISO 8601 date-time of the last edit.                                                                                                                       |
+  | `replyTo` | no       | Reserved for threading (later): the `id` of the comment this one answers. Phase 1 writes no replies, but reads and keeps them.                             |
+  | `status`  | no       | Reserved for resolving (later): `open` or `resolved` on the first comment of a thread. Phase 1 reads and keeps it.                                         |
+
+- **Placement:** an anchored comment's marker goes on its own line after the top-level block that contains its anchor, after any markers already there. Page-level comments go at the end of the file. Markers are ordered by `created` within each place.
+- **Encoding:** the payload is compact JSON on one line. Because an HTML comment cannot contain `--`, every `-` that follows another `-` in the JSON is written `-`. Unknown fields are kept when Cept rewrites a marker.
+- **Anchors:** on load, the anchor is matched against the page text by `quote`, using `prefix` and `suffix` to choose between repeats. A comment whose quote is no longer found is shown as detached and kept.
 - **Acceptance criteria:**
   - Comments round-trip on every backend that is wired (browser, local folder, git): create, reload, all fields intact.
   - A page with no comments contains no `cept:comment` markers.
   - Comments travel with the page because they live in it. Deleting a page that has comments asks first.
-  - Comment markers are HTML comments, so they stay invisible in other Markdown viewers such as GitHub.
-  - The schema is documented and versioned (`version: 1`).
+  - Markers are HTML comments, so they stay invisible on GitHub and in other Markdown viewers.
+  - A body containing `--`, `-->`, quotes, backslashes and newlines round-trips.
+  - The format is documented with its version.
 - **Current state:** **not-started.**
-- **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §4.6 puts threads in `.cept/comments/<page-id>.yaml`, but pages have no stable ID in their file today (pages are `pages/page-<timestamp>.md`; see [README §2](README.md#2-cept-today)).
-- **Gap:** Layout decided (D-34); specify the exact marker format, then a comment parser/serializer in core.
+- **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §4.6 puts threads in `.cept/comments/<page-id>.yaml`; D-34 supersedes it.
+- **Gap:** The marker parser and serializer in core (PR 61), then the comment UI.
 
 ### REQ-NTN-006 — Agent-readable comment format and workflow
 
@@ -265,12 +261,13 @@ stateDiagram-v2
 
 > **Decided (D-34).** Author = the signed-in GitHub identity (from the PAT's user). Scope: Phase 1.
 
-- **Statement:** Every comment MUST record an author with a display name and a stable ID. When the user is signed in to a remote, the ID comes from that account; otherwise from a local display name set once in settings.
+- **Statement:** Every comment MUST record an author with a display name and a stable ID. When the user is signed in to GitHub with a PAT, the ID and name come from that token's user; otherwise from a display name set once on this device.
 - **Priority:** MUST (next)
 - **Source:** Notion parity; [09 Remotes and auth](09-remotes-and-auth.md).
 - **Acceptance criteria:**
-  - Signed in with GitHub: `id: "github:<login>"`. Google identities arrive with REQ-AUTH-006 (later).
-  - Not signed in: the app asks for a display name the first time the user comments, and uses `id: "local:<random>"`, stored in settings.
+  - Signed in with GitHub: `"author": {"id": "github:<login>", "name": "<GitHub name, or the login when it has none>"}`. Google identities arrive with REQ-AUTH-006 (later).
+  - Not signed in: the app asks for a display name the first time the user comments on this device, and uses `"id": "local:<random>"`, stored in the device's settings (not in the space).
+  - Agents writing markers by hand use `"id": "agent:<name>"`; the UI marks them as agents.
   - Users can edit or delete only comments whose author ID matches theirs. This is a UI rule, not security; anyone with write access to the files can change them.
 - **Current state:** **not-started.** The GitHub auth code exists but sign-in is not working end to end (see [REQ-AUTH-002](09-remotes-and-auth.md#req-auth-002--github-sign-in-via-a-github-app)).
 - **Docs state:** undocumented.
