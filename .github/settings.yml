@@ -305,22 +305,22 @@ rulesets:
         parameters:
           strict_required_status_checks_policy: false
           required_status_checks:
-          - context: lint / Lint
-            integration_id: 15368   # github-actions[bot]
-          - context: typecheck / Typecheck
-            integration_id: 15368   # github-actions[bot]
-          - context: test-unit / Unit Tests
-            integration_id: 15368   # github-actions[bot]
-          - context: test-integration / Integration Tests
-            integration_id: 15368   # github-actions[bot]
-          - context: test-e2e / E2E Tests
-            integration_id: 15368   # github-actions[bot]
-          - context: build / Build
-            integration_id: 15368   # github-actions[bot]
-          - context: security / Security
-            integration_id: 15368   # github-actions[bot]
-          - context: Conventional Commit title
-            integration_id: 15368   # github-actions[bot]
+            - context: lint / Lint
+              integration_id: 15368   # github-actions[bot]
+            - context: typecheck / Typecheck
+              integration_id: 15368   # github-actions[bot]
+            - context: test-unit / Unit Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: test-integration / Integration Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: test-e2e / E2E Tests
+              integration_id: 15368   # github-actions[bot]
+            - context: build / Build
+              integration_id: 15368   # github-actions[bot]
+            - context: security / Security
+              integration_id: 15368   # github-actions[bot]
+            - context: Conventional Commit title
+              integration_id: 15368   # github-actions[bot]
 
   # ---- 5. Review required — 1 reviewer from CODEOWNERS (disabled by default) ----
   # NOTE: shipped DISABLED. Repos with a meaningful CODEOWNERS file flip to

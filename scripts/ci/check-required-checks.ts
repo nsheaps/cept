@@ -4,16 +4,15 @@ import path from 'node:path';
 /** github-actions[bot]: the App that reports checks from GitHub Actions workflows. */
 export const GITHUB_ACTIONS_APP_ID = 15368;
 
-/** The `ci.yml` jobs every pull request must pass, plus the PR title workflow. */
-export const REQUIRED_CI_JOBS = [
-  'lint',
-  'typecheck',
-  'test-unit',
-  'test-integration',
-  'test-e2e',
-  'build',
-  'security',
-] as const;
+/**
+ * The `ci.yml` jobs that do not gate a pull request, with the reason. Every
+ * other `ci.yml` job must be a required check, so a new job is gated unless it
+ * is added here on purpose.
+ */
+export const OPTIONAL_CI_JOBS: Readonly<Record<string, string>> = {
+  screenshots: 'regenerates documentation images; their content does not gate correctness',
+  'tag-release': 'runs only on pushes to main, after the other jobs',
+};
 
 interface Workflow {
   jobs?: Record<string, { name?: string; uses?: string }>;
@@ -36,6 +35,9 @@ interface Settings {
 
 type ReadYaml = (file: string) => unknown;
 
+// A reusable workflow holds one job, so each `ci.yml` job maps to one check.
+// Split a workflow that needs several jobs (say, per-browser e2e) into
+// separate `ci.yml` jobs instead.
 function onlyJobName(workflow: Workflow, file: string): string {
   const jobs = Object.values(workflow.jobs ?? {});
   const name = jobs[0]?.name;
@@ -49,8 +51,13 @@ function onlyJobName(workflow: Workflow, file: string): string {
  */
 export function expectedContexts(root: string, readYaml: ReadYaml): string[] {
   const ci = readYaml(path.join(root, '.github/workflows/ci.yml')) as Workflow;
-  const contexts = REQUIRED_CI_JOBS.map((id) => {
-    const uses = ci.jobs?.[id]?.uses;
+  const jobs = ci.jobs ?? {};
+  for (const id of Object.keys(OPTIONAL_CI_JOBS)) {
+    if (!(id in jobs)) throw new Error(`OPTIONAL_CI_JOBS lists ${id}, which ci.yml does not have`);
+  }
+  const required = Object.keys(jobs).filter((id) => !(id in OPTIONAL_CI_JOBS));
+  const contexts = required.map((id) => {
+    const uses = jobs[id]?.uses;
     if (!uses?.startsWith('./')) throw new Error(`ci.yml job ${id} must call a local workflow`);
     const file = path.join(root, uses);
     return `${id} / ${onlyJobName(readYaml(file) as Workflow, file)}`;
@@ -59,10 +66,18 @@ export function expectedContexts(root: string, readYaml: ReadYaml): string[] {
   return [...contexts, onlyJobName(readYaml(prTitle) as Workflow, prTitle)];
 }
 
-/** The checks an active `require-checks` ruleset requires on the default branch. */
+/**
+ * The checks the `require-checks` ruleset requires on the default branch. A
+ * ruleset that exists but is not enforced (`evaluate`, `disabled`) is an error,
+ * not an empty list, so it cannot quietly leave `main` ungated.
+ */
 export function requiredContexts(settings: Settings): StatusCheck[] {
   const ruleset = settings.rulesets?.find((r) => r.name === 'require-checks');
-  if (!ruleset || (ruleset.enforcement ?? 'active') !== 'active') return [];
+  if (!ruleset) return [];
+  const enforcement = ruleset.enforcement ?? 'active';
+  if (enforcement !== 'active') {
+    throw new Error(`require-checks ruleset must be enforcement: active (got ${enforcement})`);
+  }
   return (ruleset.rules ?? [])
     .filter((r) => r.type === 'required_status_checks')
     .flatMap((r) => r.parameters?.required_status_checks ?? []);

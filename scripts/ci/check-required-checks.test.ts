@@ -26,9 +26,14 @@ describe('requiredContexts', () => {
     expect(requiredContexts(ruleset('active', ['lint / Lint']))).toEqual([check('lint / Lint')]);
   });
 
-  it('requires nothing when the ruleset is missing or disabled', () => {
+  it('requires nothing when the ruleset is missing', () => {
     expect(requiredContexts({ rulesets: [] })).toEqual([]);
-    expect(requiredContexts(ruleset('disabled', ['lint / Lint']))).toEqual([]);
+  });
+
+  it.each(['evaluate', 'disabled'])('rejects a ruleset with enforcement %s', (enforcement) => {
+    expect(() => requiredContexts(ruleset(enforcement, ['lint / Lint']))).toThrow(
+      `require-checks ruleset must be enforcement: active (got ${enforcement})`,
+    );
   });
 });
 
@@ -80,5 +85,25 @@ describe('check-required-checks CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('"build / Compile" is not a required check');
     expect(result.stderr).toContain('"build / Build" is required but no job reports it');
+  });
+
+  it('fails when a new CI job is added without making it a required check', () => {
+    const added = mkdtempSync(path.join(tmpdir(), 'required-checks-added-'));
+    try {
+      cpSync(path.join(ROOT, '.github'), path.join(added, '.github'), { recursive: true });
+      const ci = path.join(added, '.github/workflows/ci.yml');
+      writeFileSync(
+        ci,
+        readFileSync(ci, 'utf8').replace(
+          '  screenshots:\n',
+          '  lint-again:\n    uses: ./.github/workflows/_lint.yml\n\n  screenshots:\n',
+        ),
+      );
+      const result = run(added);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('"lint-again / Lint" is not a required check');
+    } finally {
+      rmSync(added, { recursive: true, force: true });
+    }
   });
 });
