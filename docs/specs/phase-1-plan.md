@@ -511,6 +511,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: update `slash-commands.feature` and `SlashCommandMenu.test.tsx` to assert no database items.
 - Accept: tests and slash e2e green.
 - Risk: none notable.
+- Note (PR 44): the slash menu already had no database item and `CeptEditor` never registered `inline-database.ts`, so this PR adds the guards (a unit test that no command mentions databases, an e2e that `/database` shows "No results", a feature scenario) and drops the `/database` row from the in-app features page and `docs/content/guides/features.md`. The red test is in `slash-command.test.ts` rather than `SlashCommandMenu.test.tsx`, which only renders the items it is given.
 
 **PR 45 — `test(core): add a lossless markdown round-trip corpus`**
 
