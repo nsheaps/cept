@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.16.0](https://github.com/nsheaps/cept/compare/v0.15.1...v0.16.0) (2026-10-08)
+
+### Features
+
+* **ui:** probe backend capabilities and availability ([#387](https://github.com/nsheaps/cept/issues/387)) ([034c882](https://github.com/nsheaps/cept/commit/034c882bc474741ead1569c86e5c5297e39ee4d6))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([376b4d3](https://github.com/nsheaps/cept/commit/376b4d3ac32ad6cd80a94ee4f0c6d5b2475afb08))
+
 ## [0.15.1](https://github.com/nsheaps/cept/compare/v0.15.0...v0.15.1) (2026-10-08)
 
 ### Bug Fixes
