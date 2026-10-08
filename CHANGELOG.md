@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.0](https://github.com/nsheaps/cept/compare/v0.8.1...v0.9.0) (2026-10-08)
+
+### Features
+
+* **core:** parse space.cept.yaml and .cept.yaml ([#376](https://github.com/nsheaps/cept/issues/376)) ([6425109](https://github.com/nsheaps/cept/commit/6425109bd818477782d0bfd3e4ef20a549ed983d))
+
 ## [0.8.1](https://github.com/nsheaps/cept/compare/v0.8.0...v0.8.1) (2026-10-08)
 
 ### Refactoring
