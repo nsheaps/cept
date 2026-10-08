@@ -1,6 +1,7 @@
 /**
- * Meta-tests for the import-boundary gates in eslint.config.js
- * (`@nx/enforce-module-boundaries` and `cept/restricted-imports`):
+ * Meta-tests for the boundary gates in eslint.config.js
+ * (`@nx/enforce-module-boundaries`, `cept/restricted-imports`,
+ * `cept/no-git-type-check` and `cept/no-cors-proxy-literal`):
  *
  * - every fixture in tools/boundary-fixtures/ trips the rule its header names
  *   (or nothing, for `expect: none`) when linted as the path its header names;
@@ -37,6 +38,7 @@ const BOUNDARY_RULES = [
   '@nx/enforce-module-boundaries',
   'cept/restricted-imports',
   'cept/no-git-type-check',
+  'cept/no-cors-proxy-literal',
 ];
 
 interface Fixture {
