@@ -19,18 +19,16 @@ jobs:
         uses: jdx/mise-action@v4
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: mise run install
 
       - name: Compute preview version
-        run: |
-          NEXT_VERSION=$(bunx release-it --release-version --ci 2>/dev/null || cat package.json | grep '"version"' | head -1 | sed 's/.*"\([0-9][^"]*\)".*/\1/')
-          SHORT_SHA=$(echo "${{ github.event.pull_request.head.sha }}" | head -c 7)
-          echo "PREVIEW_VERSION=${NEXT_VERSION}-pr.${{ github.event.pull_request.number }}+${SHORT_SHA}" >> $GITHUB_ENV
+        run: scripts/ci/preview-version.sh
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
       - name: Build web app
-        run: |
-          cd packages/web
-          npx vite build
+        run: mise run build:web
         env:
           VITE_BASE_PATH: /cept/pr-${{ github.event.pull_request.number }}/
           VITE_APP_VERSION: ${{ env.PREVIEW_VERSION }}
@@ -42,39 +40,9 @@ jobs:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
 
       - name: Deploy to GitHub Pages subdirectory
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          DEPLOY_DIR="pr-${PR_NUMBER}"
-
-          # Configure git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Fetch gh-pages branch or create it
-          # Discard working tree changes since the build is already complete
-          git checkout -- .
-          git fetch origin gh-pages || true
-          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
-            git checkout -B gh-pages origin/gh-pages
-          else
-            git checkout --orphan gh-pages
-          fi
-
-          # Clean the PR directory and copy new build
-          rm -rf "${DEPLOY_DIR}"
-          mkdir -p "${DEPLOY_DIR}"
-          cp -r packages/web/dist/* "${DEPLOY_DIR}/"
-
-          # Copy shared site-level 404 router if not already present
-          if [ ! -f 404.html ]; then
-            git show origin/main:.github/pages/404.html > 404.html
-            git add 404.html
-          fi
-
-          # Commit and push
-          git add "${DEPLOY_DIR}"
-          git commit -m "Deploy preview for PR #${PR_NUMBER}" --allow-empty
-          git push origin gh-pages
+        run: scripts/ci/deploy-preview.sh
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v9
@@ -114,15 +82,6 @@ jobs:
           ref: gh-pages
 
       - name: Remove PR preview directory
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          DEPLOY_DIR="pr-${PR_NUMBER}"
-
-          if [ -d "${DEPLOY_DIR}" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            rm -rf "${DEPLOY_DIR}"
-            git add -A
-            git commit -m "Clean up preview for PR #${PR_NUMBER}" --allow-empty
-            git push origin gh-pages
-          fi
+        run: scripts/ci/cleanup-preview.sh
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}

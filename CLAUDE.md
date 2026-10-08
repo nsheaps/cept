@@ -37,10 +37,19 @@ bun run test:e2e:screenshots    # E2E with screenshot capture
 bun run lint                    # ESLint + Prettier
 bun run typecheck               # tsc --noEmit
 bun run validate                # lint + typecheck + test (full gate)
+mise run check                  # Full local gate: pins, lint (incl. workflows), typecheck, unit + integration tests, build
+mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps
+mise run build:web              # Web app only (what the PR preview deploys)
+mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)
+mise run ci:version-check       # Release-version outputs for the PR comment (writes $GITHUB_OUTPUT)
 nx graph                        # Visualize project dependency graph
 nx affected -t test             # Test only affected packages
 nx affected -t build            # Build only affected packages
 ```
+
+## CI Conventions
+
+Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`).
 
 ## Monorepo Packages
 
