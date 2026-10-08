@@ -48,3 +48,14 @@ export {
   NEW_FOLDER_PAGE,
 } from './tree.js';
 export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './tree.js';
+export { autodiscoverSpaces, AutodiscoveryError, MemoryEtagCache } from './autodiscover.js';
+export type {
+  RemoteSpace,
+  LostSpace,
+  AutodiscoveryOptions,
+  AutodiscoveryResult,
+  AutodiscoveryWarning,
+  AutodiscoveryWarningKind,
+  CachedResponse,
+  EtagCache,
+} from './autodiscover.js';
