@@ -491,6 +491,58 @@ describe('App', () => {
     });
   });
 
+  describe('folder spaces', () => {
+    const root = '.cept/spaces/space-f';
+
+    function seedFolderSpace(): MemoryBackend {
+      const backend = new MemoryBackend();
+      backend.seedFile('.cept/spaces.json', {
+        activeSpaceId: 'space-f',
+        spaces: [
+          { id: 'default', name: 'My Space', createdAt: '2026-01-01T00:00:00.000Z' },
+          { id: 'space-f', name: 'Notes', createdAt: '2026-01-01T00:00:00.000Z' },
+        ],
+      });
+      backend.seedText(`${root}/space.cept.yaml`, 'version: "1"\nname: Notes\nslug: notes\n');
+      backend.seedText(`${root}/guides/index.md`, '# Guides');
+      backend.seedText(`${root}/guides/setup.md`, '# Setup');
+      backend.seedText(`${root}/todo.md`, '# Todo');
+      return backend;
+    }
+
+    it('shows the folder hierarchy and folder pages in the sidebar', async () => {
+      renderApp(seedFolderSpace());
+      await waitFor(() => {
+        expect(screen.getByTestId('page-tree-item-guides')).toBeDefined();
+      });
+      expect(screen.getByTestId('page-tree-item-todo.md')).toBeDefined();
+      fireEvent.click(screen.getByTestId('page-tree-toggle-guides'));
+      expect(screen.getByTestId('page-tree-item-guides/setup.md')).toBeDefined();
+    });
+
+    it('writes new and renamed pages as files at their paths', async () => {
+      const backend = seedFolderSpace();
+      renderApp(backend);
+      await waitFor(() => {
+        expect(screen.getByTestId('page-tree-item-todo.md')).toBeDefined();
+      });
+      fireEvent.click(screen.getByTestId('sidebar-add-page'));
+      await waitFor(() => {
+        expect(screen.getByTestId('page-tree-item-Untitled.md')).toBeDefined();
+      });
+      expect(backend.hasFile(`${root}/Untitled.md`)).toBe(true);
+
+      fireEvent.click(await screen.findByTestId('page-title'));
+      fireEvent.change(screen.getByTestId('page-title-input'), { target: { value: 'Plans' } });
+      fireEvent.mouseDown(screen.getByTestId('page-title-save'));
+      await waitFor(() => {
+        expect(screen.getByTestId('page-tree-item-Plans.md')).toBeDefined();
+      });
+      expect(backend.hasFile(`${root}/Plans.md`)).toBe(true);
+      expect(backend.hasFile(`${root}/Untitled.md`)).toBe(false);
+    });
+  });
+
   it('migrates from legacy localStorage on first load', async () => {
     const legacyState = {
       pages: [{ id: 'legacy-page', title: 'Legacy Page', children: [] }],

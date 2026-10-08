@@ -46,11 +46,12 @@ import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
-import { CeptSearchIndex, MemoryBackend } from '@cept/core';
+import { applyMoves, CeptSearchIndex, MemoryBackend } from '@cept/core';
 import type { ImportedPage, PageContent } from '@cept/core';
 import { parseRemoteSpaceId } from './storage/SpaceManager.js';
 import type { SpaceSnapshot, SpacesManifest } from './storage/SpaceManager.js';
 import { useSpaces } from './storage/useSpaces.js';
+import type { FolderChange } from './storage/folder-space.js';
 import { canHostGitClone, cloneRemoteRepo, normalizeRepoUrl } from './storage/git-space.js';
 import type { GitHttp } from '@cept/core';
 import {
@@ -206,6 +207,67 @@ export function App() {
   const currentDeletePage = useCallback(
     (pageId: string) => spaces.deletePage(userSpaceId, pageId),
     [spaces, userSpaceId],
+  );
+
+  // Folder spaces (REQ-WS-001): page ids are file paths, so renaming or moving
+  // a page changes its id and the ids of everything under it.
+  const pagesRef = useRef(pages);
+  pagesRef.current = pages;
+  const trashRef = useRef(trash);
+  trashRef.current = trash;
+  const pendingWriteRef = useRef<{ pageId: string; content: string } | undefined>(undefined);
+
+  /** Write the content waiting on the save debounce now, so a rename never strands it. */
+  const flushPendingWrite = useCallback(async () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    const pending = pendingWriteRef.current;
+    pendingWriteRef.current = undefined;
+    if (pending) await currentWritePage(pending.pageId, pending.content);
+  }, [currentWritePage]);
+
+  /**
+   * Run a page operation on the active folder space, carry every page id the
+   * app holds over to the paths that moved, and reload the tree from disk.
+   * A refused operation (a taken or reserved name) is shown as a toast.
+   */
+  const runFolderChange = useCallback(
+    async (op: () => Promise<FolderChange>): Promise<FolderChange | null> => {
+      await flushPendingWrite();
+      let change: FolderChange;
+      try {
+        change = await op();
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : String(err), 'error');
+        return null;
+      }
+      const remap = (id: string) => applyMoves(id, change.moved);
+      const remapTree = (nodes: PageTreeNode[]): PageTreeNode[] =>
+        nodes.map((n) => ({ ...n, id: remap(n.id), children: remapTree(n.children) }));
+      const hidden = new Set(trashRef.current.map((t) => remap(t.id)));
+      const next = await spaces.pageTree(userSpaceId, remapTree(pagesRef.current), hidden);
+      const titles = new Map(flattenPages(next).map((p) => [p.id, p.title]));
+      const relabel = (refs: SidebarPageRef[]) =>
+        refs.map((r) => {
+          const id = remap(r.id);
+          return { ...r, id, title: titles.get(id) ?? r.title };
+        });
+      setPages(next);
+      setSelectedPageId((prev) => prev && remap(prev));
+      setFavorites(relabel);
+      setRecentPages(relabel);
+      setTrash((prev) =>
+        prev.map((t) => ({
+          ...t,
+          id: remap(t.id),
+          ...(t.parentId ? { parentId: remap(t.parentId) } : {}),
+        })),
+      );
+      setPageContents((prev) =>
+        Object.fromEntries(Object.entries(prev).map(([id, content]) => [remap(id), content])),
+      );
+      return change;
+    },
+    [flushPendingWrite, addToast, spaces, userSpaceId],
   );
 
   /** Save the active space's state and in-memory page contents to its own files */
@@ -666,6 +728,15 @@ export function App() {
 
   const handlePageAdd = useCallback(
     (parentId?: string) => {
+      if (spaces.isFolder(userSpaceId)) {
+        void runFolderChange(() => spaces.addPage(userSpaceId, parentId)).then((change) => {
+          if (!change) return;
+          setPageContents((prev) => ({ ...prev, [change.pageId]: '' }));
+          setSelectedPageId(change.pageId);
+          setPages((prev) => expandToNode(prev, change.pageId));
+        });
+        return;
+      }
       const newPage: PageTreeNode = {
         id: `page-${Date.now()}`,
         title: 'Untitled',
@@ -681,15 +752,22 @@ export function App() {
       void currentWritePage(newPage.id, '');
       if (!hasStarted) setHasStarted(true);
     },
-    [hasStarted, currentWritePage],
+    [hasStarted, currentWritePage, spaces, userSpaceId, runFolderChange],
   );
 
-  const handlePageRename = useCallback((id: string, title: string) => {
-    setPages((prev) => renameNode(prev, id, title));
-    // Update recent/favorites references
-    setRecentPages((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
-    setFavorites((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
-  }, []);
+  const handlePageRename = useCallback(
+    (id: string, title: string) => {
+      if (spaces.isFolder(userSpaceId)) {
+        void runFolderChange(() => spaces.renamePage(userSpaceId, id, title));
+        return;
+      }
+      setPages((prev) => renameNode(prev, id, title));
+      // Update recent/favorites references
+      setRecentPages((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
+      setFavorites((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
+    },
+    [spaces, userSpaceId, runFolderChange],
+  );
 
   const handlePageDelete = useCallback(
     (id: string) => {
@@ -719,6 +797,12 @@ export function App() {
       const item = trash.find((t) => t.id === id);
       if (!item) return;
       setTrash((prev) => prev.filter((t) => t.id !== id));
+      if (spaces.isFolder(userSpaceId)) {
+        // The page never left the disk: show the tree again without hiding it.
+        const hidden = new Set(trash.filter((t) => t.id !== id).map((t) => t.id));
+        void spaces.pageTree(userSpaceId, pagesRef.current, hidden).then(setPages);
+        return;
+      }
       const restoredPage: PageTreeNode = {
         id: item.id,
         title: item.title,
@@ -731,7 +815,7 @@ export function App() {
         setPages((prev) => [...prev, restoredPage]);
       }
     },
-    [trash, pages],
+    [trash, pages, spaces, userSpaceId],
   );
 
   const handlePermanentDelete = useCallback(
@@ -778,6 +862,10 @@ export function App() {
 
   const handlePageDuplicate = useCallback(
     (id: string) => {
+      if (spaces.isFolder(userSpaceId)) {
+        void runFolderChange(() => spaces.duplicatePage(userSpaceId, id));
+        return;
+      }
       setPages((prev) => {
         const original = findNode(prev, id);
         if (!original) return prev;
@@ -804,12 +892,19 @@ export function App() {
         return addChild(prev, parentId, duplicate);
       });
     },
-    [pageContents, currentWritePage],
+    [pageContents, currentWritePage, spaces, userSpaceId, runFolderChange],
   );
 
-  const handlePageMoveToRoot = useCallback((id: string) => {
-    setPages((prev) => moveNode(prev, id, undefined));
-  }, []);
+  const handlePageMoveToRoot = useCallback(
+    (id: string) => {
+      if (spaces.isFolder(userSpaceId)) {
+        void runFolderChange(() => spaces.movePageToRoot(userSpaceId, id));
+        return;
+      }
+      setPages((prev) => moveNode(prev, id, undefined));
+    },
+    [spaces, userSpaceId, runFolderChange],
+  );
 
   const handleContentUpdate = useCallback(
     (markdown: string) => {
@@ -818,11 +913,12 @@ export function App() {
 
       // Debounced write to backend
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      pendingWriteRef.current = { pageId: selectedPageId, content: markdown };
       saveTimeoutRef.current = setTimeout(() => {
-        void currentWritePage(selectedPageId, markdown);
+        void flushPendingWrite();
       }, 500);
     },
-    [selectedPageId, currentWritePage],
+    [selectedPageId, flushPendingWrite],
   );
 
   // Keep search index in sync with page content
@@ -965,6 +1061,16 @@ export function App() {
 
   const handleImportComplete = useCallback(
     (importedPages: ImportedPage[]) => {
+      if (spaces.isFolder(userSpaceId)) {
+        void (async () => {
+          for (const page of importedPages)
+            await runFolderChange(() =>
+              spaces.addPage(userSpaceId, undefined, page.title, page.content),
+            );
+        })();
+        if (!hasStarted) setHasStarted(true);
+        return;
+      }
       for (const page of importedPages) {
         const newPage: PageTreeNode = {
           id: page.targetPath.replace(/[^a-zA-Z0-9-_]/g, '-'),
@@ -977,7 +1083,7 @@ export function App() {
       }
       if (!hasStarted) setHasStarted(true);
     },
-    [currentWritePage, hasStarted],
+    [currentWritePage, hasStarted, spaces, userSpaceId, runFolderChange],
   );
 
   const handleOpenImport = useCallback((source: ImportSource) => {

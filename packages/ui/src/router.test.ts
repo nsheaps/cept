@@ -41,6 +41,13 @@ describe('parseRoute (base=/)', () => {
     expect(route).toEqual({ space: 'user', spaceId: 'my-space', pageId: 'page-123' });
   });
 
+  it('round-trips path page ids of folder spaces as one encoded segment', () => {
+    const path = buildPath({ space: 'user', spaceId: 'my-space', pageId: 'guides/Set up.md' });
+    expect(path).toBe('/s/my-space/guides%2FSet%20up.md');
+    expect(parseRoute(path).pageId).toBe('guides/Set up.md');
+    expect(parseRoute('/s/my-space/bad%E0%A4%A').pageId).toBe('bad%E0%A4%A');
+  });
+
   it('treats bare segment as default space page (legacy)', () => {
     const route = parseRoute('/welcome');
     expect(route).toEqual({ space: 'user', spaceId: 'default', pageId: 'welcome' });
