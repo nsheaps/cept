@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0](https://github.com/nsheaps/cept/compare/v0.7.48...v0.8.0) (2026-10-08)
+
+### Features
+
+* **core:** add memory backend and backend conformance suite ([#374](https://github.com/nsheaps/cept/issues/374)) ([8bc57bb](https://github.com/nsheaps/cept/commit/8bc57bb9373c6d82333d25242f807afb96e4901f))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([d96aaee](https://github.com/nsheaps/cept/commit/d96aaee35fb3ee2f207b781a223f7215ee7f55f8))
+
 ## [0.7.48](https://github.com/nsheaps/cept/compare/v0.7.47...v0.7.48) (2026-10-08)
 
 ### Documentation
