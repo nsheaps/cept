@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.11.0](https://github.com/nsheaps/cept/compare/v0.10.1...v0.11.0) (2026-10-08)
+
+### Features
+
+* **ui:** bind a storage backend per space ([#380](https://github.com/nsheaps/cept/issues/380)) ([b018449](https://github.com/nsheaps/cept/commit/b018449c61170828a74802370bf7023f7096d6c4))
+
 ## [0.10.1](https://github.com/nsheaps/cept/compare/v0.10.0...v0.10.1) (2026-10-08)
 
 ### Refactoring
