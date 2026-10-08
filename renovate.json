@@ -1,6 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "github>nsheaps/renovate-config"
+  "extends": ["github>nsheaps/renovate-config"],
+  "packageRules": [
+    {
+      "description": "package.json overrides pin transitive deps inside their dependents' ranges (osv-scanner.toml); a major bump forces a version they do not accept, as markdown-it 15 did for prosemirror-markdown (^14)",
+      "matchDepTypes": ["overrides"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
   ]
 }
