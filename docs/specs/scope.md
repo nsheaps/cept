@@ -1,10 +1,10 @@
 # Cept scope: phases and deferrals
 
-**Status:** Owner answers recorded 2026-10-07 (decisions D-26 to D-43) · **Owner:** nsheaps · **Source:** [requirements](requirements/README.md)
+**Status:** Owner answers recorded 2026-10-07 (decisions D-26 to D-48) · **Owner:** nsheaps · **Source:** [requirements](requirements/README.md)
 
 The ordered PR plan for Phase 1 is [phase-1-plan.md](phase-1-plan.md).
 
-This page records which requirements the current build-out (Phase 1) covers, which wait for Phase 2 or 3, which are deferred without a phase, and which are out of scope. The decisions behind it are D-26 to D-43 in [requirements §6](requirements/README.md#6-conflicts-and-owner-decisions-needed); the area files carry a scope note under each affected requirement.
+This page records which requirements the current build-out (Phase 1) covers, which wait for Phase 2 or 3, which are deferred without a phase, and which are out of scope. The decisions behind it are D-26 to D-48 in [requirements §6](requirements/README.md#6-conflicts-and-owner-decisions-needed); the area files carry a scope note under each affected requirement.
 
 ## Owner's scope statement
 

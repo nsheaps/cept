@@ -799,10 +799,11 @@ REQ-AUTH-019 (GitHub App registration and iac wiring) from §9 is Phase 2 and is
 ## 8. Open owner questions
 
 1. **D-15 pipeline (blocks PR 47).** Option A (remark/mdast as the single parser and serializer, ProseMirror JSON as the bridge) gives the strongest lossless guarantee for unknown HTML (EDT-023) but needs a custom mapper. Option B (keep markdown-it with per-node serializers, retire `CeptMarkdownParser` as a body parser) is cheaper but weaker. Recommendation: A, after a spike.
-2. **`cept:comment` format (blocks PR 61).** D3 drafts it; the owner approves the field list.
-3. **Required-check bypass (blocks PR 11).** Confirm the automation App may bypass required checks for screenshot and release pushes.
-4. **Boundary baseline (PR 8).** Accept a shrinking, checked-in list of known violations so the gate can land before PRs 13 and 28 fix them, rather than one large PR.
-5. **Key casing (blocks PR 14).** WS open question 10, decided once in D2.
+2. ~~`cept:comment` format~~ Decided (D-44): draft approved; D3 defines the fields.
+3. ~~Required-check bypass~~ Decided (D-45): reuse the automation App and the `_tag-release.yml` pattern; the App bypasses the PR and status-check rulesets, not `protect-default-branch`.
+4. ~~Boundary baseline~~ Decided (D-46): accepted.
+5. ~~Key casing~~ Decided (D-47): camelCase everywhere.
+6. Merge policy (D-48): a functional PR merges once Henry approves and CI is green.
 
 ## 9. Coverage check
 

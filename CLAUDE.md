@@ -8,7 +8,7 @@ Cept is a Notion clone with multiple storage backends: browser (IndexedDB), loca
 
 - **Remote:** github.com/nsheaps/cept
 - **Default branch:** main
-- **Git workflow (D-21):** Docs-only changes are committed and pushed directly to `main` without review. Functional changes (code, CI) go through small, reviewable PRs. The only exception for interrupted sessions is `wip/T<X>.<Y>` branches, which get rebased onto `main` immediately in the next session.
+- **Git workflow (D-21):** Docs-only changes are committed and pushed directly to `main` without review. Functional changes (code, CI) go through small, reviewable draft PRs; a PR may be merged once Henry (the review agent) approves and CI is green (D-48). The only exception for interrupted sessions is `wip/T<X>.<Y>` branches, which get rebased onto `main` immediately in the next session.
 - **Space concept:** A **space** is a folder with a `space.cept.yaml` (or `space.cept.yml`) marker file at its root. One Git repo may contain multiple spaces in sub-folders. See [`docs/specs/requirements/03-spaces-and-storage.md`](docs/specs/requirements/03-spaces-and-storage.md).
 
 ## Toolchain
