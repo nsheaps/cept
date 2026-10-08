@@ -872,11 +872,13 @@ export function App() {
   }, [currentWritePage]);
 
   const handleResetDemo = useCallback(() => {
-    saveActiveSpace();
+    // The demo is thrown away on reset, so only save a real space: saving the
+    // demo here would race the rebind of its id to a fresh backend.
+    if (userSpaceId !== DEMO_SPACE_ID) saveActiveSpace();
     setSpaceLoadError(undefined);
     setActiveSpace('user');
     void openDemoSpace();
-  }, [saveActiveSpace, openDemoSpace]);
+  }, [userSpaceId, saveActiveSpace, openDemoSpace]);
 
   const handleClearAllData = useCallback(() => {
     // Drop any pending save of the old state so it cannot land after the clear
@@ -892,6 +894,7 @@ export function App() {
     // Clear storage first, then show the demo in its own memory space: the
     // emptied default space is left empty.
     void clearAllData(backend)
+      .then(() => saveSettingsToBackend(backend, DEFAULT_SETTINGS))
       .then(() => spaces.save(freshManifest))
       .then(() => openDemoSpace());
   }, [backend, spaces, openDemoSpace]);

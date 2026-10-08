@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { App } from './App.js';
 import { StorageProvider } from './storage/StorageContext.js';
 import { MemoryBackend } from './storage/test-helpers.js';
+import { DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 
 // Mock d3 for KnowledgeGraph (transitive dep)
 vi.mock('d3', () => {
@@ -346,6 +347,7 @@ describe('App', () => {
       spaces: { id: string; name: string }[];
     };
     expect(manifest.spaces.map((s) => [s.id, s.name])).toEqual([['default', 'My Space']]);
+    expect(JSON.parse(backend.readText('.cept/settings.json') ?? '{}')).toEqual(DEFAULT_SETTINGS);
   });
 
   it('?demo opens the demo without touching saved spaces', async () => {
