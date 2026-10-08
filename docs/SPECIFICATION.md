@@ -151,7 +151,6 @@ cept/
 │   │   │   ├── storage/              # StorageBackend abstraction + implementations
 │   │   │   │   ├── backend.ts        # StorageBackend interface + BackendCapabilities
 │   │   │   │   ├── browser-fs.ts     # BrowserFsBackend (lightning-fs / IndexedDB)
-│   │   │   │   ├── local-fs.ts       # LocalFsBackend (Node fs, Capacitor)
 │   │   │   │   ├── git-backend.ts    # GitBackend (extends StorageBackend + isomorphic-git)
 │   │   │   │   ├── auto-branch.ts
 │   │   │   │   ├── auto-merge.ts

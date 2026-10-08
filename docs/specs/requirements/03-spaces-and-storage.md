@@ -210,7 +210,7 @@ flowchart TB
 
 **Current state: not-started.** A grep of `packages/`, `docs/`, `features/`, `e2e/` and `README.md` finds no `space.cept.yaml` or `space.cept.yml`. The nearest artifacts are:
 
-- `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
+- `.cept/config.yaml`, written by `initialize()` in [packages/core/src/storage/browser-fs.ts](../../../packages/core/src/storage/browser-fs.ts) (~line 150), [packages/desktop/src/local-fs.ts](../../../packages/desktop/src/local-fs.ts) (~162) and [packages/core/src/storage/web-fs.ts](../../../packages/core/src/storage/web-fs.ts) (~213). No code ever reads it (grep for `config.yaml` in `packages/` finds only these three writes). The web app calls `backend.initialize({ name: 'My Space' })` on every load ([packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 18), and `GitBackend.clone` calls `underlying.initialize({ name: 'git-clone' })` ([packages/core/src/storage/git-backend.ts](../../../packages/core/src/storage/git-backend.ts) ~line 261), so the file's contents are routinely overwritten.
 - A per-folder `.cept.yaml` that supports only `hide:` (`parseCeptYaml` in git-space.ts, from PR #67, now closed per D-42; not on `main`). It is rebuilt as the D-41 `.cept.yaml` with `ignore:` (and `hide:` as an alias).
 - `.cept/spaces.json`, the app-level space registry (SpaceManager.ts ~line 34).
 
@@ -393,7 +393,7 @@ branch: docs # optional (D-30)
 
 **Current state: stubbed.**
 
-- `LocalFsBackend` ([packages/core/src/storage/local-fs.ts](../../../packages/core/src/storage/local-fs.ts), with unit tests) is complete, but no code outside tests instantiates it.
+- `LocalFsBackend` ([packages/desktop/src/local-fs.ts](../../../packages/desktop/src/local-fs.ts), with unit tests) is complete, but no code outside tests instantiates it.
 - [packages/desktop/src/electron-bridge.ts](../../../packages/desktop/src/electron-bridge.ts) has only renderer-side IPC wrappers, `createLocalBackend` (~lines 72-77) and `showOpenDialog` (~79-88). There is no Electron main process to answer them, and nothing in `packages/ui` or `packages/web` calls them.
 - [packages/mobile/src/mobile-bridge.ts](../../../packages/mobile/src/mobile-bridge.ts) (~line 116) throws "Use BrowserFsBackend directly on web".
 - TASKS P6.1 and P6.2 are unchecked, yet P2.7 is checked.

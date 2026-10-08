@@ -1,14 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import { LocalFsBackend } from '../storage/local-fs.js';
+import { MemoryBackend } from '../storage/memory.js';
 import { CeptDatabaseEngine } from './engine.js';
 import type { DatabaseSchema, DatabaseRow } from '../models/index.js';
 
 describe('CeptDatabaseEngine', () => {
-  let testDir: string;
-  let backend: LocalFsBackend;
+  let backend: MemoryBackend;
   let engine: CeptDatabaseEngine;
 
   const testSchema: DatabaseSchema = {
@@ -64,15 +60,13 @@ describe('CeptDatabaseEngine', () => {
   ];
 
   beforeEach(async () => {
-    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cept-db-test-'));
-    backend = new LocalFsBackend(testDir);
+    backend = new MemoryBackend();
     await backend.initialize({ name: 'Test' });
     engine = new CeptDatabaseEngine(backend);
   });
 
   afterEach(async () => {
     await backend.close();
-    await fs.rm(testDir, { recursive: true, force: true });
   });
 
   describe('createDatabase / getSchema', () => {

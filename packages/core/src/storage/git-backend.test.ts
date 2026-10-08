@@ -1,24 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as fs from 'node:fs/promises';
-import * as nodeFs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
-import { LocalFsBackend } from './local-fs.js';
+import 'fake-indexeddb/auto';
+import { BrowserFsBackend } from './browser-fs.js';
 import { GitBackend } from './git-backend.js';
-import type { GitHttp } from './git-backend.js';
+import type { GitFs, GitHttp } from './git-backend.js';
 
 describe('GitBackend', () => {
-  let testDir: string;
-  let underlying: LocalFsBackend;
+  // The same wiring the browser app uses: BrowserFsBackend over lightning-fs, whose raw
+  // fs instance is also what isomorphic-git operates on.
+  const dir = '/';
+  let underlying: BrowserFsBackend;
+  let rawFs: GitFs;
   let backend: GitBackend;
 
   beforeEach(async () => {
-    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cept-git-test-'));
-    underlying = new LocalFsBackend(testDir);
+    underlying = new BrowserFsBackend(`git-test-${crypto.randomUUID()}`);
+    rawFs = underlying.getRawFs() as unknown as GitFs;
     backend = new GitBackend({
       underlying,
-      dir: testDir,
-      fs: nodeFs,
+      dir,
+      fs: rawFs,
       authorName: 'Test User',
       authorEmail: 'test@example.com',
     });
@@ -26,7 +26,6 @@ describe('GitBackend', () => {
 
   afterEach(async () => {
     await backend.close();
-    await fs.rm(testDir, { recursive: true, force: true });
   });
 
   describe('type and capabilities', () => {
@@ -55,9 +54,8 @@ describe('GitBackend', () => {
       expect(await backend.exists('.cept')).toBe(true);
 
       // Verify git repo exists
-      const gitDir = path.join(testDir, '.git');
-      const gitStat = await fs.stat(gitDir);
-      expect(gitStat.isDirectory()).toBe(true);
+      const gitStat = await underlying.stat('.git');
+      expect(gitStat?.isDirectory).toBe(true);
     });
 
     it('should not re-init if already a git repo', async () => {
@@ -340,8 +338,8 @@ describe('GitBackend', () => {
       const mockHttp: GitHttp = { request: () => Promise.reject(new Error('mock')) };
       const gitWithHttp = new GitBackend({
         underlying,
-        dir: testDir,
-        fs: nodeFs,
+        dir,
+        fs: rawFs,
         http: mockHttp,
         corsProxy: 'https://cors.example.com',
       });

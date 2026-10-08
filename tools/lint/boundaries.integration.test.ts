@@ -24,9 +24,6 @@ const FIXTURES = path.join(ROOT, 'tools/boundary-fixtures');
 
 /** The baseline when the gate landed (PR 8), as key → count. Entries and counts may only go down. */
 const BASELINE_AT_PR_8 = new Map([
-  ['packages/core/src/storage/local-fs.ts|platform|node:fs/promises|', 1],
-  ['packages/core/src/storage/local-fs.ts|platform|node:path|', 1],
-  ['packages/core/src/storage/local-fs.ts|platform|node:fs|', 1],
   ['packages/ui/src/components/App.tsx|isomorphic-git|isomorphic-git/http/web|', 4],
   ['packages/ui/src/components/App.tsx|concrete-backend|@cept/core|BrowserFsBackend', 1],
   ['packages/ui/src/components/storage/git-space.ts|concrete-backend|@cept/core|GitBackend', 1],

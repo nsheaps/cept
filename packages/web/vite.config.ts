@@ -9,60 +9,6 @@ const require = createRequire(import.meta.url);
 const rootPkg = require('../../package.json') as { version: string };
 
 /**
- * Provide empty stubs for Node.js built-in modules.
- *
- * @cept/core re-exports LocalFsBackend and GitBackend which import node:fs,
- * node:path, etc.  These backends are never instantiated in the web bundle
- * but Rollup must still resolve their imports during tree-shaking.  This
- * plugin returns an empty module for any `node:*` import so the build
- * succeeds and the final bundle contains no Node.js references.
- */
-
-function nodeStubs(): Plugin {
-  // Returns a module that re-exports a Proxy as default so any named import
-  // (e.g. `import { watch } from "node:fs"`) resolves to a no-op.
-  const stub = [
-    'const noop = () => {};',
-    'const handler = { get: () => noop };',
-    'const p = new Proxy(noop, handler);',
-    'export default p;',
-    // Common named exports used by local-fs.ts — Rollup validates these at
-    // build time so they must be declared explicitly.
-    'export const watch = noop;',
-    'export const existsSync = () => false;',
-    'export const mkdirSync = noop;',
-    'export const readFile = noop;',
-    'export const writeFile = noop;',
-    'export const mkdir = noop;',
-    'export const readdir = noop;',
-    'export const stat = noop;',
-    'export const unlink = noop;',
-    'export const rm = noop;',
-    'export const rename = noop;',
-    'export const access = noop;',
-    'export const resolve = noop;',
-    'export const join = noop;',
-    'export const dirname = noop;',
-    'export const basename = noop;',
-    'export const relative = noop;',
-    'export const sep = "/";',
-  ].join('\n');
-
-  return {
-    name: 'node-stubs',
-    enforce: 'pre',
-    resolveId(source) {
-      if (source.startsWith('node:')) return `\0stub:${source}`;
-      return null;
-    },
-    load(id) {
-      if (id.startsWith('\0stub:')) return stub;
-      return null;
-    },
-  };
-}
-
-/**
  * Post-build plugin that injects the base path into 404.html so the
  * SPA redirect hack works for both production and preview deploys.
  */
@@ -85,7 +31,7 @@ function inject404BasePath(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [tailwindcss(), react(), nodeStubs(), inject404BasePath()],
+  plugins: [tailwindcss(), react(), inject404BasePath()],
   base: process.env.VITE_BASE_PATH || '/',
   define: {
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || rootPkg.version),

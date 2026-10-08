@@ -16,7 +16,7 @@ import type {
   FileStat,
   FsEvent,
   Unsubscribe,
-} from './backend.js';
+} from '@cept/core';
 
 const LOCAL_CAPABILITIES: BackendCapabilities = {
   history: false,

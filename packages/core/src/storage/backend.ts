@@ -4,7 +4,7 @@
  * All workspace data (pages, databases, assets, config) is read/written
  * through this interface. Three implementations:
  * - BrowserFsBackend (lightning-fs / IndexedDB)
- * - LocalFsBackend (Node fs)
+ * - LocalFsBackend (Node fs; lives in @cept/desktop)
  * - GitBackend (extends StorageBackend + isomorphic-git)
  */
 

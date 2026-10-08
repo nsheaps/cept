@@ -1,7 +1,10 @@
-// lint-as: packages/core/src/storage/local-fs.ts
-// expect: cept/restricted-imports "node:path"
-// local-fs.ts is baselined for one node:path import; a second one must still fail.
-import path from 'node:path';
-import { join } from 'node:path';
+// lint-as: packages/ui/src/components/App.tsx
+// expect: cept/restricted-imports "isomorphic-git/http/web"
+// App.tsx is baselined for four isomorphic-git/http/web imports; a fifth must still fail.
+import http1 from 'isomorphic-git/http/web';
+import http2 from 'isomorphic-git/http/web';
+import http3 from 'isomorphic-git/http/web';
+import http4 from 'isomorphic-git/http/web';
+import http5 from 'isomorphic-git/http/web';
 
-export const paths = [path.sep, join];
+export const clients = [http1, http2, http3, http4, http5];
