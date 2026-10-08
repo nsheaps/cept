@@ -6,7 +6,9 @@
   "main": "src/index.ts",
   "scripts": {
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --build",
+    "test:unit": "vitest run --root ../.. --project unit packages/desktop/"
   },
   "dependencies": {
     "@cept/core": "workspace:*"

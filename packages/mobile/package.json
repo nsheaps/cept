@@ -6,9 +6,15 @@
   "main": "src/index.ts",
   "scripts": {
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --root ../.. --project unit packages/mobile/"
   },
   "dependencies": {
     "@cept/core": "workspace:*"
+  },
+  "cept": {
+    "skipTargets": {
+      "build": "Capacitor packaging is later (D-43); the app ships as the web build until then."
+    }
   }
 }

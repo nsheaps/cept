@@ -8,12 +8,21 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc --build --watch",
-    "test": "vitest run",
-    "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration",
+    "test:unit": "vitest run --root ../.. --project unit packages/core/",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@isomorphic-git/lightning-fs": "4.7.0",
+    "isomorphic-git": "1.41.9",
+    "js-yaml": "5.4.1",
+    "remark-frontmatter": "5.0.0",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "remark-stringify": "11.0.0",
+    "unified": "11.0.5"
+  },
+  "devDependencies": {
+    "@types/mdast": "4.0.4"
+  }
 }

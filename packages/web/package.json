@@ -8,11 +8,15 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --root ../.. --project unit packages/web/"
   },
   "dependencies": {
     "@cept/core": "workspace:*",
-    "@cept/ui": "workspace:*"
+    "@cept/ui": "workspace:*",
+    "buffer": "6.0.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {}
 }

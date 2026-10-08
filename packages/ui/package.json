@@ -8,34 +8,46 @@
   "scripts": {
     "build": "tsc --build",
     "dev": "tsc --build --watch",
-    "test": "vitest run",
-    "test:unit": "vitest run --project unit",
+    "test:unit": "vitest run --root ../.. --project unit packages/ui/",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@cept/core": "workspace:*",
-    "@tiptap/core": "^3.30.5",
-    "@tiptap/extension-code-block-lowlight": "^3.20.0",
-    "@tiptap/extension-placeholder": "^3.20.0",
+    "@tiptap/core": "3.31.3",
+    "@tiptap/extension-code-block-lowlight": "3.31.3",
+    "@tiptap/extension-color": "3.31.3",
+    "@tiptap/extension-highlight": "3.31.3",
+    "@tiptap/extension-link": "3.31.3",
+    "@tiptap/extension-mention": "3.31.3",
+    "@tiptap/extension-placeholder": "3.31.3",
     "@tiptap/extension-table": "3.31.3",
     "@tiptap/extension-table-cell": "3.31.3",
     "@tiptap/extension-table-header": "3.31.3",
     "@tiptap/extension-table-row": "3.31.3",
-    "@tiptap/extension-task-item": "^3.20.0",
-    "@tiptap/extension-task-list": "^3.20.0",
-    "@tiptap/pm": "^3.20.0",
-    "@tiptap/react": "^3.20.0",
-    "@tiptap/starter-kit": "^3.20.0",
+    "@tiptap/extension-task-item": "3.31.3",
+    "@tiptap/extension-task-list": "3.31.3",
+    "@tiptap/extension-text-style": "3.31.3",
+    "@tiptap/extension-underline": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "@tiptap/suggestion": "3.31.3",
     "d3": "7.9.0",
-    "lowlight": "^3.3.0",
+    "isomorphic-git": "1.41.9",
+    "katex": "0.18.7",
+    "lowlight": "3.3.0",
+    "mermaid": "11.17.2",
+    "tippy.js": "6.3.7",
+    "tiptap-extension-global-drag-handle": "0.1.18",
     "tiptap-markdown": "0.9.0"
   },
   "devDependencies": {
-    "@types/d3": "7.4.3"
+    "@types/d3": "7.4.3",
+    "@types/katex": "0.16.8"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   }
 }

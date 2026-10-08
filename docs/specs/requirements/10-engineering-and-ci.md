@@ -38,17 +38,17 @@ This document lists the engineering requirements for Cept: how the monorepo is l
 
 | ID                                                                                   | Requirement                                                        | Priority | Impl status | Docs status            | Docs accurate |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | -------- | ----------- | ---------------------- | ------------- |
-| [REQ-ENG-001](#req-eng-001--monorepo-orchestrated-by-nx)                             | Monorepo orchestrated by Nx with standard targets on every package | MUST     | partial     | documented-as-desired  | stale         |
+| [REQ-ENG-001](#req-eng-001--monorepo-orchestrated-by-nx)                             | Monorepo orchestrated by Nx with standard targets on every package | MUST     | implemented | documented             | current       |
 | [REQ-ENG-002](#req-eng-002--nx-project-tags-and-module-boundary-enforcement)         | Nx tags + enforce-module-boundaries lint                           | SHOULD   | not-started | documented-differently | stale         |
 | [REQ-ENG-003](#req-eng-003--mise-pins-all-tools-exactly)                             | mise pins all tools exactly                                        | MUST     | divergent   | documented-differently | stale         |
 | [REQ-ENG-004](#req-eng-004--mise-tasks-are-the-single-entry-point-for-ci-and-local)  | mise tasks are the single entry point for CI and local             | MUST     | not-started | undocumented           | n/a           |
 | [REQ-ENG-005](#req-eng-005--reusable-workflow-structure)                             | Reusable `_*.yml` workflow structure                               | SHOULD   | implemented | documented-differently | stale         |
 | [REQ-ENG-006](#req-eng-006--automated-formatting-fixes-in-ci)                        | Automated formatting fixes committed by CI                         | MUST     | partial     | documented             | current       |
 | [REQ-ENG-007](#req-eng-007--lint-covers-every-auto-checkable-file-type)              | Lint covers every auto-checkable file type                         | SHOULD   | partial     | undocumented           | n/a           |
-| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-ENG-008](#req-eng-008--pr-unit-tests-scoped-to-affected-projects)               | PR unit tests scoped to affected projects                          | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-ENG-009](#req-eng-009--typecheck-and-build-per-project)                         | Typecheck and build per project with real artifacts                | MUST     | partial     | documented-differently | stale         |
 | [REQ-ENG-010](#req-eng-010--base-implementation-in-bun-and-typescript-strict)        | Bun + TypeScript strict baseline                                   | MUST     | implemented | documented-as-desired  | accurate      |
-| [REQ-ENG-011](#req-eng-011--dependencies-declared-per-package)                       | Dependencies declared per package                                  | SHOULD   | divergent   | undocumented           | n/a           |
+| [REQ-ENG-011](#req-eng-011--dependencies-declared-per-package)                       | Dependencies declared per package                                  | SHOULD   | partial     | documented             | current       |
 | [REQ-ENG-012](#req-eng-012--automated-versionrelease-flow-from-conventional-commits) | Automated version/release flow from conventional commits           | MUST     | partial     | undocumented           | n/a           |
 | [REQ-ENG-013](#req-eng-013--dependency-updates-via-renovate)                         | Dependency updates via Renovate, validated by full CI              | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-ENG-014](#req-eng-014--pr-preview-deployments-of-the-app)                       | PR preview deployments of the app                                  | MUST     | implemented | documented-as-desired  | stale         |
@@ -136,18 +136,18 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - Root `test`, `build`, `lint` and `typecheck` scripts go through Nx.
 - `nx graph` shows dependency edges that match space imports.
 
-**Current state:** partial.
+**Current state:** implemented.
 
-- [nx.json](../../../nx.json) holds only `targetDefaults`/caching and `defaultBase: main`. There are no `project.json` files, so targets are inferred from `package.json` scripts.
-- [packages/desktop/package.json](../../../packages/desktop/package.json), [packages/mobile/package.json](../../../packages/mobile/package.json) and [packages/signaling-server/package.json](../../../packages/signaling-server/package.json) have no `build` or `test` targets. [packages/web/package.json](../../../packages/web/package.json) has no test target.
-- [docs/package.json](../../../docs/package.json) targets are `echo` placeholders. [e2e/package.json](../../../e2e/package.json) has only `test`.
-- Root [package.json](../../../package.json) uses `nx run-many` for build/lint/typecheck/dev, but tests bypass Nx (root `vitest run`).
+- `nx show projects` lists core, ui, web, desktop, mobile, signaling, docs, e2e and `cept-workspace` (the root [project.json](../../../project.json): repo scripts' unit tests, every integration test, and a typecheck of `scripts/`, `tools/`, `features/` and the root configs via [tsconfig.scripts.json](../../../tsconfig.scripts.json)).
+- Every package has `typecheck` and `test:unit` (`vitest run --root <repo> --project unit <package dir>`, so the root Vitest config and aliases still apply). core, ui, web, desktop and docs have a real `build`; docs no longer has `echo` targets.
+- A project that has no build or unit tests records why in `package.json` `cept.skipTargets` (mobile: Capacitor is later, D-43; signaling: co-editing is later; e2e: Playwright specs run through `test`; the root: nothing to build). `mise run check:targets` ([scripts/ci/check-targets.ts](../../../scripts/ci/check-targets.ts), part of `mise run lint`) fails when a project lacks `build`, `typecheck` or `test:unit` with no reason, or both skips and defines one.
+- Root `test`, `test:unit`, `test:integration`, `build`, `lint` and `typecheck` scripts go through `nx run-many`.
 
-**Docs state:** documented-as-desired, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §3/§9.6 (including line 233, "proper dependency graph between packages"), [CLAUDE.md](../../../CLAUDE.md) Key Commands and [README.md](../../../README.md) (`nx graph`) describe a complete Nx setup. [TASKS.md](../../../TASKS.md) T0.1 is checked although targets are incomplete.
+**Docs state:** documented, current ([CLAUDE.md](../../../CLAUDE.md) Key Commands, [CONTRIBUTING.md](../../../CONTRIBUTING.md)). [TASKS.md](../../../TASKS.md) T0.1 is now accurate.
 
-**Gap:** Add real `build`/`test:unit` targets to desktop, mobile, signaling-server, web and docs, or explicitly mark them non-buildable. Route tests through per-project Nx targets.
+**Gap:** `nx graph` edges follow `package.json` workspace dependencies; tags and module boundaries are REQ-ENG-002.
 
-**Related PRs/issues:** none found.
+**Related PRs/issues:** PR 7 of the [Phase 1 plan](../phase-1-plan.md).
 
 ### REQ-ENG-002 — Nx project tags and module-boundary enforcement
 
@@ -285,7 +285,7 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - Nx caching is enabled in CI (local or remote cache) so unchanged targets are skipped.
 - `main` runs `nx run-many -t test:unit` for every project.
 
-**Current state:** not-started. [\_test-unit.yml](../../../.github/workflows/_test-unit.yml) runs root `bun run test:unit`, which is `vitest run --project unit` over globbed `packages/*/src/**` ([vitest.config.ts](../../../vitest.config.ts), around lines 22-26), so everything runs every time. Checkouts use the default `fetch-depth: 1`. No workflow uses `nx affected`. E2E also always runs the full suite ([\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml)).
+**Current state:** partial. Every project now has its own `test:unit` target (REQ-ENG-001), and root `bun run test:unit` is `nx run-many -t test:unit`. CI still runs every project. [\_test-unit.yml](../../../.github/workflows/_test-unit.yml) runs root `bun run test:unit` (`nx run-many`), so every project runs every time. Checkouts use the default `fetch-depth: 1`. No workflow uses `nx affected`. E2E also always runs the full suite ([\_test-e2e.yml](../../../.github/workflows/_test-e2e.yml)).
 
 **Docs state:** documented-as-desired, stale. [CLAUDE.md](../../../CLAUDE.md) lists `nx affected -t test` and `nx affected -t build` as working commands, and [SPECIFICATION.md](../../SPECIFICATION.md) (around line 1298) implies the same. With most packages lacking test targets, `nx affected -t test` skips most code.
 
@@ -346,11 +346,11 @@ Material differences: no affected scoping, no mise task layer, no security or PR
 - Each third-party import in `packages/<x>/src` resolves to a dependency in `packages/<x>/package.json`. Lint enforces this (for example with `@nx/dependency-checks`).
 - No package declares a ranged version of a dependency that is exactly pinned elsewhere.
 
-**Current state:** divergent. Most runtime dependencies (tiptap, isomorphic-git, lightning-fs, mermaid, katex, remark, yaml, @anthropic-ai/sdk) are in the root [package.json](../../../package.json). [packages/core/package.json](../../../packages/core/package.json) has an empty `dependencies` even though core imports isomorphic-git and yaml. [packages/ui/package.json](../../../packages/ui/package.json) repeats tiptap with `^` ranges.
+**Current state:** partial. Root [package.json](../../../package.json) `dependencies` is empty (the unused `@anthropic-ai/sdk` was removed). core, ui, web and signaling declare their own runtime dependencies with exact pins (ui's tiptap ranges are now exact, and React is a peer dependency of ui). Nothing yet lints that each import is declared (`@nx/dependency-checks`).
 
-**Docs state:** undocumented.
+**Docs state:** documented ([CONTRIBUTING.md](../../../CONTRIBUTING.md) "Dependencies").
 
-**Gap:** Move dependencies into the packages that own them, with exact pins.
+**Gap:** Enforce declared dependencies in lint (`@nx/dependency-checks`).
 
 ### REQ-ENG-012 — Automated version/release flow from conventional commits
 

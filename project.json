@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/nx/schemas/project-schema.json",
+  "name": "cept-workspace",
+  "metadata": {
+    "description": "Repo-level code outside the packages: scripts/ci, tools/ and the features/ integration suite."
+  },
+  "targets": {
+    "test:unit": {
+      "command": "vitest run --project unit scripts/",
+      "cache": true
+    },
+    "test:integration": {
+      "command": "vitest run --project integration",
+      "cache": true
+    },
+    "typecheck": {
+      "command": "tsc --noEmit -p tsconfig.scripts.json",
+      "cache": true
+    }
+  }
+}

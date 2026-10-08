@@ -32,7 +32,7 @@ bun run dev
 bun run dev          # Dev mode (all packages)
 bun run dev:web      # Dev mode (web only)
 bun run build        # Production build
-bun run test         # All tests
+bun run test         # All unit + integration tests, through Nx
 bun run lint         # ESLint
 mise run lint        # ESLint, workflow lint and prettier --check
 mise run format      # Apply Prettier formatting
@@ -74,6 +74,11 @@ These rules are enforced in code review and CI:
 - ESLint for lints, Prettier for formatting. `mise run lint` fails on unformatted files. Same-repo PRs get an autofix commit from the Format workflow; on fork PRs, run `mise run format` yourself.
 - Prefer functional patterns where appropriate
 - Write tests for all new code
+
+### Packages and Nx Targets
+
+- Every Nx project has `build`, `typecheck` and `test:unit` targets. A project that genuinely has nothing to build or unit-test says why in its `package.json`: `"cept": {"skipTargets": {"build": "<reason>"}}`. `mise run lint` runs `mise run check:targets`, which fails otherwise.
+- Declare each runtime dependency in the package that imports it, with an exact version. The root `package.json` holds tooling only.
 
 ### Testing Requirements
 

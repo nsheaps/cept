@@ -35,8 +35,13 @@ run = "bunx prettier --check ."
 
 [tasks.lint]
 description = "Lint every project, the workflows and formatting"
-depends = ["lint:workflows", "lint:format"]
+depends = ["lint:workflows", "lint:format", "check:targets"]
 run = "bun run lint"
+env = { NX_DAEMON = "false" }
+
+[tasks."check:targets"]
+description = "Fail when an Nx project lacks build, typecheck or test:unit and records no skip reason"
+run = "bun scripts/ci/check-targets.ts"
 env = { NX_DAEMON = "false" }
 
 [tasks.format]
@@ -51,10 +56,12 @@ env = { NX_DAEMON = "false" }
 [tasks."test:unit"]
 description = "Run unit tests"
 run = "bun run test:unit"
+env = { NX_DAEMON = "false" }
 
 [tasks."test:integration"]
 description = "Run integration tests"
 run = "bun run test:integration"
+env = { NX_DAEMON = "false" }
 
 [tasks."test:e2e"]
 description = "Run Playwright end-to-end tests"

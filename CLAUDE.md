@@ -30,9 +30,9 @@ bun run dev                     # Dev mode (all packages)
 bun run dev:web                 # Dev mode (web only)
 bun run dev:desktop             # Dev mode (desktop only)
 bun run build                   # Production build
-bun run test                    # All unit + integration tests
-bun run test:unit               # Unit tests only
-bun run test:integration        # Integration tests only
+bun run test                    # All unit + integration tests (nx run-many)
+bun run test:unit               # Unit tests, one Nx target per project
+bun run test:integration        # Integration tests (the root cept-workspace project)
 bun run test:e2e                # Playwright E2E tests
 bun run test:e2e:screenshots    # E2E with screenshot capture
 bun run lint                    # ESLint (per package)
@@ -42,6 +42,7 @@ mise run check                  # Full local gate: pins, lint (incl. workflows),
 mise run lint:format            # prettier --check . (part of mise run lint)
 mise run format                 # prettier --write . (CI's format.yml pushes this as an autofix commit on PRs)
 mise run lint:workflows         # actionlint + shellcheck on scripts/ci + no multi-command `run:` steps
+mise run check:targets          # every Nx project has build, typecheck, test:unit or a cept.skipTargets reason (part of lint)
 mise run build:web              # Web app only (what the PR preview deploys)
 mise run screenshots:capture    # Regenerate docs/screenshots/features (needs Playwright browsers)
 mise run ci:version-check       # Release-version outputs for the PR comment (writes $GITHUB_OUTPUT)
@@ -54,6 +55,10 @@ nx affected -t build            # Build only affected packages
 ## CI Conventions
 
 Workflows call `mise run <task>` or a script in `scripts/ci/`; a `run:` step holds one command (`mise run lint:workflows` enforces it via `scripts/ci/no-inline-logic.ts`; synced templates are allowlisted there with a reason). Put shell logic in `scripts/ci/*.sh` (shellcheck-clean, `set -euo pipefail`) or `scripts/ci/*.ts` with a test beside it. Lint and typecheck are separate jobs (`_lint.yml`, `_typecheck.yml`).
+
+## Nx Targets
+
+Every project defines `build`, `typecheck` and `test:unit`, or records why it has none in its `package.json` (`"cept": {"skipTargets": {"build": "<reason>"}}`); `mise run check:targets` enforces this. A package's `test:unit` is `vitest run --root <repo> --project unit <package dir>`, so the root Vitest config applies. Repo scripts and integration tests belong to the root `cept-workspace` project ([`project.json`](project.json)). Each package declares the runtime dependencies it imports, exactly pinned; the root `package.json` has none.
 
 ## Monorepo Packages
 
