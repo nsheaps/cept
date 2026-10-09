@@ -50,6 +50,7 @@ import {
   applyMoves,
   CeptSearchIndex,
   commitIdentityFor,
+  frontMatterPrefix,
   MemoryBackend,
   reconnectFolder,
 } from '@cept/core';
@@ -1349,14 +1350,21 @@ export function App() {
     [spaces, userSpaceId, runFolderChange],
   );
 
+  // The editor shows a page's body only; its front matter (and the blank
+  // lines after it) stay in the page's stored text and are put back byte for
+  // byte on save (EDT-026).
   const handleContentUpdate = useCallback(
-    (markdown: string) => {
+    (body: string) => {
       if (!selectedPageId) return;
+      // The prefix comes from this page's own text (not the page now on
+      // screen), so a late update from the previous page keeps its own.
+      const stored = pageContentsRef.current[selectedPageId] ?? '';
+      const markdown = frontMatterPrefix(stored) + body;
       setPageContents((prev) => ({ ...prev, [selectedPageId]: markdown }));
+      pendingWriteRef.current = { pageId: selectedPageId, content: markdown };
 
       // Debounced write to backend
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      pendingWriteRef.current = { pageId: selectedPageId, content: markdown };
       saveTimeoutRef.current = setTimeout(() => {
         flushPendingWrite().catch((err: unknown) => {
           addToast(
@@ -2603,6 +2611,7 @@ export function App() {
   );
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
+  const currentBody = currentContent.slice(frontMatterPrefix(currentContent).length);
   const contentLoaded = selectedPageId ? selectedPageId in pageContents : false;
   const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
@@ -3022,7 +3031,7 @@ export function App() {
                 <CeptEditor
                   // Remounted when the page is read again after a sync, or is locked or unlocked.
                   key={`${selectedPageId}:${editorVersion}:${editLocked ? 'locked' : 'open'}`}
-                  content={currentContent}
+                  content={currentBody}
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
                   editable={!editLocked}

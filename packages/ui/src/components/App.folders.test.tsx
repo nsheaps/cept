@@ -279,6 +279,27 @@ describe('App folder spaces', () => {
     expect(screen.queryByText('Page not found')).toBeNull();
   });
 
+  it('shows a page without its front matter and leaves the file unchanged (EDT-026)', async () => {
+    const page = '---\n# Hugo settings\nweight: 3\ndraft: true\n---\n\nHugo body.\n';
+    const folder = notesFolder();
+    folder.seedText('Hugo.md', page);
+    const { backend, writes } = writeSpy(folder);
+    const { host, next } = fakeHost(new Map([['notes', backend]]));
+    next.handle = folderHandle('notes');
+    renderApp(new MemoryBackend(), host);
+
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    const [item] = await screen.findAllByText('Hugo', {}, { timeout: 3000 });
+    fireEvent.click(item!);
+    await screen.findByText('Hugo body.', {}, { timeout: 3000 });
+    expect(screen.queryByText(/weight: 3/)).toBeNull();
+    expect(screen.queryByText(/Hugo settings/)).toBeNull();
+    await settle();
+
+    expect(writes).toEqual([]);
+    expect(folder.readText('Hugo.md')).toBe(page);
+  });
+
   it('reopens a still-allowed folder after a reload without asking', async () => {
     const app = new MemoryBackend();
     const folder = notesFolder();

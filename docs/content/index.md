@@ -28,6 +28,7 @@ Welcome to the Cept documentation. Cept is an open-source Notion alternative tha
 - [Keyboard Shortcuts](reference/keyboard-shortcuts.md) — All keyboard shortcuts
 - [Icon Reference](reference/icon-reference.md) — Emoji icons used in the app
 - [Space and Folder Configuration](reference/space-config.md) — `space.cept.yaml` and `.cept.yaml`
+- [Page Front Matter](reference/front-matter.md) — The metadata block at the top of a page
 - [Product Roadmap](reference/roadmap.md) — What's built and what's coming next
 
 ## Source

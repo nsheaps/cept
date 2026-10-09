@@ -9,6 +9,8 @@
  * pipeline; until then the body merges line by line.
  */
 
+import { frontMatterKeyBlocks, type FrontMatterKeyBlock } from '../markdown/front-matter.js';
+
 /** The marker lines a conflicting hunk is wrapped in. */
 export const CONFLICT_MARKERS = {
   mine: '<<<<<<< mine',
@@ -184,58 +186,24 @@ function joinPage(frontMatter: string[], body: string, eol: string): string {
   return ['---', ...frontMatter, '---', ''].join(eol) + body;
 }
 
-/** A top-level key of a front matter block, with the lines that belong to it. */
-interface KeyBlock {
-  key: string;
-  lines: string[];
-}
-
-const TOP_LEVEL_KEY = /^([^\s#'"-][^:]*|'[^']*'|"[^"]*"):(\s|$)/;
-
-/**
- * Split front matter lines into blocks, one per top-level key. Comment and
- * blank lines go with the key after them; anything after the last key stays
- * with it. Returns null when a key appears twice (the merge then falls back
- * to lines).
- */
-function keyBlocks(lines: readonly string[]): KeyBlock[] | null {
-  const blocks: KeyBlock[] = [];
-  let pending: string[] = [];
-  for (const line of lines) {
-    const key = TOP_LEVEL_KEY.exec(line)?.[1]?.trim();
-    if (key !== undefined) {
-      if (blocks.some((block) => block.key === key)) return null;
-      blocks.push({ key, lines: [...pending, line] });
-      pending = [];
-    } else if (blocks.length > 0 && /^\s/.test(line) && line.trim() !== '') {
-      // An indented line continues the key above.
-      blocks[blocks.length - 1]!.lines.push(...pending, line);
-      pending = [];
-    } else {
-      pending.push(line);
-    }
-  }
-  if (pending.length > 0) {
-    if (blocks.length > 0) blocks[blocks.length - 1]!.lines.push(...pending);
-    else blocks.push({ key: '', lines: pending });
-  }
-  return blocks;
-}
-
 /** Merge front matter key by key; the same key changed on both sides is a conflict. */
 export function mergeFrontMatter(
   base: readonly string[],
   mine: readonly string[],
   theirs: readonly string[],
 ): { clean: boolean; lines: string[] } {
-  const parsed = [keyBlocks(base), keyBlocks(mine), keyBlocks(theirs)] as const;
+  const parsed = [
+    frontMatterKeyBlocks(base),
+    frontMatterKeyBlocks(mine),
+    frontMatterKeyBlocks(theirs),
+  ] as const;
   if (parsed.some((blocks) => blocks === null)) return mergeLineArrays(base, mine, theirs);
   const [baseBlocks, mineBlocks, theirBlocks] = parsed as unknown as [
-    KeyBlock[],
-    KeyBlock[],
-    KeyBlock[],
+    FrontMatterKeyBlock[],
+    FrontMatterKeyBlock[],
+    FrontMatterKeyBlock[],
   ];
-  const text = (blocks: KeyBlock[], key: string) =>
+  const text = (blocks: FrontMatterKeyBlock[], key: string) =>
     blocks.find((block) => block.key === key)?.lines.join('\n');
 
   // Keys in my order, then keys only they have, in theirs.

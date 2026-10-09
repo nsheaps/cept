@@ -10,6 +10,12 @@ import type { Block, PageMeta } from '../models/index.js';
 export interface ParsedPage {
   meta: PageMeta;
   blocks: Block[];
+  /**
+   * The page's bytes before its first block (byte order mark, front matter
+   * block, blank lines), kept verbatim by `serialize`. Set by `parse`; when
+   * undefined, `serialize` generates front matter from `meta`.
+   */
+  frontMatter?: string;
 }
 
 /** Markdown parser/serializer interface */
@@ -31,3 +37,4 @@ export interface MarkdownParser {
 }
 
 export { CeptMarkdownParser } from './parser.js';
+export * from './front-matter.js';

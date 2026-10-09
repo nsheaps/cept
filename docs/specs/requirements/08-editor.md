@@ -62,7 +62,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | partial     | undocumented           | n/a           |
 | [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | divergent   | documented-differently | stale         |
 | [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running)                      | Editor-area acceptance tests bound and running                           | MUST     | partial     | documented-as-desired  | stale         |
-| [REQ-EDT-026](#req-edt-026--page-front-matter-schema)                                            | Page front matter schema                                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-026](#req-edt-026--page-front-matter-schema)                                            | Page front matter schema                                                 | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-027](#req-edt-027--standard-links-assets-and-foreign-files)                             | Standard links, assets and foreign files                                 | MUST     | not-started | undocumented           | n/a           |
 
 Priority is MUST for items the owner named directly and for their direct prerequisites. Derived refinements are SHOULD.
@@ -726,11 +726,11 @@ The title is `title` from front matter, else the text of the first level-1 headi
 - Unit tests cover the title fallbacks, the compatibility aliases, wrong types, invalid YAML and a minimal edit of one reserved key.
 - The editor body never contains the raw front matter text.
 
-**Current state:** not-started. `PageMeta` in [models/index.ts](../../../packages/core/src/models/index.ts) has `id`, `title`, `icon`, `cover`, `parent`, `created`, `modified`, `template`, `tags`, `properties` and `locked`; the core parser re-dumps front matter with js-yaml, which loses comments, order and quoting. The app passes raw front matter into the editor.
+**Current state:** partial (PR 46). [front-matter.ts](../../../packages/core/src/markdown/front-matter.ts) splits and rejoins a page byte for byte (BOM, `...` closer, CRLF), reads the reserved keys with the aliases, type checks and warnings (`readFrontMatter`), computes the title fallback (`pageTitle`), and edits one key with a minimal change (`setFrontMatterKey`). `CeptMarkdownParser.parse` keeps the front matter verbatim in `ParsedPage.frontMatter` and `serialize` writes it back; the six front matter fixtures of the round-trip corpus pass. `App.tsx` passes only the body to the editor and puts the front matter back on save. Not yet done: nothing in the UI calls `setFrontMatterKey` (icon and cover pickers, PR 59), warnings are not shown on the page, new pages are not written with `title` and `created`, and `order` does not sort the sidebar. The sidebar title still comes from the page tree, not `pageTitle`.
 
-**Docs:** undocumented.
+**Docs:** documented-as-desired and accurate: [reference/front-matter.md](../../content/reference/front-matter.md).
 
-**Gap:** A front matter splitter and minimal-edit writer in core (PR 46), a reference page in `docs/content/reference/`, and the corpus fixtures (PR 45).
+**Gap:** Wire `setFrontMatterKey` into the metadata pickers, show front matter warnings on the page, write `title` and `created` for new pages, and use `pageTitle` and `order` for the page tree.
 
 **Related:** [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip), [REQ-WS-019](03-spaces-and-storage.md#req-ws-019--opening-an-existing-folder-is-non-destructive).
 
