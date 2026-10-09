@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.32.2](https://github.com/nsheaps/cept/compare/v0.32.1...v0.32.2) (2026-10-09)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([8297d58](https://github.com/nsheaps/cept/commit/8297d5873edc605d7f86f453321a52d2e27dd2b4))
+
+### Tests
+
+* **core:** add a lossless markdown round-trip corpus ([#411](https://github.com/nsheaps/cept/issues/411)) ([488e4f0](https://github.com/nsheaps/cept/commit/488e4f01c0d4031172ff086457e02472c110d586))
+
 ## [0.32.1](https://github.com/nsheaps/cept/compare/v0.32.0...v0.32.1) (2026-10-09)
 
 ### Refactoring
