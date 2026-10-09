@@ -11,10 +11,16 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import { dump, load } from 'js-yaml';
+import { dump } from 'js-yaml';
 import type { Content, Heading, Code, List, ListItem, Table, TableRow, TableCell } from 'mdast';
 import type { Block, BlockType, PageMeta } from '../models/index.js';
-import { frontMatterPrefix, pageTitle, readFrontMatter, splitFrontMatter } from './front-matter.js';
+import {
+  frontMatterPrefix,
+  loadFrontMatter,
+  pageTitle,
+  readFrontMatter,
+  splitFrontMatter,
+} from './front-matter.js';
 import type { ParsedPage } from './index.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -56,15 +62,10 @@ export class CeptMarkdownParser {
    */
   parseFrontMatter(markdown: string): PageMeta {
     const { yaml, body } = splitFrontMatter(markdown);
-    const fm = readFrontMatter(yaml);
+    const loaded = loadFrontMatter(yaml);
+    const fm = readFrontMatter(yaml, loaded);
+    const { data } = loaded;
     const now = new Date().toISOString();
-    let data: Record<string, unknown> = {};
-    if (yaml !== null && fm.warnings.every((w) => !w.startsWith('Front matter is not'))) {
-      const loaded: unknown = load(yaml);
-      if (typeof loaded === 'object' && loaded !== null && !Array.isArray(loaded)) {
-        data = loaded as Record<string, unknown>;
-      }
-    }
     return {
       id: fm.id ?? '',
       title: pageTitle(fm, body),

@@ -160,6 +160,7 @@ export type {
   ParsedPage,
   FrontMatterSplit,
   FrontMatterKeyBlock,
+  LoadedFrontMatter,
   PageFrontMatter,
   ReservedFrontMatterKey,
 } from './markdown/index.js';
@@ -170,6 +171,7 @@ export {
   frontMatterKeyBlocks,
   frontMatterPrefix,
   joinFrontMatter,
+  loadFrontMatter,
   pageTitle,
   readFrontMatter,
   setFrontMatterKey,

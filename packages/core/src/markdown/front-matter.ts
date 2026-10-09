@@ -129,24 +129,38 @@ function toStrings(value: unknown): string[] | undefined {
   return undefined;
 }
 
-/** Read the reserved keys from a front matter YAML string (null = no front matter). */
-export function readFrontMatter(yaml: string | null): PageFrontMatter {
-  const meta: PageFrontMatter = { tags: [], aliases: [], warnings: [] };
-  if (yaml === null || isBlankYaml(yaml)) return meta;
+/** Front matter YAML loaded into keys, with the problems found loading it. */
+export interface LoadedFrontMatter {
+  /** The keys; empty when there is no front matter or it could not be read. */
+  data: Record<string, unknown>;
+  warnings: string[];
+}
 
+/** Load a front matter YAML string (null = no front matter) without throwing. */
+export function loadFrontMatter(yaml: string | null): LoadedFrontMatter {
+  if (yaml === null || isBlankYaml(yaml)) return { data: {}, warnings: [] };
   let data: unknown;
   try {
     data = load(yaml);
   } catch (err) {
     const reason = err instanceof Error ? err.message.split('\n')[0] : String(err);
-    meta.warnings.push(`Front matter is not valid YAML: ${reason}`);
-    return meta;
+    return { data: {}, warnings: [`Front matter is not valid YAML: ${reason}`] };
   }
-  if (data === null || data === undefined) return meta;
-  if (!isRecord(data)) {
-    meta.warnings.push('Front matter is not a set of keys');
-    return meta;
-  }
+  if (data === null || data === undefined) return { data: {}, warnings: [] };
+  if (!isRecord(data)) return { data: {}, warnings: ['Front matter is not a set of keys'] };
+  return { data, warnings: [] };
+}
+
+/**
+ * Read the reserved keys from a front matter YAML string (null = no front
+ * matter). Pass `loaded` when the YAML was already loaded, to parse it once.
+ */
+export function readFrontMatter(
+  yaml: string | null,
+  loaded: LoadedFrontMatter = loadFrontMatter(yaml),
+): PageFrontMatter {
+  const meta: PageFrontMatter = { tags: [], aliases: [], warnings: [...loaded.warnings] };
+  const { data } = loaded;
 
   const raw = (key: ReservedFrontMatterKey): [string, unknown] | undefined => {
     if (key in data) return [key, data[key]];
@@ -192,8 +206,9 @@ export function firstHeading(body: string): string | undefined {
   for (const line of body.split(/\r?\n/)) {
     const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
     if (marker) {
-      if (fence === null) fence = marker[0]!;
-      else if (marker[0] === fence) fence = null;
+      // A fence closes on the same character, at least as long as it opened.
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
       continue;
     }
     if (fence !== null) continue;

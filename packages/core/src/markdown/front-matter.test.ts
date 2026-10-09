@@ -4,6 +4,7 @@ import {
   frontMatterKeyBlocks,
   frontMatterPrefix,
   joinFrontMatter,
+  loadFrontMatter,
   pageTitle,
   readFrontMatter,
   setFrontMatterKey,
@@ -75,6 +76,13 @@ describe('splitFrontMatter', () => {
 });
 
 describe('readFrontMatter', () => {
+  it('reads keys already loaded, without loading the YAML again', () => {
+    const loaded = loadFrontMatter('title: A\ncustom: 1');
+    expect(loaded).toEqual({ data: { title: 'A', custom: 1 }, warnings: [] });
+    expect(readFrontMatter('not: read', loaded).title).toBe('A');
+    expect(loadFrontMatter('title: [unclosed').warnings[0]).toMatch(/not valid YAML/);
+  });
+
   it('reads the reserved keys', () => {
     const meta = readFrontMatter(
       [
@@ -158,6 +166,7 @@ describe('firstHeading and pageTitle', () => {
     expect(firstHeading('```\n# not this\n```\n\n## nor this\n# This one #\n')).toBe('This one');
     expect(firstHeading('~~~\n```\n# still code\n~~~\n# Real\n')).toBe('Real');
     expect(firstHeading('text only')).toBeUndefined();
+    expect(firstHeading('`````\n```\n# inside the outer fence\n```\n`````\n# Real\n')).toBe('Real');
   });
 
   it('uses the front matter title first', () => {
