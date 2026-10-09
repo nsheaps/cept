@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.32.1](https://github.com/nsheaps/cept/compare/v0.32.0...v0.32.1) (2026-10-09)
+
+### Refactoring
+
+* **ui:** remove database entries from the slash menu ([#410](https://github.com/nsheaps/cept/issues/410)) ([f78a324](https://github.com/nsheaps/cept/commit/f78a324482947bf3c62dbd955fa2fbd45be3b389))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([24d952b](https://github.com/nsheaps/cept/commit/24d952b9bc757e27e716d89061fb27e390cdf9ce))
+
 ## [0.32.0](https://github.com/nsheaps/cept/compare/v0.31.0...v0.32.0) (2026-10-08)
 
 ### Features
