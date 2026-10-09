@@ -37,8 +37,21 @@ properties: {}
       const md = '# No Front Matter\n\nJust content.';
       const meta = parser.parseFrontMatter(md);
       expect(meta.id).toBe('');
-      expect(meta.title).toBe('');
+      // EDT-026: without a title key the first level-1 heading is the title.
+      expect(meta.title).toBe('No Front Matter');
       expect(meta.tags).toEqual([]);
+      expect(parser.parseFrontMatter('Just content.').title).toBe('');
+    });
+
+    it('should not throw on front matter that is not valid YAML', () => {
+      const meta = parser.parseFrontMatter('---\ntitle: [unclosed\n---\n# Heading\n');
+      expect(meta.title).toBe('Heading');
+    });
+
+    it('should read the date aliases', () => {
+      const meta = parser.parseFrontMatter('---\ndate: 2026-01-02\nlastmod: 2026-02-03\n---\n');
+      expect(meta.created).toBe('2026-01-02');
+      expect(meta.modified).toBe('2026-02-03');
     });
 
     it('should handle optional fields', () => {
@@ -311,6 +324,26 @@ Content here.
       expect(serialized).toContain('title: "My Page"');
       expect(serialized).toContain('# My Page');
       expect(serialized).toContain('Content here.');
+      expect(serialized).toBe(original);
+    });
+
+    it('should keep the front matter verbatim and parse blocks from the body only', () => {
+      const original = '---\n# comment\nweight: 3\n...\n\n# Title\n';
+      const page = parser.parse(original);
+      expect(page.frontMatter).toBe('---\n# comment\nweight: 3\n...\n\n');
+      expect(page.blocks.map((b) => b.type)).toEqual(['heading1']);
+      expect(parser.serialize(page)).toBe(original);
+    });
+
+    it('should not add front matter to a page without it', () => {
+      const page = parser.parse('Text.\n');
+      expect(page.frontMatter).toBe('');
+      expect(parser.serialize(page)).toBe('Text.\n');
+    });
+
+    it('should generate front matter for a page that was not parsed', () => {
+      const { frontMatter: _ignored, ...page } = parser.parse('Text.\n');
+      expect(parser.serialize(page)).toMatch(/^---\nid: ""\n/);
     });
   });
 

@@ -50,6 +50,7 @@ import {
   applyMoves,
   CeptSearchIndex,
   commitIdentityFor,
+  frontMatterPrefix,
   MemoryBackend,
   reconnectFolder,
 } from '@cept/core';
@@ -1349,9 +1350,14 @@ export function App() {
     [spaces, userSpaceId, runFolderChange],
   );
 
+  // The editor shows a page's body only; its front matter (and the blank
+  // lines after it) are kept here and put back byte for byte on save (EDT-026).
+  const editorPrefixRef = useRef('');
+
   const handleContentUpdate = useCallback(
-    (markdown: string) => {
+    (body: string) => {
       if (!selectedPageId) return;
+      const markdown = editorPrefixRef.current + body;
       setPageContents((prev) => ({ ...prev, [selectedPageId]: markdown }));
 
       // Debounced write to backend
@@ -2603,6 +2609,9 @@ export function App() {
   );
 
   const currentContent = selectedPageId ? (pageContents[selectedPageId] ?? '') : '';
+  const currentPrefix = frontMatterPrefix(currentContent);
+  editorPrefixRef.current = currentPrefix;
+  const currentBody = currentContent.slice(currentPrefix.length);
   const contentLoaded = selectedPageId ? selectedPageId in pageContents : false;
   const docsSelectedNode = docsSelectedPageId ? findNode(docsPages, docsSelectedPageId) : undefined;
   const selectedNode = selectedPageId ? findNode(pages, selectedPageId) : undefined;
@@ -3022,7 +3031,7 @@ export function App() {
                 <CeptEditor
                   // Remounted when the page is read again after a sync, or is locked or unlocked.
                   key={`${selectedPageId}:${editorVersion}:${editLocked ? 'locked' : 'open'}`}
-                  content={currentContent}
+                  content={currentBody}
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
                   editable={!editLocked}

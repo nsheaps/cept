@@ -14,51 +14,68 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { dump, load } from 'js-yaml';
 import type { Content, Heading, Code, List, ListItem, Table, TableRow, TableCell } from 'mdast';
 import type { Block, BlockType, PageMeta } from '../models/index.js';
+import { frontMatterPrefix, pageTitle, readFrontMatter, splitFrontMatter } from './front-matter.js';
+import type { ParsedPage } from './index.js';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 export class CeptMarkdownParser {
   private parser = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ['yaml']);
 
-  parse(markdown: string): { meta: PageMeta; blocks: Block[] } {
-    const meta = this.parseFrontMatter(markdown);
-    const blocks = this.parseBlocks(markdown);
-    return { meta, blocks };
-  }
-
-  serialize(page: { meta: PageMeta; blocks: Block[] }): string {
-    const frontMatter = this.serializeFrontMatter(page.meta);
-    const body = this.serializeBlocks(page.blocks);
-    return `---\n${frontMatter}---\n\n${body}`;
-  }
-
-  parseFrontMatter(markdown: string): PageMeta {
-    const tree = this.parser.parse(markdown);
-    const yamlNode = tree.children.find(
-      (node): node is Content & { type: 'yaml'; value: string } => node.type === 'yaml',
-    );
-
-    if (!yamlNode) {
-      return {
-        id: '',
-        title: '',
-        created: new Date().toISOString(),
-        modified: new Date().toISOString(),
-        tags: [],
-        properties: {},
-      };
-    }
-
-    const data = load(yamlNode.value) as Record<string, unknown>;
+  /**
+   * Parse a page. `frontMatter` keeps every byte before the first block (the
+   * byte order mark, the front matter block and blank lines) so `serialize`
+   * can write it back unchanged; blocks come from the body only.
+   */
+  parse(markdown: string): ParsedPage {
+    const frontMatter = frontMatterPrefix(markdown);
     return {
-      id: String(data.id ?? ''),
-      title: String(data.title ?? ''),
-      icon: data.icon ? String(data.icon) : undefined,
-      cover: data.cover ? String(data.cover) : undefined,
+      meta: this.parseFrontMatter(markdown),
+      blocks: this.parseBlocks(markdown.slice(frontMatter.length)),
+      frontMatter,
+    };
+  }
+
+  /**
+   * Serialize a page. A parsed page's `frontMatter` is written back verbatim
+   * (an empty string means the page has none); without it the front matter
+   * is generated from `meta`.
+   */
+  serialize(page: ParsedPage): string {
+    const body = this.serializeBlocks(page.blocks);
+    if (page.frontMatter !== undefined) return page.frontMatter + body;
+    return `---\n${this.serializeFrontMatter(page.meta)}---\n\n${body}`;
+  }
+
+  /**
+   * Read page metadata. The reserved keys follow EDT-026 (`readFrontMatter`:
+   * aliases, type checks, title falling back to the first heading); front
+   * matter that is not valid YAML yields defaults instead of throwing.
+   */
+  parseFrontMatter(markdown: string): PageMeta {
+    const { yaml, body } = splitFrontMatter(markdown);
+    const fm = readFrontMatter(yaml);
+    const now = new Date().toISOString();
+    let data: Record<string, unknown> = {};
+    if (yaml !== null && fm.warnings.every((w) => !w.startsWith('Front matter is not'))) {
+      const loaded: unknown = load(yaml);
+      if (typeof loaded === 'object' && loaded !== null && !Array.isArray(loaded)) {
+        data = loaded as Record<string, unknown>;
+      }
+    }
+    return {
+      id: fm.id ?? '',
+      title: pageTitle(fm, body),
+      icon: fm.icon,
+      cover: fm.cover,
       parent: data.parent ? String(data.parent) : undefined,
-      created: String(data.created ?? new Date().toISOString()),
-      modified: String(data.modified ?? new Date().toISOString()),
+      created: fm.created ?? now,
+      modified: fm.updated ?? now,
       template: data.template ? String(data.template) : undefined,
-      tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-      properties: (data.properties as Record<string, unknown>) ?? {},
+      tags: fm.tags,
+      properties: isRecord(data.properties) ? data.properties : {},
       locked: data.locked ? Boolean(data.locked) : undefined,
     };
   }

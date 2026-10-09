@@ -527,6 +527,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: corpus fixtures for front matter pass from expected-failure to green.
 - Accept: those fixtures green; `App.tsx` no longer passes raw front matter into the editor.
 - Risk: none beyond the schema decision in D3.
+- Note (PR 46): `packages/core/src/markdown/front-matter.ts` holds the splitter, reader, title fallback and minimal-edit writer; `text-merge.ts` now shares its key-block splitter, which also treats `- ` list lines as part of the key above. `ParsedPage.frontMatter` keeps every byte before the first block. Six corpus fixtures leave `expected-failures.json` (the four `front-matter-*` ones, `cept-front-matter`, `no-front-matter`). EDT-026 work left for later PRs is listed in its Gap: warnings on the page, `title`/`created` for new pages, `pageTitle` and `order` in the page tree.
 
 **PR 47 — `feat(core): bridge mdast and prosemirror for core blocks`**
 
