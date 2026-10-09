@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.32.3](https://github.com/nsheaps/cept/compare/v0.32.2...v0.32.3) (2026-10-09)
+
+### Documentation
+
+* **ui:** document slash commands the menu actually matches ([#412](https://github.com/nsheaps/cept/issues/412)) ([fa7ac52](https://github.com/nsheaps/cept/commit/fa7ac524b49815bc1d055d828d4e2865675966b0))
+
 ## [0.32.2](https://github.com/nsheaps/cept/compare/v0.32.1...v0.32.2) (2026-10-09)
 
 ### Documentation
