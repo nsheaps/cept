@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.33.0](https://github.com/nsheaps/cept/compare/v0.32.3...v0.33.0) (2026-10-09)
+
+### Features
+
+* **core:** preserve front matter byte-for-byte ([#413](https://github.com/nsheaps/cept/issues/413)) ([68dfca2](https://github.com/nsheaps/cept/commit/68dfca237168a58f7a0b248df22e542ebb92aea0))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1c11889](https://github.com/nsheaps/cept/commit/1c118895925cf5a6982dd8322b9f1cc8b3192792))
+
 ## [0.32.3](https://github.com/nsheaps/cept/compare/v0.32.2...v0.32.3) (2026-10-09)
 
 ### Documentation
