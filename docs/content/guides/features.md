@@ -10,10 +10,10 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 
 | Block | Slash Command | Markdown Shortcut |
 |-------|---------------|-------------------|
-| Paragraph | `/text` | Just start typing |
-| Heading 1 | `/heading1` | `# ` |
-| Heading 2 | `/heading2` | `## ` |
-| Heading 3 | `/heading3` | `### ` |
+| Paragraph | — | Just start typing |
+| Heading 1 | `/heading 1` | `# ` |
+| Heading 2 | `/heading 2` | `## ` |
+| Heading 3 | `/heading 3` | `### ` |
 | Blockquote | `/quote` | *(slash command only)* |
 | Code Block | `/code` | ```` ``` ```` |
 | Divider | `/divider` | `---` |
@@ -24,7 +24,7 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type `
 |-------|---------------|-------------------|
 | Bullet List | `/bullet` | `- ` or `* ` |
 | Numbered List | `/numbered` | `1. ` |
-| To-do List | `/todo` | `[] ` |
+| To-do List | `/to-do` | `[] ` |
 
 ### Rich Blocks
 

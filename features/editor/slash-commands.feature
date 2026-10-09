@@ -18,7 +18,7 @@ Feature: Slash Command Menu
     And only matching items should be visible
 
   Scenario: Inserting a heading via slash command
-    When I type "/heading1"
+    When I type "/heading 1"
     And I press Enter
     Then the current block should become a Heading 1
     And the slash menu should close
