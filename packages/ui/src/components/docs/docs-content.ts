@@ -239,11 +239,11 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type \
 
 | Block | Slash Command | Markdown Shortcut |
 |-------|---------------|-------------------|
-| Paragraph | /text | Just start typing |
-| Heading 1 | /heading1 | # |
-| Heading 2 | /heading2 | ## |
-| Heading 3 | /heading3 | ### |
-| Blockquote | /quote | > |
+| Paragraph | — | Just start typing |
+| Heading 1 | /large | # |
+| Heading 2 | /medium | ## |
+| Heading 3 | /small | ### |
+| Blockquote | /quote | *(slash command only)* |
 | Code Block | /code | \`\`\` |
 | Divider | /divider | --- |
 
@@ -253,7 +253,7 @@ The editor is built on TipTap (ProseMirror) and supports 20+ block types. Type \
 |-------|---------------|-------------------|
 | Bullet List | /bullet | - or * |
 | Numbered List | /numbered | 1. |
-| To-do List | /todo | [] |
+| To-do List | /to-do | [] |
 
 ### Rich Blocks
 
@@ -638,7 +638,7 @@ const MD_KEYBOARD_SHORTCUTS = `# Keyboard Shortcuts
 | Cmd/Ctrl + Shift + H | Highlight |
 | / | Slash command menu |
 | --- | Horizontal divider |
-| > + Space | Blockquote |
+| > + Space | Toggle |
 | # + Space | Heading 1 |
 | ## + Space | Heading 2 |
 | ### + Space | Heading 3 |
