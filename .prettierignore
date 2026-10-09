@@ -16,3 +16,7 @@ docs/content/
 # Prettier's repair changes the structure of everything after them.
 docs/SPECIFICATION.md
 .claude/prompts/init.md
+
+# Round-trip fixtures must stay byte for byte as written; Prettier would normalise
+# exactly the syntax the corpus checks (packages/core/src/markdown/round-trip.test.ts).
+packages/core/src/markdown/__fixtures__/
