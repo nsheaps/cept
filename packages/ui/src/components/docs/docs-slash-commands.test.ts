@@ -9,14 +9,14 @@ const featuresGuide = readFileSync(
   'utf8',
 );
 
-/** Slash commands named in the "Slash Command" column of a docs table row. */
-function documentedSlashCommands(markdown: string): string[] {
-  const queries: string[] = [];
+/** The block and slash command of each docs table row that names one. */
+function documentedSlashCommands(markdown: string): { block: string; query: string }[] {
+  const rows: { block: string; query: string }[] = [];
   for (const line of markdown.split('\n')) {
-    const cell = /^\|[^|]+\|\s*`?\/([a-z0-9 -]+?)`?(?:\s+or\s[^|]*)?\s*\|/i.exec(line);
-    if (cell?.[1]) queries.push(cell[1]);
+    const cell = /^\|([^|]+)\|\s*`?\/([a-z0-9 -]+?)`?(?:\s+or\s[^|]*)?\s*\|/i.exec(line);
+    if (cell?.[1] && cell[2]) rows.push({ block: cell[1].trim(), query: cell[2] });
   }
-  return queries;
+  return rows;
 }
 
 describe('documented slash commands', () => {
@@ -26,15 +26,26 @@ describe('documented slash commands', () => {
   };
 
   for (const [source, markdown] of Object.entries(sources)) {
-    const queries = documentedSlashCommands(markdown);
+    const rows = documentedSlashCommands(markdown);
 
     it(`${source} documents slash commands`, () => {
-      expect(queries.length).toBeGreaterThan(10);
+      expect(rows.length).toBeGreaterThan(10);
     });
 
-    for (const query of queries) {
-      it(`${source}: /${query} finds a block`, () => {
-        expect(filterSlashCommands(defaultSlashCommands, query)).not.toEqual([]);
+    for (const { block, query } of rows) {
+      it(`${source}: /${query} finds ${block}`, () => {
+        // The editor's Suggestion plugin ends the query at a space, so a
+        // documented command with one can never be typed.
+        expect(query).not.toMatch(/\s/);
+        // Docs names differ a little from menu titles ("To-do List" is
+        // "To-do / Checkbox"), so match on the name's words, minus "list".
+        const words = block
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w !== 'list');
+        const titles = filterSlashCommands(defaultSlashCommands, query).map((c) => c.title);
+        const found = titles.some((t) => words.every((w) => t.toLowerCase().includes(w)));
+        expect(found, `${titles.join(', ')} has no ${block}`).toBe(true);
       });
     }
   }
