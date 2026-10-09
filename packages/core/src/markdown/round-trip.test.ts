@@ -3,8 +3,9 @@
  *
  * Every fixture in `__fixtures__/round-trip/` must come back byte for byte
  * after `serialize(parse(input))`. Fixtures that do not yet are listed in
- * `expected-failures.json` with a reason; they run as `it.fails`, so a fix
- * turns them red until their entry is removed. That list is the M3
+ * `expected-failures.json` with a reason; for those the test asserts the
+ * output still differs (and that nothing throws), so a fix turns them red
+ * until their entry is removed. That list is the M3
  * burn-down: entries are removed as PRs fix them, never added.
  */
 import { describe, expect, it } from 'vitest';
@@ -46,9 +47,16 @@ describe('markdown round-trip corpus', () => {
   });
 
   for (const { name, source } of corpus) {
-    const test = name in expected ? it.fails : it;
-    test(`${name} round-trips unchanged`, () => {
-      expect(roundTrip(source)).toBe(source);
-    });
+    if (name in expected) {
+      // Must not throw, and must still differ from the input: once it
+      // round-trips this fails until the entry is removed.
+      it(`${name} does not round-trip yet (expected failure)`, () => {
+        expect(roundTrip(source)).not.toBe(source);
+      });
+    } else {
+      it(`${name} round-trips unchanged`, () => {
+        expect(roundTrip(source)).toBe(source);
+      });
+    }
   }
 });
