@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.33.3](https://github.com/nsheaps/cept/compare/v0.33.2...v0.33.3) (2026-10-10)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1934971](https://github.com/nsheaps/cept/commit/1934971c8adda6ff44fc0281c3fa9c9f10270c64))
+
+### Chores
+
+* **deps:** update dependency vite to v8.3.0 ([#418](https://github.com/nsheaps/cept/issues/418)) ([f7cb2a4](https://github.com/nsheaps/cept/commit/f7cb2a4d608dd660b7d462ff350792fb79c94f88))
+
 ## [0.33.2](https://github.com/nsheaps/cept/compare/v0.33.1...v0.33.2) (2026-10-10)
 
 ### Documentation
