@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.33.1](https://github.com/nsheaps/cept/compare/v0.33.0...v0.33.1) (2026-10-10)
+
+### Bug Fixes
+
+* **deps:** update react dependencies to v19.3.0 ([#415](https://github.com/nsheaps/cept/issues/415)) ([7ad5f9e](https://github.com/nsheaps/cept/commit/7ad5f9e00a7f6f4881f173a9c8e9d4a089d9d03d))
+
 ## [0.33.0](https://github.com/nsheaps/cept/compare/v0.32.3...v0.33.0) (2026-10-09)
 
 ### Features
