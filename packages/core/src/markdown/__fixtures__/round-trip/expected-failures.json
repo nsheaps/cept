@@ -1,16 +1,5 @@
 {
-  "blockquote": "A multi-paragraph quote splits into separate quotes.",
-  "callout": "The data-type=\"callout\" HTML block is dropped.",
-  "cept-comment": "The cept:comment markers are dropped.",
-  "code-fences": "A ~~~ fence is rewritten as ```.",
-  "columns": "The data-type=\"columns\" HTML block is dropped.",
-  "footnotes": "The footnote reference and definition are dropped.",
-  "gfm-basics": "_emphasis_ is rewritten as *emphasis*.",
-  "links-and-images": "The autolink <https://...> is rewritten as an inline link.",
-  "lists": "The nested list item is dropped.",
-  "math": "The backslash escape in \\, is lost inside $$ math.",
-  "mermaid": "The mermaid fence is wrapped in cept:block comments.",
-  "table": "Column padding and the :---- alignment marker are normalised.",
-  "toggle-details": "<details>/<summary> toggles lose their summary and wrapper.",
-  "unknown-html": "Unknown HTML blocks and HTML comments are dropped."
+  "cept-comment": "A rewritten block is followed by a blank line, so a cept:comment line placed directly under a paragraph moves down one line.",
+  "math": "Without math parsing (PR 52), $$ math is text: `\\,` loses its backslash and `_` gains one.",
+  "table": "Column padding is regenerated: centre-aligned cells are padded on both sides."
 }

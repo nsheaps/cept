@@ -163,6 +163,9 @@ export type {
   LoadedFrontMatter,
   PageFrontMatter,
   ReservedFrontMatterKey,
+  MarkdownDocument,
+  PmMark,
+  PmNode,
 } from './markdown/index.js';
 export {
   CeptMarkdownParser,
@@ -170,10 +173,14 @@ export {
   firstHeading,
   frontMatterKeyBlocks,
   frontMatterPrefix,
+  blocksToMdast,
   joinFrontMatter,
   loadFrontMatter,
+  mdastToBlocks,
   pageTitle,
+  parseMarkdownDocument,
   readFrontMatter,
+  serializeMarkdownDocument,
   setFrontMatterKey,
   splitFrontMatter,
 } from './markdown/index.js';

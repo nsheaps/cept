@@ -38,3 +38,7 @@ export interface MarkdownParser {
 
 export { CeptMarkdownParser } from './parser.js';
 export * from './front-matter.js';
+export { parseMarkdownDocument, serializeMarkdownDocument } from './document.js';
+export type { MarkdownDocument } from './document.js';
+export { blocksToMdast, mdastToBlocks } from './prosemirror.js';
+export type { PmMark, PmNode } from './prosemirror.js';

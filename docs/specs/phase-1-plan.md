@@ -535,6 +535,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: corpus fixtures for GFM core syntax.
 - Accept: those fixtures green.
 - Risk: the central design decision; spike first and record the result in D6. If the mapper passes about 400 lines, split by node family (block nodes first, then inline marks and tables) rather than growing the PR.
+- Note (PR 47): the spike result and D6 are recorded under EDT-005 in `08-editor.md`. `markdown/prosemirror.ts` maps mdast to ProseMirror JSON and back (about 450 lines; blocks, inline marks and tables share one style-attribute scheme, so it stays one file), and `markdown/document.ts` parses a page and serializes it by reusing the source of every unchanged top-level block. `round-trip.test.ts` now runs the corpus through this pipeline instead of `CeptMarkdownParser`: every fixture loads and saves byte for byte, every full rewrite re-parses to the same document, and three full rewrites still normalize (`cept-comment`, `math`, `table`). HTML and unmodelled syntax (callouts, toggles, columns, footnotes, references) pass through as `rawBlock`/`rawInline`; PR 48 models the custom blocks as editor nodes. The app is not switched over yet.
 
 **PR 48 — `feat(core): serialize custom blocks and unknown html losslessly`**
 
