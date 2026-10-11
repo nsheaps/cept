@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.33.5](https://github.com/nsheaps/cept/compare/v0.33.4...v0.33.5) (2026-10-11)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([9cd3478](https://github.com/nsheaps/cept/commit/9cd3478a8279989e4f2f3c877f6c61d56e35ca57))
+
+### Chores
+
+* **deps:** update dependency markdown-it to v15.0.2 ([#421](https://github.com/nsheaps/cept/issues/421)) ([99aecc8](https://github.com/nsheaps/cept/commit/99aecc84bdb2c508d987dc36b8cd8bde4a9af00d))
+
 ## [0.33.4](https://github.com/nsheaps/cept/compare/v0.33.3...v0.33.4) (2026-10-11)
 
 ### Bug Fixes
