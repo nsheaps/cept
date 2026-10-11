@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.33.4](https://github.com/nsheaps/cept/compare/v0.33.3...v0.33.4) (2026-10-11)
+
+### Bug Fixes
+
+* **deps:** update dependency isomorphic-git to v1.42.0 ([#420](https://github.com/nsheaps/cept/issues/420)) ([78939f1](https://github.com/nsheaps/cept/commit/78939f150c5dcb0774fdb656b1e5e4b9a48b0bad))
+
 ## [0.33.3](https://github.com/nsheaps/cept/compare/v0.33.2...v0.33.3) (2026-10-10)
 
 ### Documentation
