@@ -32,3 +32,11 @@ export {
 export type { SlashCommandItem, SlashCommandOptions } from './slash-command.js';
 export { createFencedBlockExtension } from './fenced-block.js';
 export type { FencedBlockEditorPlugin, FencedBlockInfo } from './fenced-block.js';
+export { MarkdownAttributes } from './markdown-attributes.js';
+export { RawBlock, RawInline } from './raw-markdown.js';
+export {
+  FootnoteReference,
+  FootnoteDefinition,
+  footnoteNumbers,
+  footnotePluginKey,
+} from './footnote.js';

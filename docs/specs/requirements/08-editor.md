@@ -444,11 +444,11 @@ flowchart TD
 - Users can insert a footnote from the editor (slash command or shortcut).
 - Footnotes round-trip unchanged.
 
-**Current state:** partial. The shared Markdown pipeline models footnotes (PR 52): `[^id]` loads as an inline `footnoteReference {identifier, label}` and `[^id]: ...` as a `footnoteDefinition {identifier, label}` block holding the definition's blocks. Both are written back with the label as typed, and an unchanged definition is saved byte for byte (corpus fixtures `footnotes.md` and `footnotes-reuse.md`). The editor has no footnote nodes yet: they come with PR 49, when the editor loads pages through the pipeline. The older `CeptMarkdownParser`'s `convertNode` still drops footnote definitions; PR 49 retires it.
+**Current state:** partial. The shared Markdown pipeline models footnotes (PR 52): `[^id]` loads as an inline `footnoteReference {identifier, label}` and `[^id]: ...` as a `footnoteDefinition {identifier, label}` block holding the definition's blocks. Both are written back with the label as typed, and an unchanged definition is saved byte for byte (corpus fixtures `footnotes.md` and `footnotes-reuse.md`). The editor has the matching nodes (PR 49a): a reference renders as a superscript number and jumps to its definition when clicked; a definition renders as a numbered note. Every corpus fixture loads into the editor schema and saves unchanged (`document-extensions.test.ts`). The editor does not load pages through the pipeline until PR 49b, so a footnote in a file does not reach the editor yet, and there is no way to insert one. The older `CeptMarkdownParser`'s `convertNode` still drops footnote definitions; PR 49 retires it.
 
 **Docs:** undocumented.
 
-**Gap:** Editor nodes for references (superscript numbers) and definitions (the footnote list), insertion from the editor, and user docs.
+**Gap:** Loading pages through the pipeline (PR 49b), insertion from the editor, and user docs.
 
 **Related:** none.
 
@@ -466,7 +466,7 @@ flowchart TD
 - The rendered footnote list shows a back-reference to each use.
 - Editing the definition is reflected at every reference without further edits.
 
-**Current state:** partial. In the pipeline (PR 52), every reference to one definition carries the same `identifier`, and the definition is one block, so editing it rewrites the definition once and every reference keeps pointing at it (unit test in `document.test.ts`). Numbering, the footnote list and back-references are editor rendering and come with the editor's footnote nodes (PR 49). A related "synced block" exists only as a serialize case in the core parser, with no editor extension.
+**Current state:** partial. In the pipeline (PR 52), every reference to one definition carries the same `identifier`, and the definition is one block, so editing it rewrites the definition once and every reference keeps pointing at it (unit test in `document.test.ts`). In the editor (PR 49a), numbers are not stored: decorations number each identifier by its first reference, so every reference to `[^a]` shows the same number, and each definition ends with a back-reference link per use (`↩1`, `↩2`) that jumps to that reference (`footnote.test.ts`). This reaches users once PR 49b loads pages through the pipeline. A related "synced block" exists only as a serialize case in the core parser, with no editor extension.
 
 **Docs:** undocumented. SPEC §5.1 mentions synced blocks but not footnote reuse.
 
@@ -618,11 +618,11 @@ flowchart TD
 - A corpus of unsupported constructs survives load and save byte-for-byte.
 - Raw blocks are visible in the editor, and they are editable as source or at least deletable.
 
-**Current state:** partial. The ProseMirror schema discards HTML elements that have no parse rule (TipTap default; not tested here). The core parser returns `null` for footnotes and for non-cept HTML. There is no raw passthrough node.
+**Current state:** partial. The shared Markdown pipeline keeps Markdown it does not model (unknown HTML, comments, link reference definitions) as `rawBlock` and `rawInline` nodes holding the source, and the round-trip corpus checks it survives (`unknown-html.md`, `html-container.md`). The editor schema has both nodes (PR 49a): they show the source, are deletable but not editable, and every corpus fixture saves unchanged through the editor (`document-extensions.test.ts`, `raw-markdown.test.ts`). The editor still loads pages through `tiptap-markdown`, whose HTML parse discards elements without a parse rule, until PR 49b. The older core parser returns `null` for non-cept HTML; PR 49b retires it.
 
 **Docs:** undocumented.
 
-**Gap:** Add a raw passthrough node and data-loss regression tests.
+**Gap:** Loading pages through the pipeline (PR 49b); editing raw blocks as source.
 
 **Related:** none.
 

@@ -492,6 +492,58 @@
   font-size: 0.875em;
 }
 
+/* Markdown the pipeline does not model, shown as source (EDT-023) */
+.cept-editor .tiptap pre.cept-raw-block {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid #e3e2e0;
+  color: #787774;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+}
+
+.cept-editor .tiptap code.cept-raw-inline {
+  color: #787774;
+  font-size: 0.8125em;
+}
+
+/* Footnotes (EDT-015, EDT-016); numbers come from decorations */
+.cept-editor .tiptap sup.cept-footnote-ref {
+  cursor: pointer;
+  color: #2383e2;
+  font-size: 0.75em;
+}
+
+.cept-editor .tiptap sup.cept-footnote-ref::after {
+  content: '[' attr(data-footnote-number) ']';
+}
+
+.cept-editor .tiptap .cept-footnote-def {
+  position: relative;
+  margin: 0.25rem 0;
+  padding-left: 2rem;
+  font-size: 0.875rem;
+  color: #37352f;
+}
+
+.cept-editor .tiptap .cept-footnote-def::before {
+  content: attr(data-footnote-number) '.';
+  position: absolute;
+  left: 0;
+  color: #787774;
+}
+
+.cept-editor .tiptap .cept-footnote-def > p {
+  margin: 0;
+}
+
+.cept-editor .tiptap .cept-footnote-backref {
+  margin-left: 0.25rem;
+  color: #2383e2;
+  text-decoration: none;
+}
+
 /* Mermaid diagram */
 .cept-editor .tiptap .cept-mermaid {
   margin: 0.75rem 0;
@@ -968,6 +1020,13 @@
 }
 .dark .cept-editor .tiptap pre.cept-code-block {
   background-color: #1e1e1e;
+}
+.dark .cept-editor .tiptap pre.cept-raw-block {
+  border-left-color: #404040;
+  color: #9b9a97;
+}
+.dark .cept-editor .tiptap .cept-footnote-def {
+  color: #e3e2e0;
 }
 .dark .cept-editor .tiptap .cept-mermaid {
   border-color: #404040;

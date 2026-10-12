@@ -1,41 +1,18 @@
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import Highlight from '@tiptap/extension-highlight';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Color from '@tiptap/extension-color';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { TableHeader } from '@tiptap/extension-table-header';
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
-import { common, createLowlight } from 'lowlight';
-import { Callout } from './extensions/callout.js';
-import { Toggle } from './extensions/toggle.js';
-import { ImageBlock } from './extensions/image.js';
-import { Embed } from './extensions/embed.js';
-import { Bookmark } from './extensions/bookmark.js';
-import { Columns, Column } from './extensions/columns.js';
-import { MathBlock, InlineMath } from './extensions/math.js';
-import { Mermaid } from './extensions/mermaid.js';
 import {
   SlashCommand,
   defaultSlashCommands,
   filterSlashCommands,
 } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
+import { documentExtensions } from './document-extensions.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import { InlineToolbar } from './InlineToolbar.js';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
-
-const lowlight = createLowlight(common);
 
 export interface CeptEditorProps {
   content?: string;
@@ -52,107 +29,7 @@ export function CeptEditor({
 }: CeptEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-        bulletList: {
-          HTMLAttributes: {
-            class: 'cept-bullet-list',
-          },
-        },
-        orderedList: {
-          HTMLAttributes: {
-            class: 'cept-ordered-list',
-          },
-        },
-        listItem: {
-          HTMLAttributes: {
-            class: 'cept-list-item',
-          },
-        },
-        paragraph: {
-          HTMLAttributes: {
-            class: 'cept-paragraph',
-          },
-        },
-        blockquote: {
-          HTMLAttributes: {
-            class: 'cept-blockquote',
-          },
-        },
-        horizontalRule: {
-          HTMLAttributes: {
-            class: 'cept-divider',
-          },
-        },
-        // Disable default code block in favor of lowlight version
-        codeBlock: false,
-        // Disable defaults to use standalone configured versions
-        link: false,
-        underline: false,
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        HTMLAttributes: {
-          class: 'cept-code-block',
-        },
-      }),
-      TaskList.configure({
-        HTMLAttributes: {
-          class: 'cept-task-list',
-        },
-      }),
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: {
-          class: 'cept-task-item',
-        },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: false,
-        HTMLAttributes: {
-          class: 'cept-link',
-        },
-      }),
-      TextStyle,
-      Color,
-      Highlight.configure({
-        multicolor: true,
-      }),
-      Callout,
-      Toggle,
-      ImageBlock,
-      Embed,
-      Bookmark,
-      Columns,
-      Column,
-      MathBlock,
-      InlineMath,
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class: 'cept-table',
-        },
-      }),
-      TableRow.configure({
-        HTMLAttributes: {
-          class: 'cept-table-row',
-        },
-      }),
-      TableCell.configure({
-        HTMLAttributes: {
-          class: 'cept-table-cell',
-        },
-      }),
-      TableHeader.configure({
-        HTMLAttributes: {
-          class: 'cept-table-header-cell',
-        },
-      }),
-      Mermaid,
+      ...documentExtensions(),
       GlobalDragHandle.configure({
         dragHandleWidth: 24,
         scrollTreshold: 100,
@@ -165,6 +42,8 @@ export function CeptEditor({
           'columns',
           'mathBlock',
           'mermaid',
+          'rawBlock',
+          'footnoteDefinition',
         ],
       }),
       SlashCommand.configure({
