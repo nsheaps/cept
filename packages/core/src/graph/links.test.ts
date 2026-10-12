@@ -153,4 +153,12 @@ describe('headingSlugs', () => {
       headingSlugs(['Hello, World!', 'Install', 'Install', 'Install', 'A_b-c  d', 'Café 2']),
     ).toEqual(['hello-world', 'install', 'install-1', 'install-2', 'a_b-c--d', 'café-2']);
   });
+
+  it('skips a numbered slug a heading already has', () => {
+    expect(headingSlugs(['Install', 'Install 1', 'Install'])).toEqual([
+      'install',
+      'install-1',
+      'install-2',
+    ]);
+  });
 });

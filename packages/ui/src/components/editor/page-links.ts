@@ -14,7 +14,7 @@
  *   which is revoked when the editor unmounts.
  */
 
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { baseFileOfPage, headingSlugs, pageIdForPath, resolvePath } from '@cept/core';
 
 /** What the editor needs from the app to resolve a page's relative links. */
@@ -87,14 +87,24 @@ export function usePageLinks(
   editable: boolean,
 ): void {
   const pageId = ctx?.pageId;
+  // The callbacks change identity whenever the app re-renders (every keystroke).
+  // The effect owns the blob URLs, so it reads them through a ref and re-runs
+  // only when the page or editability changes; a revoked blob would leave the
+  // image in the DOM broken.
+  const latest = useRef(ctx);
+  latest.current = ctx;
+  const remark = useRef<(() => void) | null>(null);
   const hasPage = ctx?.hasPage;
-  const readFile = ctx?.readFile;
-  const onNavigate = ctx?.onNavigate;
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || pageId === undefined || !hasPage || !readFile || !onNavigate) return;
-    const links: PageLinksContext = { pageId, hasPage, readFile, onNavigate };
+    if (!container || pageId === undefined || !latest.current) return;
+    const links: PageLinksContext = {
+      pageId,
+      hasPage: (id) => latest.current?.hasPage(id) ?? false,
+      readFile: (path) => latest.current?.readFile(path) ?? Promise.resolve(null),
+      onNavigate: (id, anchor) => latest.current?.onNavigate(id, anchor),
+    };
     const base = baseFileOfPage(pageId);
     let disposed = false;
     const blobUrls = new Map<string, string>();
@@ -115,7 +125,8 @@ export function usePageLinks(
           blobUrls.set(path, url);
           return url;
         })
-        .catch(() => null);
+        .catch(() => null)
+        .finally(() => loading.delete(path));
       loading.set(path, load);
       return load;
     };
@@ -141,6 +152,8 @@ export function usePageLinks(
         const href = a.getAttribute('href') ?? '';
         if (!isRelativeUrl(href)) continue;
         const resolved = resolvePath(base, href);
+        // Links to files that are not pages are not checked yet: listing the
+        // space's other files comes with the foreign-file preview (PR 54b).
         if (!resolved || resolved.path === base || isAssetPath(resolved.path)) continue;
         const missing = pageIdForPath(resolved.path, links.hasPage) === null;
         if (missing) a.setAttribute('data-broken', 'true');
@@ -152,6 +165,7 @@ export function usePageLinks(
       resolveImages();
       markBrokenLinks();
     };
+    remark.current = markBrokenLinks;
     refresh();
     const observer = new MutationObserver(refresh);
     observer.observe(container, {
@@ -183,10 +197,16 @@ export function usePageLinks(
 
     return () => {
       disposed = true;
+      remark.current = null;
       observer.disconnect();
       container.removeEventListener('click', onClick);
       for (const url of blobUrls.values()) URL.revokeObjectURL(url);
       blobUrls.clear();
     };
-  }, [containerRef, pageId, hasPage, readFile, onNavigate, editable]);
+  }, [containerRef, pageId, editable]);
+
+  // A new page tree can make a broken link good (or the reverse).
+  useEffect(() => {
+    remark.current?.();
+  }, [hasPage]);
 }

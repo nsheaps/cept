@@ -1194,7 +1194,7 @@ export function App() {
         addToRecent(id, node.title, node.icon);
       }
       // Load page content from backend if not already cached
-      if (!pageContents[id]) {
+      if (!pageContentsRef.current[id]) {
         void currentReadPage(id).then((content) => {
           if (content !== null) {
             setPageContents((prev) => ({ ...prev, [id]: content }));
@@ -1206,7 +1206,7 @@ export function App() {
         setSidebarOpen(false);
       }
     },
-    [pages, addToRecent, pageContents, currentReadPage],
+    [pages, addToRecent, currentReadPage],
   );
 
   // Relative links and images of a folder or Git space's pages resolve against

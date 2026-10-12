@@ -176,15 +176,16 @@ export function pageIdForPath(path: string, hasPage: (id: string) => boolean): s
  * removed, spaces to `-`, and `-1`, `-2` for repeats.
  */
 export function headingSlugs(headings: readonly string[]): string[] {
-  const seen = new Map<string, number>();
+  const used = new Set<string>();
   return headings.map((heading) => {
     const base = heading
       .trim()
       .toLowerCase()
       .replace(/[^\p{L}\p{N}\p{M} _-]/gu, '')
       .replace(/ /g, '-');
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count}`;
+    let slug = base;
+    for (let n = 1; used.has(slug); n++) slug = `${base}-${n}`;
+    used.add(slug);
+    return slug;
   });
 }

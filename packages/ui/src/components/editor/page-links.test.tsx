@@ -188,6 +188,29 @@ describe('relative images in a page', () => {
     expect(revoked).toEqual(['blob:mock/1']);
   });
 
+  it('keeps an image when the app re-renders with new callbacks', async () => {
+    const backend = await spaceWith({ 'notes/img/pic.png': 'PNG' });
+    const pages = ['notes/today.md'];
+    const { rerender } = render(
+      <CeptEditor
+        editable
+        content="![A picture](img/pic.png)"
+        links={contextFor(backend, 'notes/today.md', pages)}
+      />,
+    );
+    const img = await screen.findByAltText('A picture');
+    await waitFor(() => expect(img.getAttribute('src')).toBe('blob:mock/1'));
+    rerender(
+      <CeptEditor
+        editable
+        content="![A picture](img/pic.png)"
+        links={contextFor(backend, 'notes/today.md', pages)}
+      />,
+    );
+    expect(revoked).toEqual([]);
+    expect(screen.getByAltText('A picture').getAttribute('src')).toBe('blob:mock/1');
+  });
+
   it('marks an image that is not in the space as broken', async () => {
     const backend = await spaceWith({});
     render(
