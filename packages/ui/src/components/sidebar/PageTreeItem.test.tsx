@@ -103,4 +103,29 @@ describe('PageTreeItem', () => {
     const btn = screen.getByTestId('page-tree-button-leaf');
     expect(btn.style.paddingLeft).toBe('56px'); // 3 * 16 + 8
   });
+
+  describe('a file that is not a page', () => {
+    const file: PageTreeNode = { id: 'logo.png', title: 'logo.png', foreign: true, children: [] };
+
+    it('is selectable but has no page actions', () => {
+      const onSelect = vi.fn();
+      const onContextMenu = vi.fn();
+      render(
+        <PageTreeItem
+          node={file}
+          depth={0}
+          selectedId="logo.png"
+          onSelect={onSelect}
+          onContextMenu={onContextMenu}
+        />,
+      );
+      fireEvent.click(screen.getByTestId('page-tree-button-logo.png'));
+      expect(onSelect).toHaveBeenCalledWith('logo.png');
+      fireEvent.contextMenu(screen.getByTestId('page-tree-button-logo.png'));
+      expect(onContextMenu).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('page-tree-menu-logo.png')).toBeNull();
+      expect(screen.queryByTestId('page-tree-add-logo.png')).toBeNull();
+      expect(screen.getByText('\u{1F4CE}')).toBeDefined();
+    });
+  });
 });

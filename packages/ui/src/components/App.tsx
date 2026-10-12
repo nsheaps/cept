@@ -40,6 +40,7 @@ import {
 import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
 import { FolderView } from './editor/FolderView.js';
+import { ForeignFilePreview } from './preview/ForeignFilePreview.js';
 import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
@@ -194,12 +195,14 @@ function remoteSpaceRequestedByUrl(): boolean {
 
 const MAX_RECENT = 10;
 
-function flattenPages(nodes: PageTreeNode[]): SidebarPageRef[] {
+/** The pages of a tree, flat. Files that are not pages are left out unless `includeForeign`. */
+function flattenPages(nodes: PageTreeNode[], includeForeign = false): SidebarPageRef[] {
   const result: SidebarPageRef[] = [];
   for (const n of nodes) {
+    if (n.foreign && !includeForeign) continue;
     result.push({ id: n.id, title: n.title, icon: n.icon });
     if (n.children.length > 0) {
-      result.push(...flattenPages(n.children));
+      result.push(...flattenPages(n.children, includeForeign));
     }
   }
   return result;
@@ -1025,7 +1028,7 @@ export function App() {
         const hidden = new Set(trashRef.current.map((t) => t.id));
         const next = await spaces.pageTree(spaceId, pagesRef.current, hidden).catch(() => null);
         if (next && spaceId === userSpaceIdRef.current) {
-          const ids = new Set(flattenPages(next).map((p) => p.id));
+          const ids = new Set(flattenPages(next, true).map((p) => p.id));
           const selected = selectedPageIdRef.current;
           const pending = pendingWriteRef.current?.pageId;
           // The open page is read again unless it is being edited.
@@ -1194,7 +1197,7 @@ export function App() {
         addToRecent(id, node.title, node.icon);
       }
       // Load page content from backend if not already cached
-      if (!pageContentsRef.current[id]) {
+      if (!node?.foreign && !pageContentsRef.current[id]) {
         void currentReadPage(id).then((content) => {
           if (content !== null) {
             setPageContents((prev) => ({ ...prev, [id]: content }));
@@ -1231,6 +1234,11 @@ export function App() {
           }
         : undefined,
     [activeSpace, selectedPageId, spaces, userSpaceId, pageIds, handleLinkNavigate],
+  );
+
+  const readForeignFile = useCallback(
+    (path: string) => spaces.readSpaceFile(userSpaceId, path),
+    [spaces, userSpaceId],
   );
 
   const handlePageToggle = useCallback((id: string) => {
@@ -3155,6 +3163,12 @@ export function App() {
                 </>
               )}
             </div>
+          ) : selectedPageId && selectedNode?.foreign ? (
+            <ForeignFilePreview
+              key={selectedPageId}
+              path={selectedPageId}
+              readFile={readForeignFile}
+            />
           ) : selectedPageId && selectedNode ? (
             <>
               <PageHeader

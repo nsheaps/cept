@@ -634,6 +634,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: component tests for tree listing and each preview kind from `MemoryBackend`.
 - Accept: tests green.
 - Risk: large binaries; read on open only, revoke blob URLs on close.
+- Delivered: listing and preview. Moving, renaming and deleting a foreign file, and broken-link marking for links to missing files, follow with PR 55 (which already rewrites links on move).
 
 **PR 55 — `feat(ui): rewrite inbound links when a page moves`**
 

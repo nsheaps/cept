@@ -145,6 +145,24 @@ describe('App folder spaces', () => {
     expect((await host.handles.list()).map((e) => e.id)).toEqual([space?.id]);
   });
 
+  it('lists a file that is not a page and previews it read-only', async () => {
+    const folder = notesFolder();
+    folder.seedText('readme.txt', 'plain words');
+    const { backend, writes } = writeSpy(folder);
+    const { host, next } = fakeHost(new Map([['notes', backend]]));
+    next.handle = folderHandle('notes');
+    renderApp(new MemoryBackend(), host);
+
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    fireEvent.click(
+      await screen.findByTestId('page-tree-button-readme.txt', {}, { timeout: 3000 }),
+    );
+    expect((await screen.findByTestId('foreign-file-text')).textContent).toBe('plain words');
+    expect(screen.queryByTestId('page-tree-menu-readme.txt')).toBeNull();
+    await settle();
+    expect(writes).toEqual([]);
+  });
+
   it('asks before making a plain folder a space, and then adds only its marker', async () => {
     const plain = new MemoryBackend();
     plain.seedText('todo.md', '# Todo\n');

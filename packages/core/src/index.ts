@@ -429,7 +429,14 @@ export {
   pickFolderPage,
   NEW_FOLDER_PAGE,
 } from './space/index.js';
-export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './space/index.js';
+export type {
+  PageNode,
+  SpaceTree,
+  TreeReadBackend,
+  Moved,
+  ForeignFile,
+  ReadTreeOptions,
+} from './space/index.js';
 
 // Space autodiscovery (find the spaces in every repository a GitHub token can read)
 export { autodiscoverSpaces, AutodiscoveryError, MemoryEtagCache } from './space/index.js';

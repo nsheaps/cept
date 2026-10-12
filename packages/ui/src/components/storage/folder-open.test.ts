@@ -177,7 +177,11 @@ describe('opening a folder space (REQ-WS-019)', () => {
 
     const opened = await spaces.open(space.id, 'Notes');
     expect(opened.converted).toBeFalsy();
-    expect(opened.snapshot?.pages.map((p) => p.title).sort()).toEqual(['Guides', 'Welcome']);
+    expect(opened.snapshot?.pages.map((p) => p.title).sort()).toEqual([
+      'Guides',
+      'Welcome',
+      'notes.txt',
+    ]);
     // The app saves what it opened (autosave); nothing changed, so nothing is written.
     await spaces.saveState(space.id, opened.snapshot!);
 
@@ -270,7 +274,7 @@ describe('opening a folder space (REQ-WS-019)', () => {
     reloaded.connectFolder(space, folder);
     expect(reloaded.isConnected(space.id)).toBe(true);
     const { snapshot } = await reloaded.open(space.id, 'Notes');
-    expect(snapshot?.pages.map((p) => p.title).sort()).toEqual(['Guides', 'Welcome']);
+    expect(snapshot?.pages.map((p) => p.title).sort()).toEqual(['Guides', 'Welcome', 'notes.txt']);
   });
 
   it('writes the marker only through the separate "make it a space" step', async () => {

@@ -57,10 +57,26 @@ describe('folder spaces', () => {
       {
         id: 'guides',
         title: 'guides',
-        children: [{ id: 'guides/setup.md', title: 'setup', children: [] }],
+        children: [
+          { id: 'guides/setup.md', title: 'setup', children: [] },
+          { id: 'guides/logo.png', title: 'logo.png', foreign: true, children: [] },
+        ],
       },
       { id: 'todo.md', title: 'todo', children: [] },
     ]);
+  });
+
+  it('lists files that are not pages after the pages of their folder, and not in hidden folders', async () => {
+    backend.seedText('chart.png', 'png');
+    const pages = toPageTree(await readFolderTree(backend), [], new Set(['guides/logo.png']));
+    expect(pages.map((p) => p.id)).toEqual(['README.md', 'guides', 'todo.md', 'chart.png']);
+    expect(pages.at(-1)).toEqual({
+      id: 'chart.png',
+      title: 'chart.png',
+      foreign: true,
+      children: [],
+    });
+    expect(pages[1]?.children.map((c) => c.id)).toEqual(['guides/setup.md']);
   });
 
   it('keeps icons, covers and expanded state by id and leaves hidden pages out', async () => {
@@ -74,7 +90,7 @@ describe('folder spaces', () => {
       title: 'guides',
       icon: '📘',
       isExpanded: true,
-      children: [],
+      children: [{ id: 'guides/logo.png', title: 'logo.png', foreign: true, children: [] }],
     });
     expect(pages[2]).toMatchObject({ id: 'todo.md', cover: 'c.png' });
   });

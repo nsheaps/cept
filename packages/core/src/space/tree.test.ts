@@ -110,6 +110,30 @@ describe.each(backends)('space folder tree on %s', (_name, make) => {
     ]);
   });
 
+  it('lists the visible non-page files of each folder when asked', async () => {
+    const tree = await readSpaceTree(backend, '', { foreignFiles: true });
+    const listed = (id: string) => findPage(tree, id)?.files?.map((f) => f.path);
+    // Config files, dotfiles, ignored paths and nested spaces are not content.
+    expect(tree.root.files).toEqual([]);
+    expect(listed('guides')).toEqual([]);
+    // `guides/img` holds only a PNG, so it is not in the tree and its file is not listed.
+    expect(findPage(tree, 'guides/img')).toBeNull();
+    expect(findPage(tree, 'assets')).toBeNull();
+    expect((await readSpaceTree(backend)).root.files).toBeUndefined();
+  });
+
+  it('lists a file next to the pages of its folder, in name order', async () => {
+    await backend.writeFile('/guides/10-chart.png', new Uint8Array([1]));
+    await backend.writeFile('/guides/2-chart.png', new Uint8Array([2]));
+    await backend.writeFile('/guides/notes.tmp.md', enc.encode('x'));
+    await backend.writeFile('/guides/.hidden.txt', enc.encode('x'));
+    const tree = await readSpaceTree(backend, '', { foreignFiles: true });
+    expect(findPage(tree, 'guides')?.files).toEqual([
+      { path: 'guides/2-chart.png', name: '2-chart.png' },
+      { path: 'guides/10-chart.png', name: '10-chart.png' },
+    ]);
+  });
+
   it('round-trips every page byte for byte and touches no other file', async () => {
     const before = await snapshot(backend);
     const tree = await readSpaceTree(backend);
