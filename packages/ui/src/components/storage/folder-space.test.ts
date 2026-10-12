@@ -15,6 +15,7 @@ import {
   previewRenameLinks,
   renameForeignFile,
   pageNameFromTitle,
+  readFolderBacklinks,
   readFolderPage,
   readFolderTree,
   renameFolderPage,
@@ -344,5 +345,40 @@ describe('folder spaces', () => {
         /already exists/,
       );
     });
+  });
+});
+
+describe('backlinks', () => {
+  it('lists, for each page, the pages that link to it with the link text', async () => {
+    const backend = fixture();
+    backend.seedText(
+      'README.md',
+      '# Notes\n\nStart with [the setup guide](guides/setup.md#install).\n',
+    );
+    backend.seedText('todo.md', '# Todo\n\nSee [setup](guides/setup.md) and [home](README.md).\n');
+    backend.seedText(
+      'guides/setup.md',
+      '# Setup\n\nBack to [notes](../README.md). [self](setup.md)\n',
+    );
+
+    const backlinks = await readFolderBacklinks(backend);
+
+    expect(backlinks.get('guides/setup.md')).toEqual([
+      { source: 'README.md', title: 'Notes', snippets: ['the setup guide'] },
+      { source: 'todo.md', title: 'Todo', snippets: ['setup'] },
+    ]);
+    // The root page is addressed by its file, like the sidebar does.
+    expect(backlinks.get('README.md')?.map((b) => b.source)).toEqual([
+      'guides/setup.md',
+      'todo.md',
+    ]);
+    expect(backlinks.get('todo.md')).toBeUndefined();
+  });
+
+  it('ignores links to files that are not pages and dead links', async () => {
+    const backend = fixture();
+    backend.seedText('todo.md', '# Todo\n\n![logo](guides/logo.png) [gone](missing.md)\n');
+    const backlinks = await readFolderBacklinks(backend);
+    expect([...backlinks.keys()]).toEqual([]);
   });
 });

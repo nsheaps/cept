@@ -657,6 +657,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: component test: after B links to A, A's backlinks list B.
 - Accept: tests green.
 - Risk: incremental index updates on edit; full rebuild is acceptable for Phase 1 sizes.
+- Delivered: `readFolderBacklinks` (one pass over `readLinkGraph`), `BacklinksPanel` under the open page, link text indexed into search. Deferred: context snippets (sentence around the link), unlinked mentions, incremental updates.
 
 **PR 57 — `feat(ui): graph view as a fenced graph block`**
 

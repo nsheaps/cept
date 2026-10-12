@@ -25,6 +25,7 @@ import {
   pickFolderPage,
   planLinkRewrites,
   plannedPageId,
+  readLinkGraph,
   readSpaceTree,
   serializeSpaceConfig,
   SPACE_CONFIG_VERSION,
@@ -176,6 +177,48 @@ export function folderPageFile(backend: StorageBackend, id: string): Promise<str
 /** A file of a folder space (an image, an attachment) by its path relative to the space root. */
 export function readFolderFile(backend: StorageBackend, path: string): Promise<Uint8Array | null> {
   return backend.readFile(at(path));
+}
+
+/** A page that links to another, with the text of its links. */
+export interface Backlink {
+  /** The linking page's sidebar id. */
+  source: string;
+  /** The linking page's title. */
+  title: string;
+  /** The text of each link to the page, without repeats. */
+  snippets: string[];
+}
+
+/**
+ * For each page that other pages link to, the pages linking to it (REQ-EDT-021).
+ * One pass over the space feeds both the backlinks panel and the search index.
+ * Ids are the sidebar's, so the root page is addressed by its file. Links to
+ * files that are not pages and dead links are left out.
+ */
+export async function readFolderBacklinks(
+  backend: StorageBackend,
+): Promise<Map<string, Backlink[]>> {
+  const rootFile = (await readFolderTree(backend)).root.file;
+  const sidebarId = (id: string) => (id === '' && rootFile ? rootFile : id);
+  const { graph, references } = await readLinkGraph(backend);
+  const titles = new Map(graph.nodes.map((n) => [sidebarId(n.id), n.title]));
+  const out = new Map<string, Backlink[]>();
+  for (const ref of references) {
+    if (ref.unresolved) continue;
+    const target = sidebarId(ref.target);
+    const source = sidebarId(ref.source);
+    if (target === source) continue;
+    const list = out.get(target) ?? [];
+    let entry = list.find((b) => b.source === source);
+    if (!entry) {
+      entry = { source, title: titles.get(source) ?? source, snippets: [] };
+      list.push(entry);
+      out.set(target, list);
+    }
+    const text = ref.text.trim();
+    if (text && !entry.snippets.includes(text)) entry.snippets.push(text);
+  }
+  return out;
 }
 
 export async function readFolderPage(backend: StorageBackend, id: string): Promise<string | null> {

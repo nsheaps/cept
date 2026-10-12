@@ -57,7 +57,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)                  | Graph builder extracts crosslinks from space files                       | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app)                      | Browsable Obsidian-style graph view in the app                           | MUST     | stubbed     | documented-as-desired  | stale         |
 | [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model)                                  | Single consistent graph data model                                       | SHOULD   | implemented | documented-as-desired  | accurate      |
-| [REQ-EDT-021](#req-edt-021--backlinks-panel)                                                     | Backlinks panel                                                          | SHOULD   | not-started | documented-as-desired  | accurate      |
+| [REQ-EDT-021](#req-edt-021--backlinks-panel)                                                     | Backlinks panel                                                          | SHOULD   | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-022](#req-edt-022--html-fallback-for-blocks-with-no-markdown-representation)            | HTML fallback for blocks with no Markdown representation                 | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | implemented | undocumented           | n/a           |
 | [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | implemented | documented-differently | stale         |
@@ -514,7 +514,7 @@ flowchart TD
 
 **Docs:** documented-as-desired, accurate. SPEC §5.8 and [knowledge-graph.md](../knowledge-graph.md) still describe wiki-links, mentions and tags for the builder.
 
-**Gap:** Mentions (PR 58) and tags are not edges yet. The builder does not update incrementally on save and does not run in a Web Worker; the graph view (PR 57) and backlinks (PR 56) are not wired to it.
+**Gap:** Mentions (PR 58) and tags are not edges yet. The builder does not update incrementally on save and does not run in a Web Worker; the graph view (PR 57) is not wired to it (backlinks and search are, PR 56).
 
 **Related:** TASKS P4.1.
 
@@ -575,11 +575,11 @@ flowchart TD
 - The panel lists linking pages, with context snippets, and updates after a save.
 - Unlinked mentions are optional and SHOULD be listed separately.
 
-**Current state:** not-started. There is no backlinks UI.
+**Current state:** partial (PR 56). In a folder or Git space the open page shows a backlinks panel under its content ([BacklinksPanel.tsx](../../../packages/ui/src/components/backlinks/BacklinksPanel.tsx)): one row per linking page with its title and the text of its links, click to open. [folder-space.ts](../../../packages/ui/src/components/storage/folder-space.ts) `readFolderBacklinks()` reads the whole space's link graph (`readLinkGraph`) and returns the backlinks of every page by sidebar id (the root page by its file); dead links and links to files that are not pages are left out. The app re-reads it after the tree, the files or a page save change (debounced), so the panel updates after a save. The same pass feeds search: the text other pages link to a page with is indexed as part of that page, so a page is found by how it is linked. Tested at unit, component and App level, with an e2e screenshot (`docs/screenshots/features/backlinks-panel.png`).
 
 **Docs:** documented-as-desired and accurate. [roadmap.md](../../content/reference/roadmap.md) line 80 says "Planned". SPEC §5.8 item 4.
 
-**Gap:** Build the panel on top of [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files).
+**Gap:** Rows show the link text, not the surrounding sentence as a context snippet. Unlinked mentions are not listed. The whole space is re-read on each change rather than updated incrementally (fine at Phase 1 sizes). Other space kinds (browser storage) have no link graph and show no panel.
 
 **Related:** TASKS P4.3.
 
