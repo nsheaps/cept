@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.37.0](https://github.com/nsheaps/cept/compare/v0.36.0...v0.37.0) (2026-10-12)
+
+### Features
+
+* **markdown:** support footnotes and math ([#427](https://github.com/nsheaps/cept/issues/427)) ([9084282](https://github.com/nsheaps/cept/commit/90842828419abbb2c5fc9dd0c37f98859158a8c6))
+
 ## [0.36.0](https://github.com/nsheaps/cept/compare/v0.35.0...v0.36.0) (2026-10-12)
 
 ### Features
