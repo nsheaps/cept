@@ -623,10 +623,17 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 
 **PR 54 — `feat(ui): resolve relative links and assets through the backend`**
 
-- Changes: in-app navigation for relative `.md` links and heading anchors; relative images and attachments load through the StorageBackend; non-Markdown files listed read-only.
+- Changes: in-app navigation for relative `.md` links, folder links and heading anchors; broken links marked; relative images load through the StorageBackend. Non-Markdown files listed read-only moved to PR 54b to keep this PR small.
 - Red: component tests for link click and image load from `MemoryBackend`.
 - Accept: tests green.
 - Risk: blob URL lifetime; revoke on unmount.
+
+**PR 54b — `feat(ui): list foreign files with a read-only preview`**
+
+- Changes: files that are not `.md` pages and not ignored appear in the page tree under their folder; opening one previews images, PDFs and plain text, and otherwise offers a download. Never modified except to move, rename or delete on request.
+- Red: component tests for tree listing and each preview kind from `MemoryBackend`.
+- Accept: tests green.
+- Risk: large binaries; read on open only, revoke blob URLs on close.
 
 **PR 55 — `feat(ui): rewrite inbound links when a page moves`**
 

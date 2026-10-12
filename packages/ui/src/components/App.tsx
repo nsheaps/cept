@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
+import type { PageLinksContext } from './editor/page-links.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { SidebarPageRef } from './sidebar/Sidebar.js';
 import type { PageTreeNode } from './sidebar/PageTreeItem.js';
@@ -1185,6 +1186,7 @@ export function App() {
       routeResolvingRef.current = false;
       setNotFound(undefined);
       setSelectedPageId(id);
+      setPendingAnchor(undefined);
       setShowTrash(false);
       setPages((prev) => expandToNode(prev, id));
       const node = findNode(pages, id);
@@ -1205,6 +1207,30 @@ export function App() {
       }
     },
     [pages, addToRecent, pageContents, currentReadPage],
+  );
+
+  // Relative links and images of a folder or Git space's pages resolve against
+  // the space (REQ-EDT-027); other spaces have opaque page ids and no files.
+  const [pendingAnchor, setPendingAnchor] = useState<string | undefined>(undefined);
+  const handleLinkNavigate = useCallback(
+    (id: string, anchor?: string) => {
+      handlePageSelect(id);
+      setPendingAnchor(anchor);
+    },
+    [handlePageSelect],
+  );
+  const pageIds = useMemo(() => new Set(flattenPages(pages).map((p) => p.id)), [pages]);
+  const pageLinks = useMemo<PageLinksContext | undefined>(
+    () =>
+      activeSpace === 'user' && selectedPageId !== undefined && spaces.isFolder(userSpaceId)
+        ? {
+            pageId: selectedPageId,
+            hasPage: (id) => pageIds.has(id),
+            readFile: (path) => spaces.readSpaceFile(userSpaceId, path),
+            onNavigate: handleLinkNavigate,
+          }
+        : undefined,
+    [activeSpace, selectedPageId, spaces, userSpaceId, pageIds, handleLinkNavigate],
   );
 
   const handlePageToggle = useCallback((id: string) => {
@@ -3150,6 +3176,8 @@ export function App() {
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
                   editable={!editLocked}
+                  {...(pageLinks ? { links: pageLinks } : {})}
+                  {...(pendingAnchor ? { anchor: pendingAnchor } : {})}
                 />
               ) : (
                 <div className="text-center text-gray-400 mt-8" data-testid="page-loading">

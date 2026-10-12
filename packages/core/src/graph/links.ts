@@ -16,7 +16,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import type { Definition, Nodes } from 'mdast';
 import { frontMatterPrefix } from '../markdown/front-matter.js';
-import { parentFolder, splitPath } from '../space/path.js';
+import { joinPath, parentFolder, splitPath } from '../space/path.js';
 import { isPageFile } from '../space/tree.js';
 
 /** A link found in a page. */
@@ -102,16 +102,14 @@ function decode(text: string): string {
 }
 
 /**
- * Resolve a link `url` written in the page at `from` (a page file path
- * relative to the space root). Returns null for links that are not to a page
- * in the space: URLs with a scheme (`https:`, `mailto:`), protocol-relative
- * URLs, paths that leave the space root, and targets that are not `.md` or
- * `.markdown` files. A link is always to a file: a folder page is linked by
- * its index file (`guides/index.md`), not by the bare folder (`guides/`),
- * which needs a backend lookup to resolve and is a known limitation. A leading `/` is relative to the space root. The query
- * string is ignored and the path and anchor are percent-decoded.
+ * Resolve `url` written in the file at `from` (a path relative to the space
+ * root) to the path it points at, whatever the target is: a page, an image, a
+ * folder. Returns null for URLs with a scheme (`https:`, `mailto:`),
+ * protocol-relative URLs, paths that leave the space root, and an empty URL. A
+ * leading `/` is relative to the space root. The query string is ignored and
+ * the path and anchor are percent-decoded.
  */
-export function resolveLink(from: string, url: string): ResolvedLink | null {
+export function resolvePath(from: string, url: string): ResolvedLink | null {
   const trimmed = url.trim();
   if (trimmed === '' || SCHEME.test(trimmed) || trimmed.startsWith('//')) return null;
 
@@ -127,11 +125,66 @@ export function resolveLink(from: string, url: string): ResolvedLink | null {
   const base = pathPart.startsWith('/') ? [] : splitPath(parentFolder(from) ?? '');
   const segments = [...base];
   for (const segment of splitPath(pathPart)) {
+    if (segment === '.') continue;
     if (segment !== '..') segments.push(segment);
     else if (segments.length === 0) return null;
     else segments.pop();
   }
   const path = segments.join('/');
-  if (!isPageFile(segments.at(-1) ?? '')) return null;
   return anchor === undefined ? { path } : { path, anchor };
+}
+
+/**
+ * Resolve a link `url` written in the page at `from` to a page file. Like
+ * {@link resolvePath}, but also null for targets that are not `.md` or
+ * `.markdown` files. A link is always to a file: a folder page is linked by
+ * its index file (`guides/index.md`); a link to the bare folder is resolved
+ * against the page tree by {@link pageIdForPath}.
+ */
+export function resolveLink(from: string, url: string): ResolvedLink | null {
+  const resolved = resolvePath(from, url);
+  if (!resolved) return null;
+  return isPageFile(splitPath(resolved.path).at(-1) ?? '') ? resolved : null;
+}
+
+/**
+ * The file a page's relative links are written against: the file itself for a
+ * file page, a stand-in `index.md` inside the folder for a folder page.
+ */
+export function baseFileOfPage(id: string): string {
+  return isPageFile(splitPath(id).at(-1) ?? '') ? id : joinPath(id, 'index.md');
+}
+
+const FOLDER_PAGE_FILE = /^(index|readme)\.(md|markdown)$/i;
+
+/**
+ * The id of the page a resolved path stands for, or null when there is none:
+ * a file page by its file, a folder page by its folder or by its `index.md` /
+ * `README.md`. `hasPage` says whether an id exists in the space.
+ */
+export function pageIdForPath(path: string, hasPage: (id: string) => boolean): string | null {
+  if (path !== '' && hasPage(path)) return path;
+  const folder = parentFolder(path);
+  const name = splitPath(path).at(-1) ?? '';
+  if (folder !== null && folder !== '' && FOLDER_PAGE_FILE.test(name) && hasPage(folder))
+    return folder;
+  return null;
+}
+
+/**
+ * GitHub's heading slugs for a page's headings, in order: lowercase, punctuation
+ * removed, spaces to `-`, and `-1`, `-2` for repeats.
+ */
+export function headingSlugs(headings: readonly string[]): string[] {
+  const seen = new Map<string, number>();
+  return headings.map((heading) => {
+    const base = heading
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\p{M} _-]/gu, '')
+      .replace(/ /g, '-');
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  });
 }

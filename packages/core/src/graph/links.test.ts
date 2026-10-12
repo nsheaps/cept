@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { extractLinks, resolveLink } from './links.js';
+import {
+  extractLinks,
+  resolveLink,
+  resolvePath,
+  baseFileOfPage,
+  pageIdForPath,
+  headingSlugs,
+} from './links.js';
 
 describe('extractLinks', () => {
   it('finds inline links with their text and offsets', () => {
@@ -85,5 +92,65 @@ describe('resolveLink', () => {
 
   it('accepts .markdown pages', () => {
     expect(resolveLink('a.md', 'b.markdown')).toEqual({ path: 'b.markdown' });
+  });
+});
+
+describe('resolvePath', () => {
+  it('resolves any target, not just pages', () => {
+    expect(resolvePath('a/b.md', 'img/pic.png')).toEqual({ path: 'a/img/pic.png' });
+    expect(resolvePath('a/b.md', '../assets/pic%20one.png')).toEqual({
+      path: 'assets/pic one.png',
+    });
+    expect(resolvePath('a/b.md', '/assets/pic.png')).toEqual({ path: 'assets/pic.png' });
+    expect(resolvePath('a/b.md', './x/./y.pdf#page=2')).toEqual({
+      path: 'a/x/y.pdf',
+      anchor: 'page=2',
+    });
+  });
+
+  it('keeps a bare folder path', () => {
+    expect(resolvePath('a/b.md', '../guides/')).toEqual({ path: 'guides' });
+  });
+
+  it('is null for external URLs, escapes and empty input', () => {
+    expect(resolvePath('a.md', 'https://x.test/p.png')).toBeNull();
+    expect(resolvePath('a.md', 'data:image/png;base64,AAAA')).toBeNull();
+    expect(resolvePath('a.md', '//cdn.test/p.png')).toBeNull();
+    expect(resolvePath('a.md', '../p.png')).toBeNull();
+    expect(resolvePath('a.md', '')).toBeNull();
+  });
+});
+
+describe('baseFileOfPage', () => {
+  it('is the file itself for a file page and a stand-in index for a folder page', () => {
+    expect(baseFileOfPage('a/b.md')).toBe('a/b.md');
+    expect(baseFileOfPage('a/b')).toBe('a/b/index.md');
+  });
+});
+
+describe('pageIdForPath', () => {
+  const pages = new Set(['a/b.md', 'guides', 'README.md']);
+  const has = (id: string) => pages.has(id);
+
+  it('finds a file page, a folder page by folder, and a folder page by its index file', () => {
+    expect(pageIdForPath('a/b.md', has)).toBe('a/b.md');
+    expect(pageIdForPath('guides', has)).toBe('guides');
+    expect(pageIdForPath('guides/README.md', has)).toBe('guides');
+    expect(pageIdForPath('guides/index.md', has)).toBe('guides');
+    expect(pageIdForPath('README.md', has)).toBe('README.md');
+  });
+
+  it('is null when there is no such page', () => {
+    expect(pageIdForPath('missing.md', has)).toBeNull();
+    expect(pageIdForPath('a/other.md', has)).toBeNull();
+    expect(pageIdForPath('', has)).toBeNull();
+  });
+});
+
+describe('headingSlugs', () => {
+  it('follows GitHub: lowercase, punctuation removed, spaces to dashes, repeats numbered', () => {
+    expect(
+      headingSlugs(['Hello, World!', 'Install', 'Install', 'Install', 'A_b-c  d', 'Café 2']),
+    ).toEqual(['hello-world', 'install', 'install-1', 'install-2', 'a_b-c--d', 'café-2']);
   });
 });

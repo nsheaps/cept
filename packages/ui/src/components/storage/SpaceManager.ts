@@ -36,6 +36,7 @@ import {
   initFolderSpace,
   isFolderSpace,
   moveFolderPageToRoot,
+  readFolderFile,
   readFolderPage,
   readFolderTree,
   renameFolderPage,
@@ -949,6 +950,14 @@ export class SpaceManager {
     return this.isFolder(id)
       ? readFolderPage(this.store(id).backend, pageId)
       : readStorePage(this.store(id), pageId);
+  }
+
+  /**
+   * A file of a folder space (an image or attachment a page links to), by its
+   * path relative to the space root; null when missing or the space is not a folder space.
+   */
+  readSpaceFile(id: string, path: string): Promise<Uint8Array | null> {
+    return this.isFolder(id) ? readFolderFile(this.store(id).backend, path) : Promise.resolve(null);
   }
 
   writePage(id: string, pageId: string, content: string): Promise<void> {

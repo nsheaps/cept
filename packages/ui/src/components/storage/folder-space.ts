@@ -153,6 +153,11 @@ export function folderPageFile(backend: StorageBackend, id: string): Promise<str
   return pageFileOf(backend, id);
 }
 
+/** A file of a folder space (an image, an attachment) by its path relative to the space root. */
+export function readFolderFile(backend: StorageBackend, path: string): Promise<Uint8Array | null> {
+  return backend.readFile(at(path));
+}
+
 export async function readFolderPage(backend: StorageBackend, id: string): Promise<string | null> {
   const file = await pageFileOf(backend, id);
   const bytes = file ? await backend.readFile(at(file)) : null;

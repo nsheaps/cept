@@ -162,6 +162,10 @@ export type {
 export {
   extractLinks,
   resolveLink,
+  resolvePath,
+  baseFileOfPage,
+  pageIdForPath,
+  headingSlugs,
   buildLinkGraph,
   backlinksOf,
   readLinkGraph,

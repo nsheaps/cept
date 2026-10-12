@@ -1219,3 +1219,14 @@
 .dark .cept-editor .tiptap div.cept-callout[data-color='purple'] {
   background-color: rgba(168, 85, 247, 0.15);
 }
+
+/* A relative link to a page that does not exist, or an image that cannot be read (REQ-EDT-027). */
+.cept-editor a[data-broken='true'] {
+  color: #b42318;
+  text-decoration: line-through wavy;
+}
+.cept-editor img[data-broken='true'] {
+  outline: 2px dashed #b42318;
+  min-height: 2rem;
+  min-width: 2rem;
+}

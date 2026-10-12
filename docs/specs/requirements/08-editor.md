@@ -63,7 +63,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | implemented | documented-differently | stale         |
 | [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running)                      | Editor-area acceptance tests bound and running                           | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-026](#req-edt-026--page-front-matter-schema)                                            | Page front matter schema                                                 | MUST     | partial     | documented-as-desired  | accurate      |
-| [REQ-EDT-027](#req-edt-027--standard-links-assets-and-foreign-files)                             | Standard links, assets and foreign files                                 | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-027](#req-edt-027--standard-links-assets-and-foreign-files)                             | Standard links, assets and foreign files                                 | MUST     | partial     | documented-as-desired  | accurate      |
 
 Priority is MUST for items the owner named directly and for their direct prerequisites. Derived refinements are SHOULD.
 
@@ -771,11 +771,17 @@ The title is `title` from front matter, else the text of the first level-1 headi
 - A move test rewrites inbound and outbound links and leaves external links and ignored files unchanged.
 - A space opened in Cept and the same space on GitHub show the same links and images.
 
-**Current state:** not-started. Page ids are already space-relative paths ([space/tree.ts](../../../packages/core/src/space/tree.ts)), but relative links and images in a page body are not resolved through the backend, images can only be inserted by URL, and non-Markdown files are not listed.
+**Current state:** partial. In a folder or Git space ([`page-links.ts`](../../../packages/ui/src/components/editor/page-links.ts), [`graph/links.ts`](../../../packages/core/src/graph/links.ts)):
 
-**Docs:** undocumented.
+- Relative, root-relative, percent-encoded and `..` page links resolve; a link to a folder or to its `README.md` / `index.md` opens the folder page; `#anchor` links scroll to the heading by GitHub slug, in the same page or after opening another. A page that is read-only follows a click; an editable page follows Ctrl or Cmd click, so a plain click still places the caret.
+- A link to a page that does not exist is marked broken (`data-broken`) and kept as written.
+- Relative images are read through the space's `StorageBackend` and shown from blob URLs, which are revoked when the page is closed; an image that cannot be read is marked broken.
 
-**Gap:** Link and asset resolution (PR 54), rewrite on move (PR 55), foreign-file previews, and a guide page.
+Not yet: rewriting links when a page or asset moves (PR 55), adding files by paste, drop or upload into `assets/`, listing foreign files in the page tree with a read-only preview, and angle-bracket destinations written by Cept. Other spaces (browser storage) have opaque page ids and no files, so their links are not resolved.
+
+**Docs:** documented in this requirement; a guide page is still to write.
+
+**Gap:** Rewrite on move (PR 55), asset adding, foreign-file listing and previews (PR 54b), and a guide page.
 
 **Related:** [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files), [REQ-EDT-021](#req-edt-021--backlinks-panel), [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem).
 
