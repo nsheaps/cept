@@ -131,6 +131,7 @@ export function DiscoveredSpacesSection({
                         <select
                           value={authId}
                           onChange={(e) => setPicked((p) => ({ ...p, [id]: e.target.value }))}
+                          aria-label={`Sign in with, for ${space.name}`}
                           data-testid={`discovered-auth-${id}`}
                         >
                           {reaching.map((reachingId, i) => (

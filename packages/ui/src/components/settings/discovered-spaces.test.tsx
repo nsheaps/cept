@@ -274,6 +274,25 @@ describe('useDiscoveredSpaces with several auths (REQ-AUTH-020)', () => {
     expect(latest?.snapshot?.spaces).toHaveLength(1);
   });
 
+  it('notes a warning once when several accounts hit the same one', async () => {
+    const limited = { kind: 'rate-limited', message: 'rate limit' } as const;
+    const secret = { kind: 'access', repo: 'org/secret', message: 'org/secret could not be read' };
+    const discover = vi.fn<Discover>(async (options) =>
+      options.token === 'token-a'
+        ? result([], { warnings: [limited, secret] })
+        : result([], { warnings: [limited] }),
+    );
+    renderWith(
+      fakeAuths([
+        { id: 'a', login: 'alice' },
+        { id: 'b', login: 'bob' },
+      ]),
+      discover,
+    );
+    await waitFor(() => expect(latest?.status).toBe('done'));
+    expect(latest?.snapshot?.warnings).toEqual([limited, secret]);
+  });
+
   it("keeps the other account's spaces and names the account that failed", async () => {
     const discover = vi.fn<Discover>(async (options) => {
       if (options.token === 'token-b') throw new Error('GitHub rejected the token');

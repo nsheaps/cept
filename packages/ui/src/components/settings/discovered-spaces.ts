@@ -161,6 +161,7 @@ function mergeSnapshots(targets: readonly Target[], results: Record<string, Acco
   const reachedBy: Record<string, string[]> = {};
   const lost = new Map<string, LostSpace>();
   const warnings: AutodiscoveryWarning[] = [];
+  const warningSeen = new Set<string>();
   let complete = true;
   let checkedAt = '';
   let any = false;
@@ -177,7 +178,12 @@ function mergeSnapshots(targets: readonly Target[], results: Record<string, Acco
       const id = discoveredSpaceId(l.space);
       if (!lost.has(id)) lost.set(id, l);
     }
-    warnings.push(...snapshot.warnings);
+    for (const w of snapshot.warnings) {
+      const key = JSON.stringify([w.kind, 'repo' in w ? w.repo : '', w.message]);
+      if (warningSeen.has(key)) continue;
+      warningSeen.add(key);
+      warnings.push(w);
+    }
     complete = complete && snapshot.complete;
     if (snapshot.checkedAt > checkedAt) checkedAt = snapshot.checkedAt;
   }
