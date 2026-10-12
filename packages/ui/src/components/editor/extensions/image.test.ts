@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { Editor } from '@tiptap/core';
+import { documentExtensions } from '../document-extensions.js';
 import { ImageBlock } from './image.js';
 
 describe('ImageBlock extension', () => {
@@ -19,14 +21,19 @@ describe('ImageBlock extension', () => {
   it('parses from figure[data-type="image"]', () => {
     const ext = ImageBlock;
     const parseRules = ext.config.parseHTML?.call(ext);
-    expect(parseRules).toEqual([{ tag: 'figure[data-type="image"]' }]);
+    expect(parseRules).toEqual([{ tag: 'figure[data-type="image"]' }, { tag: 'img[src]' }]);
   });
 
-  it('has markdown parse.updateDOM that transforms img to figure', () => {
-    const ext = ImageBlock;
-    const storage = ext.config.addStorage?.call(ext);
-    expect(storage?.markdown?.parse?.updateDOM).toBeDefined();
-    expect(typeof storage?.markdown?.parse?.updateDOM).toBe('function');
+  it('reads a bare image in pasted HTML as an image block', () => {
+    const editor = new Editor({
+      element: document.createElement('div'),
+      extensions: documentExtensions(),
+      content: '<img src="a.png" alt="An image">',
+    });
+    const image = editor.getJSON().content?.[0];
+    expect(image?.type).toBe('imageBlock');
+    expect(image?.attrs).toMatchObject({ src: 'a.png', alt: 'An image' });
+    editor.destroy();
   });
 
   it('has src attribute defaulting to null', () => {

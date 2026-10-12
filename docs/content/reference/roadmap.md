@@ -39,7 +39,7 @@ Full storage backend implementation and data management.
 | IndexedDB backend (BrowserFsBackend with lightning-fs or OPFS) | Done | [storage-backends](../../specs/storage-backends.md) |
 | Local folder backend (File System Access API / Node fs) | Done | [storage-backends](../../specs/storage-backends.md) |
 | Git backend (isomorphic-git) | Done | [storage-backends](../../specs/storage-backends.md) |
-| Markdown parser/serializer (roundtrip-safe) | Done | [markdown-parser](../../specs/markdown-parser.md) |
+| Markdown pipeline (remark, lossless round-trip, used by the editor) | Done | [markdown-parser](../../specs/markdown-parser.md) |
 | Multi-space support | Done | — |
 | Space switching (create, switch, rename, delete from Settings) | Done | — |
 | Import from Notion (ZIP) | Done | — |

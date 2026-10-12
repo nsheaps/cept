@@ -94,10 +94,16 @@ describe('Media Blocks', () => {
     it('renders multiple media blocks together', async () => {
       const { container } = render(
         <CeptEditor
-          content={`<p>Some text before media</p>
-<figure data-type="image" data-src="https://example.com/img.jpg" data-alt="test" data-width="100%" data-caption=""><img src="https://example.com/img.jpg" alt="test" style="width: 100%; max-width: 100%;" draggable="false"></figure>
-<aside data-type="bookmark" data-url="https://example.com" data-title="Link" data-description="" data-favicon="" data-image=""><a href="https://example.com" target="_blank" rel="noopener noreferrer" class="cept-bookmark-link" contenteditable="false"><div class="cept-bookmark-text"><div class="cept-bookmark-title">Link</div><div class="cept-bookmark-meta"><span class="cept-bookmark-url">https://example.com</span></div></div></a></aside>
-<p>Some text after media</p>`}
+          content={[
+            'Some text before media',
+            '',
+            '<figure data-type="image"><img src="https://example.com/img.jpg" alt="test"></figure>',
+            '',
+            '<aside data-type="bookmark" data-url="https://example.com" data-title="Link"><a href="https://example.com">Link</a></aside>',
+            '',
+            'Some text after media',
+            '',
+          ].join('\n')}
         />,
       );
       await waitFor(() => {

@@ -41,13 +41,13 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-002](#req-edt-002--rich-custom-blocks-are-editable-in-wysiwyg-mode)                     | Rich custom blocks are editable in WYSIWYG mode                          | MUST     | partial     | documented-differently | stale         |
 | [REQ-EDT-003](#req-edt-003--slash-menu-exposes-all-supported-blocks)                             | Slash menu exposes all supported blocks                                  | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-004](#req-edt-004--inline-mentions-pagepersondate)                                      | Inline mentions (@page/@person/@date)                                    | SHOULD   | stubbed     | documented-as-desired  | stale         |
-| [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)          | Pages persist as Markdown with lossless WYSIWYG round-trip               | MUST     | divergent   | documented-differently | stale         |
+| [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)          | Pages persist as Markdown with lossless WYSIWYG round-trip               | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-006](#req-edt-006--database-engine-crud-filter-sort-group-formula-relations-rollups)    | Database engine (CRUD, filter, sort, group, formula, relations, rollups) | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-007](#req-edt-007--database-storage-in-multiple-formats)                                | Database storage in multiple formats                                     | MUST     | partial     | documented-differently | n/a           |
 | [REQ-EDT-008](#req-edt-008--database-views-rendered-from-real-data)                              | Database views rendered from real data                                   | MUST     | stubbed     | documented-as-desired  | stale         |
 | [REQ-EDT-009](#req-edt-009--inline-and-linked-database-blocks-in-pages)                          | Inline and linked database blocks in pages                               | SHOULD   | stubbed     | documented-as-desired  | stale         |
 | [REQ-EDT-010](#req-edt-010--markdown-plugins-via-fenced-code-annotations)                        | Markdown plugins via fenced-code annotations                             | MUST     | divergent   | documented-as-desired  | stale         |
-| [REQ-EDT-011](#req-edt-011--fenced-annotation-blocks-serialize-back-to-fenced-code)              | Fenced annotation blocks serialize back to fenced code                   | MUST     | divergent   | documented-differently | stale         |
+| [REQ-EDT-011](#req-edt-011--fenced-annotation-blocks-serialize-back-to-fenced-code)              | Fenced annotation blocks serialize back to fenced code                   | MUST     | partial     | documented-differently | stale         |
 | [REQ-EDT-012](#req-edt-012--math-rendering-block-and-inline)                                     | Math rendering (block and inline)                                        | SHOULD   | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)                                | Extensible annotation/plugin registry                                    | SHOULD   | partial     | documented-differently | n/a           |
 | [REQ-EDT-014](#req-edt-014--github-flavored-markdown-core-syntax)                                | GitHub Flavored Markdown core syntax                                     | MUST     | partial     | documented-as-desired  | accurate      |
@@ -59,8 +59,8 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model)                                  | Single consistent graph data model                                       | SHOULD   | divergent   | documented-differently | stale         |
 | [REQ-EDT-021](#req-edt-021--backlinks-panel)                                                     | Backlinks panel                                                          | SHOULD   | not-started | documented-as-desired  | accurate      |
 | [REQ-EDT-022](#req-edt-022--html-fallback-for-blocks-with-no-markdown-representation)            | HTML fallback for blocks with no Markdown representation                 | MUST     | partial     | documented-as-desired  | accurate      |
-| [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | partial     | undocumented           | n/a           |
-| [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | divergent   | documented-differently | stale         |
+| [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | implemented | undocumented           | n/a           |
+| [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)                             | Toggle block encoding is GFM-compatible                                  | SHOULD   | implemented | documented-differently | stale         |
 | [REQ-EDT-025](#req-edt-025--editor-area-acceptance-tests-bound-and-running)                      | Editor-area acceptance tests bound and running                           | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-026](#req-edt-026--page-front-matter-schema)                                            | Page front matter schema                                                 | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-027](#req-edt-027--standard-links-assets-and-foreign-files)                             | Standard links, assets and foreign files                                 | MUST     | not-started | undocumented           | n/a           |
@@ -100,12 +100,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    MD["Space .md files"] -->|load| TM["tiptap-markdown 0.9 (html: true)"]
-    TM --> PM["ProseMirror document"]
-    PM --> ED["CeptEditor (no NodeViews)"]
-    ED -->|"getMarkdown()"| TM
-    TM -->|"write: data-type HTML for most custom blocks"| MD
-    CP["CeptMarkdownParser (core, tested)"] -. "exported only, unused" .-> X1["(not wired)"]
+    MD["Space .md files"] -->|load| PIPE["remark pipeline (core) + markdown-bridge"]
+    PIPE --> PM["ProseMirror document"]
+    PM --> ED["CeptEditor"]
+    ED -->|"save: unchanged blocks keep their source"| PIPE
+    PIPE -->|write| MD
     ENG["CeptDatabaseEngine (YAML only)"] -. "DatabaseProvider never mounted" .-> X2["(not wired)"]
     VIEWS["Database view components"] -. "rendered nowhere" .-> X2
     KG["KnowledgeGraph components (D3)"] -. "rendered nowhere" .-> X3["(not wired)"]
@@ -197,7 +196,7 @@ flowchart TD
 - An inserted mention survives save and reload, using a documented Markdown encoding.
 - Page mentions appear as edges in the graph ([REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)) and in backlinks.
 
-**Current state:** stubbed. [mention.ts](../../../packages/ui/src/components/editor/extensions/mention.ts) defines PageMention, PersonMention and DateMention with unit tests, but `CeptEditor.tsx` does not register them. The core [parser.ts](../../../packages/core/src/markdown/parser.ts) handles `<!-- cept:mention -->` comments, but that parser is not wired into the app.
+**Current state:** stubbed. [mention.ts](../../../packages/ui/src/components/editor/extensions/mention.ts) defines PageMention, PersonMention and DateMention with unit tests, but `CeptEditor.tsx` does not register them. The Markdown pipeline has no mention encoding; a `<!-- cept:mention -->` comment loads as raw Markdown and is kept as written.
 
 **Docs:** documented-as-desired but stale. TASKS T2.9 is checked, and [features.md](../../content/guides/features.md) presents mentions as available.
 
@@ -223,11 +222,11 @@ flowchart TD
 
 **Custom blocks (PR 48, [html-blocks.ts](../../../packages/core/src/markdown/html-blocks.ts)):** Cept's own blocks are stored as HTML so that GitHub shows something sensible. Containers are written as tags around a Markdown body, separated by blank lines, so GitHub renders the body: a toggle is `<details>`/`<summary>` ([REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)), a callout is `<div data-type="callout" data-icon data-color>`, and columns are `<div data-type="columns">` holding at least two `<div data-type="column">`. Leaf blocks are one element: an embed is `<figure data-type="embed" data-src data-provider data-width data-height>` and a bookmark is `<aside data-type="bookmark" data-url data-title data-description data-favicon data-image>`, each wrapping a link; an image with a caption or width is `<figure data-type="image">`, otherwise a Markdown image. remark splits a container into separate HTML and body nodes, so the loader regroups them from their opening and closing tags and records each block's source by offset, which keeps source reuse working even when one HTML node holds tags for two blocks. Unbalanced or misplaced tags, unknown `data-type`s and any other HTML stay `rawBlock` and save byte for byte. Recovery is local: a tag that does not nest, or a container that cannot load where it is (a column outside columns), becomes `rawBlock`s around its body, and the containers around it still load. An image figure keeps the image title as a `title` attribute on its `<img>`, and empty `src`, `data-src` and `data-url` attributes are left out. Two older forms load as the same nodes and save in the form above (documented normalization, fixtures in `__fixtures__/normalized/`): a container written as one line of HTML, and the HTML the old TipTap editor wrote (with `cept-callout-icon` and `cept-*-content` wrappers). The round-trip corpus checks three things per fixture: load and save without edits is byte for byte (all 20 pass); a full rewrite re-parses to the same document (all pass); and a full rewrite is byte for byte, with the remaining normalizations listed in `expected-failures.json` (a blank line after a paragraph before an HTML comment, math escaping until PR 52, centred table padding).
 
-**Current state:** divergent. The app saves via tiptap-markdown `getMarkdown()` ([CeptEditor.tsx](../../../packages/ui/src/components/editor/CeptEditor.tsx) line 222, written at [App.tsx](../../../packages/ui/src/components/App.tsx) lines 737-744). The tested `CeptMarkdownParser` ([parser.ts](../../../packages/core/src/markdown/parser.ts), [parser.test.ts](../../../packages/core/src/markdown/parser.test.ts), TASKS P2.2) is only re-exported from [core/src/index.ts](../../../packages/core/src/index.ts) line 125 and is not used by the app. Two Markdown dialects therefore exist, and the one users actually hit has no round-trip tests in `packages/ui`.
+**Current state:** partial. Since PR 49b the editor loads and saves pages through the pipeline ([markdown-bridge.ts](../../../packages/ui/src/components/editor/markdown-bridge.ts)): `CeptEditor` parses its Markdown once, keeps the document as the editor holds it (with the editor's attribute defaults) as the save baseline, and on every update writes Markdown in which each untouched block keeps its source. Paste reads plain text as Markdown (Shift+paste keeps it as typed) and copy writes Markdown. `tiptap-markdown` and the older `CeptMarkdownParser` are removed. Tests: every corpus fixture saves unchanged through the editor schema ([document-extensions.test.ts](../../../packages/ui/src/components/editor/document-extensions.test.ts)); an edit keeps every other block's source and the front matter ([markdown-bridge.test.ts](../../../packages/ui/src/components/editor/markdown-bridge.test.ts), [CeptEditor.test.tsx](../../../packages/ui/src/components/editor/CeptEditor.test.tsx)). The static renderer and the exporters do not use the pipeline yet (REQ-SSG-004).
 
-**Docs:** documented-differently and stale. [markdown-parser.md](../markdown-parser.md) line 32 says the core parser is "Depended on by: editor, storage backends, search index". It is not used by the editor. [roadmap.md](../../content/reference/roadmap.md) line 42 marks "Markdown parser/serializer (roundtrip-safe)" as "Done", which is true only of the unused core parser. Concrete consequence: [toggle.ts](../../../packages/ui/src/components/editor/extensions/toggle.ts) line 151 leaves its Markdown `parse` hook empty with the comment "Toggle parsing handled by CeptMarkdownParser preprocessor", but that preprocessor never runs in the app (see [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible)).
+**Docs:** documented-as-desired and accurate: [markdown-parser.md](../markdown-parser.md) describes the pipeline and how the editor uses it.
 
-**Gap:** The core pipeline exists (PRs 47 and 48) but the editor still uses tiptap-markdown. Wire the pipeline into the editor and retire `CeptMarkdownParser`'s block path and tiptap-markdown, then add editor-level round-trip tests and update `markdown-parser.md`.
+**Gap:** Route the static renderer and the exporters through the same pipeline (REQ-SSG-004), and add E2E tests that open a page file, edit it and check the saved bytes.
 
 **Related:** TASKS P2.2.
 
@@ -336,7 +335,7 @@ flowchart TD
 - A fence such as ` ```python ` stays a highlighted code block.
 - E2E tests load these blocks from Markdown, not only through slash insertion.
 
-**Current state:** partial. Mermaid is the first fenced-block plugin (PR 51, [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)). [mermaid.ts](../../../packages/ui/src/components/editor/extensions/mermaid.ts) claims ` ```mermaid ` fences, imports the `mermaid` package lazily on the first render and draws the SVG with `securityLevel: 'strict'`; a diagram that does not parse shows its source and the error. The block saves back as a plain ` ```mermaid ` fence (byte for byte when unchanged), and HTML saved before the plugin (`data-mermaid`) still loads. A unit test loads a fence from Markdown into the editor and saves it back unchanged, and the slash-command E2E test waits for the rendered SVG. The editor does not load pages through the pipeline until PR 49, so a fence in a page file still opens as a code block until then. Nothing handles ` ```math ` yet (PR 52).
+**Current state:** partial. Mermaid is the first fenced-block plugin (PR 51, [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)). [mermaid.ts](../../../packages/ui/src/components/editor/extensions/mermaid.ts) claims ` ```mermaid ` fences, imports the `mermaid` package lazily on the first render and draws the SVG with `securityLevel: 'strict'`; a diagram that does not parse shows its source and the error. The block saves back as a plain ` ```mermaid ` fence (byte for byte when unchanged), and HTML saved before the plugin (`data-mermaid`) still loads. A unit test loads a fence from Markdown into the editor and saves it back unchanged, and the slash-command E2E test waits for the rendered SVG. Since PR 49b the editor loads pages through the pipeline, so a fence in a page file opens as a diagram. Nothing handles ` ```math ` yet (PR 52).
 
 **Docs:** documented-as-desired but stale. [markdown-extensions.md](../../content/guides/markdown-extensions.md) says mermaid uses fenced blocks, which is not true on load. TASKS T2.11 and [README.md](../../../README.md) line 25 claim live preview, 20+ diagram types and SVG/PNG export.
 
@@ -357,7 +356,7 @@ flowchart TD
 - Loading a ` ```mermaid ` fence and saving it without edits produces an identical fence.
 - No `data-type` HTML is emitted for annotation blocks.
 
-**Current state:** divergent. Only [toggle.ts](../../../packages/ui/src/components/editor/extensions/toggle.ts) (line 121) and [image.ts](../../../packages/ui/src/components/editor/extensions/image.ts) (line 126) define Markdown serializers. With `html: true`, tiptap-markdown most likely emits `<div data-type="mermaid" ...>` for mermaid and math. This is inferred from library behaviour and was not verified at runtime because `node_modules` is absent. The core parser instead wraps the fence in a `cept:block` comment.
+**Current state:** partial. The editor saves through the pipeline (PR 49b), whose fenced-block plugins release a ` ```mermaid ` block back to a plain fence, byte for byte when unchanged (`mermaid.test.ts`, `document-extensions.test.ts`); no `data-type` HTML is written for it. Math is stored as `$$`/`$` (remark-math), not as a fence; other annotation plugins do not exist yet.
 
 **Docs:** documented-differently and stale. SPEC §5.9, `markdown-extensions.md` and the code give three different answers.
 
@@ -422,11 +421,11 @@ flowchart TD
 - Each GFM construct renders WYSIWYG and round-trips (see [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)).
 - Bare URLs in loaded Markdown render as links, and the autolink-while-typing behaviour is an explicit, documented choice.
 
-**Current state:** partial. `CeptEditor.tsx` registers StarterKit (strike), TaskList/TaskItem, Table, CodeBlockLowlight and tiptap-markdown 0.9.0 (`Markdown.configure` at lines 210-214 sets `html`, `transformPastedText` and `transformCopiedText` only). The core parser uses remark-gfm, but it is not wired into the app ([REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)). Table E2E coverage (slash insertion only) is in [slash-commands.spec.ts](../../../e2e/tests/slash-commands.spec.ts) from line 318. Link `autolink: false` is set (CeptEditor.tsx line 111), so URLs are not autolinked while typing, and `linkify` is not enabled on tiptap-markdown, so GFM bare-URL autolinks in loaded Markdown most likely stay plain text (inferred from the library default; not verified at runtime because `node_modules` is absent). There are no load-from-Markdown or round-trip tests for any GFM construct in `packages/ui`.
+**Current state:** partial. The editor schema has StarterKit (strike), TaskList/TaskItem, Table and CodeBlockLowlight ([document-extensions.ts](../../../packages/ui/src/components/editor/document-extensions.ts)), and pages load through remark-gfm (PR 49b), which reads bare URLs as links (kept as literal autolinks on save). The GFM fixtures of the core corpus load into the editor schema and save unchanged (`document-extensions.test.ts`). Table E2E coverage (slash insertion only) is in [slash-commands.spec.ts](../../../e2e/tests/slash-commands.spec.ts) from line 318. Link `autolink: false` is still set, so URLs are not autolinked while typing.
 
 **Docs:** documented-as-desired and accurate: [markdown-extensions.md](../../content/guides/markdown-extensions.md), [.claude/rules/content-formatting.md](../../../.claude/rules/content-formatting.md).
 
-**Gap:** Enable GFM autolinks on load (tiptap-markdown `linkify`) or document the exception, confirm that disabling autolink while typing is intended, and add editor-level GFM load and round-trip tests.
+**Gap:** Confirm that disabling autolink while typing is intended, and add E2E tests that load GFM pages from files.
 
 **Related:** none.
 
@@ -444,11 +443,11 @@ flowchart TD
 - Users can insert a footnote from the editor (slash command or shortcut).
 - Footnotes round-trip unchanged.
 
-**Current state:** partial. The shared Markdown pipeline models footnotes (PR 52): `[^id]` loads as an inline `footnoteReference {identifier, label}` and `[^id]: ...` as a `footnoteDefinition {identifier, label}` block holding the definition's blocks. Both are written back with the label as typed, and an unchanged definition is saved byte for byte (corpus fixtures `footnotes.md` and `footnotes-reuse.md`). The editor has the matching nodes (PR 49a): a reference renders as a superscript number and jumps to its definition when clicked; a definition renders as a numbered note. Every corpus fixture loads into the editor schema and saves unchanged (`document-extensions.test.ts`). The editor does not load pages through the pipeline until PR 49b, so a footnote in a file does not reach the editor yet, and there is no way to insert one. The older `CeptMarkdownParser`'s `convertNode` still drops footnote definitions; PR 49 retires it.
+**Current state:** partial. The shared Markdown pipeline models footnotes (PR 52): `[^id]` loads as an inline `footnoteReference {identifier, label}` and `[^id]: ...` as a `footnoteDefinition {identifier, label}` block holding the definition's blocks. Both are written back with the label as typed, and an unchanged definition is saved byte for byte (corpus fixtures `footnotes.md` and `footnotes-reuse.md`). The editor has the matching nodes (PR 49a): a reference renders as a superscript number and jumps to its definition when clicked; a definition renders as a numbered note. Every corpus fixture loads into the editor schema and saves unchanged (`document-extensions.test.ts`). Since PR 49b the editor loads pages through the pipeline, so footnotes in a file appear in the editor and save unchanged. There is no way to insert one yet.
 
 **Docs:** undocumented.
 
-**Gap:** Loading pages through the pipeline (PR 49b), insertion from the editor, and user docs.
+**Gap:** Insertion from the editor, and user docs.
 
 **Related:** none.
 
@@ -466,7 +465,7 @@ flowchart TD
 - The rendered footnote list shows a back-reference to each use.
 - Editing the definition is reflected at every reference without further edits.
 
-**Current state:** partial. In the pipeline (PR 52), every reference to one definition carries the same `identifier`, and the definition is one block, so editing it rewrites the definition once and every reference keeps pointing at it (unit test in `document.test.ts`). In the editor (PR 49a), numbers are not stored: decorations number each identifier by its first reference, so every reference to `[^a]` shows the same number, and each definition ends with a back-reference link per use (`↩1`, `↩2`) that jumps to that reference (`footnote.test.ts`). This reaches users once PR 49b loads pages through the pipeline. A related "synced block" exists only as a serialize case in the core parser, with no editor extension.
+**Current state:** partial. In the pipeline (PR 52), every reference to one definition carries the same `identifier`, and the definition is one block, so editing it rewrites the definition once and every reference keeps pointing at it (unit test in `document.test.ts`). In the editor (PR 49a), numbers are not stored: decorations number each identifier by its first reference, so every reference to `[^a]` shows the same number, and each definition ends with a back-reference link per use (`↩1`, `↩2`) that jumps to that reference (`footnote.test.ts`). This reaches users since PR 49b loads pages through the pipeline. A "synced block" (one block shown in several places) does not exist.
 
 **Docs:** undocumented. SPEC §5.1 mentions synced blocks but not footnote reuse.
 
@@ -618,11 +617,11 @@ flowchart TD
 - A corpus of unsupported constructs survives load and save byte-for-byte.
 - Raw blocks are visible in the editor, and they are editable as source or at least deletable.
 
-**Current state:** partial. The shared Markdown pipeline keeps Markdown it does not model (unknown HTML, comments, link reference definitions) as `rawBlock` and `rawInline` nodes holding the source, and the round-trip corpus checks it survives (`unknown-html.md`, `html-container.md`). The editor schema has both nodes (PR 49a): they show the source, are deletable but not editable, and every corpus fixture saves unchanged through the editor (`document-extensions.test.ts`, `raw-markdown.test.ts`). The editor still loads pages through `tiptap-markdown`, whose HTML parse discards elements without a parse rule, until PR 49b. The older core parser returns `null` for non-cept HTML; PR 49b retires it.
+**Current state:** partial. The shared Markdown pipeline keeps Markdown it does not model (unknown HTML, comments, link reference definitions) as `rawBlock` and `rawInline` nodes holding the source, and the round-trip corpus checks it survives (`unknown-html.md`, `html-container.md`). The editor schema has both nodes (PR 49a): they show the source, are deletable but not editable, and every corpus fixture saves unchanged through the editor (`document-extensions.test.ts`, `raw-markdown.test.ts`). Since PR 49b the editor loads pages through the pipeline, so raw blocks reach the editor and save byte for byte.
 
 **Docs:** undocumented.
 
-**Gap:** Loading pages through the pipeline (PR 49b); editing raw blocks as source.
+**Gap:** Editing raw blocks as source (optional; deleting them is supported).
 
 **Related:** none.
 
@@ -655,11 +654,11 @@ Body Markdown, any blocks, including nested toggles.
 - A saved toggle renders as collapsible content on GitHub.
 - A blockquote is never loaded as a toggle, and a toggle is never loaded as a blockquote, in round-trip tests.
 
-**Current state:** divergent, and lossy in the running app. [toggle.ts](../../../packages/ui/src/components/editor/extensions/toggle.ts) lines 121-148 serialize as `> summary` followed by 2-space-indented content, which standard GFM renders as a blockquote. On load the editor only recognises `details[data-type="toggle"]` (line 67); the Markdown `parse` hook is empty (lines 150-152) and defers to the `CeptMarkdownParser` toggle preprocessor ([parser.ts](../../../packages/core/src/markdown/parser.ts) line 110), which the app never calls. So a toggle created in the editor and saved most likely reloads as a blockquote (inferred from the code; not verified at runtime). The demo content works only because it is authored as `<details data-type="toggle">` HTML ([App.tsx](../../../packages/ui/src/components/App.tsx) lines 1645-1649). The E2E toggle check in [feature-screenshots.spec.ts](../../../e2e/tests/feature-screenshots.spec.ts) lines 86-101 is guarded by `if (toggleCount > 0)` and would pass with no toggles.
+**Current state:** implemented in the editor. Since PR 49b the editor saves through the pipeline, which writes a toggle as `<details>`/`<summary>` around its Markdown body and loads `<details>` (with or without `data-type="toggle"`) as a toggle; the older `> summary` form loads as a blockquote. The corpus fixtures `toggle-details.md` and `toggle-nested.md` load into the editor schema and save unchanged (`document-extensions.test.ts`), and `html-blocks.test.ts` checks a blockquote never loads as a toggle. The E2E toggle check in [feature-screenshots.spec.ts](../../../e2e/tests/feature-screenshots.spec.ts) is still guarded by `if (toggleCount > 0)`.
 
 **Docs:** documented-differently and stale. [toggle-syntax.md](../../content/guides/toggle-syntax.md) documents the `>` syntax and says "These are all covered by automated tests", but those tests exercise only the unused core parser, not the editor. [features.md](../../content/guides/features.md) lines 53-68 author real toggles in this syntax, which will load as blockquotes once `docs/content/` is loaded as a space (PR #67, which did this at runtime, is closed per D-42). SPEC §4.2 specifies a `cept:block` comment instead.
 
-**Gap:** Decide the canonical encoding (the `<details>` HTML the parser already accepts is the GFM-compatible option), make load and save agree, add an editor round-trip test, then update SPEC, docs and the serializer.
+**Gap:** Update SPEC §4.2 and [toggle-syntax.md](../../content/guides/toggle-syntax.md) to the `<details>` encoding, and make the E2E toggle check unconditional.
 
 **Related:** none.
 
@@ -731,7 +730,7 @@ The title is `title` from front matter, else the text of the first level-1 headi
 - Unit tests cover the title fallbacks, the compatibility aliases, wrong types, invalid YAML and a minimal edit of one reserved key.
 - The editor body never contains the raw front matter text.
 
-**Current state:** partial (PR 46). [front-matter.ts](../../../packages/core/src/markdown/front-matter.ts) splits and rejoins a page byte for byte (BOM, `...` closer, CRLF), reads the reserved keys with the aliases, type checks and warnings (`readFrontMatter`), computes the title fallback (`pageTitle`), and edits one key with a minimal change (`setFrontMatterKey`). `CeptMarkdownParser.parse` keeps the front matter verbatim in `ParsedPage.frontMatter` and `serialize` writes it back; the six front matter fixtures of the round-trip corpus pass. `App.tsx` passes only the body to the editor and puts the front matter back on save. Not yet done: nothing in the UI calls `setFrontMatterKey` (icon and cover pickers, PR 59), warnings are not shown on the page, new pages are not written with `title` and `created`, and `order` does not sort the sidebar. The sidebar title still comes from the page tree, not `pageTitle`.
+**Current state:** partial (PR 46). [front-matter.ts](../../../packages/core/src/markdown/front-matter.ts) splits and rejoins a page byte for byte (BOM, `...` closer, CRLF), reads the reserved keys with the aliases, type checks and warnings (`readFrontMatter`), computes the title fallback (`pageTitle`), and edits one key with a minimal change (`setFrontMatterKey`). `parseMarkdownDocument` keeps the front matter verbatim and `serializeMarkdownDocument` writes it back; the six front matter fixtures of the round-trip corpus pass. `App.tsx` passes only the body to the editor and puts the front matter back on save. Not yet done: nothing in the UI calls `setFrontMatterKey` (icon and cover pickers, PR 59), warnings are not shown on the page, new pages are not written with `title` and `created`, and `order` does not sort the sidebar. The sidebar title still comes from the page tree, not `pageTitle`.
 
 **Docs:** documented-as-desired and accurate: [reference/front-matter.md](../../content/reference/front-matter.md).
 
@@ -787,7 +786,7 @@ Items marked **Decided** have owner direction recorded. Remaining items still ne
 1. **Canonical block encoding.** [SPECIFICATION.md](../../SPECIFICATION.md) §4.2 and [CLAUDE.md](../../../CLAUDE.md) rule 9 require `<!-- cept:block {...} -->` comments. [markdown-extensions.md](../../content/guides/markdown-extensions.md) and [content-formatting.md](../../../.claude/rules/content-formatting.md) specify `data-type` HTML elements. The running editor emits `data-type` HTML, and the unused core parser emits comments. The handler's "Fallback to HTML" matches the docs and the running editor. **Proposal:** adopt GFM, then fenced annotations, then `data-type` HTML, and retire `cept:block` comments (keeping a reader for migration).
 2. **Answered (D-33).** **Mermaid and math encoding.** SPEC §5.9 says to wrap the fence in a `cept:block` comment. The docs say a plain fence. The code likely emits a `data-type` div and cannot parse a fence. The handler wants fence-style annotations.
 3. **Decided (D3):** toggles are `<details>`/`<summary>`; see [REQ-EDT-024](#req-edt-024--toggle-block-encoding-is-gfm-compatible). **Toggle encoding.** SPEC §4.2 uses a comment. The editor and [toggle-syntax.md](../../content/guides/toggle-syntax.md) use `> summary` with indented content, which GFM renders as a blockquote. Should toggles use `<details>`?
-4. **Decided (D-49):** remark/mdast is the one pipeline; `tiptap-markdown` and `CeptMarkdownParser`'s block model are retired when PR 49 routes the editor through it. **One Markdown implementation.** Keep tiptap-markdown, or wire `CeptMarkdownParser` in? Today [markdown-parser.md](../markdown-parser.md) and TASKS P2.2 describe a parser the app does not use.
+4. **Decided (D-49), done in PR 49b:** remark/mdast is the one pipeline; `tiptap-markdown` and `CeptMarkdownParser` are removed and the editor loads and saves through it. **One Markdown implementation.**
 5. **Two graph data models.** Core (`edges`, link/mention/tag/relation) and UI (`links`, parent/mention/backlink) differ. Should the UI unify on core?
 6. **Deferred (D-26, D-36):** databases are Phase 2. **Database storage formats.** The handler requires multiple formats, but SPEC §4.3, [database-engine.md](../database-engine.md) and CLAUDE.md rule 10 mandate YAML only. Which formats are required (CSV, JSON, Markdown table, folder of pages)?
 7. **Property type count.** The docs say 18, and [models/index.ts](../../../packages/core/src/models/index.ts) defines 20 (adding files and location).
