@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.49.0](https://github.com/nsheaps/cept/compare/v0.48.0...v0.49.0) (2026-10-12)
+
+### Features
+
+* **ui:** rename, move and delete files that are not pages ([#440](https://github.com/nsheaps/cept/issues/440)) ([c5f79d1](https://github.com/nsheaps/cept/commit/c5f79d1ecc5c0bb5200ab2dedd3d317c025797cd)), references [#438](https://github.com/nsheaps/cept/issues/438) [#439](https://github.com/nsheaps/cept/issues/439)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([10abcf8](https://github.com/nsheaps/cept/commit/10abcf88c374f63b82c31d962826bf0d24aac017))
+
 ## [0.48.0](https://github.com/nsheaps/cept/compare/v0.47.0...v0.48.0) (2026-10-12)
 
 ### Features
