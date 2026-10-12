@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryBackend } from '@cept/core';
+import type { GitAuthRecord } from '@cept/core';
 import { AddSpaceWizardModal } from './AddSpaceWizardModal.js';
 import { probePlatform, spaceSources } from '../storage/platform.js';
 
@@ -190,6 +191,74 @@ describe('AddSpaceWizardModal', () => {
       subPath: 'content/',
     });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  describe('choosing the auth (REQ-AUTH-020)', () => {
+    function record(id: string, host: string, login: string): GitAuthRecord {
+      return {
+        id,
+        host,
+        username: 'x-access-token',
+        label: `@${login}`,
+        status: 'ok',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        account: { login, name: null, avatarUrl: '' },
+        grants: { kind: 'classic', scopes: ['repo'] },
+      };
+    }
+    const auths = [
+      record('a', 'github.com', 'alice'),
+      record('b', 'github.com', 'bob'),
+      record('c', 'git.example.com', 'carol'),
+    ];
+
+    function openGit(onAddRemoteRepo: ReturnType<typeof vi.fn>) {
+      render(
+        <AddSpaceWizardModal {...defaultProps} auths={auths} onAddRemoteRepo={onAddRemoteRepo} />,
+      );
+      act(() => {
+        fireEvent.click(screen.getByTestId('wizard-choose-git'));
+      });
+    }
+
+    it('offers the auths for the URL host, suggesting the first, and passes the choice on', () => {
+      const onAddRemoteRepo = vi.fn();
+      openGit(onAddRemoteRepo);
+      const picker = screen.getByTestId('wizard-remote-auth') as HTMLSelectElement;
+      expect([...picker.options].map((o) => o.textContent)).toEqual([
+        '@alice (Recommended)',
+        '@bob',
+      ]);
+      fireEvent.change(picker, { target: { value: 'b' } });
+      act(() => {
+        fireEvent.click(screen.getByTestId('wizard-add-remote-confirm'));
+      });
+      expect(onAddRemoteRepo).toHaveBeenCalledWith(expect.objectContaining({ authId: 'b' }));
+    });
+
+    it('passes the suggested auth when none was picked', () => {
+      const onAddRemoteRepo = vi.fn();
+      openGit(onAddRemoteRepo);
+      act(() => {
+        fireEvent.click(screen.getByTestId('wizard-add-remote-confirm'));
+      });
+      expect(onAddRemoteRepo).toHaveBeenCalledWith(expect.objectContaining({ authId: 'a' }));
+    });
+
+    it('follows the URL host: one auth for it needs no picker, none sends no auth', () => {
+      const onAddRemoteRepo = vi.fn();
+      openGit(onAddRemoteRepo);
+      const url = screen.getByTestId('wizard-remote-url-input');
+      fireEvent.change(url, { target: { value: 'https://git.example.com/team/wiki' } });
+      expect(screen.queryByTestId('wizard-remote-auth')).toBeNull();
+      act(() => {
+        fireEvent.click(screen.getByTestId('wizard-add-remote-confirm'));
+      });
+      expect(onAddRemoteRepo).toHaveBeenLastCalledWith(expect.objectContaining({ authId: 'c' }));
+
+      fireEvent.change(url, { target: { value: 'gitlab.com/team/wiki' } });
+      expect(screen.queryByTestId('wizard-remote-auth')).toBeNull();
+    });
   });
 
   it('disables add remote button when URL is empty', () => {

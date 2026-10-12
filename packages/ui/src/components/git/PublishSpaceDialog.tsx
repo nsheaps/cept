@@ -6,6 +6,8 @@
  */
 
 import { useCallback, useState } from 'react';
+import type { GitAuthRecord } from '@cept/core';
+import { GitAuthPicker } from '../settings/GitAuthPicker.js';
 import { slugFor } from '../storage/folder-space.js';
 
 export interface PublishSpaceRequest {
@@ -13,6 +15,8 @@ export interface PublishSpaceRequest {
   repoName: string;
   description?: string;
   private: boolean;
+  /** The saved auth chosen to publish with; absent when no auths were offered. */
+  authId?: string;
 }
 
 export interface PublishSpaceDialogProps {
@@ -20,6 +24,10 @@ export interface PublishSpaceDialogProps {
   spaceName: string;
   /** The signed-in GitHub login. */
   login: string;
+  /** The saved GitHub auths to choose from; the picker shows when there are two or more. */
+  auths?: readonly GitAuthRecord[];
+  /** The auth to start with; it is suggested in the picker. */
+  defaultAuthId?: string;
   /** Publish; rejects with the reason it could not, which the dialog shows. */
   onPublish: (request: PublishSpaceRequest) => Promise<void>;
   onClose: () => void;
@@ -47,7 +55,9 @@ export function isValidRepoName(name: string): boolean {
 
 export function PublishSpaceDialog({
   spaceName,
-  login,
+  login: signedInLogin,
+  auths = [],
+  defaultAuthId,
   onPublish,
   onClose,
 }: PublishSpaceDialogProps) {
@@ -56,6 +66,10 @@ export function PublishSpaceDialog({
   const [isPrivate, setIsPrivate] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickedAuth, setPickedAuth] = useState<string | undefined>(defaultAuthId);
+  const authId = auths.find((a) => a.id === pickedAuth)?.id ?? auths[0]?.id;
+  // The account the repository is created in: the chosen auth's, else the sign-in's.
+  const login = auths.find((a) => a.id === authId)?.account?.login ?? signedInLogin;
   const name = repoName.trim();
   const valid = isValidRepoName(name);
 
@@ -68,12 +82,13 @@ export function PublishSpaceDialog({
         repoName: name,
         ...(description.trim() ? { description: description.trim() } : {}),
         private: isPrivate,
+        ...(authId ? { authId } : {}),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setPublishing(false);
     }
-  }, [valid, name, description, isPrivate, onPublish]);
+  }, [valid, name, description, isPrivate, authId, onPublish]);
 
   return (
     <div
@@ -96,6 +111,16 @@ export function PublishSpaceDialog({
             space's pages to it. The published space then commits and syncs your edits. The copy on
             this device is kept until you remove it.
           </p>
+          <div className="cept-wizard-form-row">
+            <GitAuthPicker
+              auths={auths}
+              value={authId}
+              recommendedId={defaultAuthId}
+              onChange={setPickedAuth}
+              testId="publish-space-auth"
+              disabled={publishing}
+            />
+          </div>
           <div className="cept-wizard-form-row">
             <label className="cept-wizard-label" htmlFor="publish-space-repo">
               Repository name

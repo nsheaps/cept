@@ -55,7 +55,7 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-016](#req-auth-016--native-oauth-for-packaged-apps)                                  | Native OAuth via system browser and redirect for packaged apps   | MUST     | stubbed     | documented-differently | stale         |
 | [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon)                     | Shared credentials through the local daemon                      | SHOULD   | not-started | undocumented           | n/a           |
 | [REQ-AUTH-018](#req-auth-018--no-secrets-in-client-bundles-or-the-repo)                        | No secrets in client bundles or the repo                         | MUST     | partial     | documented-as-desired  | accurate      |
-| [REQ-AUTH-019](#req-auth-019--several-git-token-auths)                                         | Zero or more git token auths, each for one host or account       | MUST     | not-started | documented-as-desired  | accurate      |
+| [REQ-AUTH-019](#req-auth-019--several-git-token-auths)                                         | Zero or more git token auths, each for one host or account       | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-AUTH-020](#req-auth-020--choose-the-auth-for-a-git-space)                                 | A git space uses a chosen auth, so several accounts can be used  | MUST     | partial     | documented-as-desired  | accurate      |
 
 ## Architecture
@@ -628,11 +628,11 @@ The owner needs to decide each of these.
 - A token saved by an earlier version (the single GitHub token) becomes the first auth without the user doing anything.
 - Removing an auth does not delete spaces that used it; they ask the user to pick another auth (REQ-AUTH-020).
 
-**Current state:** not-started. Today there is one GitHub token ([pat.ts](../../../packages/core/src/auth/pat.ts), [GitHubAccountSection.tsx](../../../packages/ui/src/components/settings/GitHubAccountSection.tsx)), its link is plain text styled like the rest of the paragraph, and it sits in the General tab's settings.
+**Current state:** partial (PR 52b). Settings has an Auth section where any number of tokens can be added, renamed and removed, with the prefilled link ([git-auths.tsx](../../../packages/ui/src/components/settings/git-auths.tsx)); the registry is in core. A token saved by the single-token version becomes the first auth.
 
 **Docs state:** documented-as-desired, accurate.
 
-**Gap:** An auth registry in core, the Auth section, the prefilled link, migration of the single token.
+**Gap:** none known for the Auth section itself; the remaining work for several accounts is in REQ-AUTH-020.
 
 **Related:** REQ-AUTH-005, REQ-AUTH-012, REQ-AUTH-013, REQ-AUTH-001.
 
@@ -652,10 +652,10 @@ The owner needs to decide each of these.
 - When a space's auth is removed, or its token is rejected, the space shows that and offers the other auths for its host; nothing is pushed under a different account without the user choosing it.
 - The choice is kept in the space's entry on this device, not in the repository.
 
-**Current state:** partial (PRs 52c-1 and 52c-2a). A remote space's entry records its `authId` ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). New spaces are bound to the first working GitHub auth; spaces added earlier have no `authId` and keep using it. [space-auth.ts](../../../packages/ui/src/components/storage/space-auth.ts) `resolveSpaceAuth()` picks the credentials for background sync, refresh, page history and the editing session, and the commit author is the account of that auth. A space whose auth was removed or rejected stays read-only with a message and is never opened as another account. Autodiscovery runs for every working GitHub auth (one search per account, however many tokens it has), lists each space once, and Settings > Spaces shows a **Sign in with** menu for a space more than one auth reads; Open and Pin bind the space to the chosen auth ([discovered-spaces.ts](../../../packages/ui/src/components/settings/discovered-spaces.ts), [DiscoveredSpacesSection.tsx](../../../packages/ui/src/components/settings/DiscoveredSpacesSection.tsx)). Missing: the picker in the add-space dialogs and space settings, and the prompt for a lost auth.
+**Current state:** partial (PRs 52c-1 and 52c-2a). A remote space's entry records its `authId` ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). New spaces are bound to the first working GitHub auth; spaces added earlier have no `authId` and keep using it. [space-auth.ts](../../../packages/ui/src/components/storage/space-auth.ts) `resolveSpaceAuth()` picks the credentials for background sync, refresh, page history and the editing session, and the commit author is the account of that auth. A space whose auth was removed or rejected stays read-only with a message and is never opened as another account. Autodiscovery runs for every working GitHub auth (one search per account, however many tokens it has), lists each space once, and Settings > Spaces shows a **Sign in with** menu for a space more than one auth reads; Open and Pin bind the space to the chosen auth ([discovered-spaces.ts](../../../packages/ui/src/components/settings/discovered-spaces.ts), [DiscoveredSpacesSection.tsx](../../../packages/ui/src/components/settings/DiscoveredSpacesSection.tsx)). The add-from-Git form, **Start a space in a GitHub repository** and **Publish to a new GitHub repository** also show a **Sign in with** menu when more than one working auth is for the host ([GitAuthPicker.tsx](../../../packages/ui/src/components/settings/GitAuthPicker.tsx)); the first saved auth is suggested and the space is bound to the chosen one. Missing: the picker in space settings, and the prompt for a lost auth.
 
 **Docs state:** documented-as-desired, accurate.
 
-**Gap:** The picker in the add-space dialogs and space settings, and the prompt for a lost auth.
+**Gap:** The picker in space settings, and the prompt for a lost auth.
 
 **Related:** REQ-AUTH-010, REQ-AUTH-019, REQ-WS-023, REQ-WS-027.

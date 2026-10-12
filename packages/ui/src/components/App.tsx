@@ -46,11 +46,13 @@ import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
+import { authsForHost } from './settings/GitAuthPicker.js';
 import {
   applyMoves,
   CeptSearchIndex,
   commitIdentityFor,
   frontMatterPrefix,
+  GITHUB_HOST,
   MemoryBackend,
   reconnectFolder,
 } from '@cept/core';
@@ -291,6 +293,17 @@ export function App() {
   );
   /** The auth a space added now is bound to: the first working GitHub auth. */
   const newSpaceAuthId = gitAuths ? defaultGitHubAuth(gitAuths.auths)?.id : undefined;
+  /** The working GitHub auths a new repository space can be started or published with. */
+  const githubAuthChoices = useMemo(
+    () => (gitAuths ? authsForHost(gitAuths.auths, GITHUB_HOST) : []),
+    [gitAuths],
+  );
+  /** The account of a saved auth: who edits made with it are committed as. */
+  const accountOfAuth = useCallback(
+    (authId: string | undefined) =>
+      authId ? (gitAuths?.auths.find((a) => a.id === authId)?.account ?? null) : null,
+    [gitAuths],
+  );
   // Spaces in the signed-in account's repositories (null when not signed in).
   const discovered = useDiscoveredSpaces();
   const [cloneStatus, setCloneStatus] = useState<{
@@ -348,7 +361,7 @@ export function App() {
    * tried again under the same name so a second repository is not created
    * (see the retry case in git-space.integration.test.ts).
    */
-  const publishRepoRef = useRef<{ spaceId: string; repo: RepoInfo } | null>(null);
+  const publishRepoRef = useRef<{ spaceId: string; repo: RepoInfo; authId?: string } | null>(null);
   const lastSyncCheckRef = useRef<Record<string, number>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const searchIndexRef = useRef(new CeptSearchIndex());
@@ -2069,9 +2082,10 @@ export function App() {
    * Rejects with the reason, which the dialog shows.
    */
   const handleStartRepoSpace = useCallback(
-    async ({ repo, name, folder }: StartRepoSpaceRequest) => {
-      const auth = await gitAuthForSpace({});
-      if (!signedInAccount || !auth || !canHostGitClone(backend)) throw new Error(GIT_SPACE_LOCKED);
+    async ({ repo, name, folder, authId }: StartRepoSpaceRequest) => {
+      const auth = await gitAuthForSpace(authId ? { authId } : {});
+      const account = accountOfAuth(authId) ?? signedInAccount;
+      if (!account || !auth || !canHostGitClone(backend)) throw new Error(GIT_SPACE_LOCKED);
       const remoteUrl = normalizeRepoUrl(repo.url);
       const branch = repo.defaultBranch || 'main';
       const subPath = folder || undefined;
@@ -2090,7 +2104,7 @@ export function App() {
           branch,
           name,
           auth,
-          identity: commitIdentityFor(signedInAccount),
+          identity: commitIdentityFor(account),
           corsProxy: gitCorsProxy(),
         });
       }
@@ -2102,9 +2116,10 @@ export function App() {
         return;
       }
       saveActiveSpace();
+      const chosenAuth = authId ?? newSpaceAuthId;
       const created = await spaces.createRemote(name, remoteUrl, branch, subPath, 'token', {
         writable: true,
-        ...(newSpaceAuthId ? { authId: newSpaceAuthId } : {}),
+        ...(chosenAuth ? { authId: chosenAuth } : {}),
       });
       setSpacesManifest(created.manifest);
       setUserSpaceId(created.space.id);
@@ -2114,6 +2129,7 @@ export function App() {
     },
     [
       gitAuthForSpace,
+      accountOfAuth,
       newSpaceAuthId,
       signedInAccount,
       backend,
@@ -2135,11 +2151,17 @@ export function App() {
    * space is kept. Rejects with the reason, which the dialog shows.
    */
   const handlePublishSpace = useCallback(
-    async ({ repoName, description, private: isPrivate }: PublishSpaceRequest) => {
+    async ({ repoName, description, private: isPrivate, authId }: PublishSpaceRequest) => {
       const id = publishSpaceId;
-      const auth = await gitAuthForSpace({});
-      const createRepo = githubAccount?.createRepo;
-      if (!id || !signedInAccount || !auth || !createRepo || !canHostGitClone(backend)) {
+      const auth = await gitAuthForSpace(authId ? { authId } : {});
+      const account = accountOfAuth(authId) ?? signedInAccount;
+      const createRepoFor = gitAuths?.createRepoFor;
+      const createRepo =
+        authId && createRepoFor
+          ? (options: { name: string; description?: string; private?: boolean }) =>
+              createRepoFor(authId, options)
+          : githubAccount?.createRepo;
+      if (!id || !account || !auth || !createRepo || !canHostGitClone(backend)) {
         throw new Error(GIT_SPACE_LOCKED);
       }
       const local = (await spaces.load()).spaces.find((s) => s.id === id);
@@ -2154,7 +2176,7 @@ export function App() {
       }
       const earlier = publishRepoRef.current;
       let repo: RepoInfo;
-      if (earlier?.spaceId === id && earlier.repo.name === repoName) {
+      if (earlier?.spaceId === id && earlier.repo.name === repoName && earlier.authId === authId) {
         repo = earlier.repo;
       } else {
         try {
@@ -2166,7 +2188,7 @@ export function App() {
         } catch (err) {
           throw new Error(createRepoErrorMessage(err));
         }
-        publishRepoRef.current = { spaceId: id, repo };
+        publishRepoRef.current = { spaceId: id, repo, ...(authId ? { authId } : {}) };
       }
       const remoteUrl = normalizeRepoUrl(repo.url);
       const branch = repo.defaultBranch || 'main';
@@ -2175,8 +2197,8 @@ export function App() {
         url: remoteUrl,
         branch,
         auth,
-        identity: commitIdentityFor(signedInAccount),
-        login: signedInAccount.login,
+        identity: commitIdentityFor(account),
+        login: account.login,
         corsProxy: gitCorsProxy(),
       });
       // The space is on GitHub now: from here on, failures are reported in a
@@ -2193,7 +2215,10 @@ export function App() {
           branch,
           undefined,
           'token',
-          { writable: true, ...(newSpaceAuthId ? { authId: newSpaceAuthId } : {}) },
+          {
+            writable: true,
+            ...((authId ?? newSpaceAuthId) ? { authId: authId ?? newSpaceAuthId } : {}),
+          },
         );
         setSpacesManifest(created.manifest);
         setUserSpaceId(created.space.id);
@@ -2215,6 +2240,8 @@ export function App() {
     [
       publishSpaceId,
       gitAuthForSpace,
+      accountOfAuth,
+      gitAuths,
       newSpaceAuthId,
       githubAccount,
       signedInAccount,
@@ -2232,7 +2259,11 @@ export function App() {
 
   /** Handle "Add Space" from the remote repo form in the wizard. */
   const handleAddRemoteRepo = useCallback(
-    (config: RemoteSpaceConfig) => addRemoteSpace(config, { activate: true }),
+    (config: RemoteSpaceConfig) =>
+      addRemoteSpace(config, {
+        activate: true,
+        ...(config.authId ? { authId: config.authId } : {}),
+      }),
     [addRemoteSpace],
   );
 
@@ -3184,6 +3215,7 @@ export function App() {
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
         sources={addableSources}
+        auths={gitAuths?.auths}
         onClose={() => setAddSpaceWizardOpen(false)}
         onCreateSpace={(name) => {
           handleCreateSpace(name);
@@ -3250,8 +3282,21 @@ export function App() {
       {startRepoSpaceOpen && githubAccount?.listRepos && (
         <StartRepoSpaceDialog
           user={signedInAccount}
-          listRepos={githubAccount.listRepos}
-          createRepo={githubAccount.createRepo}
+          auths={githubAuthChoices}
+          {...(newSpaceAuthId ? { defaultAuthId: newSpaceAuthId } : {})}
+          listRepos={(authId) =>
+            authId && gitAuths?.listReposFor
+              ? gitAuths.listReposFor(authId)
+              : githubAccount.listRepos!()
+          }
+          createRepo={
+            githubAccount.createRepo
+              ? (options, authId) =>
+                  authId && gitAuths?.createRepoFor
+                    ? gitAuths.createRepoFor(authId, options)
+                    : githubAccount.createRepo!(options)
+              : undefined
+          }
           onStart={handleStartRepoSpace}
           onSignIn={() => {
             setStartRepoSpaceOpen(false);
@@ -3264,6 +3309,8 @@ export function App() {
         <PublishSpaceDialog
           spaceName={spacesManifest?.spaces.find((s) => s.id === publishSpaceId)?.name ?? 'Space'}
           login={signedInAccount.login}
+          auths={githubAuthChoices}
+          {...(newSpaceAuthId ? { defaultAuthId: newSpaceAuthId } : {})}
           onPublish={handlePublishSpace}
           onClose={() => setPublishSpaceId(null)}
         />

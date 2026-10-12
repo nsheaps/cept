@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { RepoInfo } from '@cept/core';
+import type { GitAuthRecord, RepoInfo } from '@cept/core';
 import { StartRepoSpaceDialog, cleanFolder } from './StartRepoSpaceDialog.js';
 
 const user = { login: 'octo', name: 'Octo', avatarUrl: 'https://avatars.example/octo' };
@@ -125,5 +125,93 @@ describe('StartRepoSpaceDialog', () => {
     expect(listRepos).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId('repo-picker-signin'));
     expect(onSignIn).toHaveBeenCalledTimes(1);
+  });
+});
+
+function authRecord(id: string, login: string): GitAuthRecord {
+  return {
+    id,
+    host: 'github.com',
+    username: 'x-access-token',
+    label: `@${login}`,
+    status: 'ok',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    account: { login, name: null, avatarUrl: '' },
+    grants: { kind: 'classic', scopes: ['repo'] },
+  };
+}
+
+describe('StartRepoSpaceDialog with several auths (REQ-AUTH-020)', () => {
+  const auths = [authRecord('a', 'octo'), authRecord('b', 'hubot')];
+
+  it("lists the chosen auth's repositories and starts the space with that auth", async () => {
+    const listRepos = vi.fn(async (authId?: string) =>
+      authId === 'b' ? [repo('bots')] : [repo('notes')],
+    );
+    const onStart = vi.fn(async () => undefined);
+    render(
+      <StartRepoSpaceDialog
+        user={user}
+        auths={auths}
+        defaultAuthId="a"
+        listRepos={listRepos}
+        onStart={onStart}
+        onClose={() => undefined}
+      />,
+    );
+    await screen.findByTestId('repo-picker-item-octo/notes');
+    expect(listRepos).toHaveBeenLastCalledWith('a');
+    fireEvent.change(screen.getByTestId('start-repo-space-auth'), { target: { value: 'b' } });
+    fireEvent.click(await screen.findByTestId('repo-picker-item-octo/bots'));
+    expect(screen.queryByTestId('repo-picker-item-octo/notes')).toBeNull();
+    fireEvent.click(screen.getByTestId('start-repo-space-confirm'));
+    await waitFor(() =>
+      expect(onStart).toHaveBeenCalledWith({
+        repo: repo('bots'),
+        name: 'bots',
+        folder: '',
+        authId: 'b',
+      }),
+    );
+  });
+
+  it('creates the repository with the chosen auth', async () => {
+    const createRepo = vi.fn(async (options: { name: string }) => repo(options.name));
+    render(
+      <StartRepoSpaceDialog
+        user={user}
+        auths={auths}
+        defaultAuthId="a"
+        listRepos={async () => []}
+        createRepo={createRepo}
+        onStart={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    fireEvent.change(await screen.findByTestId('start-repo-space-auth'), {
+      target: { value: 'b' },
+    });
+    fireEvent.click(await screen.findByTestId('repo-picker-new'));
+    fireEvent.change(screen.getByTestId('repo-picker-create-name'), {
+      target: { value: 'journal' },
+    });
+    fireEvent.click(screen.getByTestId('repo-picker-create-submit'));
+    await screen.findByTestId('start-repo-space-form');
+    expect(createRepo).toHaveBeenCalledWith({ name: 'journal', private: true }, 'b');
+  });
+
+  it('shows no picker with a single auth', async () => {
+    render(
+      <StartRepoSpaceDialog
+        user={user}
+        auths={[auths[0]!]}
+        defaultAuthId="a"
+        listRepos={async () => [repo('notes')]}
+        onStart={async () => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    await screen.findByTestId('repo-picker-item-octo/notes');
+    expect(screen.queryByTestId('start-repo-space-auth')).toBeNull();
   });
 });
