@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { captureScreenshot } from './screenshot-utils.js';
 
 /**
  * REQ-WS-012, REQ-WEB-023, REQ-WS-019: open a folder on this device as a
@@ -123,5 +124,44 @@ test.describe('Open a local folder as a space', () => {
     expect(Object.keys(after).sort()).toEqual([...Object.keys(before), 'space.cept.yaml'].sort());
     expect(after['space.cept.yaml']).toContain('name: field-notes');
     for (const [path, text] of Object.entries(before)) expect(after[path]).toBe(text);
+  });
+
+  test('renaming a linked page offers to update the links to it', async ({ page }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+    await page.evaluate(async () => {
+      const root = await navigator.storage.getDirectory();
+      const folder = await root.getDirectoryHandle('field-notes');
+      const file = await folder.getFileHandle('Welcome.md', { create: true });
+      const writable = await file.createWritable();
+      await writable.write('# Welcome\n\nStart with the [setup guide](Guides/Setup.md).\n');
+      await writable.close();
+    });
+
+    await page.getByTestId('landing-open-folder').click();
+    await page.getByTestId('page-tree-toggle-Guides').click({ timeout: 10000 });
+    await page.getByTestId('page-tree-button-Guides/Setup.md').click({ button: 'right' });
+    await page.getByTestId('ctx-rename').click();
+    await page.getByTestId('rename-input').fill('Install');
+    await page.getByTestId('rename-input').press('Enter');
+
+    const dialog = page.getByTestId('link-rewrite-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId('link-rewrite-pages')).toContainText('Welcome.md');
+    await captureScreenshot(page, {
+      name: 'link-rewrite-dialog',
+      category: 'features',
+      selector: '[data-testid="link-rewrite-dialog"] [role="dialog"]',
+    });
+
+    await page.getByTestId('link-rewrite-update').click();
+    await expect(page.getByTestId('page-tree-button-Guides/Install.md')).toBeVisible({
+      timeout: 10000,
+    });
+    const files = await folderFiles(page);
+    expect(files['Welcome.md']).toContain('[setup guide](Guides/Install.md)');
+    expect(files['Guides/Install.md']).toBe(FILES['Guides/Setup.md']);
+    expect(files['Guides/Setup.md']).toBeUndefined();
   });
 });

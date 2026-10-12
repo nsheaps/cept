@@ -46,11 +46,14 @@ import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
+import { LinkRewriteDialog } from './settings/LinkRewriteDialog.js';
+import type { LinkRewritePreview } from './storage/folder-space.js';
 import { Toast, useToast } from './shared/Toast.js';
 import type { RemoteSpaceConfig } from './settings/AddSpaceWizardModal.js';
 import { authsForHost } from './settings/GitAuthPicker.js';
 import {
   applyMoves,
+  pageIdForPath,
   CeptSearchIndex,
   commitIdentityFor,
   frontMatterPrefix,
@@ -256,6 +259,12 @@ export function App() {
   const [importSource, setImportSource] = useState<ImportSource>('notion');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  /** A rename or move waiting for the user to choose whether links to the page are updated. */
+  const [pendingRewrite, setPendingRewrite] = useState<{
+    pageTitle: string;
+    preview: LinkRewritePreview;
+    run: (updateLinks: boolean) => void;
+  } | null>(null);
   // The URL named a page or space that does not exist.
   const [notFound, setNotFound] = useState<{ path: string } | undefined>(undefined);
   const {
@@ -440,6 +449,16 @@ export function App() {
       setPageContents((prev) =>
         Object.fromEntries(Object.entries(prev).map(([id, content]) => [remap(id), content])),
       );
+      // Pages whose links were rewritten changed on disk: show and keep the new text.
+      if (change.rewritten?.length) {
+        const known = new Set(flattenPages(next).map((p) => p.id));
+        for (const file of change.rewritten) {
+          const id = pageIdForPath(file, (candidate) => known.has(candidate));
+          if (id === null) continue;
+          const text = await spaces.readPage(userSpaceId, id);
+          if (text !== null) setPageContents((prev) => ({ ...prev, [id]: text }));
+        }
+      }
       return change;
     },
     [flushPendingWrite, addToast, spaces, userSpaceId],
@@ -1277,7 +1296,19 @@ export function App() {
   const handlePageRename = useCallback(
     (id: string, title: string) => {
       if (spaces.isFolder(userSpaceId)) {
-        void runFolderChange(() => spaces.renamePage(userSpaceId, id, title));
+        void (async () => {
+          await flushPendingWrite();
+          const preview = await spaces.previewRename(userSpaceId, id, title).catch(() => null);
+          const run = (updateLinks: boolean) =>
+            void runFolderChange(() => spaces.renamePage(userSpaceId, id, title, updateLinks));
+          if (preview && preview.total > 0)
+            setPendingRewrite({
+              pageTitle: findNode(pagesRef.current, id)?.title ?? title,
+              preview,
+              run,
+            });
+          else run(true);
+        })();
         return;
       }
       setPages((prev) => renameNode(prev, id, title));
@@ -1285,7 +1316,7 @@ export function App() {
       setRecentPages((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
       setFavorites((prev) => prev.map((p) => (p.id === id ? { ...p, title } : p)));
     },
-    [spaces, userSpaceId, runFolderChange],
+    [spaces, userSpaceId, runFolderChange, flushPendingWrite],
   );
 
   const handlePageDelete = useCallback(
@@ -1427,12 +1458,24 @@ export function App() {
   const handlePageMoveToRoot = useCallback(
     (id: string) => {
       if (spaces.isFolder(userSpaceId)) {
-        void runFolderChange(() => spaces.movePageToRoot(userSpaceId, id));
+        void (async () => {
+          await flushPendingWrite();
+          const preview = await spaces.previewMoveToRoot(userSpaceId, id).catch(() => null);
+          const run = (updateLinks: boolean) =>
+            void runFolderChange(() => spaces.movePageToRoot(userSpaceId, id, updateLinks));
+          if (preview && preview.total > 0)
+            setPendingRewrite({
+              pageTitle: findNode(pagesRef.current, id)?.title ?? id,
+              preview,
+              run,
+            });
+          else run(true);
+        })();
         return;
       }
       setPages((prev) => moveNode(prev, id, undefined));
     },
-    [spaces, userSpaceId, runFolderChange],
+    [spaces, userSpaceId, runFolderChange, flushPendingWrite],
   );
 
   // The editor shows a page's body only; its front matter (and the blank
@@ -3378,6 +3421,21 @@ export function App() {
           {...(newSpaceAuthId ? { defaultAuthId: newSpaceAuthId } : {})}
           onPublish={handlePublishSpace}
           onClose={() => setPublishSpaceId(null)}
+        />
+      )}
+      {pendingRewrite && (
+        <LinkRewriteDialog
+          pageTitle={pendingRewrite.pageTitle}
+          preview={pendingRewrite.preview}
+          onUpdate={() => {
+            pendingRewrite.run(true);
+            setPendingRewrite(null);
+          }}
+          onSkip={() => {
+            pendingRewrite.run(false);
+            setPendingRewrite(null);
+          }}
+          onCancel={() => setPendingRewrite(null)}
         />
       )}
       {pickedFolder && (

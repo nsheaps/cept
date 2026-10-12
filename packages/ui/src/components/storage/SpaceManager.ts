@@ -36,6 +36,8 @@ import {
   initFolderSpace,
   isFolderSpace,
   moveFolderPageToRoot,
+  previewMoveToRootLinks,
+  previewRenameLinks,
   readFolderFile,
   readFolderPage,
   readFolderTree,
@@ -43,7 +45,7 @@ import {
   toPageTree,
   writeFolderPage,
 } from './folder-space.js';
-import type { FolderChange } from './folder-space.js';
+import type { FolderChange, LinkRewritePreview } from './folder-space.js';
 import {
   BACKUP_DIR,
   confirmFlatMigration,
@@ -988,12 +990,23 @@ export class SpaceManager {
     return addFolderPage(this.store(id).backend, parentId, title, text);
   }
 
-  renamePage(id: string, pageId: string, title: string): Promise<FolderChange> {
-    return renameFolderPage(this.store(id).backend, pageId, title);
+  /** Rename a page; `updateLinks` false leaves other pages' links to it as they are. */
+  renamePage(id: string, pageId: string, title: string, updateLinks = true): Promise<FolderChange> {
+    return renameFolderPage(this.store(id).backend, pageId, title, updateLinks);
   }
 
-  movePageToRoot(id: string, pageId: string): Promise<FolderChange> {
-    return moveFolderPageToRoot(this.store(id).backend, pageId);
+  movePageToRoot(id: string, pageId: string, updateLinks = true): Promise<FolderChange> {
+    return moveFolderPageToRoot(this.store(id).backend, pageId, updateLinks);
+  }
+
+  /** The links renaming a page would rewrite, without changing anything. */
+  previewRename(id: string, pageId: string, title: string): Promise<LinkRewritePreview> {
+    return previewRenameLinks(this.store(id).backend, pageId, title);
+  }
+
+  /** The links moving a page to the root would rewrite, without changing anything. */
+  previewMoveToRoot(id: string, pageId: string): Promise<LinkRewritePreview> {
+    return previewMoveToRootLinks(this.store(id).backend, pageId);
   }
 
   duplicatePage(id: string, pageId: string): Promise<FolderChange> {
