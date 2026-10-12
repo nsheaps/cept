@@ -1269,3 +1269,23 @@
   font-size: 0.8rem;
   color: var(--cept-text-muted, #6b7280);
 }
+
+.cept-editor .tiptap .cept-graph-block {
+  margin: 0.5rem 0;
+  border: 1px solid var(--cept-border, #e5e5e5);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cept-editor .tiptap .cept-graph-source {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+}
+
+.cept-editor .tiptap .cept-graph-error {
+  padding: 0.5rem 0.75rem;
+  color: var(--cept-danger, #c0392b);
+  font-size: 0.8rem;
+}

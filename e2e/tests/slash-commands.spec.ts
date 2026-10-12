@@ -359,6 +359,18 @@ test.describe('Slash Commands', () => {
     await expect(page.locator('.cept-editor-content .cept-mermaid-error')).toHaveCount(0);
     await captureScreenshot(page, { name: 'slash-mermaid', category: 'slash-commands' });
   });
+
+  test('graph block', async ({ page }) => {
+    await typeSlashCommand(page, 'json');
+    await selectFirstCommand(page);
+    // The graph plugin shows its JSON body as a knowledge graph (REQ-EDT-019)
+    await expect(page.locator('.cept-editor-content .cept-graph-block')).toBeVisible();
+    await expect(
+      page.locator('.cept-editor-content [data-testid="knowledge-graph-view"]'),
+    ).toBeVisible();
+    await expect(page.locator('.cept-editor-content .cept-graph-error')).toHaveCount(0);
+    await captureScreenshot(page, { name: 'graph-block', category: 'features' });
+  });
 });
 
 test.describe('Page Header', () => {

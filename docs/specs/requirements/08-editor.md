@@ -537,6 +537,8 @@ flowchart TD
 
 **Docs:** documented-as-desired but stale. [roadmap.md](../../content/reference/roadmap.md) lines 75-76 say "Done". [README.md](../../../README.md) line 24, [features.md](../../content/guides/features.md) lines 118-126, [vs-notion.md](../../content/comparison/vs-notion.md) lines 21 and 38-39, and [vs-obsidian.md](../../content/comparison/vs-obsidian.md) line 16 present it as built in. TASKS T3.9-T3.12 are checked, while P4.2, P4.5 and P4.6 are open.
 
+**Current state (PR 57):** a ` ```graph ` fenced block ([graph-block.ts](../../../packages/ui/src/components/editor/extensions/graph-block.ts)) is the second fenced-block plugin. Its body is JSON (`nodes` with `id`/`title`/optional `group`/`icon`, `links` with `source`/`target`/optional `type`); it renders with `KnowledgeGraphView`, and a body that does not parse shows its source and the error. The `/Graph` slash command inserts one. It saves back as a plain fence, byte for byte when unchanged. The block shows data written in the page; the whole-space graph from the builder is not wired in yet.
+
 **Gap:** Wire the view into the app shell with builder data, add local-graph follow and hover preview, bind the steps, add E2E, and correct the docs until then.
 
 **Related:** TASKS P4.2, P4.5, P4.6.

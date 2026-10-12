@@ -20,6 +20,7 @@ import { Embed } from './extensions/embed.js';
 import { Bookmark } from './extensions/bookmark.js';
 import { Columns, Column } from './extensions/columns.js';
 import { MathBlock, InlineMath } from './extensions/math.js';
+import { GraphBlock } from './extensions/graph-block.js';
 import { Mermaid } from './extensions/mermaid.js';
 import { MarkdownAttributes } from './extensions/markdown-attributes.js';
 import { RawBlock, RawInline } from './extensions/raw-markdown.js';
@@ -78,6 +79,7 @@ export function documentExtensions(): AnyExtension[] {
     TableCell.configure({ HTMLAttributes: { class: 'cept-table-cell' } }),
     TableHeader.configure({ HTMLAttributes: { class: 'cept-table-header-cell' } }),
     Mermaid,
+    GraphBlock,
     RawBlock,
     RawInline,
     FootnoteReference,

@@ -21,6 +21,12 @@ export type { MentionType, MentionSuggestionItem } from './mention.js';
 export { MathBlock, InlineMath, renderKatex } from './math.js';
 export type { MathBlockOptions, InlineMathOptions } from './math.js';
 export { Mermaid, defaultMermaidContent, mermaidExamples } from './mermaid.js';
+export {
+  GraphBlock,
+  defaultGraphContent,
+  graphBlockPlugin,
+  parseGraphBlock,
+} from './graph-block.js';
 export { createMermaidPlugin, mermaidPlugin } from './mermaid.js';
 export type { MermaidApi } from './mermaid.js';
 export {
