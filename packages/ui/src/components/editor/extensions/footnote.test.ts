@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { Editor } from '@tiptap/core';
 import { parseMarkdownDocument, serializeMarkdownDocument } from '@cept/core';
 import type { PmNode } from '@cept/core';
@@ -13,6 +13,8 @@ const markdown = [
   '[^b]: Note B.',
   '',
 ].join('\n');
+
+afterEach(() => document.body.replaceChildren());
 
 function editorFor(source: string) {
   const element = document.createElement('div');

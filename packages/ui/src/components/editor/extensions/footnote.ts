@@ -100,8 +100,8 @@ function decorate(doc: ProseMirrorNode): DecorationSet {
   const uses = new Map<string, number>();
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
-    const identifier = String(node.attrs.identifier ?? '');
     if (node.type.name === 'footnoteReference') {
+      const identifier = String(node.attrs.identifier);
       const use = (uses.get(identifier) ?? 0) + 1;
       uses.set(identifier, use);
       decorations.push(
@@ -111,6 +111,7 @@ function decorate(doc: ProseMirrorNode): DecorationSet {
         }),
       );
     } else if (node.type.name === 'footnoteDefinition') {
+      const identifier = String(node.attrs.identifier);
       const number = numbers.get(identifier);
       decorations.push(
         Decoration.node(pos, pos + node.nodeSize, {
@@ -169,6 +170,8 @@ const footnotePlugin = new Plugin<DecorationSet>({
     decorations: (state) => footnotePluginKey.getState(state),
     handleDOMEvents: {
       // A reference jumps to its definition; a back-reference jumps back.
+      // If two definitions share an identifier, references go to the first,
+      // the one GitHub renders.
       click(view, event) {
         const target = event.target instanceof HTMLElement ? event.target : null;
         const backref = target?.closest<HTMLElement>('[data-footnote-backref]');
