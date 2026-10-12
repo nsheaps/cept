@@ -369,7 +369,7 @@ test.describe('Slash Commands', () => {
       page.locator('.cept-editor-content [data-testid="knowledge-graph-view"]'),
     ).toBeVisible();
     await expect(page.locator('.cept-editor-content .cept-graph-error')).toHaveCount(0);
-    await captureScreenshot(page, { name: 'slash-graph', category: 'slash-commands' });
+    await captureScreenshot(page, { name: 'graph-block', category: 'features' });
   });
 });
 
