@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.52.0](https://github.com/nsheaps/cept/compare/v0.51.0...v0.52.0) (2026-10-12)
+
+### Features
+
+* **editor:** page and date mentions as standard links ([add310f](https://github.com/nsheaps/cept/commit/add310fde25b5cfbab1e41542a31cc3092fbd6fe))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([41da9af](https://github.com/nsheaps/cept/commit/41da9afa2db020aa4838b7861584038fafedbd19))
+
 ## [0.51.0](https://github.com/nsheaps/cept/compare/v0.50.0...v0.51.0) (2026-10-12)
 
 ### Features
