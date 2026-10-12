@@ -73,6 +73,18 @@ describe('mentionItems', () => {
     expect(mentionItems(source, 'START', now).map((i) => i.title)).toEqual(['Getting Started']);
   });
 
+  it('ranks an exact title, then a prefix, ahead of tree order', () => {
+    const pages = [
+      { id: 'a/foobar sub.md', title: 'foobar sub' },
+      { id: 'a/my foo.md', title: 'my foo' },
+      { id: 'a/foo.md', title: 'foo' },
+    ];
+    const titles = mentionItems({ pageId: 'x.md', pages }, 'foo', now)
+      .filter((i) => i.category === 'Pages')
+      .map((i) => i.title);
+    expect(titles).toEqual(['foo', 'foobar sub', 'my foo']);
+  });
+
   it('matches dates by label or by their text', () => {
     expect(mentionItems(source, 'tom', now).map((i) => i.title)).toEqual(['Tomorrow']);
     expect(mentionItems(source, '2026-10-19', now).map((i) => i.title)).toEqual(['Next week']);

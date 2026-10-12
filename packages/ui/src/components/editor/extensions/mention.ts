@@ -54,8 +54,14 @@ export function mentionItems(
   const items: SlashCommandItem[] = [];
 
   if (source) {
+    // Exact title first, then prefix, then any match; tree order breaks ties.
+    const rank = (title: string): number => {
+      const t = title.toLowerCase();
+      return t === q ? 0 : t.startsWith(q) ? 1 : 2;
+    };
     const matching = source.pages
       .filter((p) => p.id !== source.pageId && p.title.toLowerCase().includes(q))
+      .sort((a, b) => rank(a.title) - rank(b.title))
       .slice(0, MAX_PAGES);
     for (const page of matching) {
       items.push({
@@ -131,6 +137,8 @@ export const Mention = Extension.create<MentionOptions>({
       suggestion: {
         char: '@',
         pluginKey: mentionPluginKey,
+        // Page titles are mostly several words.
+        allowSpaces: true,
         command: ({
           editor,
           range,
