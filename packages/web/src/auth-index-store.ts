@@ -8,6 +8,20 @@
 
 import type { AuthIndexStore, GitAuthRecord } from '@cept/core';
 
+const STATUSES: readonly unknown[] = ['ok', 'unchecked', 'rejected'];
+
+/** A saved entry with the fields the registry relies on; anything else is dropped. */
+function isRecord(value: unknown): value is GitAuthRecord {
+  if (!value || typeof value !== 'object') return false;
+  const r = value as Record<string, unknown>;
+  return (
+    typeof r['id'] === 'string' &&
+    typeof r['host'] === 'string' &&
+    typeof r['label'] === 'string' &&
+    STATUSES.includes(r['status'])
+  );
+}
+
 export class LocalStorageAuthIndexStore implements AuthIndexStore {
   constructor(
     private readonly key: string,
@@ -17,7 +31,7 @@ export class LocalStorageAuthIndexStore implements AuthIndexStore {
   async load(): Promise<GitAuthRecord[]> {
     try {
       const parsed: unknown = JSON.parse(this.storage.getItem(this.key) ?? '[]');
-      return Array.isArray(parsed) ? (parsed as GitAuthRecord[]) : [];
+      return Array.isArray(parsed) ? parsed.filter(isRecord) : [];
     } catch {
       return [];
     }

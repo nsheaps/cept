@@ -183,6 +183,74 @@ describe('AuthSection', () => {
     await waitFor(() => expect(screen.getByTestId('auth-label').textContent).toBe('Work'));
   });
 
+  it('trims the new name, and Cancel or Escape leaves the old one', async () => {
+    renderSection(registry());
+    await addToken(ALICE);
+    await screen.findByTestId('auth-item-id1');
+    const oldLabel = screen.getByTestId('auth-label').textContent;
+
+    fireEvent.click(within('auth-item-id1', 'auth-rename'));
+    fireEvent.change(screen.getByTestId('auth-rename-input'), { target: { value: '' } });
+    fireEvent.click(screen.getByTestId('auth-rename-cancel'));
+    expect(screen.getByTestId('auth-label').textContent).toBe(oldLabel);
+
+    fireEvent.click(within('auth-item-id1', 'auth-rename'));
+    fireEvent.keyDown(screen.getByTestId('auth-rename-input'), { key: 'Escape' });
+    expect(screen.getByTestId('auth-label').textContent).toBe(oldLabel);
+
+    fireEvent.click(within('auth-item-id1', 'auth-rename'));
+    fireEvent.change(screen.getByTestId('auth-rename-input'), { target: { value: '  Work  ' } });
+    fireEvent.click(screen.getByTestId('auth-rename-save'));
+    await waitFor(() => expect(screen.getByTestId('auth-label').textContent).toBe('Work'));
+  });
+
+  it('forgets the repository-creation choice after an add', async () => {
+    renderSection(registry());
+    const box = (await screen.findByTestId('auth-create-repos')) as HTMLInputElement;
+    fireEvent.click(box);
+    expect(box.checked).toBe(true);
+    await addToken(ALICE);
+    await screen.findByTestId('auth-item-id1');
+    expect((screen.getByTestId('auth-create-repos') as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('explains a host it cannot read', async () => {
+    renderSection(registry());
+    expect(screen.queryByTestId('auth-host-hint')).toBeNull();
+    fireEvent.change(await screen.findByTestId('auth-host-input'), {
+      target: { value: 'https:/github.com' },
+    });
+    expect(screen.getByTestId('auth-host-hint').textContent).toContain('github.com');
+    fireEvent.change(screen.getByTestId('auth-host-input'), { target: { value: 'github.com' } });
+    expect(screen.queryByTestId('auth-host-hint')).toBeNull();
+  });
+
+  it('keeps a token added while the startup check is still running', async () => {
+    const s = stores();
+    await registry(s).add({ token: ALICE });
+    // The first request (the startup check of ALICE) waits until released.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const inner = fakeGitHub();
+    let first = true;
+    const slow = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (first) {
+        first = false;
+        await gate;
+      }
+      return inner(url, init);
+    }) as unknown as typeof fetch;
+    let n = 100;
+    renderSection(new GitAuthRegistry({ ...s, fetch: slow, newId: () => `id${++n}` }));
+
+    await addToken(BOB);
+    release();
+    await screen.findByTestId('auth-item-id101');
+    await waitFor(() =>
+      expect(screen.getByTestId('auth-list').querySelectorAll('li')).toHaveLength(2),
+    );
+  });
+
   it('asks for a new token when GitHub rejects a saved one, and takes it', async () => {
     const s = stores();
     await registry(s).add({ token: ALICE });

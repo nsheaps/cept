@@ -37,4 +37,10 @@ describe('LocalStorageAuthIndexStore', () => {
     expect(await new LocalStorageAuthIndexStore('k', memoryStorage('{oops')).load()).toEqual([]);
     expect(await new LocalStorageAuthIndexStore('k', memoryStorage('{"a":1}')).load()).toEqual([]);
   });
+
+  it('drops entries that are not auth records', async () => {
+    const junk = [null, 7, 'x', { id: 1 }, { ...record, status: 'bogus' }, { id: 'a2' }];
+    const storage = memoryStorage(JSON.stringify([record, ...junk]));
+    expect(await new LocalStorageAuthIndexStore('k', storage).load()).toEqual([record]);
+  });
 });

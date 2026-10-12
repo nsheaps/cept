@@ -80,8 +80,9 @@ function AuthItem({
 
   const submitRename = (e: FormEvent) => {
     e.preventDefault();
-    if (busy || renaming === null || !renaming.trim()) return;
-    const label = renaming;
+    if (busy || renaming === null) return;
+    const label = renaming.trim();
+    if (!label) return;
     void run(async () => {
       await state.rename(auth.id, label);
       setRenaming(null);
@@ -113,6 +114,7 @@ function AuthItem({
                 aria-label="Name for this auth"
                 value={renaming}
                 onChange={(e) => setRenaming(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && setRenaming(null)}
                 autoFocus
                 data-testid="auth-rename-input"
               />
@@ -123,6 +125,15 @@ function AuthItem({
                 data-testid="auth-rename-save"
               >
                 Save
+              </button>
+              <button
+                type="button"
+                className="cept-settings-action-btn"
+                onClick={() => setRenaming(null)}
+                disabled={busy}
+                data-testid="auth-rename-cancel"
+              >
+                Cancel
               </button>
             </form>
           )}
@@ -230,6 +241,7 @@ function AddAuthForm({ state }: { state: GitAuthsState }) {
       setToken('');
       setLabel('');
       setUsername('');
+      setCreateRepos(false);
     } catch (err) {
       setError(messageOf(err, 'Could not add this token.'));
     } finally {
@@ -252,6 +264,11 @@ function AddAuthForm({ state }: { state: GitAuthsState }) {
             aria-invalid={normalized === null}
             data-testid="auth-host-input"
           />
+          {host.trim() !== '' && normalized === null && (
+            <span className="cept-settings-github-error" data-testid="auth-host-hint">
+              Enter a host like <code>github.com</code>.
+            </span>
+          )}
         </label>
         {needsUsername && (
           <label className="cept-settings-auth-field">
