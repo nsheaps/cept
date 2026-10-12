@@ -49,7 +49,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-010](#req-edt-010--markdown-plugins-via-fenced-code-annotations)                        | Markdown plugins via fenced-code annotations                             | MUST     | divergent   | documented-as-desired  | stale         |
 | [REQ-EDT-011](#req-edt-011--fenced-annotation-blocks-serialize-back-to-fenced-code)              | Fenced annotation blocks serialize back to fenced code                   | MUST     | divergent   | documented-differently | stale         |
 | [REQ-EDT-012](#req-edt-012--math-rendering-block-and-inline)                                     | Math rendering (block and inline)                                        | SHOULD   | partial     | documented-as-desired  | stale         |
-| [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)                                | Extensible annotation/plugin registry                                    | SHOULD   | not-started | documented-differently | n/a           |
+| [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)                                | Extensible annotation/plugin registry                                    | SHOULD   | partial     | documented-differently | n/a           |
 | [REQ-EDT-014](#req-edt-014--github-flavored-markdown-core-syntax)                                | GitHub Flavored Markdown core syntax                                     | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-015](#req-edt-015--gfm-footnotes)                                                       | GFM footnotes                                                            | MUST     | not-started | undocumented           | n/a           |
 | [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information)                                  | Footnotes for repeated information                                       | MUST     | not-started | undocumented           | n/a           |
@@ -401,7 +401,7 @@ flowchart TD
 - Mermaid and math are implemented on the registry.
 - A test registers a dummy renderer and proves the load, render and save round-trip.
 
-**Current state:** not-started. Extensions are hardcoded in the `CeptEditor.tsx` extensions array.
+**Current state:** partial. The internal interface exists (PR 50). In core, a `FencedBlockPlugin` ([fenced-blocks.ts](../../../packages/core/src/markdown/fenced-blocks.ts)) has a node type `name` and `claims(language, meta)`. The page pipeline stays plugin-free: `claimFencedBlocks` turns the `codeBlock`s a plugin claims into its node (attributes `language`, `meta`, `fence`, `source`), and `releaseFencedBlocks` turns them back before saving, so an unchanged block is saved byte for byte and an edited one keeps its fence and info string. In the UI, a `FencedBlockEditorPlugin` ([fenced-block.ts](../../../packages/ui/src/components/editor/extensions/fenced-block.ts)) adds `language`, `defaultSource` and `render(source, element)`, and `createFencedBlockExtension` turns it into an atom TipTap node whose node view calls `render` and re-renders when the source changes. A test registers a dummy plugin and proves load, render and save. Mermaid and math are not on it yet (PRs 51 and 52), and the editor does not load pages through the pipeline until PR 49.
 
 **Docs:** documented-differently. TASKS P7.7b and P7.7c describe a broader plugin SDK. [roadmap.md](../../content/reference/roadmap.md) does not describe a fenced-annotation registry.
 

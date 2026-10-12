@@ -558,6 +558,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: unit test registering a fake plugin; its fence serializes unchanged.
 - Accept: test green.
 - Risk: keep the interface internal and small.
+- Note (PR 50): recorded under EDT-013 in `08-editor.md`. Core has `FencedBlockPlugin` with `claimFencedBlocks`/`releaseFencedBlocks` around the plugin-free page pipeline; the UI has `FencedBlockEditorPlugin` and `createFencedBlockExtension`. Static rendering will use the same plugins later. From the #414 review, deferred: the editor schema must not allow `columns` with one column (it saves a form that reloads as raw tags), and an `embed` or `bookmark` with no URL still writes an empty link.
 
 **PR 51 — `feat(editor): render mermaid as a fenced-block plugin`**
 
