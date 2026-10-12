@@ -8,8 +8,8 @@
  * GitHub auth, as it always did.
  */
 
+import { GITHUB_HOST } from '@cept/core';
 import type { GitAuthRecord } from '@cept/core';
-import { defaultGitHubAuth } from '../settings/git-auths.js';
 
 export type SpaceAuthResolution =
   | { kind: 'auth'; auth: GitAuthRecord }
@@ -23,7 +23,7 @@ export function resolveSpaceAuth(
   records: readonly GitAuthRecord[],
 ): SpaceAuthResolution {
   if (space.authId === undefined) {
-    const auth = defaultGitHubAuth(records);
+    const auth = records.find((a) => a.host === GITHUB_HOST && a.status === 'ok');
     return auth ? { kind: 'auth', auth } : { kind: 'none' };
   }
   const auth = records.find((a) => a.id === space.authId);

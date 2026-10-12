@@ -848,6 +848,9 @@ export function App() {
     if (!spaceMeta?.remoteUrl || !spaceMeta.branch) return;
     // A writable space syncs through its editing session; a refresh here would replace its files.
     if (isWritableRemote(spaceMeta)) return;
+    // A space whose auth is gone cannot sync: the refresh button says why, so don't repeat it every 5 minutes.
+    if (gitAuths?.status === 'ready' && resolveSpaceAuth(spaceMeta, gitAuths.auths).kind === 'lost')
+      return;
 
     // Check if we've synced recently enough
     const lastCheck = lastSyncCheckRef.current[userSpaceId] ?? 0;
@@ -921,7 +924,7 @@ export function App() {
     };
 
     void syncSpace();
-  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces, gitAuthForSpace]);
+  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces, gitAuthForSpace, gitAuths]);
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -2255,8 +2258,13 @@ export function App() {
       // A writable space syncs through its editing session, keeping what was edited here.
       if (isWritableRemote(spaceMeta)) {
         if (spaceId === gitSessionSpaceId) await handleSyncNow();
-        else if (!accountForSpace(spaceMeta)) addToast(GIT_SPACE_LOCKED, 'info');
-        else addToast(`Open "${spaceMeta.name}" to sync it.`, 'info');
+        else if (!accountForSpace(spaceMeta)) {
+          const resolved = gitAuths ? resolveSpaceAuth(spaceMeta, gitAuths.auths) : null;
+          addToast(
+            resolved?.kind === 'lost' ? lostAuthMessage(resolved.reason) : GIT_SPACE_LOCKED,
+            'info',
+          );
+        } else addToast(`Open "${spaceMeta.name}" to sync it.`, 'info');
         return;
       }
 
@@ -2440,7 +2448,10 @@ export function App() {
         ? async () =>
             pageHistorySource(backend, activeSpaceMeta, pageId, {
               sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
-              auth: await gitAuthForSpace(activeSpaceMeta).catch(() => undefined),
+              auth: await gitAuthForSpace(activeSpaceMeta).catch((err: unknown) => {
+                addToast(err instanceof Error ? err.message : String(err), 'error');
+                return undefined;
+              }),
               corsProxy: gitCorsProxy(),
             })
         : null;
