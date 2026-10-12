@@ -476,7 +476,7 @@ function blockTo(node: PmNode): RootContent[] {
         {
           type: 'math',
           value: attr<string>(node, 'content') ?? '',
-          meta: attr(node, 'meta') ?? null,
+          meta: attr<string>(node, 'meta') ?? null,
         },
       ];
     case 'footnoteDefinition':
