@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { GitAuthRegistry, MemoryAuthIndexStore, MemoryTokenStore } from '@cept/core';
+import { GitAuthsProvider } from './git-auths.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './SettingsModal.js';
 import type { SpaceInfo } from './SettingsModal.js';
 
@@ -345,5 +347,98 @@ describe('SettingsModal', () => {
     ];
     render(<SettingsModal {...defaultProps} spaces={spaces} initialSpaceId="remote" />);
     expect(screen.queryByTestId('space-details-remote')).toBeNull();
+  });
+});
+
+describe('SettingsModal space auth (REQ-AUTH-020)', () => {
+  // Built at runtime so the secret scanner does not mistake them for real tokens.
+  const ALICE = ['ghp_', 'aliceFake'].join('') + '0'.repeat(30);
+  const BOB = ['ghp_', 'bobFake'].join('') + '0'.repeat(30);
+  const fetchStub = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+    const token = (new Headers(init?.headers).get('Authorization') ?? '').replace('Bearer ', '');
+    const login = token === ALICE ? 'alice' : 'bob';
+    return new Response(JSON.stringify({ login, name: login, avatar_url: '' }), {
+      status: 200,
+      headers: { 'X-OAuth-Scopes': 'repo' },
+    });
+  }) as unknown as typeof fetch;
+
+  async function twoAuths() {
+    let n = 0;
+    const registry = new GitAuthRegistry({
+      tokenStore: new MemoryTokenStore(),
+      indexStore: new MemoryAuthIndexStore(),
+      fetch: fetchStub,
+      newId: () => `id${++n}`,
+    });
+    await registry.add({ token: ALICE });
+    await registry.add({ token: BOB });
+    return registry;
+  }
+
+  const remote: SpaceInfo = {
+    id: 'remote',
+    name: 'Notes',
+    source: 'GitHub',
+    pageCount: 2,
+    contentSize: 10,
+    remoteUrl: 'github.com/o/r',
+    authId: 'id1',
+  };
+
+  it("changes the token a remote space signs in with from the space's details", async () => {
+    const onChangeSpaceAuth = vi.fn();
+    render(
+      <GitAuthsProvider auths={await twoAuths()}>
+        <SettingsModal
+          {...defaultProps}
+          spaces={[remote]}
+          initialTab="spaces"
+          initialSpaceId="remote"
+          onChangeSpaceAuth={onChangeSpaceAuth}
+        />
+      </GitAuthsProvider>,
+    );
+    const select = await screen.findByTestId('space-auth-select');
+    await waitFor(() => expect(select.querySelectorAll('option').length).toBe(2));
+    fireEvent.change(select, { target: { value: 'id2' } });
+    expect(onChangeSpaceAuth).toHaveBeenCalledWith('remote', 'id2');
+  });
+
+  it('shows no sign-in row without a handler or for a space without a remote', async () => {
+    const auths = await twoAuths();
+    const { unmount } = render(
+      <GitAuthsProvider auths={auths}>
+        <SettingsModal
+          {...defaultProps}
+          spaces={[remote]}
+          initialTab="spaces"
+          initialSpaceId="remote"
+        />
+      </GitAuthsProvider>,
+    );
+    await screen.findByTestId('space-details-remote');
+    expect(screen.queryByTestId('space-auth')).toBeNull();
+    unmount();
+    const local: SpaceInfo = {
+      id: 'local',
+      name: 'L',
+      source: 'Browser',
+      pageCount: 1,
+      contentSize: 1,
+    };
+    render(
+      <GitAuthsProvider auths={auths}>
+        <SettingsModal
+          {...defaultProps}
+          spaces={[local]}
+          initialTab="spaces"
+          initialSpaceId="local"
+          onChangeSpaceAuth={vi.fn()}
+        />
+      </GitAuthsProvider>,
+    );
+    await screen.findByTestId('space-details-local');
+    expect(screen.queryByTestId('space-auth')).toBeNull();
   });
 });

@@ -1002,7 +1002,7 @@ export function App() {
   const userSpaceAccount = accountForSpace(userSpaceMeta);
   const gitSessionKey =
     hasStarted && userSpaceWritable && userSpaceAccount && canHostGitClone(backend)
-      ? `${userSpaceId}|${userSpaceAccount.login}`
+      ? `${userSpaceId}|${userSpaceAccount.login}#${userSpaceMeta?.authId ?? ''}`
       : null;
   /** The open space can be read but not edited: a writable GitHub space with no session (yet). */
   const editLocked =
@@ -1547,6 +1547,26 @@ export function App() {
         });
     },
     [spaces, userSpaceId, setSpacesManifest, addToast],
+  );
+
+  /** Switch the saved auth a git space uses (REQ-AUTH-020). */
+  const handleChangeSpaceAuth = useCallback(
+    (id: string, authId: string) => {
+      void spaces
+        .setAuth(id, authId)
+        .then((manifest) => {
+          setSpacesManifest(manifest);
+          const label = gitAuths?.auths.find((a) => a.id === authId)?.label;
+          addToast(label ? `Now signed in with ${label}.` : 'Sign-in changed.', 'success');
+        })
+        .catch((err: unknown) => {
+          addToast(
+            `Could not change the sign-in: ${err instanceof Error ? err.message : String(err)}`,
+            'error',
+          );
+        });
+    },
+    [spaces, setSpacesManifest, gitAuths, addToast],
   );
 
   /**
@@ -2574,6 +2594,7 @@ export function App() {
             ...(stats?.slug !== undefined ? { slug: stats.slug } : {}),
             createdAt: space.createdAt,
             remoteUrl: space.remoteUrl,
+            ...(space.authId !== undefined ? { authId: space.authId } : {}),
             branch: space.branch,
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
@@ -2593,6 +2614,7 @@ export function App() {
             ...(stats?.slug !== undefined ? { slug: stats.slug } : {}),
             createdAt: space.createdAt,
             remoteUrl: space.remoteUrl,
+            ...(space.authId !== undefined ? { authId: space.authId } : {}),
             branch: space.branch,
             subPath: space.subPath,
             lastSyncedAt: space.lastSyncedAt,
@@ -3182,6 +3204,7 @@ export function App() {
         onKeepConversion={(id) => void handleKeepConversion(id)}
         onUndoConversion={(id) => void handleUndoConversion(id)}
         onSpaceRename={handleSpaceRename}
+        onChangeSpaceAuth={handleChangeSpaceAuth}
         onSwitchSpace={handleSwitchSpace}
         onClearAllData={handleClearAllData}
         onRecreateDemoSpace={handleResetDemo}
