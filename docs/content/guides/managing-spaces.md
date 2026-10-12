@@ -42,11 +42,13 @@ When a GitHub space has changes made on this device that are not on GitHub yet, 
 
 You can delete any space, including your first one and your only one. When you delete your only space, a new, empty space named **My Space** takes its place. Deleting a space never deletes your settings or your other spaces.
 
-## Signing in to GitHub
+## Signing in to git hosts
 
-To open private repositories, sign in with a GitHub personal access token in **Settings > Settings**, under **GitHub**. A [fine-grained token](https://github.com/settings/personal-access-tokens/new) limited to the repositories you want is recommended; classic tokens also work.
+To open private repositories, add a token in **Settings > Settings**, under **Auth**. You can add as many tokens as you need, for example one for each GitHub account, and later for other git hosts too. Each one is listed with the host, the account it signs in as, and (for GitHub) what it grants.
 
-Paste the token and choose **Sign in**. Cept checks it with GitHub before keeping it, then shows the account it signs in as and what the token grants: its scopes for a classic token, and when it expires. The token is stored encrypted on this device and never written to your pages.
+For GitHub, choose **Create a fine-grained token on GitHub**. The form opens with Cept's permissions already filled in (read and write access to repository contents; tick **Also let Cept create repositories** first if you want Cept to create repositories, which adds repository administration). GitHub cannot preselect repositories, so pick the ones the token may reach, create the token and paste it into **Token**. Classic tokens also work.
+
+Cept checks a GitHub token before keeping it. For any other git host, enter the host name, your username there and the token; Cept saves it as typed because it cannot check it. Tokens are stored encrypted on this device and never written to your pages. Use **Rename** to give an auth a clearer name and **Remove** to forget it. If GitHub stops accepting a token, its entry asks for a new one.
 
 In the browser, git traffic goes through a proxy, which can see the token when Cept clones or syncs a repository. Settings names the proxy in use.
 

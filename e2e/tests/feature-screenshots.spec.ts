@@ -295,15 +295,15 @@ test.describe('Feature Screenshots', () => {
     await captureScreenshot(page, {
       name: 'github-sign-in',
       category: 'features',
-      selector: '[data-testid="github-account"]',
+      selector: '[data-testid="auth-section"]',
     });
-    await page.getByTestId('github-token-input').fill('ghp_screenshot');
-    await page.getByTestId('github-sign-in-btn').click();
-    await expect(page.getByTestId('github-signed-in')).toBeVisible();
+    await page.getByTestId('auth-token-input').fill('ghp_screenshot');
+    await page.getByTestId('auth-add-btn').click();
+    await expect(page.getByTestId('auth-list')).toBeVisible();
     await captureScreenshot(page, {
       name: 'github-account',
       category: 'features',
-      selector: '[data-testid="github-account"]',
+      selector: '[data-testid="auth-section"]',
     });
   });
 

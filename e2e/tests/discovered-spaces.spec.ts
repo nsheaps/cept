@@ -123,9 +123,9 @@ test.describe('Discovered spaces', () => {
     await expect(page.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
 
     await openSettings(page, 'settings');
-    await page.getByTestId('github-token-input').fill(TOKEN);
-    await page.getByTestId('github-sign-in-btn').click();
-    await expect(page.getByTestId('github-login')).toHaveText('The Octocat (@octocat)');
+    await page.getByTestId('auth-token-input').fill(TOKEN);
+    await page.getByTestId('auth-add-btn').click();
+    await expect(page.getByTestId('auth-detail')).toContainText('The Octocat (@octocat)');
 
     // Both spaces are listed, and nothing has been cloned.
     await page.getByTestId('settings-tab-spaces').click();

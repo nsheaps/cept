@@ -1,42 +1,14 @@
 /**
- * GitHub account — sign-in with a personal access token (REQ-AUTH-005).
+ * The GitHub account — the first working GitHub auth (REQ-AUTH-005).
  *
- * The host (the web app) supplies the PAT auth, built from `PatAuthProvider`
- * and its own token store, because ui never picks a storage mechanism. The
- * provider checks the saved token once at startup (`restore`), so the account
- * is known before Settings opens. Without a host auth, no GitHub section is
- * shown.
+ * `GitAuthsProvider` (git-auths.tsx) fills this context from the saved git
+ * auths, so code that only needs "the" GitHub account (cloning, listing and
+ * creating repositories) does not have to pick an auth. Without a host that
+ * offers git sign-in, the context is null and no GitHub features show.
  */
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import type { ReactNode } from 'react';
-import type { GitAuth, HttpAuth, PatAccount, RepoInfo } from '@cept/core';
-
-/** The part of `PatAuthProvider` the UI uses. */
-export interface PatAuth {
-  signIn(token: string): Promise<PatAccount>;
-  /** The saved token's account; null when none is saved or GitHub rejects it. Rejects when offline. */
-  restore(): Promise<PatAccount | null>;
-  logout(): Promise<void>;
-  /** Git-over-HTTPS credentials for the saved token. Rejects when none is saved. */
-  getHttpAuth(): Promise<HttpAuth>;
-  /** The signed-in account's repositories (for starting a space in one). */
-  getRepos?(): Promise<RepoInfo[]>;
-  /** Create a repository owned by the signed-in account, with a first commit. */
-  createRepo?(options: {
-    name: string;
-    description?: string;
-    private?: boolean;
-  }): Promise<RepoInfo>;
-}
+import { createContext, useContext } from 'react';
+import type { GitAuth, PatAccount, RepoInfo } from '@cept/core';
 
 /**
  * `checking`: the saved token is being checked; `signed-out`; `signed-in`;
@@ -47,9 +19,9 @@ export type GitHubAccountStatus = 'checking' | 'signed-out' | 'signed-in' | 'unv
 export interface GitHubAccountState {
   status: GitHubAccountStatus;
   account: PatAccount | null;
-  /** Check `token` with GitHub and save it. Rejects with the reason, saving nothing. */
+  /** Check `token` with GitHub and save it as a new auth. Rejects with the reason, saving nothing. */
   signIn(token: string): Promise<void>;
-  /** Forget the saved token. */
+  /** Forget the account's auth. */
   signOut(): Promise<void>;
   /**
    * Credentials for cloning and fetching from GitHub with the saved token, or
@@ -66,78 +38,7 @@ export interface GitHubAccountState {
   }): Promise<RepoInfo>;
 }
 
-const GitHubAccountContext = createContext<GitHubAccountState | null>(null);
-
-export function GitHubAccountProvider({
-  auth,
-  children,
-}: {
-  auth: PatAuth | null;
-  children: ReactNode;
-}) {
-  const [status, setStatus] = useState<GitHubAccountStatus>(auth ? 'checking' : 'signed-out');
-  const [account, setAccount] = useState<PatAccount | null>(null);
-
-  // One restore per auth: StrictMode runs the effect twice, and both runs share this check.
-  const restoring = useRef<{ auth: PatAuth; check: Promise<PatAccount | null> } | null>(null);
-
-  useEffect(() => {
-    if (!auth) return;
-    let current = true;
-    if (restoring.current?.auth !== auth) restoring.current = { auth, check: auth.restore() };
-    restoring.current.check.then(
-      (restored) => {
-        if (!current) return;
-        setAccount(restored);
-        setStatus(restored ? 'signed-in' : 'signed-out');
-      },
-      () => {
-        // Offline (or GitHub unreachable): keep the token, check again next start.
-        if (current) setStatus('unverified');
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [auth]);
-
-  const signIn = useCallback(
-    async (token: string) => {
-      if (!auth) return;
-      const signedIn = await auth.signIn(token);
-      setAccount(signedIn);
-      setStatus('signed-in');
-    },
-    [auth],
-  );
-
-  const signOut = useCallback(async () => {
-    if (!auth) return;
-    await auth.logout();
-    setAccount(null);
-    setStatus('signed-out');
-  }, [auth]);
-
-  // Asks the store, not `status`, so a clone during the startup check still uses the token.
-  const gitAuth = useCallback(async (): Promise<GitAuth | undefined> => {
-    if (!auth) return undefined;
-    const credentials = await auth.getHttpAuth().catch(() => null);
-    return credentials?.password
-      ? { username: 'x-access-token', password: credentials.password }
-      : undefined;
-  }, [auth]);
-
-  const value = useMemo((): GitHubAccountState | null => {
-    if (!auth) return null;
-    const state: GitHubAccountState = { status, account, signIn, signOut, gitAuth };
-    const list = auth.getRepos?.bind(auth);
-    if (list) state.listRepos = () => list();
-    const create = auth.createRepo?.bind(auth);
-    if (create) state.createRepo = (options) => create(options);
-    return state;
-  }, [auth, status, account, signIn, signOut, gitAuth]);
-  return <GitHubAccountContext.Provider value={value}>{children}</GitHubAccountContext.Provider>;
-}
+export const GitHubAccountContext = createContext<GitHubAccountState | null>(null);
 
 /** The GitHub account, or null when this host offers no GitHub sign-in. */
 export function useGitHubAccount(): GitHubAccountState | null {
