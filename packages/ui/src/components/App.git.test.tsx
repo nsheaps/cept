@@ -4,7 +4,9 @@
  * as read-only until the user signs in, and nothing is written to the clone.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { GitAuthRegistry, MemoryAuthIndexStore, MemoryTokenStore } from '@cept/core';
+import { GitAuthsProvider } from './settings/git-auths.js';
 import { App } from './App.js';
 import { StorageProvider } from './storage/StorageContext.js';
 import { MemoryBackend } from './storage/test-helpers.js';
@@ -14,7 +16,7 @@ import { cloneSpaceRoot } from './storage/git-space.js';
 const URL = 'https://github.com/octo/notes';
 const ID = generateRemoteSpaceId(URL, 'main');
 
-async function appWithGitSpace(readOnly: boolean) {
+async function appWithGitSpace(readOnly: boolean, authId?: string) {
   const app = new MemoryBackend();
   app.seedText(
     '.cept/spaces.json',
@@ -30,6 +32,7 @@ async function appWithGitSpace(readOnly: boolean) {
           branch: 'main',
           access: 'token',
           readOnly,
+          ...(authId ? { authId } : {}),
         },
       ],
     }),
@@ -83,5 +86,34 @@ describe('App writable GitHub spaces (REQ-WS-027)', () => {
       (await screen.findAllByText('Copied page', {}, { timeout: 3000 })).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByTestId('sync-indicator')).toBeNull();
+  });
+
+  it('keeps a space read-only when its auth is gone, instead of editing it as another account', async () => {
+    // Built at runtime so the secret scanner does not mistake it for a real token.
+    const token = ['ghp_', 'aliceFake'].join('') + '0'.repeat(30);
+    const registry = new GitAuthRegistry({
+      tokenStore: new MemoryTokenStore(),
+      indexStore: new MemoryAuthIndexStore(),
+      newId: () => 'alice-auth',
+      fetch: (async () =>
+        new Response(JSON.stringify({ login: 'alice', name: 'Alice', avatar_url: 'https://a/a' }), {
+          status: 200,
+          headers: { 'X-OAuth-Scopes': 'repo' },
+        })) as unknown as typeof fetch,
+    });
+    await registry.add({ token });
+    const app = await appWithGitSpace(false, 'removed-auth');
+    render(
+      <GitAuthsProvider auths={registry}>
+        <StorageProvider backend={app}>
+          <App />
+        </StorageProvider>
+      </GitAuthsProvider>,
+    );
+    expect((await screen.findAllByText('Hello', {}, { timeout: 3000 })).length).toBeGreaterThan(0);
+    await waitFor(() =>
+      expect(screen.getByTestId('sync-state').textContent).toMatch(/sign in to edit/),
+    );
+    expect(screen.queryByTestId('sync-now')).toBeNull();
   });
 });

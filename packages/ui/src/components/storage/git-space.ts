@@ -484,8 +484,8 @@ export async function publishSpaceToRepo(
 export function cloneErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof GitAuthRequiredError) {
     return err.status === 401
-      ? `GitHub asked for a sign-in to read ${err.url}. Sign in with a personal access token under Settings → GitHub, then try again.`
-      : `Your GitHub token cannot read ${err.url}. Sign in with a token that has access under Settings → GitHub, then try again.`;
+      ? `GitHub asked for a sign-in to read ${err.url}. Add a personal access token under Settings → Auth, then try again.`
+      : `Your GitHub token cannot read ${err.url}. Sign in with a token that has access under Settings → Auth, then try again.`;
   }
   return err instanceof Error ? err.message : fallback;
 }

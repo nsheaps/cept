@@ -60,7 +60,7 @@ import { cloneSpaceRoot } from './git-space.js';
 
 /** Why a GitHub space cannot be edited while it has no editing session. */
 export const GIT_SPACE_LOCKED =
-  'Sign in to GitHub under Settings → GitHub to edit this space and sync it.';
+  'Add a GitHub token under Settings → Auth to edit this space and sync it.';
 
 /**
  * Where a space's data lives:
@@ -99,6 +99,11 @@ export interface SpaceMeta {
   access?: RemoteAccess;
   /** Where the space's data lives; absent means `app`. */
   backend?: SpaceBackendKind;
+  /**
+   * The git auth (settings → Auth) this remote space uses. Absent for spaces
+   * added before auths could be chosen: they use the first working GitHub auth.
+   */
+  authId?: string;
 }
 
 /** How a remote space reaches its repository. */
@@ -245,6 +250,7 @@ async function addRemoteSpace(
   access?: RemoteAccess,
   activate = true,
   writable = false,
+  authId?: string,
 ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
   const manifest = await loadSpaces(backend);
   const id = generateRemoteSpaceId(remoteUrl, branch, subPath);
@@ -262,6 +268,10 @@ async function addRemoteSpace(
   if (access) newSpace.access = access;
   // Replace existing space with same ID (re-clone) or add new
   const existingIdx = manifest.spaces.findIndex((s) => s.id === id);
+  // A re-clone keeps the auth the space already had unless a new one is given.
+  const keptAuth = existingIdx >= 0 ? manifest.spaces[existingIdx]?.authId : undefined;
+  const chosenAuth = authId ?? keptAuth;
+  if (chosenAuth !== undefined) newSpace.authId = chosenAuth;
   if (existingIdx >= 0) {
     manifest.spaces[existingIdx] = newSpace;
   } else {
@@ -607,7 +617,7 @@ export class SpaceManager {
     branch: string,
     subPath?: string,
     access?: RemoteAccess,
-    options: { activate?: boolean; writable?: boolean } = {},
+    options: { activate?: boolean; writable?: boolean; authId?: string } = {},
   ): Promise<{ space: SpaceMeta; manifest: SpacesManifest }> {
     const activate = options.activate ?? true;
     if (activate) this.sessionActive = null;
@@ -620,6 +630,7 @@ export class SpaceManager {
       access,
       activate,
       options.writable ?? false,
+      options.authId,
     );
     this.layouts.delete(space.id);
     this.savedState.delete(space.id);
@@ -641,6 +652,20 @@ export class SpaceManager {
     await saveSpaces(this.backend, manifest);
     this.layouts.delete(id);
     this.savedState.delete(id);
+    return this.visible(manifest);
+  }
+
+  /**
+   * Bind a remote space to a git auth, or with `null` back to the default
+   * (the first working GitHub auth). Throws for a space that is not remote.
+   */
+  async setAuth(id: string, authId: string | null): Promise<SpacesManifest> {
+    const manifest = await loadSpaces(this.backend);
+    const space = manifest.spaces.find((s) => s.id === id);
+    if (!space?.remoteUrl) throw new Error(`Not a remote space: ${id}`);
+    if (authId === null) delete space.authId;
+    else space.authId = authId;
+    await saveSpaces(this.backend, manifest);
     return this.visible(manifest);
   }
 

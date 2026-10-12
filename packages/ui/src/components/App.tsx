@@ -107,6 +107,8 @@ import type { StartRepoSpaceRequest } from './git/StartRepoSpaceDialog.js';
 import { PublishSpaceDialog, createRepoErrorMessage } from './git/PublishSpaceDialog.js';
 import type { PublishSpaceRequest } from './git/PublishSpaceDialog.js';
 import { useGitHubAccount } from './settings/github-account.js';
+import { defaultGitHubAuth, useGitAuths } from './settings/git-auths.js';
+import { lostAuthMessage, resolveSpaceAuth } from './storage/space-auth.js';
 import { useDiscoveredSpaces } from './settings/discovered-spaces.js';
 import { probePlatform, spaceSources } from './storage/platform.js';
 import {
@@ -262,6 +264,33 @@ export function App() {
   const gitAuth = githubAccount?.gitAuth;
   /** The signed-in GitHub account, who edits of GitHub spaces are committed as. */
   const signedInAccount = githubAccount?.status === 'signed-in' ? githubAccount.account : null;
+  // Every saved git auth: each git space uses the one it was added with (REQ-AUTH-019).
+  const gitAuths = useGitAuths();
+  /** Git credentials for a space, or for a new clone when `space` is empty. */
+  const gitAuthForSpace = useCallback(
+    async (space: { authId?: string }) => {
+      if (!gitAuths) return gitAuth?.();
+      // While the saved auths are checked, the list is empty but the tokens are already readable.
+      if (gitAuths.status === 'checking' && space.authId) return gitAuths.gitAuthFor(space.authId);
+      const resolved = resolveSpaceAuth(space, gitAuths.auths);
+      if (resolved.kind === 'lost') throw new Error(lostAuthMessage(resolved.reason));
+      if (resolved.kind === 'auth') return gitAuths.gitAuthFor(resolved.auth.id);
+      return gitAuth?.();
+    },
+    [gitAuths, gitAuth],
+  );
+  /** Who edits of this space are committed as: the account of its auth. */
+  const accountForSpace = useCallback(
+    (space: { authId?: string } | undefined) => {
+      if (!space || !gitAuths) return signedInAccount;
+      const resolved = resolveSpaceAuth(space, gitAuths.auths);
+      if (resolved.kind === 'auth') return resolved.auth.account ?? null;
+      return resolved.kind === 'none' ? signedInAccount : null;
+    },
+    [gitAuths, signedInAccount],
+  );
+  /** The auth a space added now is bound to: the first working GitHub auth. */
+  const newSpaceAuthId = gitAuths ? defaultGitHubAuth(gitAuths.auths)?.id : undefined;
   // Spaces in the signed-in account's repositories (null when not signed in).
   const discovered = useDiscoveredSpaces();
   const [cloneStatus, setCloneStatus] = useState<{
@@ -738,7 +767,7 @@ export function App() {
                     branch: parsed.branch,
                     subPath,
                     corsProxy: gitCorsProxy(),
-                    auth: await gitAuth?.(),
+                    auth: await gitAuthForSpace({}),
                   });
 
                   const { space: newSpace, manifest: updatedManifest } = await spaces.createRemote(
@@ -747,7 +776,10 @@ export function App() {
                     parsed.branch,
                     subPath,
                     access,
-                    { writable },
+                    {
+                      writable,
+                      ...(access === 'token' && newSpaceAuthId ? { authId: newSpaceAuthId } : {}),
+                    },
                   );
 
                   setSpacesManifest(updatedManifest);
@@ -801,7 +833,8 @@ export function App() {
     loadAndApplySpaceState,
     applyClonedSpace,
     openDemoSpace,
-    gitAuth,
+    gitAuthForSpace,
+    newSpaceAuthId,
     requestPersistentStorage,
   ]);
 
@@ -849,7 +882,7 @@ export function App() {
           branch: spaceMeta.branch!,
           subPath: spaceMeta.subPath || undefined,
           corsProxy: gitCorsProxy(),
-          auth: await gitAuth?.(),
+          auth: await gitAuthForSpace(spaceMeta),
         });
 
         const manifest = await spaces.markSynced(userSpaceId, access);
@@ -888,7 +921,7 @@ export function App() {
     };
 
     void syncSpace();
-  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces, gitAuth]);
+  }, [hasStarted, userSpaceId, spacesManifest, backend, spaces, gitAuthForSpace]);
 
   // Deep linking: update URL when selected page or space changes.
   // Guarded: never fires during initial render or on the landing page.
@@ -950,9 +983,10 @@ export function App() {
   // space while signed in, which commits edits and syncs them with GitHub.
   const userSpaceMeta = spacesManifest?.spaces.find((s) => s.id === userSpaceId);
   const userSpaceWritable = userSpaceMeta ? isWritableRemote(userSpaceMeta) : false;
+  const userSpaceAccount = accountForSpace(userSpaceMeta);
   const gitSessionKey =
-    hasStarted && userSpaceWritable && signedInAccount && canHostGitClone(backend)
-      ? `${userSpaceId}|${signedInAccount.login}`
+    hasStarted && userSpaceWritable && userSpaceAccount && canHostGitClone(backend)
+      ? `${userSpaceId}|${userSpaceAccount.login}`
       : null;
   /** The open space can be read but not edited: a writable GitHub space with no session (yet). */
   const editLocked =
@@ -1020,15 +1054,16 @@ export function App() {
     open: async (key) => {
       const spaceId = spaceIdOfSessionKey(key);
       const meta = (await spaces.load()).spaces.find((s) => s.id === spaceId);
-      if (!meta || !signedInAccount || !canHostGitClone(backend)) {
+      const account = accountForSpace(meta);
+      if (!meta || !account || !canHostGitClone(backend)) {
         throw new Error(GIT_SPACE_LOCKED);
       }
       return openGitSpaceSession(backend, {
         spaceId,
         subPath: meta.subPath,
-        auth: await gitAuth?.(),
-        identity: commitIdentityFor(signedInAccount),
-        login: signedInAccount.login,
+        auth: await gitAuthForSpace(meta),
+        identity: commitIdentityFor(account),
+        login: account.login,
         corsProxy: gitCorsProxy(),
       });
     },
@@ -1110,12 +1145,12 @@ export function App() {
   /** Tell the user why the open space cannot be edited. */
   const explainLocked = useCallback(() => {
     addToast(
-      signedInAccount
+      userSpaceAccount
         ? 'This space is still opening for editing; try again in a moment.'
         : GIT_SPACE_LOCKED,
       'info',
     );
-  }, [signedInAccount, addToast]);
+  }, [userSpaceAccount, addToast]);
 
   const breadcrumbItems = useMemo(() => {
     if (!selectedPageId) return [];
@@ -1951,7 +1986,7 @@ export function App() {
           branch,
           subPath,
           corsProxy: gitCorsProxy(),
-          auth: await gitAuth?.(),
+          auth: await gitAuthForSpace({}),
         });
 
         // Create the space with remote metadata
@@ -1961,7 +1996,11 @@ export function App() {
           branch,
           subPath,
           access,
-          { activate: options.activate, writable },
+          {
+            activate: options.activate,
+            writable,
+            ...(access === 'token' && newSpaceAuthId ? { authId: newSpaceAuthId } : {}),
+          },
         );
         setSpacesManifest(manifest);
         void requestPersistentStorage();
@@ -2003,7 +2042,8 @@ export function App() {
     [
       backend,
       spaces,
-      gitAuth,
+      gitAuthForSpace,
+      newSpaceAuthId,
       addToast,
       handleCreateSpace,
       handleSwitchSpace,
@@ -2023,7 +2063,7 @@ export function App() {
    */
   const handleStartRepoSpace = useCallback(
     async ({ repo, name, folder }: StartRepoSpaceRequest) => {
-      const auth = await gitAuth?.();
+      const auth = await gitAuthForSpace({});
       if (!signedInAccount || !auth || !canHostGitClone(backend)) throw new Error(GIT_SPACE_LOCKED);
       const remoteUrl = normalizeRepoUrl(repo.url);
       const branch = repo.defaultBranch || 'main';
@@ -2057,6 +2097,7 @@ export function App() {
       saveActiveSpace();
       const created = await spaces.createRemote(name, remoteUrl, branch, subPath, 'token', {
         writable: true,
+        ...(newSpaceAuthId ? { authId: newSpaceAuthId } : {}),
       });
       setSpacesManifest(created.manifest);
       setUserSpaceId(created.space.id);
@@ -2065,7 +2106,8 @@ export function App() {
       addToast(`"${name}" is ready. Your edits are committed and synced with GitHub.`, 'success');
     },
     [
-      gitAuth,
+      gitAuthForSpace,
+      newSpaceAuthId,
       signedInAccount,
       backend,
       spaces,
@@ -2088,7 +2130,7 @@ export function App() {
   const handlePublishSpace = useCallback(
     async ({ repoName, description, private: isPrivate }: PublishSpaceRequest) => {
       const id = publishSpaceId;
-      const auth = await gitAuth?.();
+      const auth = await gitAuthForSpace({});
       const createRepo = githubAccount?.createRepo;
       if (!id || !signedInAccount || !auth || !createRepo || !canHostGitClone(backend)) {
         throw new Error(GIT_SPACE_LOCKED);
@@ -2144,7 +2186,7 @@ export function App() {
           branch,
           undefined,
           'token',
-          { writable: true },
+          { writable: true, ...(newSpaceAuthId ? { authId: newSpaceAuthId } : {}) },
         );
         setSpacesManifest(created.manifest);
         setUserSpaceId(created.space.id);
@@ -2165,7 +2207,8 @@ export function App() {
     },
     [
       publishSpaceId,
-      gitAuth,
+      gitAuthForSpace,
+      newSpaceAuthId,
       githubAccount,
       signedInAccount,
       backend,
@@ -2212,7 +2255,7 @@ export function App() {
       // A writable space syncs through its editing session, keeping what was edited here.
       if (isWritableRemote(spaceMeta)) {
         if (spaceId === gitSessionSpaceId) await handleSyncNow();
-        else if (!signedInAccount) addToast(GIT_SPACE_LOCKED, 'info');
+        else if (!accountForSpace(spaceMeta)) addToast(GIT_SPACE_LOCKED, 'info');
         else addToast(`Open "${spaceMeta.name}" to sync it.`, 'info');
         return;
       }
@@ -2226,7 +2269,7 @@ export function App() {
           branch: spaceMeta.branch,
           subPath: spaceMeta.subPath,
           corsProxy: gitCorsProxy(),
-          auth: await gitAuth?.(),
+          auth: await gitAuthForSpace(spaceMeta),
         });
       } catch (err) {
         addToast(
@@ -2271,11 +2314,11 @@ export function App() {
       spaces,
       userSpaceId,
       gitSessionSpaceId,
-      signedInAccount,
+      accountForSpace,
       handleSyncNow,
       loadAndApplySpaceState,
       setSpacesManifest,
-      gitAuth,
+      gitAuthForSpace,
       addToast,
     ],
   );
@@ -2397,7 +2440,7 @@ export function App() {
         ? async () =>
             pageHistorySource(backend, activeSpaceMeta, pageId, {
               sessionGit: gitSessionSpaceId === activeSpaceMeta.id ? gitSession?.git : undefined,
-              auth: await gitAuth?.(),
+              auth: await gitAuthForSpace(activeSpaceMeta).catch(() => undefined),
               corsProxy: gitCorsProxy(),
             })
         : null;
@@ -2427,7 +2470,7 @@ export function App() {
     historyFolder,
     gitSessionSpaceId,
     gitSession,
-    gitAuth,
+    gitAuthForSpace,
     addToast,
   ]);
 
@@ -2659,7 +2702,7 @@ export function App() {
         {activeSpace === 'user' && userSpaceWritable && (
           <SyncIndicator
             status={gitSessionSpaceId === userSpaceId ? gitSync.status : null}
-            locked={!signedInAccount}
+            locked={!userSpaceAccount}
             syncing={gitSync.syncing}
             onSyncNow={() => void handleSyncNow()}
             onSignIn={() => handleOpenSettings('settings')}

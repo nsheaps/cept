@@ -56,7 +56,7 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon)                     | Shared credentials through the local daemon                      | SHOULD   | not-started | undocumented           | n/a           |
 | [REQ-AUTH-018](#req-auth-018--no-secrets-in-client-bundles-or-the-repo)                        | No secrets in client bundles or the repo                         | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-AUTH-019](#req-auth-019--several-git-token-auths)                                         | Zero or more git token auths, each for one host or account       | MUST     | not-started | documented-as-desired  | accurate      |
-| [REQ-AUTH-020](#req-auth-020--choose-the-auth-for-a-git-space)                                 | A git space uses a chosen auth, so several accounts can be used  | MUST     | not-started | documented-as-desired  | accurate      |
+| [REQ-AUTH-020](#req-auth-020--choose-the-auth-for-a-git-space)                                 | A git space uses a chosen auth, so several accounts can be used  | MUST     | partial     | documented-as-desired  | accurate      |
 
 ## Architecture
 
@@ -378,7 +378,7 @@ flowchart LR
 - An integration test clones, pulls and pushes a private repository with a mocked or local authenticated Git server.
 - Auth failures (401/403) show the user a re-authenticate prompt and are not retried in a loop.
 
-**Current state:** partial. Clone and fetch are authenticated since PR 31. Core's `syncRemoteClone()` ([packages/core/src/storage/git-clone.ts](../../../packages/core/src/storage/git-clone.ts)) keeps one clone per remote space under `/.cept/git-repos/`. It clones on first use (shallow unless `fullHistory`), and later fetches and fast-forwards instead of re-cloning (`GitBackend.updateFromRemote`). A 401 or 403 rejects once with `GitAuthRequiredError`, with no retry. [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) `cloneRemoteRepo()` passes the GitHub sign-in (`useGitHubAccount().gitAuth()`) and sends it only to github.com. [App.tsx](../../../packages/ui/src/components/App.tsx) turns an auth failure into a "sign in under Settings → GitHub" message on add, open, refresh and background sync. [git-clone.integration.test.ts](../../../packages/core/src/storage/git-clone.integration.test.ts) clones a private repository from a token-protected `git http-backend`, then fetches a new commit into the same clone. Pull and push are not wired yet (PR 36), so the integration test does not push.
+**Current state:** partial. Clone and fetch are authenticated since PR 31. Core's `syncRemoteClone()` ([packages/core/src/storage/git-clone.ts](../../../packages/core/src/storage/git-clone.ts)) keeps one clone per remote space under `/.cept/git-repos/`. It clones on first use (shallow unless `fullHistory`), and later fetches and fast-forwards instead of re-cloning (`GitBackend.updateFromRemote`). A 401 or 403 rejects once with `GitAuthRequiredError`, with no retry. [git-space.ts](../../../packages/ui/src/components/storage/git-space.ts) `cloneRemoteRepo()` passes the GitHub sign-in (`useGitHubAccount().gitAuth()`) and sends it only to github.com. [App.tsx](../../../packages/ui/src/components/App.tsx) turns an auth failure into a "sign in under Settings → Auth" message on add, open, refresh and background sync. [git-clone.integration.test.ts](../../../packages/core/src/storage/git-clone.integration.test.ts) clones a private repository from a token-protected `git http-backend`, then fetches a new commit into the same clone. Pull and push are not wired yet (PR 36), so the integration test does not push.
 
 **Docs state:** documented-as-desired, stale. SPECIFICATION §7.1 matches the intent. [README.md](../../../README.md) line 17 and [quick-start.md](../../content/getting-started/quick-start.md) lines 55-64 overstate the current state ("sync automatically").
 
@@ -652,10 +652,10 @@ The owner needs to decide each of these.
 - When a space's auth is removed, or its token is rejected, the space shows that and offers the other auths for its host; nothing is pushed under a different account without the user choosing it.
 - The choice is kept in the space's entry on this device, not in the repository.
 
-**Current state:** not-started. Every git operation uses the one signed-in token (`gitAuth` in [github-account.tsx](../../../packages/ui/src/components/settings/github-account.tsx)).
+**Current state:** partial (PR 52c-1). A remote space's entry records its `authId` ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). New spaces are bound to the first working GitHub auth; spaces added earlier have no `authId` and keep using it. [space-auth.ts](../../../packages/ui/src/components/storage/space-auth.ts) `resolveSpaceAuth()` picks the credentials for background sync, refresh, page history and the editing session, and the commit author is the account of that auth. A space whose auth was removed or rejected stays read-only with a message and is never opened as another account. Missing: the picker in the add-space dialogs and space settings, and per-auth discovery.
 
 **Docs state:** documented-as-desired, accurate.
 
-**Gap:** Per-space auth id in the space manifest, the picker, per-auth discovery.
+**Gap:** The picker (add-space dialogs, space settings, the prompt for a lost auth) and per-auth discovery.
 
 **Related:** REQ-AUTH-010, REQ-AUTH-019, REQ-WS-023, REQ-WS-027.
