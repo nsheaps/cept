@@ -93,4 +93,23 @@ describe('SpaceAuthRow (REQ-AUTH-020)', () => {
     expect(screen.getByTestId('space-auth-none').textContent).toContain('github.com');
     expect(screen.queryByTestId('space-auth-select')).toBeNull();
   });
+
+  it("treats an auth for another host as lost and offers the right host's auths", () => {
+    render(
+      <SpaceAuthRow
+        authId="g"
+        remoteUrl={URL}
+        auths={[auth('g', 'gl', { host: 'gitlab.com' }), auth('a', 'alice'), auth('b', 'bob')]}
+        onChange={vi.fn()}
+      />,
+    );
+    const select = screen.getByTestId('space-auth-select') as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      'Choose a token…',
+      '@alice',
+      '@bob',
+    ]);
+    expect(screen.getByTestId('space-auth-lost')).toBeTruthy();
+  });
 });

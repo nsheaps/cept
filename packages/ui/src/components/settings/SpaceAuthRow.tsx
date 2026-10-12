@@ -20,8 +20,15 @@ export function SpaceAuthRow({ authId, remoteUrl, auths, onChange }: SpaceAuthRo
   const host = hostOfRepoUrl(remoteUrl);
   const choices = authsForHost(auths, host);
   const resolved = resolveSpaceAuth(authId === undefined ? {} : { authId }, auths);
-  const current = resolved.kind === 'auth' ? resolved.auth : undefined;
-  const lost = resolved.kind === 'lost' ? resolved : undefined;
+  // An auth for another host cannot sign in to this remote, so it counts as lost.
+  const sameHost = resolved.kind === 'auth' && resolved.auth.host.toLowerCase() === host;
+  const current = resolved.kind === 'auth' && sameHost ? resolved.auth : undefined;
+  const lost =
+    resolved.kind === 'lost'
+      ? resolved
+      : resolved.kind === 'auth' && !sameHost
+        ? { reason: 'removed' as const }
+        : undefined;
   // A single working auth that is already in use leaves nothing to choose.
   const canChoose = choices.length > 1 || (lost !== undefined && choices.length > 0);
 
