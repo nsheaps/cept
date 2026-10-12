@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.44.0](https://github.com/nsheaps/cept/compare/v0.43.0...v0.44.0) (2026-10-12)
+
+### Features
+
+* **ui:** choose the git auth when adding a space ([#434](https://github.com/nsheaps/cept/issues/434)) ([e4dfa93](https://github.com/nsheaps/cept/commit/e4dfa93895c71a970bab7329dd12b3b92155bce3))
+
 ## [0.43.0](https://github.com/nsheaps/cept/compare/v0.42.0...v0.43.0) (2026-10-12)
 
 ### Features
