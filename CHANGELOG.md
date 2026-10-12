@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.45.0](https://github.com/nsheaps/cept/compare/v0.44.0...v0.45.0) (2026-10-12)
+
+### Features
+
+* **ui:** change a space's git auth in its settings ([#435](https://github.com/nsheaps/cept/issues/435)) ([d09dce6](https://github.com/nsheaps/cept/commit/d09dce6c475ea9f09c500978ede00aa0c9412908))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([d1c7970](https://github.com/nsheaps/cept/commit/d1c797054d85609392e825fcbb31f9f26b8cbd6c))
+
 ## [0.44.0](https://github.com/nsheaps/cept/compare/v0.43.0...v0.44.0) (2026-10-12)
 
 ### Features
