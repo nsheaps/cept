@@ -65,7 +65,7 @@ Nothing is downloaded until you choose a space:
 - **Open** downloads the space and switches to it.
 - **Pin** downloads it and adds it to your spaces without leaving the one you are in.
 
-Spaces already on this device are not listed again. A space whose `space.cept.yaml` has a problem (for example, no slug) is shown with the reason and cannot be opened until it is fixed.
+If you have saved more than one GitHub token (**Settings > Auth**), Cept looks with each account and lists a space once. When more than one token can read a space, a **Sign in with** menu lets you pick which one the space uses; the token that found it first is suggested. Spaces already on this device are not listed again. A space whose `space.cept.yaml` has a problem (for example, no slug) is shown with the reason and cannot be opened until it is fixed.
 
 Cept looks again each time you sign in or start Cept with a saved token, and when you choose **Look again**. Until a new look finishes, the list from last time is shown. GitHub limits how many requests a token can make each hour; on a very large account Cept may stop before checking every repository and says so. Repositories it could not read are listed under the notes at the bottom.
 

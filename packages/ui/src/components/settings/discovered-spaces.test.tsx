@@ -53,6 +53,20 @@ function fakeAuth(login: string | null): GitAuths {
   };
 }
 
+/** Several GitHub auths, each with its own token (`token-<id>`). */
+function fakeAuths(entries: { id: string; login: string }[]): GitAuths {
+  const saved = entries.map((e) => ({ ...record(e.login), id: e.id }));
+  return {
+    restore: async () => ({ records: saved, unreachable: [] }),
+    list: async () => saved,
+    add: async () => record('someone'),
+    remove: async () => undefined,
+    rename: async () => record('someone'),
+    replaceToken: async () => record('someone'),
+    httpAuth: async (id) => ({ username: 'x-access-token', password: `token-${id}` }),
+  };
+}
+
 function remote(repo: string, path = ''): RemoteSpace {
   return {
     repo,
@@ -192,6 +206,89 @@ describe('useDiscoveredSpaces (REQ-WS-023)', () => {
     expect(screen.getByTestId('status').textContent).toBe('none');
     expect(loadDiscovery('octocat')).toBeNull();
     expect(loadDiscovery('someone-else')).toBeNull();
+  });
+});
+
+describe('useDiscoveredSpaces with several auths (REQ-AUTH-020)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    latest = null;
+  });
+
+  it('searches each account once and lists a shared space once with every auth that reads it', async () => {
+    const discover = vi.fn<Discover>(async (options) =>
+      options.token === 'token-a'
+        ? result([remote('ann/shared'), remote('ann/only-a')])
+        : result([remote('ann/shared'), remote('org/only-b')]),
+    );
+    renderWith(
+      fakeAuths([
+        { id: 'a', login: 'alice' },
+        { id: 'b', login: 'bob' },
+      ]),
+      discover,
+    );
+    await waitFor(() => expect(latest?.status).toBe('done'));
+    expect(discover).toHaveBeenCalledTimes(2);
+    const ids = latest?.snapshot?.spaces.map(discoveredSpaceId);
+    expect(ids).toEqual([
+      'github.com/ann/shared@main',
+      'github.com/ann/only-a@main',
+      'github.com/org/only-b@main',
+    ]);
+    expect(latest?.reachedBy['github.com/ann/shared@main']).toEqual(['a', 'b']);
+    expect(latest?.reachedBy['github.com/ann/only-a@main']).toEqual(['a']);
+    expect(latest?.reachedBy['github.com/org/only-b@main']).toEqual(['b']);
+  });
+
+  it('searches an account once when two tokens sign in as it', async () => {
+    const discover = vi.fn<Discover>(async () => result([remote('ann/notes')]));
+    renderWith(
+      fakeAuths([
+        { id: 'a', login: 'alice' },
+        { id: 'a2', login: 'Alice' },
+      ]),
+      discover,
+    );
+    await waitFor(() => expect(latest?.status).toBe('done'));
+    expect(discover).toHaveBeenCalledTimes(1);
+    expect(latest?.reachedBy['github.com/ann/notes@main']).toEqual(['a', 'a2']);
+  });
+
+  it('does not flag a space as lost while another account still reads it', async () => {
+    const gone = remote('ann/shared');
+    const discover = vi.fn<Discover>(async (options) =>
+      options.token === 'token-a'
+        ? result([], { lost: [{ space: gone, reason: 'access' }] })
+        : result([gone]),
+    );
+    renderWith(
+      fakeAuths([
+        { id: 'a', login: 'alice' },
+        { id: 'b', login: 'bob' },
+      ]),
+      discover,
+    );
+    await waitFor(() => expect(latest?.status).toBe('done'));
+    expect(latest?.snapshot?.lost).toEqual([]);
+    expect(latest?.snapshot?.spaces).toHaveLength(1);
+  });
+
+  it("keeps the other account's spaces and names the account that failed", async () => {
+    const discover = vi.fn<Discover>(async (options) => {
+      if (options.token === 'token-b') throw new Error('GitHub rejected the token');
+      return result([remote('ann/notes')]);
+    });
+    renderWith(
+      fakeAuths([
+        { id: 'a', login: 'alice' },
+        { id: 'b', login: 'bob' },
+      ]),
+      discover,
+    );
+    await waitFor(() => expect(latest?.status).toBe('done'));
+    expect(latest?.error).toBe('@bob: GitHub rejected the token');
+    expect(latest?.snapshot?.spaces).toHaveLength(1);
   });
 });
 

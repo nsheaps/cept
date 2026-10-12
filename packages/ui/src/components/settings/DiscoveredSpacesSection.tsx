@@ -5,7 +5,8 @@
  * be read. Listing a space clones nothing; Open and Pin do.
  */
 
-import type { LostSpace, RemoteSpace } from '@cept/core';
+import { useState } from 'react';
+import type { GitAuthRecord, LostSpace, RemoteSpace } from '@cept/core';
 import { discoveredSpaceId } from './discovered-spaces.js';
 import type { DiscoveredSpacesState } from './discovered-spaces.js';
 
@@ -13,10 +14,12 @@ export interface DiscoveredSpacesSectionProps {
   discovered: DiscoveredSpacesState;
   /** Ids of the spaces already on this device. */
   addedSpaceIds: ReadonlySet<string>;
-  /** Clone the space, add it and switch to it. */
-  onOpen?: (space: RemoteSpace) => void;
-  /** Clone the space and add it without switching to it. */
-  onPin?: (space: RemoteSpace) => void;
+  /** The saved auths, to name the one a space is reached with. */
+  auths?: readonly GitAuthRecord[];
+  /** Clone the space with `authId` (the auth chosen for it), add it and switch to it. */
+  onOpen?: (space: RemoteSpace, authId?: string) => void;
+  /** Clone the space with `authId` and add it without switching to it. */
+  onPin?: (space: RemoteSpace, authId?: string) => void;
 }
 
 const LOST_REASON: Record<LostSpace['reason'], string> = {
@@ -37,10 +40,13 @@ function formatChecked(iso: string): string {
 export function DiscoveredSpacesSection({
   discovered,
   addedSpaceIds,
+  auths = [],
   onOpen,
   onPin,
 }: DiscoveredSpacesSectionProps) {
   const { status, snapshot, error } = discovered;
+  // The auth picked for a space that more than one auth can read; the first one found it.
+  const [picked, setPicked] = useState<Record<string, string>>({});
   const notAdded = (snapshot?.spaces ?? []).filter((s) => !addedSpaceIds.has(discoveredSpaceId(s)));
   // Only spaces on this device are worth flagging; the copy here is kept.
   const lostHere = (snapshot?.lost ?? []).filter((l) =>
@@ -100,6 +106,8 @@ export function DiscoveredSpacesSection({
           {notAdded.map((space) => {
             const id = discoveredSpaceId(space);
             const blocked = space.errors.length > 0;
+            const reaching = discovered.reachedBy[id] ?? [];
+            const authId = picked[id] && reaching.includes(picked[id]) ? picked[id] : reaching[0];
             return (
               <div
                 key={id}
@@ -117,6 +125,23 @@ export function DiscoveredSpacesSection({
                     <span className="cept-settings-space-meta">
                       {location(space)} &middot; {space.branch}
                     </span>
+                    {reaching.length > 1 && (
+                      <label className="cept-settings-space-meta">
+                        Sign in with{' '}
+                        <select
+                          value={authId}
+                          onChange={(e) => setPicked((p) => ({ ...p, [id]: e.target.value }))}
+                          data-testid={`discovered-auth-${id}`}
+                        >
+                          {reaching.map((reachingId, i) => (
+                            <option key={reachingId} value={reachingId}>
+                              {auths.find((a) => a.id === reachingId)?.label ?? reachingId}
+                              {i === 0 ? ' (Recommended)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {blocked && (
                       <span
                         className="cept-settings-github-error"
@@ -130,7 +155,7 @@ export function DiscoveredSpacesSection({
                 <div className="cept-settings-space-actions">
                   <button
                     className="cept-settings-action-btn"
-                    onClick={() => onOpen?.(space)}
+                    onClick={() => onOpen?.(space, authId)}
                     disabled={blocked || !onOpen}
                     title="Download this space and switch to it"
                     data-testid={`discovered-open-${id}`}
@@ -139,7 +164,7 @@ export function DiscoveredSpacesSection({
                   </button>
                   <button
                     className="cept-settings-action-btn"
-                    onClick={() => onPin?.(space)}
+                    onClick={() => onPin?.(space, authId)}
                     disabled={blocked || !onPin}
                     title="Download this space and add it to your spaces"
                     data-testid={`discovered-pin-${id}`}

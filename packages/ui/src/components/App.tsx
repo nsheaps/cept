@@ -1928,7 +1928,10 @@ export function App() {
    * `name` overrides the name built from the URL.
    */
   const addRemoteSpace = useCallback(
-    async (config: RemoteSpaceConfig, options: { activate: boolean; name?: string }) => {
+    async (
+      config: RemoteSpaceConfig,
+      options: { activate: boolean; name?: string; authId?: string },
+    ) => {
       // Build a human-readable name from the repo URL
       const normalizedUrl = config.url
         .replace(/^https?:\/\/(www\.)?/, '')
@@ -1955,6 +1958,7 @@ export function App() {
       const remoteUrl = normalizeRepoUrl(config.url);
       const subPath = config.subPath.trim() || undefined;
       const spaceId = generateRemoteSpaceId(remoteUrl, branch, subPath);
+      const chosenAuth = options.authId ?? newSpaceAuthId;
       // A space edited on this device is never cloned over: open it as it is.
       const existing = (await spaces.load()).spaces.find((s) => s.id === spaceId);
       if (existing && isWritableRemote(existing)) {
@@ -1989,7 +1993,7 @@ export function App() {
           branch,
           subPath,
           corsProxy: gitCorsProxy(),
-          auth: await gitAuthForSpace({}),
+          auth: await gitAuthForSpace(chosenAuth ? { authId: chosenAuth } : {}),
         });
 
         // Create the space with remote metadata
@@ -2002,7 +2006,7 @@ export function App() {
           {
             activate: options.activate,
             writable,
-            ...(access === 'token' && newSpaceAuthId ? { authId: newSpaceAuthId } : {}),
+            ...(access === 'token' && chosenAuth ? { authId: chosenAuth } : {}),
           },
         );
         setSpacesManifest(manifest);
@@ -2234,13 +2238,17 @@ export function App() {
 
   /** Open (clone and switch to) or pin (clone and add) a space discovered on GitHub. */
   const handleDiscoveredSpace = useCallback(
-    (space: RemoteSpace, activate: boolean) => {
+    (space: RemoteSpace, activate: boolean, authId?: string) => {
       const config: RemoteSpaceConfig = {
         url: space.url,
         branch: space.branch,
         subPath: space.path,
       };
-      return addRemoteSpace(config, { activate, name: space.name });
+      return addRemoteSpace(config, {
+        activate,
+        name: space.name,
+        ...(authId ? { authId } : {}),
+      });
     },
     [addRemoteSpace],
   );
@@ -3167,11 +3175,11 @@ export function App() {
         }}
         onRefreshSpace={handleRefreshSpace}
         discovered={discovered}
-        onOpenDiscovered={(space) => {
+        onOpenDiscovered={(space, authId) => {
           setSettingsOpen(false);
-          void handleDiscoveredSpace(space, true);
+          void handleDiscoveredSpace(space, true, authId);
         }}
-        onPinDiscovered={(space) => void handleDiscoveredSpace(space, false)}
+        onPinDiscovered={(space, authId) => void handleDiscoveredSpace(space, false, authId)}
       />
       <AddSpaceWizardModal
         isOpen={addSpaceWizardOpen}
