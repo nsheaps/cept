@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.33.7](https://github.com/nsheaps/cept/compare/v0.33.6...v0.33.7) (2026-10-12)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([c76d91a](https://github.com/nsheaps/cept/commit/c76d91a6f1a02023484b344a55a69cf69b2809ef))
+
 ## [0.33.6](https://github.com/nsheaps/cept/compare/v0.33.5...v0.33.6) (2026-10-12)
 
 ### Bug Fixes
