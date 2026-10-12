@@ -27,7 +27,7 @@ import {
   SPACE_CONFIG_VERSION,
   SPACE_MARKER_YAML,
 } from '@cept/core';
-import type { Moved, PageNode, SpaceTree, StorageBackend } from '@cept/core';
+import type { ForeignFile, Moved, PageNode, SpaceTree, StorageBackend } from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
 /** The result of a page operation: the page's id afterwards and the paths that moved. */
@@ -74,7 +74,7 @@ export async function initFolderSpace(backend: StorageBackend, name: string): Pr
 }
 
 export function readFolderTree(backend: StorageBackend): Promise<SpaceTree> {
-  return readSpaceTree(backend);
+  return readSpaceTree(backend, '', { foreignFiles: true });
 }
 
 function flatten(nodes: readonly PageTreeNode[], into = new Map<string, PageTreeNode>()) {
@@ -97,7 +97,12 @@ export function toPageTree(
   hidden: ReadonlySet<string> = new Set(),
 ): PageTreeNode[] {
   const kept = flatten(previous);
-  const convert = (id: string, title: string, children: readonly PageNode[]): PageTreeNode => {
+  // A folder's files that are not pages follow its pages, as read-only nodes.
+  const foreign = (files: readonly ForeignFile[] = []): PageTreeNode[] =>
+    files
+      .filter((f) => !hidden.has(f.path))
+      .map((f) => ({ id: f.path, title: f.name, foreign: true, children: [] }));
+  const convert = (id: string, title: string, node: PageNode): PageTreeNode => {
     const old = kept.get(id);
     return {
       id,
@@ -105,15 +110,18 @@ export function toPageTree(
       ...(old?.icon !== undefined ? { icon: old.icon } : {}),
       ...(old?.cover !== undefined ? { cover: old.cover } : {}),
       ...(old?.isExpanded !== undefined ? { isExpanded: old.isExpanded } : {}),
-      children: children
-        .filter((c) => !hidden.has(c.id))
-        .map((c) => convert(c.id, c.name, c.children)),
+      children: [
+        ...node.children.filter((c) => !hidden.has(c.id)).map((c) => convert(c.id, c.name, c)),
+        ...foreign(node.files),
+      ],
     };
   };
-  const top = convert('', '', tree.root.children).children;
+  const top = convert('', '', tree.root).children;
   const rootFile = tree.root.file;
   if (rootFile && !hidden.has(rootFile))
-    top.unshift(convert(rootFile, stripExtension(rootFile), []));
+    top.unshift(
+      convert(rootFile, stripExtension(rootFile), { ...tree.root, children: [], files: [] }),
+    );
   return top;
 }
 

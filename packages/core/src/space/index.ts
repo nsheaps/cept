@@ -47,7 +47,14 @@ export {
   pickFolderPage,
   NEW_FOLDER_PAGE,
 } from './tree.js';
-export type { PageNode, SpaceTree, TreeReadBackend, Moved } from './tree.js';
+export type {
+  PageNode,
+  SpaceTree,
+  TreeReadBackend,
+  Moved,
+  ForeignFile,
+  ReadTreeOptions,
+} from './tree.js';
 export { autodiscoverSpaces, AutodiscoveryError, MemoryEtagCache } from './autodiscover.js';
 export type {
   RemoteSpace,

@@ -7,6 +7,8 @@ export interface PageTreeNode {
   cover?: string;
   children: PageTreeNode[];
   isExpanded?: boolean;
+  /** A file that is not a page (an image, a PDF): previewed read-only, no page actions. */
+  foreign?: boolean;
 }
 
 export interface PageTreeItemProps {
@@ -34,7 +36,7 @@ export function PageTreeItem({
   const hasChildren = node.children.length > 0;
   const isSelected = selectedId === node.id;
   const isExpanded = node.isExpanded ?? false;
-  const showActions = !readOnly && (hovered || isSelected);
+  const showActions = !readOnly && !node.foreign && (hovered || isSelected);
 
   const handleClick = useCallback(() => {
     onSelect?.(node.id);
@@ -60,9 +62,10 @@ export function PageTreeItem({
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (node.foreign) return;
       onContextMenu?.(node.id, node.title, { x: e.clientX, y: e.clientY });
     },
-    [node.id, node.title, onContextMenu],
+    [node.id, node.title, node.foreign, onContextMenu],
   );
 
   return (
@@ -83,7 +86,9 @@ export function PageTreeItem({
         >
           {isExpanded ? '\u25BC' : '\u25B6'}
         </span>
-        <span className="cept-sidebar-icon">{node.icon ?? '\u{1F4C4}'}</span>
+        <span className="cept-sidebar-icon">
+          {node.icon ?? (node.foreign ? '\u{1F4CE}' : '\u{1F4C4}')}
+        </span>
         <span className="cept-sidebar-title">{node.title || 'Untitled'}</span>
         {showActions && (
           <>

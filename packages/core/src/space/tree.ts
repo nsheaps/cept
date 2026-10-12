@@ -28,6 +28,10 @@
 
 import type { StorageBackend } from '../storage/backend.js';
 import {
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
   createIgnoreMatcher,
   parseCeptConfig,
   pickCeptConfigFile,
@@ -48,6 +52,25 @@ export interface PageNode {
   /** The file holding the page content, relative to the space root; `null` for a folder shown as a listing. */
   file: string | null;
   children: PageNode[];
+  /** The visible files in this folder that are not pages; set only when read with `foreignFiles`. */
+  files?: ForeignFile[];
+}
+
+/** A file in the space that is not a Markdown page: an image, a PDF, an attachment (REQ-WS-018). */
+export interface ForeignFile {
+  /** Path relative to the space root. */
+  path: string;
+  /** File name, extension included. */
+  name: string;
+}
+
+export interface ReadTreeOptions {
+  /**
+   * Also list each folder's visible non-page files in `PageNode.files`. The
+   * space marker and `.cept.yaml` files are configuration, not content, and are
+   * never listed. Folders holding only such files are still left out of the tree.
+   */
+  foreignFiles?: boolean;
 }
 
 export interface SpaceTree {
@@ -83,6 +106,17 @@ export function pickFolderPage(fileNames: Iterable<string>): string | null {
   return null;
 }
 
+const CONFIG_FILES: ReadonlySet<string> = new Set([
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+]);
+
+function isConfigFile(name: string): boolean {
+  return CONFIG_FILES.has(name);
+}
+
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
 
 function byName(a: PageNode, b: PageNode): number {
@@ -98,7 +132,11 @@ const encoder = new TextEncoder();
  * root; `''` is the backend root). Never throws on user data: an unreadable
  * or invalid `.cept.yaml` is reported as a warning and ignored.
  */
-export async function readSpaceTree(backend: TreeReadBackend, root = ''): Promise<SpaceTree> {
+export async function readSpaceTree(
+  backend: TreeReadBackend,
+  root = '',
+  options: ReadTreeOptions = {},
+): Promise<SpaceTree> {
   const spaceRoot = normalizeFolder(root);
   const warnings: string[] = [];
 
@@ -148,6 +186,16 @@ export async function readSpaceTree(backend: TreeReadBackend, root = ''): Promis
     }
     children.sort(byName);
 
+    const files: ForeignFile[] = options.foreignFiles
+      ? fileNames
+          .filter(
+            (name) =>
+              !isPageFile(name) && !isConfigFile(name) && !matcher.isHidden(joinPath(folder, name)),
+          )
+          .sort((a, b) => collator.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0))
+          .map((name) => ({ path: joinPath(folder, name), name }))
+      : [];
+
     if (folder !== '' && !folderPage && children.length === 0) return null;
     return {
       id: folder,
@@ -155,6 +203,7 @@ export async function readSpaceTree(backend: TreeReadBackend, root = ''): Promis
       name: splitPath(folder).at(-1) ?? '',
       file: folderPage ? joinPath(folder, folderPage) : null,
       children,
+      ...(options.foreignFiles ? { files } : {}),
     };
   }
 
