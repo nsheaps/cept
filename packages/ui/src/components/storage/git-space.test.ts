@@ -138,7 +138,7 @@ describe('cloneErrorMessage', () => {
   it('asks for a sign-in on a 401 and for a token with access on a 403', () => {
     expect(
       cloneErrorMessage(new GitAuthRequiredError(401, 'https://github.com/u/r'), 'x'),
-    ).toContain('Sign in with a personal access token under Settings → GitHub');
+    ).toContain('Add a personal access token under Settings → Auth');
     expect(
       cloneErrorMessage(new GitAuthRequiredError(403, 'https://github.com/u/r'), 'x'),
     ).toContain('cannot read https://github.com/u/r');

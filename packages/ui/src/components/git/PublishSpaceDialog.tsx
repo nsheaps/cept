@@ -29,7 +29,7 @@ export interface PublishSpaceDialogProps {
 export function createRepoErrorMessage(err: unknown): string {
   const status = (err as { status?: unknown } | null)?.status;
   if (status === 404) {
-    return 'GitHub did not accept the sign-in for creating a repository. Sign in again under Settings → GitHub; if it still fails, the token may lack the permission to create repositories.';
+    return 'GitHub did not accept the sign-in for creating a repository. Sign in again under Settings → Auth; if it still fails, the token may lack the permission to create repositories.';
   }
   if (status === 403) {
     return 'Your GitHub token cannot create repositories. A classic token needs the "repo" scope (or "public_repo" for a public repository); a fine-grained token needs access to all repositories with the "Administration" permission set to read and write.';

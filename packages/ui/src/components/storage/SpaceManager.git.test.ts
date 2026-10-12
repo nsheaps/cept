@@ -43,6 +43,33 @@ describe('SpaceManager GitHub spaces (REQ-WS-027)', () => {
     expect(spaces.isGitSpace(ID)).toBe(false);
   });
 
+  it('records the auth a space was added with, and keeps it when the space is cloned again', async () => {
+    const first = await spaces.createRemote('Notes', URL, 'main', undefined, 'token', {
+      authId: 'work',
+    });
+    expect(first.space.authId).toBe('work');
+    const again = await spaces.createRemote('Notes', URL, 'main', undefined, 'token');
+    expect(again.space.authId).toBe('work');
+    const other = await spaces.createRemote('Notes', URL, 'main', undefined, 'token', {
+      authId: 'home',
+    });
+    expect(other.space.authId).toBe('home');
+  });
+
+  it('leaves authId off a space added without one', async () => {
+    const { space } = await spaces.createRemote('Notes', URL, 'main', undefined, 'token');
+    expect('authId' in space).toBe(false);
+  });
+
+  it('changes the auth of a space, and clears it with null', async () => {
+    await spaces.createRemote('Notes', URL, 'main', undefined, 'token', { authId: 'work' });
+    let manifest = await spaces.setAuth(ID, 'home');
+    expect(manifest.spaces.find((s) => s.id === ID)?.authId).toBe('home');
+    manifest = await spaces.setAuth(ID, null);
+    expect(manifest.spaces.find((s) => s.id === ID)?.authId).toBeUndefined();
+    await expect(spaces.setAuth('nope', 'home')).rejects.toThrow(/not a remote space/i);
+  });
+
   it('keeps remote spaces read-only by default', async () => {
     const { space } = await spaces.createRemote('Notes', URL, 'main', undefined, 'token');
     expect(space.readOnly).toBe(true);

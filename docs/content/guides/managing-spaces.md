@@ -46,6 +46,8 @@ You can delete any space, including your first one and your only one. When you d
 
 To open private repositories, add a token in **Settings > Settings**, under **Auth**. You can add as many tokens as you need, for example one for each GitHub account, and later for other git hosts too. Each one is listed with the host, the account it signs in as, and (for GitHub) what it grants.
 
+A GitHub space remembers which token it was added with and uses that token to refresh, sync and commit, so your edits are always committed as the account that token belongs to. Spaces added before this version have no chosen token yet, so they use the first token that works until you pick one for them. If you remove that token, or GitHub stops accepting it, the space stays readable but cannot be edited until you add a token again; Cept never switches to another account by itself.
+
 For GitHub, choose **Create a fine-grained token on GitHub**. The form opens with Cept's permissions already filled in (read and write access to repository contents; tick **Also let Cept create repositories** first if you want Cept to create repositories, which adds repository administration). GitHub cannot preselect repositories, so pick the ones the token may reach, create the token and paste it into **Token**. Classic tokens also work.
 
 Cept checks a GitHub token before keeping it. For any other git host, enter the host name, your username there and the token; Cept saves it as typed because it cannot check it. Tokens are stored encrypted on this device and never written to your pages. Use **Rename** to give an auth a clearer name and **Remove** to forget it. If GitHub stops accepting a token, its entry asks for a new one.
