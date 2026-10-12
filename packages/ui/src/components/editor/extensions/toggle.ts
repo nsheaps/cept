@@ -114,42 +114,6 @@ export const Toggle = Node.create<ToggleOptions>({
     ];
   },
 
-  addStorage() {
-    return {
-      markdown: {
-        serialize(
-          state: Record<string, unknown>,
-          node: { attrs: { summary: string }; content: unknown },
-        ) {
-          const s = state as unknown as {
-            out: string;
-            write: (text: string) => void;
-            ensureNewLine: () => void;
-            renderContent: (n: { content: unknown }) => void;
-            closeBlock: (n: unknown) => void;
-          };
-          s.write(`> ${node.attrs.summary}\n`);
-          // Indent child content by 2 spaces
-          const oldOut = s.out;
-          s.out = '';
-          s.renderContent(node);
-          const inner = s.out;
-          s.out = oldOut;
-          const indented = inner
-            .split('\n')
-            .map((line: string) => (line.trim() === '' ? '' : `  ${line}`))
-            .join('\n');
-          s.write(indented);
-          s.ensureNewLine();
-          s.closeBlock(node);
-        },
-        parse: {
-          // Toggle parsing handled by CeptMarkdownParser preprocessor
-        },
-      },
-    };
-  },
-
   addProseMirrorPlugins() {
     const nodeName = this.name;
     return [

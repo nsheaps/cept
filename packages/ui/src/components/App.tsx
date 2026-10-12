@@ -1410,7 +1410,7 @@ export function App() {
 
   const handleStartWriting = useCallback(() => {
     setHasStarted(true);
-    const content = '<p>Start typing here...</p>';
+    const content = 'Start typing here...\n';
     void (async () => {
       // A new space starts in the folder layout, so it never needs converting.
       if (await spaces.startFolder(userSpaceId, spaceName)) {

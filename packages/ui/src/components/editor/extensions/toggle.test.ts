@@ -58,14 +58,6 @@ describe('Toggle extension', () => {
     expect(inputRules!.length).toBeGreaterThan(0);
   });
 
-  it('provides markdown serialization storage', () => {
-    const ext = Toggle;
-    const storage = ext.config.addStorage?.call(ext);
-    expect(storage).toBeDefined();
-    expect(storage?.markdown?.serialize).toBeDefined();
-    expect(typeof storage?.markdown?.serialize).toBe('function');
-  });
-
   it('defines ProseMirror plugins for click handling', () => {
     const ext = Toggle;
     const plugins = ext.config.addProseMirrorPlugins?.call(ext);

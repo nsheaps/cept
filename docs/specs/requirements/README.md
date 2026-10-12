@@ -71,7 +71,7 @@ Cept is a Bun, TypeScript and Nx monorepo for a Notion-like editor whose pages a
 **What works.**
 
 - **Editor.** A real TipTap 3 WYSIWYG editor (`packages/ui/src/components/editor/CeptEditor.tsx`). It has a slash menu, drag handles, GFM tables and task lists, code highlighting, callouts, toggles, columns, images, embeds and bookmarks.
-- **Saving.** Pages are saved as Markdown through the third-party `tiptap-markdown` extension. Blocks that have no Markdown form fall back to `<div data-type="…">` HTML.
+- **Saving.** Pages are loaded and saved as Markdown through the shared remark pipeline in `@cept/core` (D-49, PR 49b). An unedited block is saved byte for byte; Cept's own blocks are written as GitHub-friendly HTML (`<details>`, `<div data-type="callout">`, …) and mermaid as a plain fence.
 - **Storage.** Everything is stored in the browser in IndexedDB (lightning-fs, `BrowserFsBackend`). One backend instance holds every "space" under `.cept/spaces/<id>/`. Pages are flat `pages/page-<timestamp>.md` files, and the page tree is kept in `.cept/workspace-state.json` (legacy code name).
 - **Git spaces.** You can add a Git repo as a space. It is shallow-cloned through the configured public CORS proxy, with the GitHub token when you are signed in (so private repos work). A space cloned without the sign-in, or whose folder has no `space.cept.yaml`, is read-only, and its kept clone is fetched again when the space is visited more than 5 minutes after its last sync. A space cloned with the sign-in whose folder holds `space.cept.yaml` is editable: edits are auto-committed as the signed-in account and synced (pull, then push) while the tab is visible, with a sync indicator and "Sync now" in the header (REQ-WS-027). A signed-in user can also start a space in a repository folder from Settings.
 - **Bundled docs.** The app includes a read-only "Cept Docs" space. Its pages are hand-copied TypeScript constants in `packages/ui/src/components/docs/docs-content.ts`, and they have drifted from `docs/content/`.
@@ -81,7 +81,6 @@ Cept is a Bun, TypeScript and Nx monorepo for a Notion-like editor whose pages a
 
 - the Git engine (`GitBackend` commit, push and pull; `AutoCommitEngine`; `SyncEngine`);
 - the local-folder backends (`LocalFsBackend` on `node:fs`, `WebFsBackend` on the File System Access API);
-- the Markdown parser `CeptMarkdownParser` with `cept:block` comments;
 - the database engine and its six views;
 - the D3 knowledge graph;
 - mentions and inline databases;
@@ -270,7 +269,7 @@ flowchart TB
 
   WEB["@cept/web Vite SPA<br/>(main.tsx)"]:::live
   SW["service-worker.ts<br/>cache only, root-absolute precache<br/>(likely fails under /cept/app/)"]:::live
-  UI["@cept/ui App.tsx + CeptEditor<br/>(tiptap-markdown, data-type HTML fallback)"]:::live
+  UI["@cept/ui App.tsx + CeptEditor<br/>(remark Markdown pipeline)"]:::live
   BFS["BrowserFsBackend<br/>lightning-fs on IndexedDB<br/>spaces under .cept/spaces/"]:::live
   DEMO["Demo content written into<br/>user's default space"]:::live
   DOCS["Cept Docs space<br/>hand-copied docs-content.ts"]:::live
@@ -282,7 +281,6 @@ flowchart TB
   subgraph LIB["Library code with unit tests, not wired"]
     GITB["GitBackend commit/push/pull,<br/>AutoCommitEngine, SyncEngine"]:::lib
     LFS["LocalFsBackend (node:fs),<br/>WebFsBackend (FS Access)"]:::lib
-    PARSER["CeptMarkdownParser<br/>(cept:block comments)"]:::lib
     DB["Database engine + 6 views"]:::lib
     GRAPH["KnowledgeGraph (D3)"]:::lib
     CRDT["CollaborationProvider, OfflineQueue,<br/>DatabaseSyncAdapter, AvatarStack/Cursors"]:::lib

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import type { Editor } from '@tiptap/core';
 import { CeptEditor } from './CeptEditor.js';
 
 describe('CeptEditor', () => {
@@ -9,14 +10,14 @@ describe('CeptEditor', () => {
   });
 
   it('renders with initial HTML content', async () => {
-    render(<CeptEditor content="<p>Hello world</p>" />);
+    render(<CeptEditor content="Hello world" />);
     await waitFor(() => {
       expect(screen.getByTestId('cept-editor').textContent).toContain('Hello world');
     });
   });
 
   it('renders heading content', async () => {
-    render(<CeptEditor content="<h1>My Title</h1><p>Body text</p>" />);
+    render(<CeptEditor content={'# My Title\n\nBody text\n'} />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.textContent).toContain('My Title');
@@ -25,7 +26,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders bullet list content', async () => {
-    render(<CeptEditor content="<ul><li>Item 1</li><li>Item 2</li></ul>" />);
+    render(<CeptEditor content={'- Item 1\n- Item 2\n'} />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.textContent).toContain('Item 1');
@@ -34,7 +35,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders ordered list content', async () => {
-    render(<CeptEditor content="<ol><li>First</li><li>Second</li></ol>" />);
+    render(<CeptEditor content={'1. First\n2. Second\n'} />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.textContent).toContain('First');
@@ -54,25 +55,33 @@ describe('CeptEditor', () => {
   });
 
   it('can be set to non-editable', async () => {
-    render(<CeptEditor content="<p>Read only</p>" editable={false} />);
+    render(<CeptEditor content="Read only" editable={false} />);
     await waitFor(() => {
       const prosemirror = screen.getByTestId('cept-editor').querySelector('[contenteditable]');
       expect(prosemirror?.getAttribute('contenteditable')).toBe('false');
     });
   });
 
-  it('calls onUpdate when content changes', async () => {
+  it('reports edits as Markdown, keeping the source of untouched blocks', async () => {
     const onUpdate = vi.fn();
-    render(<CeptEditor content="<p>Initial</p>" onUpdate={onUpdate} />);
-    // The editor initializes and may trigger an update
-    // We verify the callback is callable (actual typing tested in E2E)
-    await waitFor(() => {
-      expect(screen.getByTestId('cept-editor').textContent).toContain('Initial');
+    const source = 'Intro with __bold__.\n\n* one\n* two\n\nLast paragraph.\n';
+    render(<CeptEditor content={source} onUpdate={onUpdate} />);
+    const dom = await waitFor(() => {
+      const element = screen.getByTestId('cept-editor').querySelector('.ProseMirror');
+      expect(element).not.toBeNull();
+      return element as HTMLElement & { editor: Editor };
     });
+    const { editor } = dom;
+    act(() => {
+      editor.commands.insertContentAt(editor.state.doc.content.size - 1, ' More.');
+    });
+    expect(onUpdate).toHaveBeenLastCalledWith(
+      'Intro with __bold__.\n\n* one\n* two\n\nLast paragraph. More.\n',
+    );
   });
 
   it('renders multiple heading levels', async () => {
-    render(<CeptEditor content="<h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3</h3>" />);
+    render(<CeptEditor content={'# Heading 1\n\n## Heading 2\n\n### Heading 3\n'} />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       const h1 = editor.querySelector('h1');
@@ -85,9 +94,7 @@ describe('CeptEditor', () => {
   });
 
   it('renders inline formatting', async () => {
-    render(
-      <CeptEditor content="<p><strong>bold</strong> and <em>italic</em> and <s>strike</s></p>" />,
-    );
+    render(<CeptEditor content="**bold** and *italic* and ~~strike~~" />);
     await waitFor(() => {
       const editor = screen.getByTestId('cept-editor');
       expect(editor.querySelector('strong')?.textContent).toBe('bold');

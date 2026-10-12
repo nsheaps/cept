@@ -156,8 +156,6 @@ export type { BuiltInTemplate, TemplateCategory } from './templates/index.js';
 
 // Markdown
 export type {
-  MarkdownParser,
-  ParsedPage,
   FrontMatterSplit,
   FrontMatterKeyBlock,
   LoadedFrontMatter,
@@ -169,7 +167,6 @@ export type {
   PmNode,
 } from './markdown/index.js';
 export {
-  CeptMarkdownParser,
   RESERVED_FRONT_MATTER_KEYS,
   firstHeading,
   frontMatterKeyBlocks,
