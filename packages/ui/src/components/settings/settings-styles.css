@@ -1578,6 +1578,68 @@
   color: #dc2626;
 }
 
+/* Auth section (Settings) */
+.cept-settings-auth-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+.cept-settings-auth-item {
+  border-bottom: 1px solid #e5e7eb;
+}
+.cept-settings-auth-item:last-child {
+  border-bottom: 0;
+}
+.dark .cept-settings-auth-item {
+  border-bottom-color: #3f3f46;
+}
+.cept-settings-subtitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.cept-settings-auth-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.cept-settings-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.cept-settings-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+/* A link that looks like one: coloured, underlined, with a visible focus ring. */
+.cept-settings-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.cept-settings-link:hover {
+  color: #1d4ed8;
+}
+.cept-settings-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.dark .cept-settings-link {
+  color: #60a5fa;
+}
+.dark .cept-settings-link:hover {
+  color: #93c5fd;
+}
+.dark .cept-settings-link:focus-visible {
+  outline-color: #60a5fa;
+}
+
 /* Discovered on GitHub (Settings > Spaces) */
 .cept-settings-discovered-header {
   display: flex;

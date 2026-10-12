@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { RemoteSpace, StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
-import { GitHubAccountSection } from './GitHubAccountSection.js';
+import { AuthSection } from './AuthSection.js';
 import { DiscoveredSpacesSection } from './DiscoveredSpacesSection.js';
 import type { DiscoveredSpacesState } from './discovered-spaces.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
@@ -395,7 +395,7 @@ export function SettingsModal({
                   </button>
                 </label>
 
-                <GitHubAccountSection />
+                <AuthSection />
 
                 <div className="cept-settings-section-divider" />
                 <button

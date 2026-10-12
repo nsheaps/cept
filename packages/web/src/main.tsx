@@ -4,22 +4,26 @@ globalThis.Buffer = Buffer;
 
 import { StrictMode, useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
-import { App, FolderHostProvider, GitHubAccountProvider, StorageProvider } from '@cept/ui';
-import { BrowserFsBackend, PatAuthProvider } from '@cept/core';
+import { App, FolderHostProvider, GitAuthsProvider, StorageProvider } from '@cept/ui';
+import { BrowserFsBackend, GitAuthRegistry } from '@cept/core';
 import '@cept/ui/styles/globals.css';
 import { registerServiceWorker, consumeUpdateFlag } from './sw-register.js';
 import { UpdateToast } from './UpdateToast.js';
 import { PreviewToast } from './PreviewToast.js';
 import { getDbName } from './deploy-namespace.js';
 import { createFolderHost } from './folder-host.js';
+import { LocalStorageAuthIndexStore } from './auth-index-store.js';
 import { EncryptedTokenStore } from './token-store.js';
 
 const dbName = getDbName(import.meta.env.BASE_URL);
 const backend = new BrowserFsBackend(dbName);
 // Folders on this device, where the browser can open them (REQ-WS-012).
 const folderHost = createFolderHost(`${dbName}-folders`);
-// GitHub sign-in with a personal access token, kept encrypted (REQ-AUTH-005, REQ-AUTH-012).
-const patAuth = new PatAuthProvider({ tokenStore: new EncryptedTokenStore(`${dbName}-auth`) });
+// Git token auths: tokens kept encrypted, the secret-free list in localStorage (REQ-AUTH-012, REQ-AUTH-019).
+const gitAuths = new GitAuthRegistry({
+  tokenStore: new EncryptedTokenStore(`${dbName}-auth`),
+  indexStore: new LocalStorageAuthIndexStore(`${dbName}:auth-index`),
+});
 
 // Initialize the workspace structure (creates dirs if needed, no-ops if they exist)
 void backend.initialize({ name: 'My Space' });
@@ -43,9 +47,9 @@ function Root() {
     <StrictMode>
       <StorageProvider backend={backend}>
         <FolderHostProvider host={folderHost}>
-          <GitHubAccountProvider auth={patAuth}>
+          <GitAuthsProvider auths={gitAuths}>
             <App />
-          </GitHubAccountProvider>
+          </GitAuthsProvider>
         </FolderHostProvider>
       </StorageProvider>
       <UpdateToast version={__APP_VERSION__} visible={showUpdateToast} onDismiss={dismissToast} />

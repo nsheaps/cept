@@ -138,9 +138,9 @@ test.describe('Sync leader election', () => {
     await tabA.getByTestId('start-writing').click();
     await expect(tabA.getByTestId('landing-page')).not.toBeVisible({ timeout: 10000 });
     await openSettings(tabA, 'settings');
-    await tabA.getByTestId('github-token-input').fill(TOKEN);
-    await tabA.getByTestId('github-sign-in-btn').click();
-    await expect(tabA.getByTestId('github-login')).toHaveText('The Octocat (@octocat)');
+    await tabA.getByTestId('auth-token-input').fill(TOKEN);
+    await tabA.getByTestId('auth-add-btn').click();
+    await expect(tabA.getByTestId('auth-detail')).toContainText('The Octocat (@octocat)');
     await tabA.getByTestId('settings-tab-spaces').click();
     await tabA.getByTestId(`discovered-open-${SPACE_ID}`).click();
     await expect(tabA.getByTestId('breadcrumbs')).toContainText('intro', { timeout: 20000 });

@@ -3,11 +3,12 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import type {
   AutodiscoveryOptions,
   AutodiscoveryResult,
-  PatAccount,
+  GitAuthRecord,
   RemoteSpace,
 } from '@cept/core';
-import { GitHubAccountProvider, useGitHubAccount } from './github-account.js';
-import type { PatAuth } from './github-account.js';
+import { useGitHubAccount } from './github-account.js';
+import { GitAuthsProvider } from './git-auths.js';
+import type { GitAuths } from './git-auths.js';
 import {
   clearDiscoveries,
   discoveredSpaceId,
@@ -20,26 +21,33 @@ import type { Discover, DiscoveredSpacesState } from './discovered-spaces.js';
 
 const TOKEN = 'ghp_discovery_token';
 
-function account(login: string): PatAccount {
+function record(login: string): GitAuthRecord {
   return {
-    login,
-    name: null,
-    avatarUrl: '',
+    id: 'auth-1',
+    host: 'github.com',
+    username: 'x-access-token',
+    label: `@${login}`,
+    status: 'ok',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    account: { login, name: null, avatarUrl: '' },
     grants: { kind: 'classic', scopes: ['repo'] },
-  } as unknown as PatAccount;
+  };
 }
 
-/** A host auth whose saved token signs in as `login` (null: nothing saved). */
-function fakeAuth(login: string | null): PatAuth {
-  let saved = login;
+/** Host auths with one GitHub auth signed in as `login` (null: none saved). */
+function fakeAuth(login: string | null): GitAuths {
+  let saved: GitAuthRecord[] = login ? [record(login)] : [];
   return {
-    signIn: async () => account('someone'),
-    restore: async () => (saved ? account(saved) : null),
-    logout: async () => {
-      saved = null;
+    restore: async () => ({ records: saved, unreachable: [] }),
+    list: async () => saved,
+    add: async () => record('someone'),
+    remove: async () => {
+      saved = [];
     },
-    getHttpAuth: async () => {
-      if (!saved) throw new Error('none');
+    rename: async () => record('someone'),
+    replaceToken: async () => record('someone'),
+    httpAuth: async () => {
+      if (!saved.length) throw new Error('none');
       return { username: 'x-access-token', password: TOKEN };
     },
   };
@@ -74,11 +82,11 @@ function Probe({ discover }: { discover: Discover }) {
   return <span data-testid="status">{latest ? latest.status : 'none'}</span>;
 }
 
-function renderWith(auth: PatAuth | null, discover: Discover) {
+function renderWith(auth: GitAuths | null, discover: Discover) {
   return render(
-    <GitHubAccountProvider auth={auth}>
+    <GitAuthsProvider auths={auth}>
       <Probe discover={discover} />
-    </GitHubAccountProvider>,
+    </GitAuthsProvider>,
   );
 }
 

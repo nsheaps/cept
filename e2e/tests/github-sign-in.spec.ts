@@ -37,7 +37,7 @@ async function openSettings(page: Page) {
 }
 
 test.describe('GitHub sign-in', () => {
-  test('signs in with a token, keeps it across a reload and signs out', async ({ page }) => {
+  test('adds a token, keeps it across a reload and removes it', async ({ page }) => {
     await mockGitHub(page);
     await page.goto('/');
     await page.getByTestId('start-writing').click();
@@ -45,27 +45,28 @@ test.describe('GitHub sign-in', () => {
 
     // A wrong token is rejected.
     await openSettings(page);
-    await expect(page.getByTestId('github-proxy-notice')).toBeVisible();
-    await page.getByTestId('github-token-input').fill('ghp_wrong');
-    await page.getByTestId('github-sign-in-btn').click();
-    await expect(page.getByTestId('github-error')).toContainText('rejected the token');
+    await expect(page.getByTestId('auth-proxy-notice')).toBeVisible();
+    await page.getByTestId('auth-token-input').fill('ghp_wrong');
+    await page.getByTestId('auth-add-btn').click();
+    await expect(page.getByTestId('auth-error')).toContainText('rejected the token');
 
     // The right one signs in.
-    await page.getByTestId('github-token-input').fill(GOOD);
-    await page.getByTestId('github-sign-in-btn').click();
-    await expect(page.getByTestId('github-login')).toHaveText('The Octocat (@octocat)');
-    await expect(page.getByTestId('github-grants')).toHaveText('Fine-grained token');
+    await page.getByTestId('auth-token-input').fill(GOOD);
+    await page.getByTestId('auth-add-btn').click();
+    await expect(page.getByTestId('auth-detail')).toHaveText(
+      'github.com · The Octocat (@octocat) · Fine-grained token',
+    );
 
     // After a reload the saved token is restored.
     await page.reload();
     await openSettings(page);
-    await expect(page.getByTestId('github-login')).toHaveText('The Octocat (@octocat)');
+    await expect(page.getByTestId('auth-detail')).toContainText('The Octocat (@octocat)');
 
-    // Sign out, and stay signed out after a reload.
-    await page.getByTestId('github-sign-out').click();
-    await expect(page.getByTestId('github-sign-in')).toBeVisible();
+    // Remove it, and stay signed out after a reload.
+    await page.getByTestId('auth-remove').click();
+    await expect(page.getByTestId('auth-empty')).toBeVisible();
     await page.reload();
     await openSettings(page);
-    await expect(page.getByTestId('github-sign-in')).toBeVisible();
+    await expect(page.getByTestId('auth-empty')).toBeVisible();
   });
 });
