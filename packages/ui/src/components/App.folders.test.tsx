@@ -159,6 +159,8 @@ describe('App folder spaces', () => {
     );
     expect((await screen.findByTestId('foreign-file-text')).textContent).toBe('plain words');
     expect(screen.queryByTestId('page-tree-menu-readme.txt')).toBeNull();
+    // A file that is not a page is not added to Recent.
+    expect(screen.queryByTestId('recent-section')).toBeNull();
     await settle();
     expect(writes).toEqual([]);
   });

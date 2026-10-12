@@ -1193,7 +1193,7 @@ export function App() {
       setShowTrash(false);
       setPages((prev) => expandToNode(prev, id));
       const node = findNode(pages, id);
-      if (node) {
+      if (node && !node.foreign) {
         addToRecent(id, node.title, node.icon);
       }
       // Load page content from backend if not already cached

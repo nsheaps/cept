@@ -3,21 +3,10 @@
  * Files are previewed read-only from their bytes; nothing here writes.
  */
 
-import { imageMimeType } from '../editor/page-links.js';
+import { imageMimeType, isImagePath } from '../editor/page-links.js';
 
 export type PreviewKind = 'image' | 'pdf' | 'text' | 'download';
 
-const IMAGE_EXTENSIONS = new Set([
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'webp',
-  'avif',
-  'bmp',
-  'ico',
-  'svg',
-]);
 const TEXT_EXTENSIONS = new Set([
   'txt',
   'json',
@@ -54,7 +43,7 @@ function looksLikeText(bytes: Uint8Array): boolean {
 /** The preview kind for a file, from its name and (for unknown extensions) its bytes. */
 export function previewKind(name: string, bytes: Uint8Array): PreviewKind {
   const ext = extensionOf(name);
-  if (IMAGE_EXTENSIONS.has(ext)) return 'image';
+  if (isImagePath(name)) return 'image';
   if (ext === 'pdf') return 'pdf';
   if (TEXT_EXTENSIONS.has(ext)) return 'text';
   return ext === '' && looksLikeText(bytes) && bytes.length > 0 ? 'text' : 'download';

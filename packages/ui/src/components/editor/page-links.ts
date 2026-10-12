@@ -41,6 +41,11 @@ const MIME_TYPES: Record<string, string> = {
   svg: 'image/svg+xml',
 };
 
+/** Whether a path names an image the editor can show, by extension. */
+export function isImagePath(path: string): boolean {
+  return Object.hasOwn(MIME_TYPES, path.split('.').at(-1)?.toLowerCase() ?? '');
+}
+
 /** The media type for an image path, by extension. */
 export function imageMimeType(path: string): string {
   const ext = path.split('.').at(-1)?.toLowerCase() ?? '';

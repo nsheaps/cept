@@ -28,6 +28,10 @@
 
 import type { StorageBackend } from '../storage/backend.js';
 import {
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
   createIgnoreMatcher,
   parseCeptConfig,
   pickCeptConfigFile,
@@ -102,10 +106,15 @@ export function pickFolderPage(fileNames: Iterable<string>): string | null {
   return null;
 }
 
-const CONFIG_FILE = /^(space\.cept|\.cept)\.ya?ml$/i;
+const CONFIG_FILES: ReadonlySet<string> = new Set([
+  SPACE_MARKER_YAML,
+  SPACE_MARKER_YML,
+  CEPT_CONFIG_YAML,
+  CEPT_CONFIG_YML,
+]);
 
 function isConfigFile(name: string): boolean {
-  return CONFIG_FILE.test(name);
+  return CONFIG_FILES.has(name);
 }
 
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
