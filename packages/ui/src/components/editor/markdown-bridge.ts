@@ -28,8 +28,9 @@ export interface LoadedMarkdown {
 export function loadMarkdown(markdown: string): LoadedMarkdown {
   const parsed = parseMarkdownDocument(markdown);
   const doc = claimFencedBlocks(parsed.doc, fencedBlockPlugins);
-  if (!doc.content?.length) doc.content = [{ type: 'paragraph' }];
-  return { parsed, doc };
+  if (doc.content?.length) return { parsed, doc };
+  // A copy, as `claimFencedBlocks` may return `parsed.doc` itself.
+  return { parsed, doc: { ...doc, content: [{ type: 'paragraph' }] } };
 }
 
 /** The editor's document as the pipeline sees it. */
@@ -51,7 +52,7 @@ export function saveMarkdown(doc: PmNode, baseline: MarkdownDocument): string {
   return serializeMarkdownDocument(releaseDocument(doc), baseline);
 }
 
-/** Pasted plain text, read as Markdown. */
+/** Pasted plain text, read as Markdown. Front matter in the pasted text is discarded. */
 export function markdownToSlice(text: string, schema: Schema): Slice {
   const { doc } = loadMarkdown(text);
   return Slice.maxOpen(schema.nodeFromJSON(doc).content);

@@ -352,7 +352,10 @@ function inlineFrom(nodes: readonly PhrasingContent[], src: string, marks: PmMar
 /**
  * Marks Markdown has no syntax for, written as HTML tags (`<u>`, `<mark>`).
  * Only the exact tags the bridge writes are read back as marks; any other
- * HTML stays `rawInline`.
+ * HTML (`<mark class="x">`, `<U>`) stays `rawInline`. A highlight colour is
+ * kept as a plain string attribute, never used as CSS or a URL, so writing it
+ * strips only `"`, `<` and `>`: the characters the reader rejects, which
+ * keeps the written tag readable again.
  */
 const HTML_MARKS: {
   type: string;
@@ -389,6 +392,7 @@ function htmlMarkClose(
       const node = nodes[i]!;
       if (node.type !== 'html') continue;
       if (kind.open.test(node.value)) depth++;
+      // Compares the depth before decrementing: a close at depth 0 is ours.
       else if (node.value === kind.close && depth-- === 0) {
         const attrs = kind.attrs(match);
         return { mark: attrs ? { type: kind.type, attrs } : { type: kind.type }, at: i };
