@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.34.1](https://github.com/nsheaps/cept/compare/v0.34.0...v0.34.1) (2026-10-12)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([691fa79](https://github.com/nsheaps/cept/commit/691fa79015bf8bb0d800a3e82a3bf5348a683096))
+
+### Chores
+
+* **deps:** update dependency @types/hast to v3.0.5 ([#424](https://github.com/nsheaps/cept/issues/424)) ([22d12d7](https://github.com/nsheaps/cept/commit/22d12d7113446bb7b4b87be7531c3369c75ee6d5))
+
 ## [0.34.0](https://github.com/nsheaps/cept/compare/v0.33.8...v0.34.0) (2026-10-12)
 
 ### Features
