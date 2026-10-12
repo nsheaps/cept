@@ -40,5 +40,7 @@ export { CeptMarkdownParser } from './parser.js';
 export * from './front-matter.js';
 export { parseMarkdownDocument, serializeMarkdownDocument } from './document.js';
 export type { MarkdownDocument } from './document.js';
+export { claimFencedBlocks, fencedBlockNode, releaseFencedBlocks } from './fenced-blocks.js';
+export type { FencedBlockPlugin } from './fenced-blocks.js';
 export { blocksToMdast, mdastToBlocks } from './prosemirror.js';
 export type { PmMark, PmNode } from './prosemirror.js';
