@@ -1268,6 +1268,7 @@ export function App() {
       ),
     [pages, pageIds],
   );
+  const mentionPages = useMemo(() => flattenPages(pages), [pages]);
   const pageLinks = useMemo<PageLinksContext | undefined>(
     () =>
       activeSpace === 'user' && selectedPageId !== undefined && spaces.isFolder(userSpaceId)
@@ -1275,11 +1276,21 @@ export function App() {
             pageId: selectedPageId,
             hasPage: (id) => pageIds.has(id),
             hasFile: (path) => filePaths.has(path),
+            pages: mentionPages,
             readFile: (path) => spaces.readSpaceFile(userSpaceId, path),
             onNavigate: handleLinkNavigate,
           }
         : undefined,
-    [activeSpace, selectedPageId, spaces, userSpaceId, pageIds, filePaths, handleLinkNavigate],
+    [
+      activeSpace,
+      selectedPageId,
+      spaces,
+      userSpaceId,
+      pageIds,
+      filePaths,
+      mentionPages,
+      handleLinkNavigate,
+    ],
   );
 
   const readForeignFile = useCallback(

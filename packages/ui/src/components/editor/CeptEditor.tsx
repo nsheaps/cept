@@ -10,6 +10,7 @@ import {
   filterSlashCommands,
 } from './extensions/slash-command.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
+import { Mention } from './extensions/mention.js';
 import { documentExtensions } from './document-extensions.js';
 import {
   editorBaseline,
@@ -36,6 +37,55 @@ export interface CeptEditorProps {
   anchor?: string;
 }
 
+/** The popup that lists a suggestion's items under the caret, shared by `/` and `@`. */
+function renderSuggestionMenu() {
+  let component: ReactRenderer<SlashCommandMenuRef> | null = null;
+  let popup: TippyInstance[] | null = null;
+
+  return {
+    onStart: (props: SuggestionProps<SlashCommandItem>) => {
+      component = new ReactRenderer(SlashCommandMenu, {
+        props: { items: props.items, command: props.command },
+        editor: props.editor,
+      });
+
+      if (!props.clientRect) return;
+
+      popup = tippy('body', {
+        getReferenceClientRect: props.clientRect as () => DOMRect,
+        appendTo: () => document.body,
+        content: component.element,
+        showOnCreate: true,
+        interactive: true,
+        trigger: 'manual',
+        placement: 'bottom-start',
+      });
+    },
+
+    onUpdate: (props: SuggestionProps<SlashCommandItem>) => {
+      component?.updateProps({ items: props.items, command: props.command });
+      if (popup?.[0] && props.clientRect) {
+        popup[0].setProps({
+          getReferenceClientRect: props.clientRect as () => DOMRect,
+        });
+      }
+    },
+
+    onKeyDown: (props: SuggestionKeyDownProps) => {
+      if (props.event.key === 'Escape') {
+        popup?.[0]?.hide();
+        return true;
+      }
+      return component?.ref?.onKeyDown(props) ?? false;
+    },
+
+    onExit: () => {
+      popup?.[0]?.destroy();
+      component?.destroy();
+    },
+  };
+}
+
 export function CeptEditor({
   content = '',
   editable = true,
@@ -48,6 +98,9 @@ export function CeptEditor({
   // that is unchanged since load (EDT-005).
   const [loaded] = useState(() => loadMarkdown(content));
   const baseline = useRef<MarkdownDocument | null>(null);
+  // The extensions are built once, so the mention menu reads the space through a ref.
+  const latestLinks = useRef(links);
+  latestLinks.current = links;
   const editor = useEditor({
     extensions: [
       ...documentExtensions(),
@@ -71,54 +124,15 @@ export function CeptEditor({
       SlashCommand.configure({
         suggestion: {
           items: ({ query }: { query: string }) => filterSlashCommands(defaultSlashCommands, query),
-          render: () => {
-            let component: ReactRenderer<SlashCommandMenuRef> | null = null;
-            let popup: TippyInstance[] | null = null;
-
-            return {
-              onStart: (props: SuggestionProps<SlashCommandItem>) => {
-                component = new ReactRenderer(SlashCommandMenu, {
-                  props: { items: props.items, command: props.command },
-                  editor: props.editor,
-                });
-
-                if (!props.clientRect) return;
-
-                popup = tippy('body', {
-                  getReferenceClientRect: props.clientRect as () => DOMRect,
-                  appendTo: () => document.body,
-                  content: component.element,
-                  showOnCreate: true,
-                  interactive: true,
-                  trigger: 'manual',
-                  placement: 'bottom-start',
-                });
-              },
-
-              onUpdate: (props: SuggestionProps<SlashCommandItem>) => {
-                component?.updateProps({ items: props.items, command: props.command });
-                if (popup?.[0] && props.clientRect) {
-                  popup[0].setProps({
-                    getReferenceClientRect: props.clientRect as () => DOMRect,
-                  });
-                }
-              },
-
-              onKeyDown: (props: SuggestionKeyDownProps) => {
-                if (props.event.key === 'Escape') {
-                  popup?.[0]?.hide();
-                  return true;
-                }
-                return component?.ref?.onKeyDown(props) ?? false;
-              },
-
-              onExit: () => {
-                popup?.[0]?.destroy();
-                component?.destroy();
-              },
-            };
-          },
+          render: renderSuggestionMenu,
         },
+      }),
+      Mention.configure({
+        source: () => {
+          const current = latestLinks.current;
+          return current?.pages ? { pageId: current.pageId, pages: current.pages } : undefined;
+        },
+        suggestion: { render: renderSuggestionMenu },
       }),
       Placeholder.configure({
         placeholder,

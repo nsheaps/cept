@@ -16,5 +16,5 @@ export {
 export type { Destination, ExtractedLink, ResolvedLink } from './links.js';
 export { buildLinkGraph, backlinksOf, readLinkGraph } from './link-graph.js';
 export type { LinkGraph, LinkGraphOptions, LinkGraphPage, PageReference } from './link-graph.js';
-export { mapPath, planLinkRewrites, rewriteLinks } from './rewrite.js';
+export { linkPathBetween, mapPath, planLinkRewrites, rewriteLinks } from './rewrite.js';
 export type { LinkRewrite } from './rewrite.js';

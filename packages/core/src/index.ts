@@ -167,6 +167,7 @@ export {
   mapPath,
   planLinkRewrites,
   rewriteLinks,
+  linkPathBetween,
   resolveLink,
   resolvePath,
   baseFileOfPage,

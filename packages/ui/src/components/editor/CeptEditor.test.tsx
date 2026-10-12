@@ -112,4 +112,53 @@ describe('CeptEditor', () => {
       expect(emptyParagraph?.getAttribute('data-placeholder')).toBe('Start typing...');
     });
   });
+
+  describe('@ mentions', () => {
+    const links = (pages?: { id: string; title: string }[]) => ({
+      pageId: 'notes/today.md',
+      hasPage: () => true,
+      readFile: () => Promise.resolve(null),
+      onNavigate: () => undefined,
+      ...(pages ? { pages } : {}),
+    });
+
+    async function typeAt(query: string, onUpdate?: (md: string) => void) {
+      const pages = [
+        { id: 'notes/today.md', title: 'Today' },
+        { id: 'guides/Getting Started.md', title: 'Getting Started' },
+      ];
+      render(
+        <CeptEditor content="See " links={links(pages)} {...(onUpdate ? { onUpdate } : {})} />,
+      );
+      const dom = await waitFor(() => {
+        const el = screen
+          .getByTestId('cept-editor')
+          .querySelector<HTMLElement & { editor?: Editor }>('.tiptap');
+        if (!el?.editor) throw new Error('editor not ready');
+        return el as HTMLElement & { editor: Editor };
+      });
+      act(() => {
+        dom.editor
+          .chain()
+          .setTextSelection(dom.editor.state.doc.content.size - 1)
+          .insertContent(` @${query}`)
+          .run();
+      });
+      return dom.editor;
+    }
+
+    it('offers the space pages, then dates, and links the chosen page', async () => {
+      const updates: string[] = [];
+      await typeAt('gett', (md) => updates.push(md));
+      const menu = await screen.findByTestId('slash-command-menu');
+      expect(menu.textContent).toContain('Getting Started');
+      expect(menu.textContent).not.toContain('Today');
+      act(() => {
+        screen.getByText('Getting Started').click();
+      });
+      await waitFor(() =>
+        expect(updates.at(-1)).toContain('[Getting Started](../guides/Getting%20Started.md)'),
+      );
+    });
+  });
 });

@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
+import type { MentionPage } from './extensions/mention.js';
 import { baseFileOfPage, headingSlugs, pageIdForPath, resolvePath } from '@cept/core';
 
 /** What the editor needs from the app to resolve a page's relative links. */
@@ -31,6 +32,8 @@ export interface PageLinksContext {
   hasFile?: (path: string) => boolean;
   /** Read a file of the space by its path relative to the space root; null when missing. */
   readFile: (path: string) => Promise<Uint8Array | null>;
+  /** The pages an `@` mention can link to (REQ-EDT-004); without it only dates are offered. */
+  pages?: readonly MentionPage[];
   /** Show another page of the space, scrolled to `anchor` when given. */
   onNavigate: (pageId: string, anchor?: string) => void;
 }
