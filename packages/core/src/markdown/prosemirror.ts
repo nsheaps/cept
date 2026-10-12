@@ -5,8 +5,10 @@
  * ProseMirror JSON that uses the editor's (TipTap's) node and mark names, and
  * back. How a construct was written (`_` or `*`, a `~~~` fence, a `+` bullet,
  * an autolink) is kept in attributes so an edited block is written the way
- * it was. Cept's custom blocks (toggles, callouts, columns, embeds, bookmarks)
- * are HTML in the file and are modelled in `html-blocks.ts` (PR 48). Syntax
+ * it was. Math (`$..$`, `$$` blocks) maps to the editor's KaTeX nodes and
+ * footnotes to reference and definition nodes (PR 52). Cept's custom blocks
+ * (toggles, callouts, columns, embeds, bookmarks) are HTML in the file and
+ * are modelled in `html-blocks.ts` (PR 48). Syntax
  * the bridge does not model is kept as raw Markdown in a `rawBlock` or
  * `rawInline` node, so nothing is lost.
  */
@@ -15,6 +17,7 @@ import type {
   BlockContent,
   Code,
   DefinitionContent,
+  FootnoteDefinition,
   Heading,
   Link,
   List,
@@ -200,8 +203,19 @@ function blockFrom(node: RootContent, src: string): PmNode {
       return tableFrom(node, src);
     case 'html':
       return elementBlock(node.value, sourceless) ?? rawBlock(node.value);
+    case 'math':
+      return pmNode('mathBlock', {
+        content: node.value,
+        ...(node.meta ? { meta: node.meta } : {}),
+      });
+    case 'footnoteDefinition':
+      return pmNode(
+        'footnoteDefinition',
+        { identifier: node.identifier, label: node.label ?? node.identifier },
+        childBlocks(node.children, src),
+      );
     default:
-      // Definitions, footnote definitions and anything else not modelled yet.
+      // Link definitions and anything else not modelled yet.
       return pmNode('rawBlock', { markdown: sourceOf(node, src) });
   }
 }
@@ -299,12 +313,39 @@ function inlineFrom(nodes: readonly PhrasingContent[], src: string, marks: PmMar
       case 'html':
         push(pmNode('rawInline', { markdown: node.value }));
         break;
+      case 'inlineMath':
+        if (isProse(text, src, node.position?.end.offset)) {
+          push({ type: 'text', text });
+        } else {
+          push(pmNode('inlineMath', { content: node.value }));
+        }
+        break;
+      case 'footnoteReference':
+        push(
+          pmNode('footnoteReference', {
+            identifier: node.identifier,
+            label: node.label ?? node.identifier,
+          }),
+        );
+        break;
       default:
-        // Images inside text, references, footnote references.
+        // Images inside text, link references.
         push(pmNode('rawInline', { markdown: text }));
     }
   }
   return mergeText(out);
+}
+
+/**
+ * Whether `$..$` is prose with dollar signs (`$5 and $10`), not math. remark
+ * reads any pair of single dollars as math; like Pandoc, Cept keeps them as
+ * text when the math would start or end with whitespace or the closing dollar
+ * is followed by a digit. Written back, such dollars are escaped (`\$`).
+ */
+function isProse(text: string, src: string, end: number | undefined): boolean {
+  if (!text.startsWith('$') || text.startsWith('$$')) return false;
+  if (/^\$\s|\s\$$/.test(text)) return true;
+  return end !== undefined && /[0-9]/.test(src.charAt(end));
 }
 
 function styled(type: string, text: string, alternate: string): PmMark {
@@ -430,6 +471,16 @@ function blockTo(node: PmNode): RootContent[] {
       ];
     case 'rawBlock':
       return [{ type: 'html', value: attr<string>(node, 'markdown') ?? '' }];
+    case 'mathBlock':
+      return [
+        {
+          type: 'math',
+          value: attr<string>(node, 'content') ?? '',
+          meta: attr(node, 'meta') ?? null,
+        },
+      ];
+    case 'footnoteDefinition':
+      return [footnoteDefinitionTo(node)];
     default:
       // A node type the bridge does not know: keep its content. Inline
       // children held directly are wrapped in paragraphs so they are not lost.
@@ -437,7 +488,17 @@ function blockTo(node: PmNode): RootContent[] {
   }
 }
 
-const INLINE_TYPES = new Set(['text', 'hardBreak', 'rawInline']);
+const INLINE_TYPES = new Set(['text', 'hardBreak', 'rawInline', 'inlineMath', 'footnoteReference']);
+
+function footnoteDefinitionTo(node: PmNode): FootnoteDefinition {
+  const label = attr<string>(node, 'label') ?? attr<string>(node, 'identifier') ?? '';
+  return {
+    type: 'footnoteDefinition',
+    identifier: attr<string>(node, 'identifier') ?? label.toLowerCase(),
+    label,
+    children: blocksToMdast(node.content ?? []) as (BlockContent | DefinitionContent)[],
+  };
+}
 
 /** Group runs of inline nodes into paragraphs, leaving block nodes as they are. */
 function wrapInline(nodes: readonly PmNode[]): PmNode[] {
@@ -567,6 +628,18 @@ function inlineTo(nodes: readonly PmNode[]): PhrasingContent[] {
       case 'rawInline':
         parent.push({ type: 'html', value: attr<string>(node, 'markdown') ?? '' });
         break;
+      case 'inlineMath':
+        parent.push({ type: 'inlineMath', value: attr<string>(node, 'content') ?? '' });
+        break;
+      case 'footnoteReference': {
+        const label = attr<string>(node, 'label') ?? attr<string>(node, 'identifier') ?? '';
+        parent.push({
+          type: 'footnoteReference',
+          identifier: attr<string>(node, 'identifier') ?? label.toLowerCase(),
+          label,
+        });
+        break;
+      }
       default:
         parent.push(...inlineTo(node.content ?? []));
     }

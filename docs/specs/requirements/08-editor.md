@@ -51,8 +51,8 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-012](#req-edt-012--math-rendering-block-and-inline)                                     | Math rendering (block and inline)                                        | SHOULD   | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-013](#req-edt-013--extensible-annotationplugin-registry)                                | Extensible annotation/plugin registry                                    | SHOULD   | partial     | documented-differently | n/a           |
 | [REQ-EDT-014](#req-edt-014--github-flavored-markdown-core-syntax)                                | GitHub Flavored Markdown core syntax                                     | MUST     | partial     | documented-as-desired  | accurate      |
-| [REQ-EDT-015](#req-edt-015--gfm-footnotes)                                                       | GFM footnotes                                                            | MUST     | not-started | undocumented           | n/a           |
-| [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information)                                  | Footnotes for repeated information                                       | MUST     | not-started | undocumented           | n/a           |
+| [REQ-EDT-015](#req-edt-015--gfm-footnotes)                                                       | GFM footnotes                                                            | MUST     | partial     | undocumented           | n/a           |
+| [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information)                                  | Footnotes for repeated information                                       | MUST     | partial     | undocumented           | n/a           |
 | [REQ-EDT-017](#req-edt-017--wiki-link-crosslinks-between-files)                                  | `[[wiki-link]]` crosslinks between files                                 | MUST     | not-started | documented-as-desired  | stale         |
 | [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)                  | Graph builder extracts crosslinks from space files                       | MUST     | not-started | documented-as-desired  | stale         |
 | [REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app)                      | Browsable Obsidian-style graph view in the app                           | MUST     | stubbed     | documented-as-desired  | stale         |
@@ -379,11 +379,11 @@ flowchart TD
 - `$$x$$` and `$x$` round-trip.
 - The E2E test asserts the `.katex` output, not just the container.
 
-**Current state:** partial. [math.ts](../../../packages/ui/src/components/editor/extensions/math.ts) calls `katex.renderToString`, but passes the result as `{ innerHTML }` inside a ProseMirror DOMOutputSpec. ProseMirror treats that as an attribute, so the math most likely does not display (unverified at runtime). No KaTeX stylesheet is imported, and there is no `$` syntax support. The E2E test only checks that `.cept-math-block` is visible ([slash-commands.spec.ts](../../../e2e/tests/slash-commands.spec.ts) lines 294-316).
+**Current state:** partial. [math.ts](../../../packages/ui/src/components/editor/extensions/math.ts) calls `katex.renderToString`, but passes the result as `{ innerHTML }` inside a ProseMirror DOMOutputSpec. ProseMirror treats that as an attribute, so the math most likely does not display (unverified at runtime). No KaTeX stylesheet is imported. The shared Markdown pipeline reads and writes math (PR 52, remark-math): `$..$` loads as `inlineMath {content}` and a `$$` block as `mathBlock {content}` (with `meta` when the opening fence has one), and both are written back with dollars; an unchanged block is saved byte for byte. A pair of single dollars that would start or end with a space, or whose closing dollar is followed by a digit (`It costs $5 and $10.`), stays text, as in Pandoc; when such a block is rewritten its dollars are escaped (`\$`) so math-aware renderers such as GitHub also read them as text. Inline `$$x$$` loads as inline math and is rewritten as `$x$`. The editor does not load pages through the pipeline until PR 49. The E2E test only checks that `.cept-math-block` is visible ([slash-commands.spec.ts](../../../e2e/tests/slash-commands.spec.ts) lines 294-316).
 
 **Docs:** documented-as-desired but stale. [markdown-extensions.md](../../content/guides/markdown-extensions.md) and [docs-content.ts](../../../packages/ui/src/components/docs/docs-content.ts) line 851 document `$$E = mc^2$$` and `$a^2$`.
 
-**Gap:** Inject the KaTeX HTML through a NodeView, import the CSS, add `$` input and Markdown rules, and strengthen the E2E test.
+**Gap:** Inject the KaTeX HTML through a NodeView, import the CSS, add `$` input rules, load pages through the pipeline (PR 49), and strengthen the E2E test.
 
 **Related:** TASKS T2.10.
 
@@ -401,7 +401,7 @@ flowchart TD
 - Mermaid and math are implemented on the registry.
 - A test registers a dummy renderer and proves the load, render and save round-trip.
 
-**Current state:** partial. The internal interface exists (PR 50). In core, a `FencedBlockPlugin` ([fenced-blocks.ts](../../../packages/core/src/markdown/fenced-blocks.ts)) has a node type `name` (a plain identifier such as `mermaid`) and `claims(language, meta)`; when several plugins claim a fence, the first registered wins. The page pipeline stays plugin-free: `claimFencedBlocks` turns the `codeBlock`s a plugin claims into its node (attributes `language`, `meta`, `fence`, `source`), and `releaseFencedBlocks` turns them back before saving, so an unchanged block is saved byte for byte and an edited one keeps its fence and info string. In the UI, a `FencedBlockEditorPlugin` ([fenced-block.ts](../../../packages/ui/src/components/editor/extensions/fenced-block.ts)) adds `language`, `defaultSource` and `render(source, element, {language, meta})`, and `createFencedBlockExtension` turns it into an atom TipTap node whose node view calls `render` and re-renders when the source, language or meta string changes. Its HTML output is only a wrapper carrying the source; a static rendering of the body for export comes later. A test registers a dummy plugin and proves load, render and save. Mermaid is on it (PR 51) and math is not yet (PR 52), and the editor does not load pages through the pipeline until PR 49.
+**Current state:** partial. The internal interface exists (PR 50). In core, a `FencedBlockPlugin` ([fenced-blocks.ts](../../../packages/core/src/markdown/fenced-blocks.ts)) has a node type `name` (a plain identifier such as `mermaid`) and `claims(language, meta)`; when several plugins claim a fence, the first registered wins. The page pipeline stays plugin-free: `claimFencedBlocks` turns the `codeBlock`s a plugin claims into its node (attributes `language`, `meta`, `fence`, `source`), and `releaseFencedBlocks` turns them back before saving, so an unchanged block is saved byte for byte and an edited one keeps its fence and info string. In the UI, a `FencedBlockEditorPlugin` ([fenced-block.ts](../../../packages/ui/src/components/editor/extensions/fenced-block.ts)) adds `language`, `defaultSource` and `render(source, element, {language, meta})`, and `createFencedBlockExtension` turns it into an atom TipTap node whose node view calls `render` and re-renders when the source, language or meta string changes. Its HTML output is only a wrapper carrying the source; a static rendering of the body for export comes later. A test registers a dummy plugin and proves load, render and save. Mermaid is on it (PR 51). Math is not: `$..$` and `$$` math is modelled directly in the Markdown bridge (PR 52), and a ` ```math ` fence plugin is not implemented. The editor does not load pages through the pipeline until PR 49.
 
 **Docs:** documented-differently. TASKS P7.7b and P7.7c describe a broader plugin SDK. [roadmap.md](../../content/reference/roadmap.md) does not describe a fenced-annotation registry.
 
@@ -444,11 +444,11 @@ flowchart TD
 - Users can insert a footnote from the editor (slash command or shortcut).
 - Footnotes round-trip unchanged.
 
-**Current state:** not-started. A case-insensitive grep for "footnote" across packages, docs, e2e and features returns nothing. The core parser's remark-gfm produces footnote nodes, but `convertNode`'s default case returns `null`, so footnote definitions are dropped.
+**Current state:** partial. The shared Markdown pipeline models footnotes (PR 52): `[^id]` loads as an inline `footnoteReference {identifier, label}` and `[^id]: ...` as a `footnoteDefinition {identifier, label}` block holding the definition's blocks. Both are written back with the label as typed, and an unchanged definition is saved byte for byte (corpus fixtures `footnotes.md` and `footnotes-reuse.md`). The editor has no footnote nodes yet: they come with PR 49, when the editor loads pages through the pipeline. The older `CeptMarkdownParser`'s `convertNode` still drops footnote definitions; PR 49 retires it.
 
 **Docs:** undocumented.
 
-**Gap:** Add a footnote reference/definition node pair with parse and serialize support (for example markdown-it-footnote), plus spec and docs.
+**Gap:** Editor nodes for references (superscript numbers) and definitions (the footnote list), insertion from the editor, and user docs.
 
 **Related:** none.
 
@@ -466,7 +466,7 @@ flowchart TD
 - The rendered footnote list shows a back-reference to each use.
 - Editing the definition is reflected at every reference without further edits.
 
-**Current state:** not-started. There is no footnote support. A related "synced block" exists only as a serialize case in the core parser, with no editor extension.
+**Current state:** partial. In the pipeline (PR 52), every reference to one definition carries the same `identifier`, and the definition is one block, so editing it rewrites the definition once and every reference keeps pointing at it (unit test in `document.test.ts`). Numbering, the footnote list and back-references are editor rendering and come with the editor's footnote nodes (PR 49). A related "synced block" exists only as a serialize case in the core parser, with no editor extension.
 
 **Docs:** undocumented. SPEC §5.1 mentions synced blocks but not footnote reuse.
 

@@ -1,5 +1,4 @@
 {
   "cept-comment": "A rewritten block is followed by a blank line, so a cept:comment line placed directly under a paragraph moves down one line.",
-  "math": "Without math parsing (PR 52), $$ math is text: `\\,` loses its backslash and `_` gains one.",
   "table": "Column padding is regenerated: centre-aligned cells are padded on both sides."
 }

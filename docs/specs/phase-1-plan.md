@@ -551,6 +551,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: `CeptEditor.test.tsx` round-trips toggle, callout, columns and image blocks.
 - Accept: tests and editor e2e green.
 - Risk: touches every block; keep screenshots in the PR. It waits for PR 52 so that removing `tiptap-markdown` does not regress the existing KaTeX math blocks on `main`.
+- Note (PR 52): the pipeline now emits `footnoteReference` and `footnoteDefinition` nodes and a `meta` attribute on `mathBlock`; this PR adds the matching editor nodes (numbered references, the footnote list with back-references, EDT-015 and EDT-016) and the `meta` attribute, and registers the fenced-block plugins with `claimFencedBlocks`/`releaseFencedBlocks`.
 
 **PR 50 — `feat(editor): add a fenced-block plugin interface`**
 
@@ -573,6 +574,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: corpus fixtures for `[^1]`, `$..$` and `$$..$$`.
 - Accept: fixtures green.
 - Risk: none notable.
+- Note (PR 52): remark-math 6.0.0 is in the parser and the serializer. Math maps to the existing `inlineMath`/`mathBlock` nodes; footnotes map to new `footnoteReference`/`footnoteDefinition` nodes whose editor side is in PR 49. Prices such as `$5 and $10` stay text (Pandoc's rule) and are escaped as `\$` when rewritten. The `math` expected failure is removed; fixtures `footnotes-reuse.md` and `math-inline.md` are added.
 
 ### M4 — Comments, links, graph and Notion parity
 
