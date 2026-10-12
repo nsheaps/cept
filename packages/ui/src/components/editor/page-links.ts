@@ -23,6 +23,12 @@ export interface PageLinksContext {
   pageId: string;
   /** Whether a page with this id exists in the space. */
   hasPage: (id: string) => boolean;
+  /**
+   * Whether a file that is not a page exists in the space, by path relative to
+   * the space root. Omit it when the space's files are not listed: links to
+   * files are then left unchecked.
+   */
+  hasFile?: (path: string) => boolean;
   /** Read a file of the space by its path relative to the space root; null when missing. */
   readFile: (path: string) => Promise<Uint8Array | null>;
   /** Show another page of the space, scrolled to `anchor` when given. */
@@ -100,6 +106,7 @@ export function usePageLinks(
   latest.current = ctx;
   const remark = useRef<(() => void) | null>(null);
   const hasPage = ctx?.hasPage;
+  const hasFile = ctx?.hasFile;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -107,6 +114,9 @@ export function usePageLinks(
     const links: PageLinksContext = {
       pageId,
       hasPage: (id) => latest.current?.hasPage(id) ?? false,
+      ...(latest.current.hasFile
+        ? { hasFile: (path: string) => latest.current?.hasFile?.(path) ?? true }
+        : {}),
       readFile: (path) => latest.current?.readFile(path) ?? Promise.resolve(null),
       onNavigate: (id, anchor) => latest.current?.onNavigate(id, anchor),
     };
@@ -157,10 +167,13 @@ export function usePageLinks(
         const href = a.getAttribute('href') ?? '';
         if (!isRelativeUrl(href)) continue;
         const resolved = resolvePath(base, href);
-        // Links to files that are not pages are not checked yet: listing the
-        // space's other files comes with the foreign-file preview (PR 54b).
-        if (!resolved || resolved.path === base || isAssetPath(resolved.path)) continue;
-        const missing = pageIdForPath(resolved.path, links.hasPage) === null;
+        if (!resolved || resolved.path === base) continue;
+        let missing: boolean;
+        if (isAssetPath(resolved.path)) {
+          // Checked only when the space lists its files.
+          if (!links.hasFile) continue;
+          missing = !links.hasFile(resolved.path);
+        } else missing = pageIdForPath(resolved.path, links.hasPage) === null;
         if (missing) a.setAttribute('data-broken', 'true');
         else a.removeAttribute('data-broken');
       }
@@ -213,5 +226,5 @@ export function usePageLinks(
   // A new page tree can make a broken link good (or the reverse).
   useEffect(() => {
     remark.current?.();
-  }, [hasPage]);
+  }, [hasPage, hasFile]);
 }

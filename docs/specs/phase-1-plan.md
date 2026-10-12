@@ -636,6 +636,13 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Risk: large binaries; read on open only, revoke blob URLs on close.
 - Delivered: listing and preview. Moving, renaming and deleting a foreign file, and broken-link marking for links to missing files, follow in PR 55b, with the refresh of an open preview after a Git sync.
 
+**PR 55b — `feat(ui): rename, move and delete files that are not pages`**
+
+- Changes: Rename, Move and Delete in the context menu of a foreign file; rename and move rewrite links to it like a page move; delete asks first; links to a file missing from the space are marked broken; an open preview reads its file again after a Git sync changed the space.
+- Red: `folder-space.test.ts` (rename keeps extension, refuses page names, rewrites links, move, previews, delete leaves pages), `App.folders.test.tsx` (menu, update/skip, confirm/cancel delete), `page-links.test.tsx` (missing file marked broken, unchecked when files are not listed), `ForeignFilePreview.test.tsx` (refresh token).
+- Accept: tests green; E2E captures `delete-file-dialog.png`.
+- Delivered: all of the above. Deferred: a ranged read for large attachments (the `StorageBackend` has no ranged read; revisit with the backend interface), adding files by paste, drop or upload.
+
 **PR 55 — `feat(ui): rewrite inbound links when a page moves`**
 
 - Changes: renaming or moving a page rewrites inbound relative links with a preview; one commit in Git spaces.

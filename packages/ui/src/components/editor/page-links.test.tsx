@@ -122,6 +122,34 @@ describe('relative links in a page', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
+  it('marks a link to a file that is not in the space as broken, when the space lists its files', async () => {
+    const backend = await spaceWith({});
+    render(
+      <CeptEditor
+        editable={false}
+        content="[Gone](gone.pdf) [Here](here.pdf)"
+        links={{ ...contextFor(backend, 'home.md', []), hasFile: (path) => path === 'here.pdf' }}
+      />,
+    );
+    const gone = await screen.findByText('Gone');
+    await waitFor(() => expect(gone.getAttribute('data-broken')).toBe('true'));
+    expect(screen.getByText('Here').getAttribute('data-broken')).toBeNull();
+  });
+
+  it('does not check links to files when the space does not list them', async () => {
+    const backend = await spaceWith({});
+    render(
+      <CeptEditor
+        editable={false}
+        content="[Doc](doc.pdf)"
+        links={contextFor(backend, 'home.md', [])}
+      />,
+    );
+    const link = await screen.findByText('Doc');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(link.getAttribute('data-broken')).toBeNull();
+  });
+
   it('scrolls to a heading of the same page for an #anchor link', async () => {
     const backend = await spaceWith({});
     const onNavigate = vi.fn();

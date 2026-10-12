@@ -369,6 +369,8 @@ export function App() {
   const [gitSessionSpaceId, setGitSessionSpaceId] = useState<string | null>(null);
   /** Bumped when the open page is read again from its file after a sync, to show it. */
   const [editorVersion, setEditorVersion] = useState(0);
+  /** Bumped when a sync changed the space's files, so an open file preview reads its file again. */
+  const [filesVersion, setFilesVersion] = useState(0);
   /** Edits and commits of writable GitHub spaces not on GitHub yet, read while settings are open. */
   const [unsyncedChanges, setUnsyncedChanges] = useState<Record<string, number>>({});
   const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
@@ -1063,6 +1065,7 @@ export function App() {
               : null;
           if (spaceId !== userSpaceIdRef.current) return;
           setPages(next);
+          setFilesVersion((v) => v + 1);
           // Other pages are read again from their files when they are opened.
           const previous = pageContentsRef.current;
           const kept: Record<string, string> = {};
@@ -1247,17 +1250,28 @@ export function App() {
     [handlePageSelect],
   );
   const pageIds = useMemo(() => new Set(flattenPages(pages).map((p) => p.id)), [pages]);
+  // Files that are not pages, by path: a link to one that is not here is broken.
+  const filePaths = useMemo(
+    () =>
+      new Set(
+        flattenPages(pages, true)
+          .map((p) => p.id)
+          .filter((id) => !pageIds.has(id)),
+      ),
+    [pages, pageIds],
+  );
   const pageLinks = useMemo<PageLinksContext | undefined>(
     () =>
       activeSpace === 'user' && selectedPageId !== undefined && spaces.isFolder(userSpaceId)
         ? {
             pageId: selectedPageId,
             hasPage: (id) => pageIds.has(id),
+            hasFile: (path) => filePaths.has(path),
             readFile: (path) => spaces.readSpaceFile(userSpaceId, path),
             onNavigate: handleLinkNavigate,
           }
         : undefined,
-    [activeSpace, selectedPageId, spaces, userSpaceId, pageIds, handleLinkNavigate],
+    [activeSpace, selectedPageId, spaces, userSpaceId, pageIds, filePaths, handleLinkNavigate],
   );
 
   const readForeignFile = useCallback(
@@ -3239,6 +3253,7 @@ export function App() {
               key={selectedPageId}
               path={selectedPageId}
               readFile={readForeignFile}
+              refreshToken={filesVersion}
             />
           ) : selectedPageId && selectedNode ? (
             <>

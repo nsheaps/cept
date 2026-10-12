@@ -33,6 +33,20 @@ describe('ForeignFilePreview', () => {
     expect(revoked).toEqual(['blob:mock/1']);
   });
 
+  it('reads the file again when the refresh token changes, and not otherwise', async () => {
+    const { rerender } = render(
+      <ForeignFilePreview path="notes.json" readFile={readFile} refreshToken={0} />,
+    );
+    expect((await screen.findByTestId('foreign-file-text')).textContent).toBe('{"a":1}');
+    await backend.writeFile('/notes.json', enc('{"a":2}'));
+    rerender(<ForeignFilePreview path="notes.json" readFile={readFile} refreshToken={0} />);
+    expect(screen.getByTestId('foreign-file-text').textContent).toBe('{"a":1}');
+    rerender(<ForeignFilePreview path="notes.json" readFile={readFile} refreshToken={1} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('foreign-file-text').textContent).toBe('{"a":2}'),
+    );
+  });
+
   it('embeds a PDF', async () => {
     const { container } = render(<ForeignFilePreview path="docs/paper.pdf" readFile={readFile} />);
     await waitFor(() =>

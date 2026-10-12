@@ -6,6 +6,8 @@ export interface ForeignFilePreviewProps {
   path: string;
   /** Read the file's bytes; null when it is missing. Called once per opened file. */
   readFile: (path: string) => Promise<Uint8Array | null>;
+  /** Change it to read the file again, for example after a sync rewrote it. */
+  refreshToken?: number;
 }
 
 type Loaded =
@@ -31,7 +33,7 @@ function formatSize(bytes: number): string {
  * text are shown, anything else offers a download. The file is read when it is
  * opened and its blob URL is revoked when it is closed.
  */
-export function ForeignFilePreview({ path, readFile }: ForeignFilePreviewProps) {
+export function ForeignFilePreview({ path, readFile, refreshToken }: ForeignFilePreviewProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const name = path.split('/').at(-1) ?? path;
 
@@ -59,7 +61,7 @@ export function ForeignFilePreview({ path, readFile }: ForeignFilePreviewProps) 
       disposed = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [path, name, readFile]);
+  }, [path, name, readFile, refreshToken]);
 
   return (
     <div className="cept-foreign-preview" data-testid="foreign-file-preview">
