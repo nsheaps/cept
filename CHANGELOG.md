@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.51.0](https://github.com/nsheaps/cept/compare/v0.50.0...v0.51.0) (2026-10-12)
+
+### Features
+
+* **ui:** graph view as a fenced graph block ([#442](https://github.com/nsheaps/cept/issues/442)) ([4691766](https://github.com/nsheaps/cept/commit/4691766fb318e2942a9201822ea45ec1febaf687))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([53e2162](https://github.com/nsheaps/cept/commit/53e216244717b84c96bf906d3f3a6a6637dcccdf))
+
 ## [0.50.0](https://github.com/nsheaps/cept/compare/v0.49.0...v0.50.0) (2026-10-12)
 
 ### Features
