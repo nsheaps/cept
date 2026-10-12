@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.39.0](https://github.com/nsheaps/cept/compare/v0.38.0...v0.39.0) (2026-10-12)
+
+### Features
+
+* **editor:** load and save pages through the markdown pipeline ([#429](https://github.com/nsheaps/cept/issues/429)) ([43a759e](https://github.com/nsheaps/cept/commit/43a759e532ce784bab7a44c1c7995e84480fc682)), references [#428](https://github.com/nsheaps/cept/issues/428)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([d414814](https://github.com/nsheaps/cept/commit/d4148141e2b4cfee9c6ce62ab9997cafeaf78a20))
+
 ## [0.38.0](https://github.com/nsheaps/cept/compare/v0.37.0...v0.38.0) (2026-10-12)
 
 ### Features
