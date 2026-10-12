@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.38.0](https://github.com/nsheaps/cept/compare/v0.37.0...v0.38.0) (2026-10-12)
+
+### Features
+
+* **editor:** add the pipeline's nodes and attributes to the schema ([#428](https://github.com/nsheaps/cept/issues/428)) ([088ad4a](https://github.com/nsheaps/cept/commit/088ad4ac33067b923dc585f27e4f505fdf45645e)), references [#427](https://github.com/nsheaps/cept/issues/427)
+
 ## [0.37.0](https://github.com/nsheaps/cept/compare/v0.36.0...v0.37.0) (2026-10-12)
 
 ### Features
