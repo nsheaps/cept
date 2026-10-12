@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.46.0](https://github.com/nsheaps/cept/compare/v0.45.0...v0.46.0) (2026-10-12)
+
+### Features
+
+* **core:** extract links and build the link graph ([850d8bc](https://github.com/nsheaps/cept/commit/850d8bc6d87c375c256e7b0c630e5302e37521b9))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([5fdf247](https://github.com/nsheaps/cept/commit/5fdf24707e9b76f7042d3669b1f020ac01c2714c))
+
 ## [0.45.0](https://github.com/nsheaps/cept/compare/v0.44.0...v0.45.0) (2026-10-12)
 
 ### Features
