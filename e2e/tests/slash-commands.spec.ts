@@ -351,8 +351,12 @@ test.describe('Slash Commands', () => {
   test('mermaid diagram', async ({ page }) => {
     await typeSlashCommand(page, 'mermaid');
     await selectFirstCommand(page);
-    // mermaid is an atom node — default flowchart content is set by the extension
+    // The mermaid plugin renders the default flowchart to SVG (mermaid loads lazily)
     await expect(page.locator('.cept-editor-content .cept-mermaid')).toBeVisible();
+    await expect(page.locator('.cept-editor-content .cept-mermaid-preview svg')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.locator('.cept-editor-content .cept-mermaid-error')).toHaveCount(0);
     await captureScreenshot(page, { name: 'slash-mermaid', category: 'slash-commands' });
   });
 });

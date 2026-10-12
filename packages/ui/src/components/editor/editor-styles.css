@@ -523,6 +523,17 @@
   height: auto;
 }
 
+.cept-editor .tiptap .cept-mermaid-preview .cept-mermaid-source {
+  text-align: left;
+}
+
+.cept-editor .tiptap .cept-mermaid-error {
+  padding-top: 0.5rem;
+  color: #e53e3e;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
 /* Table */
 .cept-editor .tiptap table.cept-table {
   border-collapse: collapse;

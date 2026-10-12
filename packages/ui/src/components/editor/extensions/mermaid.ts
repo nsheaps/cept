@@ -1,13 +1,11 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-
-export interface MermaidOptions {
-  HTMLAttributes: Record<string, string>;
-}
+import type { Attributes } from '@tiptap/core';
+import type { FencedBlockEditorPlugin } from './fenced-block.js';
+import { createFencedBlockExtension } from './fenced-block.js';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     mermaid: {
-      setMermaid: (attrs?: { content?: string }) => ReturnType;
+      setMermaid: (attrs?: { source?: string }) => ReturnType;
     };
   }
 }
@@ -87,65 +85,101 @@ export const mermaidExamples: Record<string, string> = {
       Pen and paper`,
 };
 
-export const Mermaid = Node.create<MermaidOptions>({
-  name: 'mermaid',
+/** The part of the `mermaid` package the plugin uses. */
+export interface MermaidApi {
+  initialize(config: { startOnLoad: boolean; securityLevel: 'strict' }): void;
+  render(id: string, text: string): Promise<{ svg: string }>;
+}
 
-  group: 'block',
+/**
+ * The mermaid fenced-block plugin (EDT-013, D-33): it claims ` ```mermaid `
+ * fences and renders them to SVG with the `mermaid` package, imported only
+ * when the first diagram is shown (a failed load is retried by the next
+ * diagram). A diagram that fails to render shows its
+ * source and the error instead. `loadMermaid` is injectable for tests.
+ */
+export function createMermaidPlugin(
+  loadMermaid: () => Promise<MermaidApi> = async () => (await import('mermaid')).default,
+): FencedBlockEditorPlugin {
+  let nextDiagramId = 0;
+  let ready: Promise<MermaidApi> | null = null;
+  const load = () => {
+    ready ??= loadMermaid()
+      .then((mermaid) => {
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+        return mermaid;
+      })
+      .catch((error: unknown) => {
+        // Let the next diagram retry a failed load (a flaky chunk, offline).
+        ready = null;
+        throw error;
+      });
+    return ready;
+  };
 
-  atom: true,
+  return {
+    name: 'mermaid',
+    language: 'mermaid',
+    defaultSource: defaultMermaidContent,
+    claims: (language) => language === 'mermaid',
+    render(source, element) {
+      let active = true;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'cept-mermaid';
+      const preview = document.createElement('div');
+      preview.className = 'cept-mermaid-preview';
+      wrapper.append(preview);
+      element.append(wrapper);
 
-  addOptions() {
-    return {
-      HTMLAttributes: {},
-    };
-  },
+      load()
+        .then((mermaid) => mermaid.render(`cept-mermaid-${nextDiagramId++}`, source))
+        .then(({ svg }) => {
+          if (active) preview.innerHTML = svg;
+        })
+        .catch((error: unknown) => {
+          if (!active) return;
+          const code = document.createElement('pre');
+          code.className = 'cept-mermaid-source';
+          code.textContent = source;
+          const message = document.createElement('div');
+          message.className = 'cept-mermaid-error';
+          message.textContent = error instanceof Error ? error.message : String(error);
+          preview.replaceChildren(code, message);
+        });
 
+      return () => {
+        active = false;
+      };
+    },
+  };
+}
+
+export const mermaidPlugin = createMermaidPlugin();
+
+/** The editor node for mermaid diagrams, saved as a ` ```mermaid ` fence. */
+export const Mermaid = createFencedBlockExtension(mermaidPlugin).extend({
   addAttributes() {
+    const attributes: Attributes = this.parent?.() ?? {};
     return {
-      content: {
-        default: defaultMermaidContent,
+      ...attributes,
+      source: {
+        ...attributes.source,
+        // Pages saved before PR 51 keep the diagram in `data-mermaid`.
         parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-mermaid') ?? defaultMermaidContent,
-        renderHTML: (attributes: Record<string, unknown>) => ({
-          'data-mermaid': attributes.content as string,
-        }),
+          element.getAttribute('data-source') ?? element.getAttribute('data-mermaid') ?? '',
       },
     };
-  },
-
-  parseHTML() {
-    return [
-      {
-        tag: 'div[data-type="mermaid"]',
-      },
-    ];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    const attrs = HTMLAttributes as Record<string, string>;
-    const content = attrs['data-mermaid'] || defaultMermaidContent;
-
-    return [
-      'div',
-      mergeAttributes(this.options.HTMLAttributes, attrs, {
-        'data-type': 'mermaid',
-        class: 'cept-mermaid',
-      }),
-      ['pre', { class: 'cept-mermaid-source' }, content],
-      ['div', { class: 'cept-mermaid-preview' }],
-    ] as const;
   },
 
   addCommands() {
     return {
       setMermaid:
         (attrs) =>
-        ({ commands }) => {
-          return commands.insertContent({
+        ({ commands }) =>
+          commands.insertContent({
             type: this.name,
-            attrs: { content: attrs?.content ?? defaultMermaidContent },
-          });
-        },
+            attrs: { source: attrs?.source ?? defaultMermaidContent },
+          }),
     };
   },
 });
