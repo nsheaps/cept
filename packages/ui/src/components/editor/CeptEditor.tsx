@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import type { MarkdownDocument, PmNode } from '@cept/core';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -21,6 +21,7 @@ import {
 } from './markdown-bridge.js';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import { InlineToolbar } from './InlineToolbar.js';
+import { usePageLinks, scrollToHeading, type PageLinksContext } from './page-links.js';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
 export interface CeptEditorProps {
@@ -29,6 +30,10 @@ export interface CeptEditorProps {
   editable?: boolean;
   placeholder?: string;
   onUpdate?: (markdown: string) => void;
+  /** Resolves the page's relative links and images against its space (REQ-EDT-027). */
+  links?: PageLinksContext;
+  /** A heading to scroll to when the page opens, by GitHub slug. */
+  anchor?: string;
 }
 
 export function CeptEditor({
@@ -36,6 +41,8 @@ export function CeptEditor({
   editable = true,
   placeholder = "Type '/' for commands...",
   onUpdate,
+  links,
+  anchor,
 }: CeptEditorProps) {
   // The page is parsed once per mount; saves reuse the source of every block
   // that is unchanged since load (EDT-005).
@@ -142,8 +149,14 @@ export function CeptEditor({
     },
   });
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  usePageLinks(containerRef, links, editable);
+  useEffect(() => {
+    if (editor && anchor && containerRef.current) scrollToHeading(containerRef.current, anchor);
+  }, [editor, anchor]);
+
   return (
-    <div className="cept-editor" data-testid="cept-editor">
+    <div className="cept-editor" data-testid="cept-editor" ref={containerRef}>
       <EditorContent editor={editor} />
       {editable && <InlineToolbar editor={editor} />}
     </div>

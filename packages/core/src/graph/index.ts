@@ -4,7 +4,14 @@
  */
 
 export type { GraphData, GraphLink, GraphLinkType, GraphNode } from './model.js';
-export { extractLinks, resolveLink } from './links.js';
+export {
+  extractLinks,
+  resolveLink,
+  resolvePath,
+  baseFileOfPage,
+  pageIdForPath,
+  headingSlugs,
+} from './links.js';
 export type { ExtractedLink, ResolvedLink } from './links.js';
 export { buildLinkGraph, backlinksOf, readLinkGraph } from './link-graph.js';
 export type { LinkGraph, LinkGraphOptions, LinkGraphPage, PageReference } from './link-graph.js';
