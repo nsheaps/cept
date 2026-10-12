@@ -1,5 +1,69 @@
 # Changelog
 
+## [0.33.7](https://github.com/nsheaps/cept/compare/v0.33.6...v0.33.7) (2026-10-12)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([c76d91a](https://github.com/nsheaps/cept/commit/c76d91a6f1a02023484b344a55a69cf69b2809ef))
+
+## [0.33.6](https://github.com/nsheaps/cept/compare/v0.33.5...v0.33.6) (2026-10-12)
+
+### Bug Fixes
+
+* **deps:** update dependency isomorphic-git to v1.42.2 ([#422](https://github.com/nsheaps/cept/issues/422)) ([ab64ef6](https://github.com/nsheaps/cept/commit/ab64ef69204e74662e6629d6dbe9b774a3c72c54))
+
+## [0.33.5](https://github.com/nsheaps/cept/compare/v0.33.4...v0.33.5) (2026-10-11)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([9cd3478](https://github.com/nsheaps/cept/commit/9cd3478a8279989e4f2f3c877f6c61d56e35ca57))
+
+### Chores
+
+* **deps:** update dependency markdown-it to v15.0.2 ([#421](https://github.com/nsheaps/cept/issues/421)) ([99aecc8](https://github.com/nsheaps/cept/commit/99aecc84bdb2c508d987dc36b8cd8bde4a9af00d))
+
+## [0.33.4](https://github.com/nsheaps/cept/compare/v0.33.3...v0.33.4) (2026-10-11)
+
+### Bug Fixes
+
+* **deps:** update dependency isomorphic-git to v1.42.0 ([#420](https://github.com/nsheaps/cept/issues/420)) ([78939f1](https://github.com/nsheaps/cept/commit/78939f150c5dcb0774fdb656b1e5e4b9a48b0bad))
+
+## [0.33.3](https://github.com/nsheaps/cept/compare/v0.33.2...v0.33.3) (2026-10-10)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1934971](https://github.com/nsheaps/cept/commit/1934971c8adda6ff44fc0281c3fa9c9f10270c64))
+
+### Chores
+
+* **deps:** update dependency vite to v8.3.0 ([#418](https://github.com/nsheaps/cept/issues/418)) ([f7cb2a4](https://github.com/nsheaps/cept/commit/f7cb2a4d608dd660b7d462ff350792fb79c94f88))
+
+## [0.33.2](https://github.com/nsheaps/cept/compare/v0.33.1...v0.33.2) (2026-10-10)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([6cfe458](https://github.com/nsheaps/cept/commit/6cfe4580e6b29ab107e1952ffc95469b7e77b6b2))
+
+### Chores
+
+* **deps:** update dependency @types/node to v26.5.1 ([#416](https://github.com/nsheaps/cept/issues/416)) ([2d163bf](https://github.com/nsheaps/cept/commit/2d163bf032e00e9cb30538e2e7dc0b2139dad2b5))
+
+## [0.33.1](https://github.com/nsheaps/cept/compare/v0.33.0...v0.33.1) (2026-10-10)
+
+### Bug Fixes
+
+* **deps:** update react dependencies to v19.3.0 ([#415](https://github.com/nsheaps/cept/issues/415)) ([7ad5f9e](https://github.com/nsheaps/cept/commit/7ad5f9e00a7f6f4881f173a9c8e9d4a089d9d03d))
+
+## [0.33.0](https://github.com/nsheaps/cept/compare/v0.32.3...v0.33.0) (2026-10-09)
+
+### Features
+
+* **core:** preserve front matter byte-for-byte ([#413](https://github.com/nsheaps/cept/issues/413)) ([68dfca2](https://github.com/nsheaps/cept/commit/68dfca237168a58f7a0b248df22e542ebb92aea0))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1c11889](https://github.com/nsheaps/cept/commit/1c118895925cf5a6982dd8322b9f1cc8b3192792))
+
 ## [0.32.3](https://github.com/nsheaps/cept/compare/v0.32.2...v0.32.3) (2026-10-09)
 
 ### Documentation
