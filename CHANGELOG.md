@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.40.0](https://github.com/nsheaps/cept/compare/v0.39.1...v0.40.0) (2026-10-12)
+
+### Features
+
+* **core:** keep several git token auths ([#430](https://github.com/nsheaps/cept/issues/430)) ([4e5eafb](https://github.com/nsheaps/cept/commit/4e5eafb733cc8022589a7a246bab60cf2e8b49cd))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([fc64a08](https://github.com/nsheaps/cept/commit/fc64a08fb95552abf48c4de37a9c023b874356bb))
+
 ## [0.39.1](https://github.com/nsheaps/cept/compare/v0.39.0...v0.39.1) (2026-10-12)
 
 ### Documentation
