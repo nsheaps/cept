@@ -322,7 +322,7 @@ describe('App folder spaces', () => {
     expect(writes).toEqual([]);
   });
 
-  it('lists the pages that link to the open page, and opens one when clicked (EDT-020)', async () => {
+  it('lists the pages that link to the open page, and opens one when clicked (EDT-021)', async () => {
     const folder = notesFolder();
     folder.seedText('Welcome.md', '# Welcome\n\nHello from a folder.\n');
     folder.seedText('Guides/Setup.md', '# Setup\n\nBack to the [start page](../Welcome.md).\n');

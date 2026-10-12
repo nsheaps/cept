@@ -7,7 +7,7 @@ export interface BacklinksPanelProps {
   onNavigate: (pageId: string) => void;
 }
 
-/** The pages that link to the open page (REQ-EDT-020), shown under its content. */
+/** The pages that link to the open page (REQ-EDT-021), shown under its content. */
 export function BacklinksPanel({ backlinks, onNavigate }: BacklinksPanelProps) {
   if (backlinks.length === 0) return null;
   return (

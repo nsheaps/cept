@@ -190,7 +190,7 @@ export interface Backlink {
 }
 
 /**
- * For each page that other pages link to, the pages linking to it (REQ-EDT-020).
+ * For each page that other pages link to, the pages linking to it (REQ-EDT-021).
  * One pass over the space feeds both the backlinks panel and the search index.
  * Ids are the sidebar's, so the root page is addressed by its file. Links to
  * files that are not pages and dead links are left out.
