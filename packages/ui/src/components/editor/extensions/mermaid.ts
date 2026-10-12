@@ -91,23 +91,29 @@ export interface MermaidApi {
   render(id: string, text: string): Promise<{ svg: string }>;
 }
 
-let nextDiagramId = 0;
-
 /**
  * The mermaid fenced-block plugin (EDT-013, D-33): it claims ` ```mermaid `
  * fences and renders them to SVG with the `mermaid` package, imported only
- * when the first diagram is shown. A diagram that fails to render shows its
+ * when the first diagram is shown (a failed load is retried by the next
+ * diagram). A diagram that fails to render shows its
  * source and the error instead. `loadMermaid` is injectable for tests.
  */
 export function createMermaidPlugin(
   loadMermaid: () => Promise<MermaidApi> = async () => (await import('mermaid')).default,
 ): FencedBlockEditorPlugin {
+  let nextDiagramId = 0;
   let ready: Promise<MermaidApi> | null = null;
   const load = () => {
-    ready ??= loadMermaid().then((mermaid) => {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
-      return mermaid;
-    });
+    ready ??= loadMermaid()
+      .then((mermaid) => {
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+        return mermaid;
+      })
+      .catch((error: unknown) => {
+        // Let the next diagram retry a failed load (a flaky chunk, offline).
+        ready = null;
+        throw error;
+      });
     return ready;
   };
 

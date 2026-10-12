@@ -113,6 +113,25 @@ describe('createMermaidPlugin', () => {
     expect(element.querySelector('.cept-mermaid-error')?.textContent).toBe('Parse error on line 1');
   });
 
+  it('retries loading mermaid after a failed load', async () => {
+    let attempts = 0;
+    const plugin = createMermaidPlugin(async () => {
+      attempts++;
+      if (attempts === 1) throw new Error('chunk failed to load');
+      return { initialize: () => undefined, render: async () => ({ svg: '<svg></svg>' }) };
+    });
+    const first = document.createElement('div');
+    plugin.render('graph TD', first, { language: 'mermaid', meta: null });
+    await settle();
+    expect(first.querySelector('.cept-mermaid-error')?.textContent).toBe('chunk failed to load');
+
+    const second = document.createElement('div');
+    plugin.render('graph TD', second, { language: 'mermaid', meta: null });
+    await settle();
+    expect(second.querySelector('svg')).not.toBeNull();
+    expect(attempts).toBe(2);
+  });
+
   it('drops a render that finishes after cleanup', async () => {
     const { plugin } = fakeMermaid(async () => ({ svg: '<svg></svg>' }));
     const element = document.createElement('div');
