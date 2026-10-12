@@ -296,7 +296,7 @@ export function App() {
   /** The working GitHub auths a new repository space can be started or published with. */
   const githubAuthChoices = useMemo(
     () => (gitAuths ? authsForHost(gitAuths.auths, GITHUB_HOST) : []),
-    [gitAuths],
+    [gitAuths?.auths],
   );
   /** The account of a saved auth: who edits made with it are committed as. */
   const accountOfAuth = useCallback(

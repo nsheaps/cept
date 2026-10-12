@@ -200,18 +200,23 @@ describe('StartRepoSpaceDialog with several auths (REQ-AUTH-020)', () => {
     expect(createRepo).toHaveBeenCalledWith({ name: 'journal', private: true }, 'b');
   });
 
-  it('shows no picker with a single auth', async () => {
+  it('shows no picker with a single auth, and still starts the space with it', async () => {
+    const onStart = vi.fn(async () => undefined);
     render(
       <StartRepoSpaceDialog
         user={user}
         auths={[auths[0]!]}
         defaultAuthId="a"
         listRepos={async () => [repo('notes')]}
-        onStart={async () => undefined}
+        onStart={onStart}
         onClose={() => undefined}
       />,
     );
-    await screen.findByTestId('repo-picker-item-octo/notes');
+    fireEvent.click(await screen.findByTestId('repo-picker-item-octo/notes'));
     expect(screen.queryByTestId('start-repo-space-auth')).toBeNull();
+    fireEvent.click(screen.getByTestId('start-repo-space-confirm'));
+    await waitFor(() =>
+      expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ authId: 'a' })),
+    );
   });
 });

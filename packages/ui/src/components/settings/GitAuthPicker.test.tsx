@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { GitAuthRecord } from '@cept/core';
-import { GitAuthPicker, authsForHost } from './GitAuthPicker.js';
+import { GitAuthPicker, authsForHost, hostOfRepoUrl } from './GitAuthPicker.js';
 
 function auth(id: string, login: string, extra: Partial<GitAuthRecord> = {}): GitAuthRecord {
   return {
@@ -74,5 +74,17 @@ describe('GitAuthPicker (REQ-AUTH-020)', () => {
       />,
     );
     expect(screen.getByLabelText('Sign in with')).toBeTruthy();
+  });
+});
+
+describe('hostOfRepoUrl (REQ-AUTH-020)', () => {
+  it('reads the host from several URL shapes', () => {
+    expect(hostOfRepoUrl('github.com/u/r')).toBe('github.com');
+    expect(hostOfRepoUrl('https://github.com/u/r')).toBe('github.com');
+    expect(hostOfRepoUrl('https://user:pass@github.com/u/r')).toBe('github.com');
+    expect(hostOfRepoUrl('git@github.com:u/r.git')).toBe('github.com');
+    expect(hostOfRepoUrl('ssh://git@git.example.com:22/u/r')).toBe('git.example.com');
+    expect(hostOfRepoUrl('GitHub.com/u/r')).toBe('github.com');
+    expect(hostOfRepoUrl('')).toBe('');
   });
 });

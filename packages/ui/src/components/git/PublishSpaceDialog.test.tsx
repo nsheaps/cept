@@ -133,6 +133,25 @@ describe('PublishSpaceDialog with several auths (REQ-AUTH-020)', () => {
     );
   });
 
+  it('shows no picker with a single auth, and still publishes with it', async () => {
+    const onPublish = vi.fn(async () => undefined);
+    render(
+      <PublishSpaceDialog
+        spaceName="Notes"
+        login="octo"
+        auths={[authRecord('a', 'octo')]}
+        defaultAuthId="a"
+        onPublish={onPublish}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.queryByTestId('publish-space-auth')).toBeNull();
+    fireEvent.click(screen.getByTestId('publish-space-confirm'));
+    await waitFor(() =>
+      expect(onPublish).toHaveBeenCalledWith(expect.objectContaining({ authId: 'a' })),
+    );
+  });
+
   it('shows no picker and sends no auth without a choice', async () => {
     const onPublish = vi.fn(async () => undefined);
     render(
