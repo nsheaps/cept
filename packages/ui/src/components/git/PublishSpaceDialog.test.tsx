@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { GitAuthRecord } from '@cept/core';
 import {
   PublishSpaceDialog,
   createRepoErrorMessage,
@@ -94,5 +95,76 @@ describe('PublishSpaceDialog', () => {
     );
     expect(onPublish).toHaveBeenCalledWith({ repoName: 'x', private: false });
     expect((screen.getByTestId('publish-space-confirm') as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+function authRecord(id: string, login: string): GitAuthRecord {
+  return {
+    id,
+    host: 'github.com',
+    username: 'x-access-token',
+    label: `@${login}`,
+    status: 'ok',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    account: { login, name: null, avatarUrl: '' },
+    grants: { kind: 'classic', scopes: ['repo'] },
+  };
+}
+
+describe('PublishSpaceDialog with several auths (REQ-AUTH-020)', () => {
+  it('publishes to the account of the chosen auth', async () => {
+    const onPublish = vi.fn(async () => undefined);
+    render(
+      <PublishSpaceDialog
+        spaceName="Notes"
+        login="octo"
+        auths={[authRecord('a', 'octo'), authRecord('b', 'hubot')]}
+        defaultAuthId="a"
+        onPublish={onPublish}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.getByTestId('publish-space-dialog').textContent).toContain('octo');
+    fireEvent.change(screen.getByTestId('publish-space-auth'), { target: { value: 'b' } });
+    expect(screen.getByTestId('publish-space-dialog').textContent).toContain("hubot's account");
+    fireEvent.click(screen.getByTestId('publish-space-confirm'));
+    await waitFor(() =>
+      expect(onPublish).toHaveBeenCalledWith(expect.objectContaining({ authId: 'b' })),
+    );
+  });
+
+  it('shows no picker with a single auth, and still publishes with it', async () => {
+    const onPublish = vi.fn(async () => undefined);
+    render(
+      <PublishSpaceDialog
+        spaceName="Notes"
+        login="octo"
+        auths={[authRecord('a', 'octo')]}
+        defaultAuthId="a"
+        onPublish={onPublish}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.queryByTestId('publish-space-auth')).toBeNull();
+    fireEvent.click(screen.getByTestId('publish-space-confirm'));
+    await waitFor(() =>
+      expect(onPublish).toHaveBeenCalledWith(expect.objectContaining({ authId: 'a' })),
+    );
+  });
+
+  it('shows no picker and sends no auth without a choice', async () => {
+    const onPublish = vi.fn(async () => undefined);
+    render(
+      <PublishSpaceDialog
+        spaceName="Notes"
+        login="octo"
+        onPublish={onPublish}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.queryByTestId('publish-space-auth')).toBeNull();
+    fireEvent.click(screen.getByTestId('publish-space-confirm'));
+    await waitFor(() => expect(onPublish).toHaveBeenCalled());
+    expect(onPublish.mock.calls[0]).toEqual([{ repoName: 'notes', private: true }]);
   });
 });

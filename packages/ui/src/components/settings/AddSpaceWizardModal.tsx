@@ -1,10 +1,14 @@
 import { useState, useCallback } from 'react';
+import type { GitAuthRecord } from '@cept/core';
 import type { SpaceSources } from '../storage/platform.js';
+import { GitAuthPicker, authsForHost, hostOfRepoUrl } from './GitAuthPicker.js';
 
 export interface RemoteSpaceConfig {
   url: string;
   branch: string;
   subPath: string;
+  /** The saved auth the space is added with; absent when none applies to the host. */
+  authId?: string;
 }
 
 export interface AddSpaceWizardModalProps {
@@ -12,6 +16,8 @@ export interface AddSpaceWizardModalProps {
   onClose: () => void;
   onCreateSpace: (name: string) => void;
   onAddRemoteRepo?: (config: RemoteSpaceConfig) => void;
+  /** The saved git auths, to choose the one a Git space is added with. */
+  auths?: readonly GitAuthRecord[];
   /** Opens a folder on disk as a space; the folder option shows only when this is set. */
   onOpenFolder?: () => void;
   /** The kinds of space this device supports (REQ-WS-017); only these are offered. */
@@ -25,6 +31,7 @@ export function AddSpaceWizardModal({
   onClose,
   onCreateSpace,
   onAddRemoteRepo,
+  auths = [],
   onOpenFolder,
   sources,
 }: AddSpaceWizardModalProps) {
@@ -35,6 +42,10 @@ export function AddSpaceWizardModal({
   const [remoteUrl, setRemoteUrl] = useState('github.com/nsheaps/cept');
   const [remoteBranch, setRemoteBranch] = useState('main');
   const [remoteSubPath, setRemoteSubPath] = useState('docs/');
+  const [pickedAuth, setPickedAuth] = useState<string | undefined>();
+  // The auths for the URL's host; the one picked, or else the first saved, is used.
+  const hostAuths = authsForHost(auths, hostOfRepoUrl(remoteUrl));
+  const authId = hostAuths.find((a) => a.id === pickedAuth)?.id ?? hostAuths[0]?.id;
 
   const resetAndClose = useCallback(() => {
     setStep('choose-type');
@@ -42,6 +53,7 @@ export function AddSpaceWizardModal({
     setRemoteUrl('github.com/nsheaps/cept');
     setRemoteBranch('main');
     setRemoteSubPath('docs/');
+    setPickedAuth(undefined);
     onClose();
   }, [onClose]);
 
@@ -58,10 +70,11 @@ export function AddSpaceWizardModal({
         url: remoteUrl.trim(),
         branch: remoteBranch.trim() || 'main',
         subPath: remoteSubPath.trim(),
+        ...(authId ? { authId } : {}),
       });
       resetAndClose();
     }
-  }, [remoteUrl, remoteBranch, remoteSubPath, onAddRemoteRepo, resetAndClose]);
+  }, [remoteUrl, remoteBranch, remoteSubPath, authId, onAddRemoteRepo, resetAndClose]);
 
   const handleOpenFolder = useCallback(() => {
     onOpenFolder?.();
@@ -327,6 +340,15 @@ export function AddSpaceWizardModal({
                     data-testid="wizard-remote-subpath-input"
                   />
                 </div>
+              </div>
+              <div className="cept-wizard-form-row">
+                <GitAuthPicker
+                  auths={hostAuths}
+                  value={authId}
+                  recommendedId={hostAuths[0]?.id}
+                  onChange={setPickedAuth}
+                  testId="wizard-remote-auth"
+                />
               </div>
               <div className="cept-wizard-footer">
                 <button
