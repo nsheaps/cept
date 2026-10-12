@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  convertWikiLinksToMarkdown,
   serializeFrontMatter,
   markdownToHtml,
   wrapHtmlDocument,
@@ -9,29 +8,6 @@ import {
   DEFAULT_CSS,
 } from './exporter.js';
 import type { PageContent } from './exporter.js';
-
-describe('convertWikiLinksToMarkdown', () => {
-  it('converts wiki-links with display text', () => {
-    const result = convertWikiLinksToMarkdown('See [[/pages/note.md|my note]]');
-    expect(result).toBe('See [my note](/pages/note.md)');
-  });
-
-  it('converts wiki-links without display text', () => {
-    const result = convertWikiLinksToMarkdown('See [[/pages/note.md]]');
-    expect(result).toBe('See [note](/pages/note.md)');
-  });
-
-  it('preserves regular markdown links', () => {
-    const result = convertWikiLinksToMarkdown('[link](https://example.com)');
-    expect(result).toBe('[link](https://example.com)');
-  });
-
-  it('handles multiple wiki-links', () => {
-    const result = convertWikiLinksToMarkdown('[[a.md]] and [[b.md]]');
-    expect(result).toContain('[a](a.md)');
-    expect(result).toContain('[b](b.md)');
-  });
-});
 
 describe('serializeFrontMatter', () => {
   it('serializes simple key-value pairs', () => {
@@ -138,7 +114,7 @@ describe('wrapHtmlDocument', () => {
 describe('exportPage', () => {
   const page: PageContent = {
     title: 'My Note',
-    markdown: '# My Note\n\nSee [[other.md|other page]].\n\nSome content.',
+    markdown: '# My Note\n\nSee [other page](other.md).\n\nSome content.',
     frontMatter: { tags: ['test'] },
     path: '/notes/my-note.md',
   };

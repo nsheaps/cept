@@ -28,11 +28,11 @@ describe('buildGraphData', () => {
     expect(parentLinks).toHaveLength(3); // b->a, c->a, e->d
   });
 
-  it('creates mention links', () => {
+  it('creates links from page links', () => {
     const data = buildGraphData(pages);
-    const mentionLinks = data.links.filter((l) => l.type === 'mention');
-    // a links to b,c (2 mentions), b links to c (1 mention), e links to a (1 mention) = 4
-    expect(mentionLinks).toHaveLength(4);
+    const pageLinks = data.links.filter((l) => l.type === 'link');
+    // a links to b,c (2 links), b links to c (1 link), e links to a (1 link) = 4
+    expect(pageLinks).toHaveLength(4);
   });
 
   it('preserves node properties', () => {
@@ -77,8 +77,8 @@ describe('filterByDepth', () => {
     links: [
       { source: 'a', target: 'b', type: 'parent' },
       { source: 'b', target: 'c', type: 'parent' },
-      { source: 'c', target: 'd', type: 'mention' },
-      { source: 'd', target: 'e', type: 'mention' },
+      { source: 'c', target: 'd', type: 'link' },
+      { source: 'd', target: 'e', type: 'link' },
     ],
   };
 
@@ -150,12 +150,12 @@ describe('getLinkTypes', () => {
     const data: GraphData = {
       nodes: [],
       links: [
-        { source: 'a', target: 'b', type: 'mention' },
+        { source: 'a', target: 'b', type: 'link' },
         { source: 'b', target: 'c', type: 'parent' },
-        { source: 'c', target: 'a', type: 'mention' },
+        { source: 'c', target: 'a', type: 'link' },
       ],
     };
-    expect(getLinkTypes(data)).toEqual(['mention', 'parent']);
+    expect(getLinkTypes(data)).toEqual(['link', 'parent']);
   });
 });
 
@@ -169,8 +169,8 @@ describe('filterGraph', () => {
     ],
     links: [
       { source: 'a', target: 'b', type: 'parent' },
-      { source: 'b', target: 'c', type: 'mention' },
-      { source: 'c', target: 'd', type: 'mention' },
+      { source: 'b', target: 'c', type: 'link' },
+      { source: 'c', target: 'd', type: 'link' },
     ],
   };
 
@@ -204,9 +204,9 @@ describe('filterGraph', () => {
   it('combines group and link type filters', () => {
     const result = filterGraph(data, {
       groups: new Set(['work']),
-      linkTypes: new Set(['mention'] as const),
+      linkTypes: new Set(['link'] as const),
     });
     expect(result.nodes).toHaveLength(3); // a, c, d
-    expect(result.links).toHaveLength(1); // c->d mention
+    expect(result.links).toHaveLength(1); // c->d link
   });
 });

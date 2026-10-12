@@ -54,9 +54,9 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-015](#req-edt-015--gfm-footnotes)                                                       | GFM footnotes                                                            | MUST     | partial     | undocumented           | n/a           |
 | [REQ-EDT-016](#req-edt-016--footnotes-for-repeated-information)                                  | Footnotes for repeated information                                       | MUST     | partial     | undocumented           | n/a           |
 | [REQ-EDT-017](#req-edt-017--wiki-link-crosslinks-between-files)                                  | `[[wiki-link]]` crosslinks between files                                 | MUST     | not-started | documented-as-desired  | stale         |
-| [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)                  | Graph builder extracts crosslinks from space files                       | MUST     | not-started | documented-as-desired  | stale         |
+| [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)                  | Graph builder extracts crosslinks from space files                       | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-019](#req-edt-019--browsable-obsidian-style-graph-view-in-the-app)                      | Browsable Obsidian-style graph view in the app                           | MUST     | stubbed     | documented-as-desired  | stale         |
-| [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model)                                  | Single consistent graph data model                                       | SHOULD   | divergent   | documented-differently | stale         |
+| [REQ-EDT-020](#req-edt-020--single-consistent-graph-data-model)                                  | Single consistent graph data model                                       | SHOULD   | implemented | documented-as-desired  | accurate      |
 | [REQ-EDT-021](#req-edt-021--backlinks-panel)                                                     | Backlinks panel                                                          | SHOULD   | not-started | documented-as-desired  | accurate      |
 | [REQ-EDT-022](#req-edt-022--html-fallback-for-blocks-with-no-markdown-representation)            | HTML fallback for blocks with no Markdown representation                 | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-023](#req-edt-023--unknown-raw-html-and-unsupported-syntax-preserved-without-data-loss) | Unknown/raw HTML and unsupported syntax preserved without data loss      | MUST     | implemented | undocumented           | n/a           |
@@ -510,11 +510,11 @@ flowchart TD
 - The builder reads through StorageBackend and updates incrementally when a page is saved.
 - It runs off the main thread for large spaces (Web Worker), with a benchmark test.
 
-**Current state:** not-started. [core/src/graph/index.ts](../../../packages/core/src/graph/index.ts) contains only types. [graph-types.ts](../../../packages/ui/src/components/knowledge-graph/graph-types.ts) line 31 `buildGraphData()` takes precomputed links. Nothing parses page content.
+**Current state:** partial (PR 53). [links.ts](../../../packages/core/src/graph/links.ts) `extractLinks()` reads every standard Markdown link in a page with remark (inline and reference-style; not code, math, images, inline HTML or front matter), and `resolveLink()` turns a URL into a page path in the space (relative or `/`-rooted, `..`, percent-decoding, anchors; web, `mailto:` and non-page targets are not links to pages). [link-graph.ts](../../../packages/core/src/graph/link-graph.ts) `buildLinkGraph()` and `readLinkGraph()` return the graph (a node per page, a `link` edge per linked pair, an `unresolved` node per dead target) and the list of references with text and offsets, and `backlinksOf()` lists the pages linking to a page. Hidden paths (dotfiles, `.git/`, `.cept/`, `ignore:` patterns) are dropped, not shown as dead (D-41). Tested over fixture pages and a `MemoryBackend` space.
 
-**Docs:** documented-as-desired but stale. SPEC §5.8 describes a builder that scans all pages. [knowledge-graph.md](../knowledge-graph.md) lists MarkdownParser as a dependency. [features.md](../../content/guides/features.md) presents the graph as available.
+**Docs:** documented-as-desired, accurate. SPEC §5.8 and [knowledge-graph.md](../knowledge-graph.md) still describe wiki-links, mentions and tags for the builder.
 
-**Gap:** Implement the builder in core, with tests.
+**Gap:** Mentions (PR 58) and tags are not edges yet. The builder does not update incrementally on save and does not run in a Web Worker; the graph view (PR 57) and backlinks (PR 56) are not wired to it.
 
 **Related:** TASKS P4.1.
 
@@ -554,11 +554,11 @@ flowchart TD
 - The UI graph components import their types from `@cept/core`.
 - Node types (page, tag, attachment, unresolved) and edge types (link, mention, tag, relation) are rendered distinctly.
 
-**Current state:** divergent. Core `GraphData` is `{nodes, edges}` with edge types `link|mention|tag|relation` and node types `page|tag|attachment|unresolved`. UI `GraphData` is `{nodes, links}` with link types `parent|mention|backlink` and no node type ([graph-types.ts](../../../packages/ui/src/components/knowledge-graph/graph-types.ts) lines 1-21).
+**Current state:** implemented (PR 53). Core owns the one model ([model.ts](../../../packages/core/src/graph/model.ts)): `GraphNode` (`id`, `title`, `icon`, `group`, `unresolved`), `GraphLink` (`source`, `target`, `type`) and `GraphData` `{nodes, links}`, with link types `link` and `parent`. The UI graph components import these from `@cept/core` and add only layout state ([graph-types.ts](../../../packages/ui/src/components/knowledge-graph/graph-types.ts)). Unresolved nodes are marked `unresolved`. The page id is the path-based id of the space tree, so the root page is the empty string.
 
-**Docs:** documented-differently and stale. SPEC §5.8 and [knowledge-graph.md](../knowledge-graph.md) define only the core model.
+**Docs:** documented-as-desired, accurate. SPEC §5.8 and [knowledge-graph.md](../knowledge-graph.md) still describe the old core model (`edges`, node types, `mention`/`tag`/`relation` edges).
 
-**Gap:** Unify on the core model, or document a mapping.
+**Gap:** Mention edges arrive with PR 58, and tags and attachments are not nodes. The views draw unresolved nodes without a distinct style until PR 57.
 
 **Related:** none.
 

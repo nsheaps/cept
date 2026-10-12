@@ -3,7 +3,7 @@
  *
  * Provides a unified export pipeline:
  * 1. Read page content from StorageBackend
- * 2. Process wiki-links and embedded assets
+ * 2. Process embedded assets
  * 3. Convert to target format (Markdown, HTML, PDF)
  * 4. Package output (single file or ZIP for multi-page)
  */
@@ -70,19 +70,6 @@ th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
 th { background: #f5f5f5; }
 img { max-width: 100%; }
 `.trim();
-
-/**
- * Convert wiki-links [[path|text]] back to standard markdown links.
- */
-export function convertWikiLinksToMarkdown(content: string): string {
-  return content.replace(
-    /\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g,
-    (_match, path: string, text: string | undefined) => {
-      const displayText = text ?? path.split('/').pop()?.replace(/\.md$/, '') ?? path;
-      return `[${displayText}](${encodeURI(path)})`;
-    },
-  );
-}
 
 /**
  * Serialize front matter to YAML format.
@@ -195,7 +182,7 @@ export function exportPage(page: PageContent, options: ExportOptions): ExportedF
 
   switch (options.format) {
     case 'markdown': {
-      let content = convertWikiLinksToMarkdown(page.markdown);
+      let content = page.markdown;
       if (options.includeFrontMatter !== false && page.frontMatter) {
         content = serializeFrontMatter(page.frontMatter) + '\n\n' + content;
       }
@@ -206,8 +193,7 @@ export function exportPage(page: PageContent, options: ExportOptions): ExportedF
       };
     }
     case 'html': {
-      const mdContent = convertWikiLinksToMarkdown(page.markdown);
-      const bodyHtml = markdownToHtml(mdContent);
+      const bodyHtml = markdownToHtml(page.markdown);
       const html = wrapHtmlDocument(title, bodyHtml, options.customCss);
       return {
         filename: `${sanitizeFilename(title)}.html`,
@@ -218,8 +204,7 @@ export function exportPage(page: PageContent, options: ExportOptions): ExportedF
     case 'pdf': {
       // PDF export generates HTML that can be printed to PDF by the caller
       // (browser print, puppeteer, etc.)
-      const mdContent = convertWikiLinksToMarkdown(page.markdown);
-      const bodyHtml = markdownToHtml(mdContent);
+      const bodyHtml = markdownToHtml(page.markdown);
       const pdfCss = (options.customCss ?? DEFAULT_CSS) + '\n@media print { body { margin: 0; } }';
       const html = wrapHtmlDocument(title, bodyHtml, pdfCss);
       return {
