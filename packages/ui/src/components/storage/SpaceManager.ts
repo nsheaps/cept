@@ -42,6 +42,7 @@ import {
   previewMoveToRootLinks,
   previewRenameForeignLinks,
   previewRenameLinks,
+  readFolderBacklinks,
   readFolderFile,
   readFolderPage,
   readFolderTree,
@@ -50,7 +51,7 @@ import {
   toPageTree,
   writeFolderPage,
 } from './folder-space.js';
-import type { FolderChange, LinkRewritePreview } from './folder-space.js';
+import type { Backlink, FolderChange, LinkRewritePreview } from './folder-space.js';
 import {
   BACKUP_DIR,
   confirmFlatMigration,
@@ -965,6 +966,16 @@ export class SpaceManager {
    */
   readSpaceFile(id: string, path: string): Promise<Uint8Array | null> {
     return this.isFolder(id) ? readFolderFile(this.store(id).backend, path) : Promise.resolve(null);
+  }
+
+  /**
+   * For each page of a folder space that other pages link to, the pages linking
+   * to it; empty for other spaces.
+   */
+  readBacklinks(id: string): Promise<Map<string, Backlink[]>> {
+    return this.isFolder(id)
+      ? readFolderBacklinks(this.store(id).backend)
+      : Promise.resolve(new Map());
   }
 
   writePage(id: string, pageId: string, content: string): Promise<void> {

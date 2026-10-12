@@ -322,6 +322,51 @@ describe('App folder spaces', () => {
     expect(writes).toEqual([]);
   });
 
+  it('lists the pages that link to the open page, and opens one when clicked (EDT-020)', async () => {
+    const folder = notesFolder();
+    folder.seedText('Welcome.md', '# Welcome\n\nHello from a folder.\n');
+    folder.seedText('Guides/Setup.md', '# Setup\n\nBack to the [start page](../Welcome.md).\n');
+    const { host, next } = fakeHost(new Map([['notes', folder]]));
+    next.handle = folderHandle('notes');
+    renderApp(new MemoryBackend(), host);
+
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    const [item] = await screen.findAllByText('Welcome', {}, { timeout: 3000 });
+    fireEvent.click(item!);
+    await screen.findByText('Hello from a folder.', {}, { timeout: 3000 });
+
+    const backlink = await screen.findByTestId('backlink-Guides/Setup.md', {}, { timeout: 3000 });
+    expect(backlink.textContent).toContain('Setup');
+    expect(backlink.textContent).toContain('start page');
+    fireEvent.click(backlink);
+    expect(await screen.findByText(/Back to the/, {}, { timeout: 3000 })).toBeDefined();
+  });
+
+  it('finds a page by the text other pages link to it with', async () => {
+    const folder = notesFolder();
+    folder.seedText(
+      'Guides/Setup.md',
+      '# Setup\n\nRead the [onboarding checklist](../Welcome.md).\n',
+    );
+    const { host, next } = fakeHost(new Map([['notes', folder]]));
+    next.handle = folderHandle('notes');
+    renderApp(new MemoryBackend(), host);
+
+    fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    const [item] = await screen.findAllByText('Welcome', {}, { timeout: 3000 });
+    fireEvent.click(item!);
+    await screen.findByTestId('backlink-Guides/Setup.md', {}, { timeout: 3000 });
+
+    fireEvent.click(screen.getByTestId('sidebar-search'));
+    fireEvent.change(await screen.findByTestId('search-input'), {
+      target: { value: 'onboarding' },
+    });
+    // "Welcome" never says "onboarding"; the page that links to it does.
+    expect(
+      await screen.findByTestId('search-result-Welcome.md', {}, { timeout: 3000 }),
+    ).toBeDefined();
+  });
+
   it('opens a space found in a subfolder', async () => {
     const repo = new MemoryBackend();
     repo.seedText('README.md', '# repo\n');

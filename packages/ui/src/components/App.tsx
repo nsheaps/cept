@@ -41,6 +41,8 @@ import { LandingPage } from './landing/LandingPage.js';
 import { AppMenu } from './app-menu/AppMenu.js';
 import { FolderView } from './editor/FolderView.js';
 import { ForeignFilePreview } from './preview/ForeignFilePreview.js';
+import { BacklinksPanel } from './backlinks/BacklinksPanel.js';
+import type { Backlink } from './storage/folder-space.js';
 import { ImportDialog } from './import-export/ImportDialog.js';
 import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
@@ -371,6 +373,9 @@ export function App() {
   const [editorVersion, setEditorVersion] = useState(0);
   /** Bumped when a sync changed the space's files, so an open file preview reads its file again. */
   const [filesVersion, setFilesVersion] = useState(0);
+  // Bumped when a page is written, so the backlinks are read again.
+  const [linksVersion, setLinksVersion] = useState(0);
+  const [backlinkIndex, setBacklinkIndex] = useState<Map<string, Backlink[]>>(() => new Map());
   /** Edits and commits of writable GitHub spaces not on GitHub yet, read while settings are open. */
   const [unsyncedChanges, setUnsyncedChanges] = useState<Record<string, number>>({});
   const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
@@ -413,7 +418,10 @@ export function App() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     const pending = pendingWriteRef.current;
     pendingWriteRef.current = undefined;
-    if (pending) await currentWritePage(pending.pageId, pending.content);
+    if (pending) {
+      await currentWritePage(pending.pageId, pending.content);
+      setLinksVersion((v) => v + 1);
+    }
   }, [currentWritePage]);
 
   /**
@@ -1547,6 +1555,27 @@ export function App() {
     [selectedPageId, flushPendingWrite, addToast],
   );
 
+  // Read the space's links again after the tree, the files or a page changes.
+  useEffect(() => {
+    if (activeSpace !== 'user' || !spaces.isFolder(userSpaceId)) {
+      setBacklinkIndex((prev) => (prev.size === 0 ? prev : new Map()));
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      spaces
+        .readBacklinks(userSpaceId)
+        .then((index) => {
+          if (!cancelled) setBacklinkIndex(index);
+        })
+        .catch(() => undefined);
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeSpace, spaces, userSpaceId, pages, filesVersion, linksVersion]);
+
   // Keep search index in sync with page content
   const indexedRef = useRef(new Set<string>());
   useEffect(() => {
@@ -1559,7 +1588,14 @@ export function App() {
       const md = pageContents[page.id];
       if (md !== undefined) {
         const plainText = md.replace(/[#*_~`>\[\]()|-]/g, '');
-        void idx.indexPage(page.id, page.title, plainText, page.title);
+        // The text other pages link to this one with is part of what finds it.
+        const linkedAs = (backlinkIndex.get(page.id) ?? []).flatMap((b) => b.snippets).join(' ');
+        void idx.indexPage(
+          page.id,
+          page.title,
+          linkedAs ? `${plainText}\n${linkedAs}` : plainText,
+          page.title,
+        );
         indexedRef.current.add(page.id);
       }
     }
@@ -1571,7 +1607,7 @@ export function App() {
         indexedRef.current.delete(id);
       }
     }
-  }, [pages, pageContents]);
+  }, [pages, pageContents, backlinkIndex]);
 
   const handleSearch = useCallback(async (query: string): Promise<SearchResult[]> => {
     if (!query.trim()) return [];
@@ -3287,6 +3323,10 @@ export function App() {
               {selectedNode.children.length > 0 && (
                 <FolderView children={selectedNode.children} onPageSelect={handlePageSelect} />
               )}
+              <BacklinksPanel
+                backlinks={backlinkIndex.get(selectedPageId) ?? []}
+                onNavigate={handleLinkNavigate}
+              />
             </>
           ) : (
             <div className="cept-empty-state" data-testid="empty-state">

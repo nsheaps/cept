@@ -164,6 +164,35 @@ test.describe('Open a local folder as a space', () => {
     expect(files['Guides/Install.md']).toBe(FILES['Guides/Setup.md']);
     expect(files['Guides/Setup.md']).toBeUndefined();
   });
+  test('shows the pages that link to the open page', async ({ page }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+    await page.evaluate(async () => {
+      const root = await navigator.storage.getDirectory();
+      const folder = await root.getDirectoryHandle('field-notes');
+      const guides = await folder.getDirectoryHandle('Guides');
+      const file = await guides.getFileHandle('Setup.md', { create: true });
+      const writable = await file.createWritable();
+      await writable.write('# Setup\n\nBack to the [start page](../Welcome.md).\n');
+      await writable.close();
+    });
+
+    await page.getByTestId('landing-open-folder').click();
+    await page.getByTestId('page-tree-button-Welcome.md').click({ timeout: 10000 });
+    const backlink = page.getByTestId('backlink-Guides/Setup.md');
+    await expect(backlink).toBeVisible({ timeout: 10000 });
+    await expect(backlink).toContainText('start page');
+    await captureScreenshot(page, {
+      name: 'backlinks-panel',
+      category: 'features',
+      selector: '[data-testid="backlinks-panel"]',
+    });
+
+    await backlink.click();
+    await expect(page.locator('.cept-editor')).toContainText('Back to the', { timeout: 10000 });
+  });
+
   test('deleting a file that is not a page asks first', async ({ page }) => {
     await mockPicker(page);
     await page.goto('/');

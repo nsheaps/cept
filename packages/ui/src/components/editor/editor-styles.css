@@ -1230,3 +1230,42 @@
   min-height: 2rem;
   min-width: 2rem;
 }
+
+.cept-backlinks {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cept-border, #e5e5e5);
+}
+.cept-backlinks-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cept-text-muted, #6b7280);
+  margin-bottom: 0.5rem;
+}
+.cept-backlinks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cept-backlink {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border-radius: 4px;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.cept-backlink:hover {
+  background: var(--cept-hover, rgba(0, 0, 0, 0.05));
+}
+.cept-backlink-title {
+  font-weight: 500;
+}
+.cept-backlink-snippets {
+  font-size: 0.8rem;
+  color: var(--cept-text-muted, #6b7280);
+}
