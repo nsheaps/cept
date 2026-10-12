@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.35.0](https://github.com/nsheaps/cept/compare/v0.34.1...v0.35.0) (2026-10-12)
+
+### Features
+
+* **editor:** add a fenced-block plugin interface ([#425](https://github.com/nsheaps/cept/issues/425)) ([21db9d6](https://github.com/nsheaps/cept/commit/21db9d6cdb25a338ab6eae10ff2896cab70d25c7))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([b41f008](https://github.com/nsheaps/cept/commit/b41f008e18863c099b859e3283324e49e58475fd))
+
 ## [0.34.1](https://github.com/nsheaps/cept/compare/v0.34.0...v0.34.1) (2026-10-12)
 
 ### Documentation
