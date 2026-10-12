@@ -116,6 +116,62 @@ describe('parseMarkdownDocument: inline content', () => {
       attrs: { markdown: '![i](i.png)' },
     });
   });
+
+  it('reads <u> and <mark> pairs as underline and highlight, and writes them back', () => {
+    const inline = block('a <u>under **bold**</u> <mark data-color="#ff0">hi</mark>').content;
+    expect(inline).toEqual([
+      { type: 'text', text: 'a ' },
+      { type: 'text', text: 'under ', marks: [{ type: 'underline' }] },
+      { type: 'text', text: 'bold', marks: [{ type: 'underline' }, { type: 'bold' }] },
+      { type: 'text', text: ' ' },
+      { type: 'text', text: 'hi', marks: [{ type: 'highlight', attrs: { color: '#ff0' } }] },
+    ]);
+    for (const markdown of [
+      'a <u>b <mark>c</mark></u> d\n',
+      '<u>x</u> <mark data-color="red">y</mark>\n',
+    ]) {
+      expect(rewrite(markdown)).toBe(markdown);
+    }
+    // Written fresh, marks nest in a fixed order; the text and marks are unchanged.
+    const mixed = 'a <u>under **bold**</u>\n';
+    expect(rewrite(mixed)).toBe('a <u>under </u>**<u>bold</u>**\n');
+    const marks = (markdown: string) =>
+      block(markdown).content?.map((node) => [node.text, node.marks?.map((m) => m.type).sort()]);
+    expect(marks(rewrite(mixed))).toEqual(marks(mixed));
+  });
+
+  it('adds one mark for a tag nested in itself', () => {
+    expect(block('<u>a <u>b</u></u>').content).toEqual([
+      { type: 'text', text: 'a b', marks: [{ type: 'underline' }] },
+    ]);
+  });
+
+  it('keeps unpaired or unknown tags raw', () => {
+    expect(block('a <u>open').content).toContainEqual({
+      type: 'rawInline',
+      attrs: { markdown: '<u>' },
+    });
+    expect(block('a <U>x</U>').content).toContainEqual({
+      type: 'rawInline',
+      attrs: { markdown: '<U>' },
+    });
+  });
+
+  it('writes underline and highlight made in the editor', () => {
+    const doc: PmNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'u', marks: [{ type: 'underline' }] },
+            { type: 'text', text: 'h', marks: [{ type: 'highlight', attrs: { color: null } }] },
+          ],
+        },
+      ],
+    };
+    expect(serializeMarkdownDocument(doc)).toBe('<u>u</u><mark>h</mark>\n');
+  });
 });
 
 describe('math', () => {

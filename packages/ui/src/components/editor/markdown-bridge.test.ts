@@ -62,6 +62,16 @@ describe('loadMarkdown / saveMarkdown', () => {
     editor.destroy();
   });
 
+  it('keeps underline and highlight, which Markdown writes as HTML', () => {
+    const { editor, save } = open('Some <u>under</u> and <mark>marked</mark> text.\n');
+    const marks = editor.getJSON().content?.[0]?.content?.flatMap((node) => node.marks ?? []);
+    expect(marks?.map((mark) => mark.type)).toEqual(['underline', 'highlight']);
+    editor.commands.setTextSelection({ from: 1, to: 5 });
+    editor.commands.toggleUnderline();
+    expect(save()).toBe('<u>Some</u> <u>under</u> and <mark>marked</mark> text.\n');
+    editor.destroy();
+  });
+
   it('gives an empty page a paragraph to type in', () => {
     expect(loadMarkdown('').doc.content).toEqual([{ type: 'paragraph' }]);
   });

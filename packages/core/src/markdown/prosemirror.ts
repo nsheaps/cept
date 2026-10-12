@@ -286,8 +286,21 @@ function inlineFrom(nodes: readonly PhrasingContent[], src: string, marks: PmMar
     if (marks.length > 0) node.marks = [...marks];
     out.push(node);
   };
-  for (const node of nodes) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]!;
     const text = sourceOf(node, src);
+    if (node.type === 'html') {
+      const close = htmlMarkClose(nodes, i);
+      if (close) {
+        // A tag nested in the same tag (`<u><u>x</u></u>`) adds no second mark.
+        const inner = marks.some((mark) => mark.type === close.mark.type)
+          ? marks
+          : [...marks, close.mark];
+        out.push(...inlineFrom(nodes.slice(i + 1, close.at), src, inner));
+        i = close.at;
+        continue;
+      }
+    }
     switch (node.type) {
       case 'text':
         if (node.value) push({ type: 'text', text: node.value });
@@ -334,6 +347,56 @@ function inlineFrom(nodes: readonly PhrasingContent[], src: string, marks: PmMar
     }
   }
   return mergeText(out);
+}
+
+/**
+ * Marks Markdown has no syntax for, written as HTML tags (`<u>`, `<mark>`).
+ * Only the exact tags the bridge writes are read back as marks; any other
+ * HTML stays `rawInline`.
+ */
+const HTML_MARKS: {
+  type: string;
+  open: RegExp;
+  close: string;
+  attrs: (match: RegExpExecArray) => Record<string, unknown> | undefined;
+  write: (mark: PmMark) => string;
+}[] = [
+  { type: 'underline', open: /^<u>$/, close: '</u>', attrs: () => undefined, write: () => '<u>' },
+  {
+    type: 'highlight',
+    open: /^<mark(?: data-color="([^"<>]*)")?>$/,
+    close: '</mark>',
+    attrs: (match) => (match[1] ? { color: match[1] } : undefined),
+    write: (mark) =>
+      typeof mark.attrs?.color === 'string' && mark.attrs.color
+        ? `<mark data-color="${mark.attrs.color.replace(/["<>]/g, '')}">`
+        : '<mark>',
+  },
+];
+
+/** If `nodes[at]` opens an HTML mark closed later among its siblings, the mark and the close. */
+function htmlMarkClose(
+  nodes: readonly PhrasingContent[],
+  at: number,
+): { mark: PmMark; at: number } | undefined {
+  const open = nodes[at];
+  if (open?.type !== 'html') return undefined;
+  for (const kind of HTML_MARKS) {
+    const match = kind.open.exec(open.value);
+    if (!match) continue;
+    let depth = 0;
+    for (let i = at + 1; i < nodes.length; i++) {
+      const node = nodes[i]!;
+      if (node.type !== 'html') continue;
+      if (kind.open.test(node.value)) depth++;
+      else if (node.value === kind.close && depth-- === 0) {
+        const attrs = kind.attrs(match);
+        return { mark: attrs ? { type: kind.type, attrs } : { type: kind.type }, at: i };
+      }
+    }
+    return undefined;
+  }
+  return undefined;
 }
 
 /**
@@ -561,10 +624,18 @@ function tableTo(node: PmNode): Table {
 
 /**
  * The marks the bridge writes, outermost first; `code` is handled separately.
- * This is an allowlist: any other mark (highlight, underline, ...) is dropped
- * on save until it is added here or kept as `rawInline`.
+ * This is an allowlist: any other mark is dropped on save until it is added
+ * here or kept as `rawInline`.
  */
-const MARK_ORDER = ['link', 'bold', 'italic', 'strike'];
+const MARK_ORDER = ['link', 'bold', 'italic', 'strike', 'underline', 'highlight'];
+
+/** Stands in for an HTML mark while phrasing content is nested; see `expandHtmlMarks`. */
+interface HtmlMarkWrap {
+  type: 'cept-html-mark';
+  open: string;
+  close: string;
+  children: PhrasingContent[];
+}
 
 function markRank(mark: PmMark): number {
   const rank = MARK_ORDER.indexOf(mark.type);
@@ -588,9 +659,38 @@ function markTo(mark: PmMark): PhrasingContent & Parents {
       return withStyle({ type: 'strong', children: [] }, { marker });
     case 'italic':
       return withStyle({ type: 'emphasis', children: [] }, { marker });
+    case 'underline':
+    case 'highlight': {
+      const kind = HTML_MARKS.find((candidate) => candidate.type === mark.type)!;
+      const wrap: HtmlMarkWrap = {
+        type: 'cept-html-mark',
+        open: kind.write(mark),
+        close: kind.close,
+        children: [],
+      };
+      return wrap as unknown as PhrasingContent & Parents;
+    }
     default:
       return { type: 'delete', children: [] };
   }
+}
+
+/** Replace each HTML mark wrapper with its opening tag, children and closing tag. */
+function expandHtmlMarks(nodes: PhrasingContent[]): PhrasingContent[] {
+  return nodes.flatMap((node): PhrasingContent[] => {
+    const wrap = node as unknown as HtmlMarkWrap;
+    if (wrap.type === 'cept-html-mark') {
+      return [
+        { type: 'html', value: wrap.open },
+        ...expandHtmlMarks(wrap.children),
+        { type: 'html', value: wrap.close },
+      ];
+    }
+    if ('children' in node) {
+      (node as Parents).children = expandHtmlMarks(node.children as PhrasingContent[]) as never;
+    }
+    return [node];
+  });
 }
 
 /** Rebuild nested phrasing content from text nodes carrying flat marks. */
@@ -644,5 +744,5 @@ function inlineTo(nodes: readonly PmNode[]): PhrasingContent[] {
         parent.push(...inlineTo(node.content ?? []));
     }
   }
-  return root;
+  return expandHtmlMarks(root);
 }

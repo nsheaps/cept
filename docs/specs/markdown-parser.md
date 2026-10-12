@@ -19,6 +19,7 @@ FR-1: Parse CommonMark + GFM (headings, lists, code, quotes, links, images, tabl
 FR-2: Keep front matter byte for byte when it is not edited ([front-matter.ts](../../packages/core/src/markdown/front-matter.ts)).
 FR-3: Load Cept's own blocks from their HTML encoding (callout, toggle, columns, embed, bookmark, image figure; [html-blocks.ts](../../packages/core/src/markdown/html-blocks.ts)) and annotated fences (mermaid) through fenced-block plugins.
 FR-4: Save an unedited page byte for byte, and write only edited or new blocks through remark-stringify.
+FR-4a: Write underline and highlight, which Markdown has no syntax for, as `<u>…</u>` and `<mark>…</mark>` (`<mark data-color="…">` for a colour), and read those exact tag pairs back as marks.
 FR-5: Keep Markdown the pipeline does not model (unknown HTML, comments, reference definitions) as `rawBlock`/`rawInline` source.
 
 ### Non-Functional Requirements
