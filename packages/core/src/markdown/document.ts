@@ -15,6 +15,7 @@
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import remarkStringify from 'remark-stringify';
 import type { Options as StringifyOptions } from 'remark-stringify';
 import { defaultHandlers } from 'mdast-util-to-markdown';
@@ -37,7 +38,7 @@ export interface MarkdownDocument {
   sources: string[];
 }
 
-const parser = unified().use(remarkParse).use(remarkGfm);
+const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 
 /** Parse a page into a ProseMirror document. */
 export function parseMarkdownDocument(markdown: string): MarkdownDocument {
@@ -179,7 +180,7 @@ const handlers: StringifyOptions['handlers'] = {
   },
 };
 
-const stringifier = unified().use(remarkGfm).use(remarkStringify, {
+const stringifier = unified().use(remarkGfm).use(remarkMath).use(remarkStringify, {
   bullet: '-',
   emphasis: '*',
   strong: '*',

@@ -72,9 +72,9 @@ describe('parseMarkdownDocument: blocks', () => {
       type: 'rawBlock',
       attrs: { markdown: '<section class="x">x</section>' },
     });
-    expect(block('[^1]: A note.\n')).toEqual({
+    expect(block('[a]: https://a.example\n')).toEqual({
       type: 'rawBlock',
-      attrs: { markdown: '[^1]: A note.' },
+      attrs: { markdown: '[a]: https://a.example' },
     });
   });
 });
@@ -108,13 +108,98 @@ describe('parseMarkdownDocument: inline content', () => {
   it('maps hard breaks and keeps inline HTML and references raw', () => {
     expect(block('a\\\nb').content?.[1]).toEqual({ type: 'hardBreak' });
     expect(block('a  \nb').content?.[1]).toEqual({ type: 'hardBreak', attrs: { spaces: true } });
-    const inline = block('a <b>x</b> [^1]\n\n[^1]: n\n').content;
+    const inline = block('a <b>x</b> [y][r]\n\n[r]: https://a.example\n').content;
     expect(inline).toContainEqual({ type: 'rawInline', attrs: { markdown: '<b>' } });
-    expect(inline).toContainEqual({ type: 'rawInline', attrs: { markdown: '[^1]' } });
+    expect(inline).toContainEqual({ type: 'rawInline', attrs: { markdown: '[y][r]' } });
     expect(block('a ![i](i.png)').content?.[1]).toEqual({
       type: 'rawInline',
       attrs: { markdown: '![i](i.png)' },
     });
+  });
+});
+
+describe('math', () => {
+  it('maps $..$ and $$ blocks to the KaTeX nodes', () => {
+    expect(block('a $x^2$ b').content?.[1]).toEqual({
+      type: 'inlineMath',
+      attrs: { content: 'x^2' },
+    });
+    expect(block('$$\n\\frac{1}{2}\n$$\n')).toEqual({
+      type: 'mathBlock',
+      attrs: { content: '\\frac{1}{2}' },
+    });
+    expect(block('$$ label\nx\n$$\n').attrs).toEqual({ content: 'x', meta: 'label' });
+  });
+
+  it('writes edited and new math with dollars', () => {
+    const doc: PmNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Area ' },
+            { type: 'inlineMath', attrs: { content: '\\pi r^2' } },
+          ],
+        },
+        { type: 'mathBlock', attrs: { content: 'a$$b' } },
+      ],
+    };
+    expect(serializeMarkdownDocument(doc)).toBe('Area $\\pi r^2$\n\n$$$\na$$b\n$$$\n');
+  });
+
+  it('keeps prices as text, not math', () => {
+    for (const markdown of [
+      'It costs $5 and $10.',
+      'From $ 1 to $ 2',
+      'Pay $5, get $',
+      'Up $3$4',
+    ]) {
+      const content = block(markdown).content ?? [];
+      expect(content, markdown).toEqual([{ type: 'text', text: markdown }]);
+    }
+    expect(rewrite('It costs $5 and $10.')).toBe('It costs \\$5 and \\$10.\n');
+    expect(block(rewrite('It costs $5 and $10.')).content).toEqual([
+      { type: 'text', text: 'It costs $5 and $10.' },
+    ]);
+  });
+});
+
+describe('footnotes', () => {
+  const page = 'One.[^n] Two.[^n]\n\n[^n]: Shared *note*.\n';
+
+  it('maps references and the definition they share (EDT-016)', () => {
+    const [paragraph, definition] = blocks(page);
+    const references = paragraph?.content?.filter((node) => node.type === 'footnoteReference');
+    expect(references).toEqual([
+      { type: 'footnoteReference', attrs: { identifier: 'n', label: 'n' } },
+      { type: 'footnoteReference', attrs: { identifier: 'n', label: 'n' } },
+    ]);
+    expect(definition).toMatchObject({
+      type: 'footnoteDefinition',
+      attrs: { identifier: 'n', label: 'n' },
+      content: [{ type: 'paragraph' }],
+    });
+  });
+
+  it('writes an edited definition once and keeps every reference', () => {
+    const parsed = parseMarkdownDocument(page);
+    const [paragraph, definition] = parsed.doc.content!;
+    const edited: PmNode = {
+      type: 'doc',
+      content: [
+        paragraph!,
+        {
+          ...definition!,
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'New.' }] }],
+        },
+      ],
+    };
+    expect(serializeMarkdownDocument(edited, parsed)).toBe('One.[^n] Two.[^n]\n\n[^n]: New.\n');
+  });
+
+  it('keeps the label as written', () => {
+    expect(rewrite('A[^Note]\n\n[^Note]: x\n')).toBe('A[^Note]\n\n[^Note]: x\n');
   });
 });
 
