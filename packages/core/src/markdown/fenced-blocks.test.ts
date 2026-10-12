@@ -56,6 +56,14 @@ describe('claimFencedBlocks', () => {
   });
 });
 
+describe('without plugins', () => {
+  it('returns the document unchanged', () => {
+    const { doc } = parseMarkdownDocument('```shout\nhey\n```\n');
+    expect(claimFencedBlocks(doc, [])).toBe(doc);
+    expect(releaseFencedBlocks(doc, [])).toBe(doc);
+  });
+});
+
 describe('fenced-block round trip', () => {
   it('saves an unedited plugin block byte for byte', () => {
     for (const source of [

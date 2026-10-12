@@ -30,4 +30,4 @@ export {
 } from './slash-command.js';
 export type { SlashCommandItem, SlashCommandOptions } from './slash-command.js';
 export { createFencedBlockExtension } from './fenced-block.js';
-export type { FencedBlockEditorPlugin } from './fenced-block.js';
+export type { FencedBlockEditorPlugin, FencedBlockInfo } from './fenced-block.js';

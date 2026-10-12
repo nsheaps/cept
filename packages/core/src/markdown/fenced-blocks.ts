@@ -28,7 +28,11 @@ export interface FencedBlockPlugin {
   claims(language: string, meta: string | null): boolean;
 }
 
-/** The plugin node for a fence with this body (for inserting new blocks). */
+/**
+ * The plugin node for a new block with this body. It is written as a backtick
+ * fence; the caller passes a `language` its plugin claims (otherwise the block
+ * loads back as a plain code block).
+ */
 export function fencedBlockNode(
   plugin: FencedBlockPlugin,
   language: string,
@@ -37,7 +41,10 @@ export function fencedBlockNode(
   return { type: plugin.name, attrs: { language, fence: '```', source } };
 }
 
-/** Turn every `codeBlock` a plugin claims into that plugin's node. */
+/**
+ * Turn every `codeBlock` a plugin claims into that plugin's node. When several
+ * plugins claim a fence, the first in `plugins` wins.
+ */
 export function claimFencedBlocks(doc: PmNode, plugins: readonly FencedBlockPlugin[]): PmNode {
   if (plugins.length === 0) return doc;
   return mapNodes(doc, (node) => {
@@ -54,8 +61,8 @@ export function claimFencedBlocks(doc: PmNode, plugins: readonly FencedBlockPlug
 
 /** Turn every plugin node back into the `codeBlock` it is saved as. */
 export function releaseFencedBlocks(doc: PmNode, plugins: readonly FencedBlockPlugin[]): PmNode {
+  if (plugins.length === 0) return doc;
   const names = new Set(plugins.map((plugin) => plugin.name));
-  if (names.size === 0) return doc;
   return mapNodes(doc, (node) => {
     if (!names.has(node.type)) return node;
     const { source, meta, fence, ...rest } = node.attrs ?? {};

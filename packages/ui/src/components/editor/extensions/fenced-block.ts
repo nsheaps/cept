@@ -12,12 +12,41 @@ export interface FencedBlockEditorPlugin extends FencedBlockPlugin {
   language: string;
   /** The body of a newly inserted block. */
   defaultSource?: string;
-  /** Render the block's body into `element`; may return a cleanup function. */
-  render(source: string, element: HTMLElement): void | (() => void);
+  /**
+   * Render the block's body into `element`; may return a cleanup function.
+   * Called again (after the cleanup) whenever the source, language or meta
+   * string changes.
+   */
+  render(source: string, element: HTMLElement, fence: FencedBlockInfo): void | (() => void);
 }
 
-/** The TipTap node for a fenced-block plugin: an atom block with a node view. */
+/** The fence's info string, split as the parser splits it. */
+export interface FencedBlockInfo {
+  language: string;
+  meta: string | null;
+}
+
+/** Plugin names become node types and CSS selectors, so keep them plain. */
+const PLUGIN_NAME = /^[a-z][a-zA-Z0-9-]*$/;
+
+function fencedBlockState(attrs: Record<string, unknown>) {
+  return {
+    source: String(attrs.source ?? ''),
+    language: String(attrs.language ?? ''),
+    meta: typeof attrs.meta === 'string' ? attrs.meta : null,
+  };
+}
+
+/**
+ * The TipTap node for a fenced-block plugin: an atom block with a node view.
+ * `renderHTML` writes only the wrapper and the source attribute (enough for
+ * copy and paste between Cept editors); a static rendering of the body for
+ * export is not part of the interface yet.
+ */
 export function createFencedBlockExtension(plugin: FencedBlockEditorPlugin) {
+  if (!PLUGIN_NAME.test(plugin.name)) {
+    throw new Error(`Invalid fenced-block plugin name: ${JSON.stringify(plugin.name)}`);
+  }
   return Node.create({
     name: plugin.name,
     group: 'block',
@@ -54,18 +83,28 @@ export function createFencedBlockExtension(plugin: FencedBlockEditorPlugin) {
         const dom = document.createElement('div');
         dom.className = 'cept-fenced-block';
         dom.setAttribute('data-type', plugin.name);
-        let source = String(node.attrs.source ?? '');
-        let cleanup = plugin.render(source, dom);
+        let state = fencedBlockState(node.attrs);
+        let cleanup = plugin.render(state.source, dom, {
+          language: state.language,
+          meta: state.meta,
+        });
         return {
           dom,
           update(updated) {
             if (updated.type.name !== plugin.name) return false;
-            const next = String(updated.attrs.source ?? '');
-            if (next !== source) {
+            const next = fencedBlockState(updated.attrs);
+            if (
+              next.source !== state.source ||
+              next.language !== state.language ||
+              next.meta !== state.meta
+            ) {
               cleanup?.();
               dom.replaceChildren();
-              source = next;
-              cleanup = plugin.render(source, dom);
+              state = next;
+              cleanup = plugin.render(state.source, dom, {
+                language: state.language,
+                meta: state.meta,
+              });
             }
             return true;
           },

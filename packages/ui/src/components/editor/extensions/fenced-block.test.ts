@@ -15,9 +15,10 @@ const cleaned: string[] = [];
 const shout: FencedBlockEditorPlugin = {
   name: 'shout',
   language: 'shout',
+  defaultSource: 'hello',
   claims: (language) => language === 'shout',
-  render(source, element) {
-    rendered.push(source);
+  render(source, element, { meta }) {
+    rendered.push(meta ? `${source}|${meta}` : source);
     element.textContent = source.toUpperCase();
     return () => cleaned.push(source);
   },
@@ -37,6 +38,20 @@ describe('createFencedBlockExtension', () => {
     expect(extension.name).toBe('shout');
     expect(extension.config.group).toBe('block');
     expect(extension.config.atom).toBe(true);
+  });
+
+  it('rejects plugin names that are not plain identifiers', () => {
+    for (const name of ['', 'Shout', 'a"b', 'a b', '1x']) {
+      expect(() => createFencedBlockExtension({ ...shout, name })).toThrow(/plugin name/);
+    }
+  });
+
+  it('gives a new block the default source and language', () => {
+    const editor = editorFor({ type: 'doc', content: [{ type: 'paragraph' }] });
+    editor.commands.insertContent({ type: 'shout' });
+    const block = (editor.getJSON() as PmNode).content?.find((node) => node.type === 'shout');
+    expect(block?.attrs).toMatchObject({ language: 'shout', source: 'hello', fence: '```' });
+    editor.destroy();
   });
 
   it('loads a claimed fence, renders it, and saves it unchanged', () => {
@@ -64,5 +79,17 @@ describe('createFencedBlockExtension', () => {
     expect(editor.view.dom.querySelector('[data-type="shout"]')?.textContent).toBe('B');
     editor.destroy();
     expect(cleaned).toEqual(['a', 'b']);
+  });
+
+  it('re-renders when the meta string changes', () => {
+    rendered.length = 0;
+    const editor = editorFor({
+      type: 'doc',
+      content: [{ type: 'shout', attrs: { language: 'shout', source: 'a' } }],
+    });
+    editor.commands.setNodeSelection(0);
+    editor.commands.updateAttributes('shout', { meta: 'loud' });
+    expect(rendered).toEqual(['a', 'a|loud']);
+    editor.destroy();
   });
 });
