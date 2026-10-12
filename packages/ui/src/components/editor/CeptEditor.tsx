@@ -63,6 +63,7 @@ export function CeptEditor({
           'columns',
           'mathBlock',
           'mermaid',
+          'graph',
           'rawBlock',
           'footnoteDefinition',
         ],

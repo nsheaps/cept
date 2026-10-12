@@ -665,6 +665,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: render test with a fixture graph; round-trip fixture.
 - Accept: tests green.
 - Risk: none notable.
+- Delivered: `graph-block.ts` (JSON body parsed and validated, rendered with `KnowledgeGraphView`, errors shown with the source), registered in the page pipeline and the editor, `/Graph` slash command, round-trip and render tests. Not in this PR: data from the space link graph (a body that follows the space), hover preview.
 
 **PR 58 — `feat(editor): page and date mentions as standard links`**
 

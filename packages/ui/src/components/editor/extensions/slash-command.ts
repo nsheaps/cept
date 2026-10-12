@@ -209,6 +209,15 @@ export const defaultSlashCommands: SlashCommandItem[] = [
       editor?.chain().focus().deleteRange(range).setMermaid().run();
     },
   },
+  {
+    title: 'Graph',
+    description: 'A graph of pages and links, from JSON',
+    icon: '\u{1F578}',
+    category: 'Advanced',
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).setGraph().run();
+    },
+  },
 ];
 
 export function filterSlashCommands(items: SlashCommandItem[], query: string): SlashCommandItem[] {

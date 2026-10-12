@@ -7,6 +7,7 @@ import {
 import type { MarkdownDocument, PmNode } from '@cept/core';
 import { Fragment, Slice, type Schema } from '@tiptap/pm/model';
 import type { FencedBlockEditorPlugin } from './extensions/fenced-block.js';
+import { graphBlockPlugin } from './extensions/graph-block.js';
 import { mermaidPlugin } from './extensions/mermaid.js';
 
 /**
@@ -16,7 +17,7 @@ import { mermaidPlugin } from './extensions/mermaid.js';
  */
 
 /** The fenced-block plugins the editor registers (EDT-013). */
-export const fencedBlockPlugins: FencedBlockEditorPlugin[] = [mermaidPlugin];
+export const fencedBlockPlugins: FencedBlockEditorPlugin[] = [mermaidPlugin, graphBlockPlugin];
 
 /** A page parsed for the editor: the document to show and the parse it came from. */
 export interface LoadedMarkdown {
