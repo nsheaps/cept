@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.48.0](https://github.com/nsheaps/cept/compare/v0.47.0...v0.48.0) (2026-10-12)
+
+### Features
+
+* **ui:** list foreign files with a read-only preview ([#438](https://github.com/nsheaps/cept/issues/438)) ([5983f8a](https://github.com/nsheaps/cept/commit/5983f8a9e31baab3912d56bcfd223a36edc5d2ef))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([42e5ce7](https://github.com/nsheaps/cept/commit/42e5ce7257d7fd7fa5d55492efa91e574b59784e))
+
 ## [0.47.0](https://github.com/nsheaps/cept/compare/v0.46.0...v0.47.0) (2026-10-12)
 
 ### Features
