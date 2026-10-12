@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { RemoteSpace, StorageBackend } from '@cept/core';
+import type { GitAuthRecord, RemoteSpace, StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { AuthSection } from './AuthSection.js';
 import { DiscoveredSpacesSection } from './DiscoveredSpacesSection.js';
+import { SpaceAuthRow } from './SpaceAuthRow.js';
 import { useGitAuths } from './git-auths.js';
 import type { DiscoveredSpacesState } from './discovered-spaces.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
@@ -76,6 +77,8 @@ export interface SpaceInfo {
   slug?: string;
   createdAt?: string;
   remoteUrl?: string;
+  /** The saved auth a git space uses; absent when none was chosen. */
+  authId?: string;
   branch?: string;
   subPath?: string;
   lastSyncedAt?: string;
@@ -114,6 +117,8 @@ export interface SettingsModalProps {
   onStartRepoSpace?: () => void;
   /** Publish a space on this device to a new GitHub repository (shown when signed in to GitHub). */
   onPublishSpace?: (id: string) => void;
+  /** Switch the saved auth a git space uses. */
+  onChangeSpaceAuth?: (id: string, authId: string) => void;
   onImportNotion?: () => void;
   onImportObsidian?: () => void;
   onExport?: () => void;
@@ -148,6 +153,7 @@ export function SettingsModal({
   onOpenAddSpaceWizard,
   onStartRepoSpace,
   onPublishSpace,
+  onChangeSpaceAuth,
   onImportNotion,
   onImportObsidian,
   onExport,
@@ -731,6 +737,12 @@ export function SettingsModal({
                     ? () => onPublishSpace(selectedSpace.id)
                     : undefined
                 }
+                auths={gitAuthRecords}
+                onChangeAuth={
+                  onChangeSpaceAuth
+                    ? (authId) => onChangeSpaceAuth(selectedSpace.id, authId)
+                    : undefined
+                }
               />
             )}
 
@@ -799,6 +811,8 @@ function SpaceDetails({
   onKeepConversion,
   onUndoConversion,
   onPublish,
+  auths,
+  onChangeAuth,
 }: {
   space: SpaceInfo;
   onBack: () => void;
@@ -810,6 +824,8 @@ function SpaceDetails({
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onPublish?: () => void;
+  auths?: readonly GitAuthRecord[];
+  onChangeAuth?: (authId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(space.name);
@@ -964,6 +980,14 @@ function SpaceDetails({
               {space.remoteUrl}
             </span>
           </div>
+        )}
+        {space.remoteUrl && auths && onChangeAuth && (
+          <SpaceAuthRow
+            {...(space.authId !== undefined ? { authId: space.authId } : {})}
+            remoteUrl={space.remoteUrl}
+            auths={auths}
+            onChange={onChangeAuth}
+          />
         )}
         {remoteHref && (
           <div className="cept-settings-detail-row">
