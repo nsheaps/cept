@@ -20,7 +20,7 @@ import { readFrontMatter, splitFrontMatter, pageTitle } from '../markdown/front-
 import { isDefaultHidden } from '../space/config.js';
 import { joinPath, splitPath, toBackendPath } from '../space/path.js';
 import { readSpaceTree, readPageText, type PageNode } from '../space/tree.js';
-import { extractLinks, resolveLink } from './links.js';
+import { extractLinks, resolveLink, type ExtractedLink } from './links.js';
 import type { GraphData, GraphLink, GraphNode } from './model.js';
 
 /** A page to index. */
@@ -33,6 +33,8 @@ export interface LinkGraphPage {
   markdown: string;
   /** The display title; defaults to `pageTitle` of the text. */
   title?: string;
+  /** The page's links, if already extracted; saves parsing the text again. */
+  links?: readonly ExtractedLink[];
 }
 
 /** One link from a page to another page. */
@@ -97,7 +99,7 @@ export function buildLinkGraph(
   const references: PageReference[] = [];
 
   for (const page of pages) {
-    for (const link of extractLinks(page.markdown)) {
+    for (const link of page.links ?? extractLinks(page.markdown)) {
       const resolved = resolveLink(page.file, link.url);
       if (!resolved || resolved.path === page.file) continue;
       const existing = idByFile.get(resolved.path);
@@ -132,10 +134,13 @@ export function buildLinkGraph(
 
 /** The ids of the pages that link to `id`, in first-seen order. */
 export function backlinksOf(graph: LinkGraph, id: string): string[] {
+  const seen = new Set<string>();
   const sources: string[] = [];
   for (const ref of graph.references)
-    if (ref.target === id && ref.source !== id && !sources.includes(ref.source))
+    if (ref.target === id && ref.source !== id && !seen.has(ref.source)) {
+      seen.add(ref.source);
       sources.push(ref.source);
+    }
   return sources;
 }
 
@@ -157,14 +162,14 @@ export async function readLinkGraph(
     stack.push(...node.children);
     const markdown = await readPageText(backend, root, node);
     if (node.file !== null && markdown !== null)
-      pages.push({ id: node.id, file: node.file, markdown });
+      pages.push({ id: node.id, file: node.file, markdown, links: extractLinks(markdown) });
   }
   pages.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const files = new Set(pages.map((page) => page.file));
   const hidden = new Set<string>();
   for (const page of pages)
-    for (const link of extractLinks(page.markdown)) {
+    for (const link of page.links ?? []) {
       const resolved = resolveLink(page.file, link.url);
       if (!resolved || files.has(resolved.path) || hidden.has(resolved.path)) continue;
       if (await backend.exists(toBackendPath(joinPath(root, resolved.path))))

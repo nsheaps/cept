@@ -106,7 +106,9 @@ function decode(text: string): string {
  * relative to the space root). Returns null for links that are not to a page
  * in the space: URLs with a scheme (`https:`, `mailto:`), protocol-relative
  * URLs, paths that leave the space root, and targets that are not `.md` or
- * `.markdown` files. A leading `/` is relative to the space root. The query
+ * `.markdown` files. A link is always to a file: a folder page is linked by
+ * its index file (`guides/index.md`), not by the bare folder (`guides/`),
+ * which needs a backend lookup to resolve and is a known limitation. A leading `/` is relative to the space root. The query
  * string is ignored and the path and anchor are percent-decoded.
  */
 export function resolveLink(from: string, url: string): ResolvedLink | null {
