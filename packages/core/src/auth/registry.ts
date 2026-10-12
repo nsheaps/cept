@@ -14,7 +14,7 @@
  */
 
 import type { FetchFn, TokenStore } from './github.js';
-import { PAT_STORE_KEY, PatAuthError, PatAuthProvider } from './pat.js';
+import { PAT_STORE_KEY, PatAuthError, PatAuthProvider, redactTokens } from './pat.js';
 import type { PatAccount, PatGrants } from './pat.js';
 import type { HttpAuth, RepoInfo } from './provider.js';
 
@@ -81,7 +81,7 @@ export class GitAuthError extends Error {
     readonly reason: GitAuthFailure,
     message: string,
   ) {
-    super(message);
+    super(redactTokens(message));
     this.name = 'GitAuthError';
   }
 }
@@ -122,9 +122,11 @@ export function normalizeHost(input: string): string | null {
     .toLowerCase()
     .replace(/^[a-z][a-z0-9+.-]*:\/\//, '')
     .split(/[/?#]/)[0]!;
-  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:\d{1,5})?$/.test(host)
-    ? host
-    : null;
+  const valid =
+    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:(\d{1,5}))?$/.exec(host);
+  if (!valid) return null;
+  const port = valid[5];
+  return port === undefined || (Number(port) >= 1 && Number(port) <= 65535) ? host : null;
 }
 
 /** A `TokenStore` that keeps one token, whatever key it is asked for. */
@@ -212,17 +214,25 @@ export class GitAuthRegistry {
       const secret = token.trim();
       if (!secret) throw new GitAuthError('invalid', 'Paste a token.');
       await this.assertNotSaved(secret, record.id);
-      if (record.host === GITHUB_HOST) {
-        const account = await this.pat(id).signIn(secret);
-        return this.update(id, (r) => ({
-          ...r,
-          status: 'ok',
-          account: accountOf(account),
-          grants: account.grants,
-        }));
+      const previous = await this.tokens.get(tokenKey(id));
+      try {
+        if (record.host === GITHUB_HOST) {
+          const account = await this.pat(id).signIn(secret);
+          return await this.update(id, (r) => ({
+            ...r,
+            status: 'ok',
+            account: accountOf(account),
+            grants: account.grants,
+          }));
+        }
+        await this.tokens.set(tokenKey(id), { accessToken: secret, scopes: [] });
+        return await this.update(id, (r) => ({ ...r, status: 'unchecked' }));
+      } catch (err) {
+        // Put the old token back, so the list and the token store still agree.
+        if (previous) await this.tokens.set(tokenKey(id), previous).catch(() => undefined);
+        else await this.tokens.delete(tokenKey(id)).catch(() => undefined);
+        throw err;
       }
-      await this.tokens.set(tokenKey(id), { accessToken: secret, scopes: [] });
-      return this.update(id, (r) => ({ ...r, status: 'unchecked' }));
     });
   }
 
@@ -277,7 +287,7 @@ export class GitAuthRegistry {
           }
         }),
       );
-      if (JSON.stringify(checked) !== JSON.stringify(records)) await this.index.save(checked);
+      if (checked.some((record, i) => record !== records[i])) await this.index.save(checked);
       return { records: checked, unreachable };
     });
   }

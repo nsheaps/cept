@@ -367,4 +367,47 @@ describe('normalizeHost', () => {
     expect(normalizeHost('a b')).toBeNull();
     expect(normalizeHost('-bad.example')).toBeNull();
   });
+
+  it('rejects ports outside 1-65535', () => {
+    expect(normalizeHost('git.example.com:65535')).toBe('git.example.com:65535');
+    expect(normalizeHost('git.example.com:65536')).toBeNull();
+    expect(normalizeHost('git.example.com:0')).toBeNull();
+  });
+});
+
+describe('GitAuthRegistry failures', () => {
+  it('puts the old token back when replacing it cannot be saved to the list', async () => {
+    const { registry, tokenStore, indexStore } = setup();
+    const a = await registry.add({ token: ALICE });
+    const save = indexStore.save.bind(indexStore);
+    indexStore.save = async () => {
+      throw new Error('disk full');
+    };
+
+    await expect(registry.replaceToken(a.id, ALICE_2)).rejects.toThrow('disk full');
+
+    indexStore.save = save;
+    expect((await tokenStore.get(`cept:auth:token:${a.id}`))?.accessToken).toBe(ALICE);
+    expect((await registry.httpAuth(a.id)).password).toBe(ALICE);
+  });
+
+  it('removes the new token again when a rejected auth cannot be saved', async () => {
+    const { registry, tokenStore, indexStore, state } = setup();
+    const a = await registry.add({ token: ALICE });
+    state.revoked = new Set([ALICE]);
+    await registry.restore();
+    expect((await registry.get(a.id))?.status).toBe('rejected');
+    indexStore.save = async () => {
+      throw new Error('disk full');
+    };
+
+    await expect(registry.replaceToken(a.id, BOB)).rejects.toThrow('disk full');
+
+    expect(await tokenStore.get(`cept:auth:token:${a.id}`)).toBeNull();
+  });
+
+  it('keeps token-shaped text out of its messages', () => {
+    const error = new GitAuthError('invalid', `bad ${BOB}`);
+    expect(error.message).not.toContain(BOB);
+  });
 });
