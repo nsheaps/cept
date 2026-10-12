@@ -75,6 +75,15 @@ export type {
   PatAuthConfig,
   PatAuthFailure,
   PatGrants,
+  AddGitAuthInput,
+  AuthIndexStore,
+  GitAuthAccount,
+  GitAuthFailure,
+  GitAuthRecord,
+  GitAuthRegistryConfig,
+  GitAuthStatus,
+  RestoreResult,
+  NewTokenUrlOptions,
 } from './auth/index.js';
 export {
   GitHubAuthProvider,
@@ -85,6 +94,14 @@ export {
   PatAuthError,
   PAT_STORE_KEY,
   redactTokens,
+  GitAuthRegistry,
+  GitAuthError,
+  MemoryAuthIndexStore,
+  GITHUB_HOST,
+  normalizeHost,
+  newTokenUrl,
+  tokenPermissions,
+  NEW_FINE_GRAINED_TOKEN_URL,
 } from './auth/index.js';
 
 // Models
