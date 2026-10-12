@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.43.0](https://github.com/nsheaps/cept/compare/v0.42.0...v0.43.0) (2026-10-12)
+
+### Features
+
+* **ui:** discover spaces with every saved GitHub auth ([#433](https://github.com/nsheaps/cept/issues/433)) ([9fbd7f5](https://github.com/nsheaps/cept/commit/9fbd7f50a8e8e6903d5d9d44ab2047f3000794b4)), references [#432](https://github.com/nsheaps/cept/issues/432)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([18a236c](https://github.com/nsheaps/cept/commit/18a236cf57e955a0f68b83fc27cdd754458bc610))
+
 ## [0.42.0](https://github.com/nsheaps/cept/compare/v0.41.0...v0.42.0) (2026-10-12)
 
 ### Features
