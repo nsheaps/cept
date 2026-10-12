@@ -47,6 +47,18 @@ function encodeSegment(segment: string): string {
 }
 
 /**
+ * The URL that links from the page file `from` to the file `to` (both relative
+ * to the space root): a relative path, with the characters that would end a
+ * Markdown destination percent-escaped.
+ */
+export function linkPathBetween(from: string, to: string): string {
+  return relativePath(parentFolder(from) ?? '', to)
+    .split('/')
+    .map(encodeSegment)
+    .join('/');
+}
+
+/**
  * `text`, the page at `file` before the move, rewritten for the move: each
  * relative URL in it that resolves inside the space is pointed at the target's
  * new path, written from the page's new path `newFile`. Absolute (`/x.md`) URLs

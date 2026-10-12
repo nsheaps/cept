@@ -1,85 +1,167 @@
 import { describe, it, expect } from 'vitest';
+import { Editor } from '@tiptap/core';
+import { backlinksOf, buildLinkGraph, type PmNode } from '@cept/core';
+import { documentExtensions } from '../document-extensions.js';
+import { editorBaseline, loadMarkdown, saveMarkdown } from '../markdown-bridge.js';
 import {
-  filterMentionItems,
-  getDefaultDateSuggestions,
-  PageMention,
-  PersonMention,
-  DateMention,
-  type MentionSuggestionItem,
+  Mention,
+  formatMentionDate,
+  mentionItems,
+  pageMentionHref,
+  type MentionSource,
 } from './mention.js';
 
-describe('filterMentionItems', () => {
-  const items: MentionSuggestionItem[] = [
-    { id: '1', label: 'Project Roadmap', type: 'page' },
-    { id: '2', label: 'Meeting Notes', type: 'page' },
-    { id: '3', label: 'Alice Smith', type: 'person' },
-    { id: '4', label: 'Bob Jones', type: 'person' },
-  ];
+const source: MentionSource = {
+  pageId: 'notes/today.md',
+  pages: [
+    { id: 'notes/today.md', title: 'Today' },
+    { id: 'notes/ideas.md', title: 'Ideas' },
+    { id: 'guides/Getting Started.md', title: 'Getting Started', icon: '🚀' },
+    { id: 'projects', title: 'Projects' },
+  ],
+};
+const now = new Date(2026, 9, 12, 9, 30);
 
-  it('returns all items for empty query', () => {
-    expect(filterMentionItems(items, '')).toHaveLength(4);
-  });
-
-  it('filters by label substring', () => {
-    const result = filterMentionItems(items, 'road');
-    expect(result).toHaveLength(1);
-    expect(result[0].label).toBe('Project Roadmap');
-  });
-
-  it('is case insensitive', () => {
-    const result = filterMentionItems(items, 'ALICE');
-    expect(result).toHaveLength(1);
-    expect(result[0].label).toBe('Alice Smith');
-  });
-
-  it('returns empty for no matches', () => {
-    expect(filterMentionItems(items, 'xyz')).toHaveLength(0);
+describe('formatMentionDate', () => {
+  it('is ISO 8601 in local time with zero padding', () => {
+    expect(formatMentionDate(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(formatMentionDate(now)).toBe('2026-10-12');
   });
 });
 
-describe('getDefaultDateSuggestions', () => {
-  it('returns three date options', () => {
-    const dates = getDefaultDateSuggestions();
-    expect(dates).toHaveLength(3);
+describe('pageMentionHref', () => {
+  it('is relative to the page being edited', () => {
+    expect(pageMentionHref('notes/today.md', 'notes/ideas.md')).toBe('ideas.md');
+    expect(pageMentionHref('notes/today.md', 'guides/Getting Started.md')).toBe(
+      '../guides/Getting%20Started.md',
+    );
   });
 
-  it('has today, tomorrow, and next week', () => {
-    const dates = getDefaultDateSuggestions();
-    const ids = dates.map((d) => d.id);
-    expect(ids).toContain('today');
-    expect(ids).toContain('tomorrow');
-    expect(ids).toContain('next-week');
+  it('links to a folder page by its index file', () => {
+    expect(pageMentionHref('notes/today.md', 'projects')).toBe('../projects/index.md');
   });
 
-  it('all items are date type', () => {
-    const dates = getDefaultDateSuggestions();
-    for (const d of dates) {
-      expect(d.type).toBe('date');
-    }
-  });
-
-  it('all items have calendar icon', () => {
-    const dates = getDefaultDateSuggestions();
-    for (const d of dates) {
-      expect(d.icon).toBe('\u{1F4C5}');
-    }
+  it('links from a folder page through its index file', () => {
+    expect(pageMentionHref('projects', 'notes/ideas.md')).toBe('../notes/ideas.md');
   });
 });
 
-describe('PageMention', () => {
-  it('has name pageMention', () => {
-    expect(PageMention.name).toBe('pageMention');
+describe('mentionItems', () => {
+  it('lists pages (not the current one) then dates', () => {
+    const items = mentionItems(source, '', now);
+    expect(items.map((i) => i.title)).toEqual([
+      'Ideas',
+      'Getting Started',
+      'Projects',
+      'Today',
+      'Tomorrow',
+      'Next week',
+    ]);
+    expect(items.map((i) => i.category)).toEqual([
+      'Pages',
+      'Pages',
+      'Pages',
+      'Dates',
+      'Dates',
+      'Dates',
+    ]);
+    expect(items.find((i) => i.title === 'Tomorrow')?.description).toBe('2026-10-13');
+    expect(items.find((i) => i.title === 'Next week')?.description).toBe('2026-10-19');
+  });
+
+  it('filters pages by title, case-insensitively', () => {
+    expect(mentionItems(source, 'START', now).map((i) => i.title)).toEqual(['Getting Started']);
+  });
+
+  it('ranks an exact title, then a prefix, ahead of tree order', () => {
+    const pages = [
+      { id: 'a/foobar sub.md', title: 'foobar sub' },
+      { id: 'a/my foo.md', title: 'my foo' },
+      { id: 'a/foo.md', title: 'foo' },
+    ];
+    const titles = mentionItems({ pageId: 'x.md', pages }, 'foo', now)
+      .filter((i) => i.category === 'Pages')
+      .map((i) => i.title);
+    expect(titles).toEqual(['foo', 'foobar sub', 'my foo']);
+  });
+
+  it('matches dates by label or by their text', () => {
+    expect(mentionItems(source, 'tom', now).map((i) => i.title)).toEqual(['Tomorrow']);
+    expect(mentionItems(source, '2026-10-19', now).map((i) => i.title)).toEqual(['Next week']);
+  });
+
+  it('offers only dates where the space has no pages to link', () => {
+    expect(mentionItems(undefined, '', now).map((i) => i.category)).toEqual([
+      'Dates',
+      'Dates',
+      'Dates',
+    ]);
+  });
+
+  it('never offers a person', () => {
+    const everything = mentionItems(source, '', now);
+    expect(everything.some((i) => /person|people/i.test(`${i.category} ${i.title}`))).toBe(false);
+    expect(mentionItems(source, 'person', now)).toEqual([]);
   });
 });
 
-describe('PersonMention', () => {
-  it('has name personMention', () => {
-    expect(PersonMention.name).toBe('personMention');
-  });
-});
+describe('inserting a mention', () => {
+  function editorWith(markdown: string) {
+    const loaded = loadMarkdown(markdown);
+    const editor = new Editor({
+      element: document.createElement('div'),
+      extensions: [...documentExtensions(), Mention.configure({ source: () => source })],
+      content: loaded.doc,
+    });
+    const baseline = editorBaseline(loaded.parsed, editor.getJSON() as PmNode);
+    const save = (): string => saveMarkdown(editor.getJSON() as PmNode, baseline);
+    return { editor, save };
+  }
 
-describe('DateMention', () => {
-  it('has name dateMention', () => {
-    expect(DateMention.name).toBe('dateMention');
+  function choose(editor: Editor, title: string, query: string): void {
+    // The query has been typed after an "@"; the menu replaces both with the item.
+    const end = editor.state.doc.content.size - 1;
+    editor.commands.setTextSelection(end); // the caret is after what was typed
+    const range = { from: end - query.length - 1, to: end };
+    const item = mentionItems(source, query, now).find((i) => i.title === title);
+    if (!item) throw new Error(`no item ${title}`);
+    item.command({ editor, range });
+    // Typing on, as a user does: a space left at the end of a line would be saved as `&#x20;`.
+    editor.commands.insertContent('now');
+  }
+
+  it('turns a page mention into a standard relative Markdown link', () => {
+    const { editor, save } = editorWith('See @gett\n');
+    choose(editor, 'Getting Started', 'gett');
+    expect(save()).toBe('See [Getting Started](../guides/Getting%20Started.md) now\n');
+    editor.destroy();
+  });
+
+  it('turns a date mention into plain text', () => {
+    const { editor, save } = editorWith('Due @tom\n');
+    choose(editor, 'Tomorrow', 'tom');
+    expect(save()).toBe('Due 2026-10-13 now\n');
+    editor.destroy();
+  });
+
+  it('feeds backlinks like any other link', () => {
+    const { editor, save } = editorWith('See @ide\n');
+    choose(editor, 'Ideas', 'ide');
+    const graph = buildLinkGraph([
+      { id: 'notes/today.md', file: 'notes/today.md', markdown: save() },
+      { id: 'notes/ideas.md', file: 'notes/ideas.md', markdown: '# Ideas\n' },
+    ]);
+    expect(backlinksOf(graph, 'notes/ideas.md')).toEqual(['notes/today.md']);
+    editor.destroy();
+  });
+
+  it('reloads a saved mention as the same link', () => {
+    const { editor, save } = editorWith('See @ide\n');
+    choose(editor, 'Ideas', 'ide');
+    const markdown = save();
+    editor.destroy();
+    const again = editorWith(markdown);
+    expect(again.save()).toBe(markdown);
+    again.editor.destroy();
   });
 });

@@ -40,7 +40,7 @@ This document sets out the requirements for Cept's editing experience: the WYSIW
 | [REQ-EDT-001](#req-edt-001--fully-wysiwyg-block-editor-in-the-app)                               | Fully WYSIWYG block editor in the app                                    | MUST     | implemented | documented-as-desired  | accurate      |
 | [REQ-EDT-002](#req-edt-002--rich-custom-blocks-are-editable-in-wysiwyg-mode)                     | Rich custom blocks are editable in WYSIWYG mode                          | MUST     | partial     | documented-differently | stale         |
 | [REQ-EDT-003](#req-edt-003--slash-menu-exposes-all-supported-blocks)                             | Slash menu exposes all supported blocks                                  | MUST     | partial     | documented-as-desired  | stale         |
-| [REQ-EDT-004](#req-edt-004--inline-mentions-pagepersondate)                                      | Inline mentions (@page/@person/@date)                                    | SHOULD   | stubbed     | documented-as-desired  | stale         |
+| [REQ-EDT-004](#req-edt-004--inline-mentions-pagepersondate)                                      | Inline mentions (@page/@person/@date)                                    | SHOULD   | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-005](#req-edt-005--pages-persist-as-markdown-with-lossless-wysiwyg-round-trip)          | Pages persist as Markdown with lossless WYSIWYG round-trip               | MUST     | partial     | documented-as-desired  | accurate      |
 | [REQ-EDT-006](#req-edt-006--database-engine-crud-filter-sort-group-formula-relations-rollups)    | Database engine (CRUD, filter, sort, group, formula, relations, rollups) | MUST     | partial     | documented-as-desired  | stale         |
 | [REQ-EDT-007](#req-edt-007--database-storage-in-multiple-formats)                                | Database storage in multiple formats                                     | MUST     | partial     | documented-differently | n/a           |
@@ -109,7 +109,7 @@ flowchart TD
     VIEWS["Database view components"] -. "rendered nowhere" .-> X2
     KG["KnowledgeGraph components (D3)"] -. "rendered nowhere" .-> X3["(not wired)"]
     GT["core graph types only, no builder"] -. "not consumed by UI" .-> X3
-    MEN["Mention / InlineDatabase extensions"] -. "not registered" .-> X1
+    MEN["InlineDatabase extension"] -. "not registered" .-> X1
     MERM["Mermaid node: pre + empty preview div"] --> ED
     MATH["Math node: KaTeX output passed as attribute"] --> ED
 ```
@@ -192,15 +192,15 @@ flowchart TD
 
 **Acceptance criteria**
 
-- Typing `@` opens a suggestion list of pages, people and dates.
+- Typing `@` opens a suggestion list of pages and dates (people are later).
 - An inserted mention survives save and reload, using a documented Markdown encoding.
 - Page mentions appear as edges in the graph ([REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files)) and in backlinks.
 
-**Current state:** stubbed. [mention.ts](../../../packages/ui/src/components/editor/extensions/mention.ts) defines PageMention, PersonMention and DateMention with unit tests, but `CeptEditor.tsx` does not register them. The Markdown pipeline has no mention encoding; a `<!-- cept:mention -->` comment loads as raw Markdown and is kept as written.
+**Current state (PR 58):** partial. Typing `@` after a space or at the start of a line opens a menu (the slash menu's component) of the pages of a folder or Git space whose title contains the query, then the matching dates (Today, Tomorrow, Next week). A mention is not a node of its own: choosing a page inserts its title as a standard Markdown link to the page file, relative to the page being edited (`[Ideas](../notes/ideas.md)`; a folder page by its `index.md`), so it is an edge in the link graph and in backlinks like any other link, and survives save and reload without a Cept-specific encoding. Choosing a date inserts plain text in ISO 8601 (`2026-10-12`). `@person` is not offered. In spaces whose page ids are not paths (browser, docs) only dates are offered. Not done: the old `PageMention`/`PersonMention`/`DateMention` nodes were removed rather than registered; mentions are not rendered as chips, and a date stays plain text (no date picker or reminders).
 
 **Docs:** documented-as-desired but stale. TASKS T2.9 is checked, and [features.md](../../content/guides/features.md) presents mentions as available.
 
-**Gap:** Register the extensions with suggestion sources, define the Markdown serialization, and add E2E tests.
+**Gap:** @person mentions (later, D-26); a way to tell a mention from a typed link or date.
 
 **Related:** TASKS T2.9 (claimed done).
 

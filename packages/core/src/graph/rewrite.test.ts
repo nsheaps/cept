@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractDestinations } from './links.js';
-import { mapPath, planLinkRewrites, rewriteLinks } from './rewrite.js';
+import { linkPathBetween, mapPath, planLinkRewrites, rewriteLinks } from './rewrite.js';
 
 describe('extractDestinations', () => {
   it('locates inline links, images and definitions exactly', () => {
@@ -102,5 +102,26 @@ describe('planLinkRewrites', () => {
       ['dir/c.md', 'dir/c.md', 2],
     ]);
     expect(plan[1]!.text).toBe('[b](../renamed.md#x) and [b again](../renamed.md)');
+  });
+});
+
+describe('linkPathBetween', () => {
+  it('links to a sibling by name', () => {
+    expect(linkPathBetween('notes/a.md', 'notes/b.md')).toBe('b.md');
+  });
+
+  it('goes up and down between folders', () => {
+    expect(linkPathBetween('notes/deep/a.md', 'guides/b.md')).toBe('../../guides/b.md');
+    expect(linkPathBetween('a.md', 'guides/b.md')).toBe('guides/b.md');
+  });
+
+  it('escapes characters that end a Markdown destination', () => {
+    expect(linkPathBetween('a.md', 'my notes/Q&A (draft).md')).toBe('my%20notes/Q&A%20(draft).md');
+  });
+
+  it('round-trips through resolvePath', async () => {
+    const { resolvePath } = await import('./links.js');
+    const url = linkPathBetween('x/y/a.md', 'x/z/My Page.md');
+    expect(resolvePath('x/y/a.md', url)?.path).toBe('x/z/My Page.md');
   });
 });

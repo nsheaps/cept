@@ -673,6 +673,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: round-trip tests and a backlink test.
 - Accept: tests green.
 - Risk: @person stays later; the menu must not offer it.
+- Delivered: `mention.ts` rewritten as an `@` suggestion that inserts a relative link (page) or ISO date text (no mention node, so no new Markdown encoding), `linkPathBetween` in core for the relative URL, the menu fed from the space's page list through `PageLinksContext.pages`, the dead `PageMention`/`PersonMention`/`DateMention` nodes and the `@tiptap/extension-mention` dependency removed. Tests: relative-URL unit tests, menu and pipeline round-trip tests, a backlink test, an editor wiring test, an e2e date mention. Not in this PR: chips or a date picker, @person.
 
 **PR 59 — `feat(ui): set page icon and cover in front matter`**
 

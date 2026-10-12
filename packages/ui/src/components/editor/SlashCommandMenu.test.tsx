@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SlashCommandMenu } from './SlashCommandMenu.js';
+import { createRef } from 'react';
+import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 
 const mockItems: SlashCommandItem[] = [
@@ -74,6 +75,16 @@ describe('SlashCommandMenu', () => {
     render(<SlashCommandMenu items={[]} command={command} />);
 
     expect(screen.getByText('No results')).toBeDefined();
+  });
+
+  it('leaves Enter to the editor when there is nothing to choose', () => {
+    const ref = createRef<SlashCommandMenuRef>();
+    const command = vi.fn();
+    render(<SlashCommandMenu ref={ref} items={[]} command={command} />);
+    expect(ref.current?.onKeyDown({ event: new KeyboardEvent('keydown', { key: 'Enter' }) })).toBe(
+      false,
+    );
+    expect(command).not.toHaveBeenCalled();
   });
 
   it('highlights first item by default', () => {

@@ -371,6 +371,22 @@ test.describe('Slash Commands', () => {
     await expect(page.locator('.cept-editor-content .cept-graph-error')).toHaveCount(0);
     await captureScreenshot(page, { name: 'graph-block', category: 'features' });
   });
+
+  test('@ mention of a date', async ({ page }) => {
+    const editor = page.locator('.cept-editor-content');
+    await editor.click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Due @tom');
+    // The browser space has no file paths to link to, so the menu offers dates (REQ-EDT-004)
+    const menu = page.getByTestId('slash-command-menu');
+    await expect(menu).toContainText('Tomorrow');
+    await expect(menu).not.toContainText('Person');
+    await captureScreenshot(page, { name: 'date-mention', category: 'features' });
+    await page.keyboard.press('Enter');
+    // A date is plain text in ISO 8601, not a node
+    await expect(editor).toContainText(/Due \d{4}-\d{2}-\d{2}/);
+  });
 });
 
 test.describe('Page Header', () => {

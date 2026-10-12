@@ -1,76 +1,166 @@
-import { Mention } from '@tiptap/extension-mention';
-import type { SuggestionOptions } from '@tiptap/suggestion';
+/**
+ * `@` mentions of pages and dates (REQ-EDT-004; phase-1 plan PR 58).
+ *
+ * A mention is not a node of its own: that would need a Markdown encoding no
+ * other tool understands. Choosing a page inserts its title as a standard link
+ * to the page file, written relative to the page being edited, so the file
+ * stays portable and the link feeds backlinks, search and move-rewriting like
+ * any other. Choosing a date inserts it as plain text in ISO 8601
+ * (`YYYY-MM-DD`). `@person` is not offered.
+ */
 
-export type MentionType = 'page' | 'person' | 'date';
+import { Extension, type Editor } from '@tiptap/core';
+import { Suggestion, type SuggestionOptions } from '@tiptap/suggestion';
+import { PluginKey } from '@tiptap/pm/state';
+import { baseFileOfPage, linkPathBetween } from '@cept/core';
+import type { SlashCommandItem } from './slash-command.js';
 
-export interface MentionSuggestionItem {
+/** A page of the space that an `@` mention can link to. */
+export interface MentionPage {
+  /** The page id: its file or folder path relative to the space root. */
   id: string;
-  label: string;
-  type: MentionType;
+  title: string;
   icon?: string;
 }
 
-export function filterMentionItems(
-  items: MentionSuggestionItem[],
+/** What the mention menu needs from the app; read afresh on every keystroke. */
+export interface MentionSource {
+  /** The id of the page being edited. */
+  pageId: string;
+  /** The pages that can be linked to. */
+  pages: readonly MentionPage[];
+}
+
+const MAX_PAGES = 8;
+
+/** A date as `YYYY-MM-DD`, in local time. */
+export function formatMentionDate(date: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** The URL of a link from the page `fromId` to the page `toId`. */
+export function pageMentionHref(fromId: string, toId: string): string {
+  return linkPathBetween(baseFileOfPage(fromId), baseFileOfPage(toId));
+}
+
+/** The `@` menu's items for `query`: pages whose title contains it, then the dates that match. */
+export function mentionItems(
+  source: MentionSource | undefined,
   query: string,
-): MentionSuggestionItem[] {
-  const q = query.toLowerCase();
-  return items.filter((item) => item.label.toLowerCase().includes(q));
-}
+  now: Date = new Date(),
+): SlashCommandItem[] {
+  const q = query.trim().toLowerCase();
+  const items: SlashCommandItem[] = [];
 
-export function getDefaultDateSuggestions(): MentionSuggestionItem[] {
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const nextWeek = new Date(today);
-  nextWeek.setDate(nextWeek.getDate() + 7);
+  if (source) {
+    // Exact title first, then prefix, then any match; tree order breaks ties.
+    const rank = (title: string): number => {
+      const t = title.toLowerCase();
+      return t === q ? 0 : t.startsWith(q) ? 1 : 2;
+    };
+    const matching = source.pages
+      .filter((p) => p.id !== source.pageId && p.title.toLowerCase().includes(q))
+      .sort((a, b) => rank(a.title) - rank(b.title))
+      .slice(0, MAX_PAGES);
+    for (const page of matching) {
+      items.push({
+        title: page.title,
+        description: page.id,
+        icon: page.icon ?? '\u{1F4C4}',
+        category: 'Pages',
+        command: ({ editor, range }) => {
+          insertAfterMention(editor, range, {
+            type: 'text',
+            text: page.title,
+            marks: [{ type: 'link', attrs: { href: pageMentionHref(source.pageId, page.id) } }],
+          });
+        },
+      });
+    }
+  }
 
-  const format = (d: Date) =>
-    d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-  return [
-    { id: 'today', label: `Today (${format(today)})`, type: 'date', icon: '\u{1F4C5}' },
-    { id: 'tomorrow', label: `Tomorrow (${format(tomorrow)})`, type: 'date', icon: '\u{1F4C5}' },
-    { id: 'next-week', label: `Next week (${format(nextWeek)})`, type: 'date', icon: '\u{1F4C5}' },
+  const day = (offset: number): Date => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset);
+    return d;
+  };
+  const dates: Array<[string, number]> = [
+    ['Today', 0],
+    ['Tomorrow', 1],
+    ['Next week', 7],
   ];
+  for (const [label, offset] of dates) {
+    const text = formatMentionDate(day(offset));
+    if (!label.toLowerCase().includes(q) && !text.includes(q)) continue;
+    items.push({
+      title: label,
+      description: text,
+      icon: '\u{1F4C5}',
+      category: 'Dates',
+      command: ({ editor, range }) => {
+        insertAfterMention(editor, range, { type: 'text', text });
+      },
+    });
+  }
+  return items;
 }
 
-export const PageMention = Mention.extend({ name: 'pageMention' }).configure({
-  HTMLAttributes: {
-    class: 'cept-mention cept-mention-page',
-    'data-mention-type': 'page',
-  },
-  suggestion: {
-    char: '@',
-    items: ({ query }: { query: string }) => filterMentionItems([], query),
-  } as Partial<SuggestionOptions>,
-});
+function insertAfterMention(
+  editor: Editor,
+  range: { from: number; to: number },
+  content: { type: 'text'; text: string; marks?: Array<{ type: string; attrs: object }> },
+): void {
+  // The trailing space is unmarked so typing continues outside the link.
+  editor
+    .chain()
+    .focus()
+    .deleteRange(range)
+    .insertContent([content, { type: 'text', text: ' ' }])
+    .run();
+}
 
-export const PersonMention = Mention.extend({ name: 'personMention' }).configure({
-  HTMLAttributes: {
-    class: 'cept-mention cept-mention-person',
-    'data-mention-type': 'person',
-  },
-  suggestion: {
-    char: '@',
-    items: ({ query }: { query: string }) => filterMentionItems([], query),
-  } as Partial<SuggestionOptions>,
-});
+export const mentionPluginKey = new PluginKey('mention');
 
-export const DateMention = Mention.extend({ name: 'dateMention' }).configure({
-  HTMLAttributes: {
-    class: 'cept-mention cept-mention-date',
-    'data-mention-type': 'date',
+export interface MentionOptions {
+  /** The mentionable pages of the space, or undefined where only dates are offered. */
+  source: () => MentionSource | undefined;
+  suggestion: Partial<SuggestionOptions>;
+}
+
+export const Mention = Extension.create<MentionOptions>({
+  name: 'mention',
+
+  addOptions() {
+    return {
+      source: () => undefined,
+      suggestion: {
+        char: '@',
+        pluginKey: mentionPluginKey,
+        // Page titles are mostly several words.
+        allowSpaces: true,
+        command: ({
+          editor,
+          range,
+          props,
+        }: {
+          editor: Editor;
+          range: { from: number; to: number };
+          props: SlashCommandItem;
+        }) => {
+          props.command({ editor, range });
+        },
+      },
+    };
   },
-  renderText: ({ node }) => {
-    return `@${(node.attrs as { label?: string }).label ?? (node.attrs as { id: string }).id}`;
+
+  addProseMirrorPlugins() {
+    return [
+      Suggestion({
+        editor: this.editor,
+        items: ({ query }: { query: string }) => mentionItems(this.options.source(), query),
+        ...this.options.suggestion,
+      }),
+    ];
   },
-  suggestion: {
-    char: '@',
-    items: ({ query }: { query: string }) => filterMentionItems(getDefaultDateSuggestions(), query),
-  } as Partial<SuggestionOptions>,
 });

@@ -41,6 +41,8 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
         }
 
         if (event.key === 'Enter') {
+          // With nothing to choose, Enter belongs to the editor (a newline).
+          if (items.length === 0) return false;
           selectItem(selectedIndex);
           return true;
         }
