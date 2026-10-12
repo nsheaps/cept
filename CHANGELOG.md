@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.41.0](https://github.com/nsheaps/cept/compare/v0.40.0...v0.41.0) (2026-10-12)
+
+### Features
+
+* **ui:** add an auth section to settings ([#431](https://github.com/nsheaps/cept/issues/431)) ([2c35dc0](https://github.com/nsheaps/cept/commit/2c35dc0235c4a5e1fcb3bc2d9247b64aa57d2f88)), references [#430](https://github.com/nsheaps/cept/issues/430)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([a801e6a](https://github.com/nsheaps/cept/commit/a801e6a9f2305edf00647c7a9982bba5ca64110e))
+
 ## [0.40.0](https://github.com/nsheaps/cept/compare/v0.39.1...v0.40.0) (2026-10-12)
 
 ### Features
