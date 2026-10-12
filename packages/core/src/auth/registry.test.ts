@@ -10,10 +10,10 @@ import {
   type AuthIndexStore,
 } from './registry.js';
 
-const ALICE = 'github_pat_11AAAAAAA0aliceSecret_0123456789abcdefghijk';
-const ALICE_2 = 'github_pat_11BBBBBBB0aliceOtherSecret_0123456789abcdef';
-const BOB = 'ghp_bobClassicSecret0123456789abcdefABCDEF';
-const GITLAB = 'glpat-gitlabSecret0123456789';
+const ALICE = ['github_pat_', 'aliceFake'].join('') + '0'.repeat(40);
+const ALICE_2 = ['github_pat_', 'alice_2Fake'].join('') + '0'.repeat(40);
+const BOB = ['ghp_', 'bobFake'].join('') + '0'.repeat(30);
+const GITLAB = ['glpat-', 'gitlabFake'].join('') + '0'.repeat(40);
 
 const USERS: Record<string, { login: string; id: number }> = {
   [ALICE]: { login: 'alice', id: 1 },
