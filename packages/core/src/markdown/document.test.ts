@@ -68,9 +68,9 @@ describe('parseMarkdownDocument: blocks', () => {
   });
 
   it('keeps HTML and unmodelled syntax as raw Markdown', () => {
-    expect(block('<div data-type="callout">x</div>\n')).toEqual({
+    expect(block('<section class="x">x</section>\n')).toEqual({
       type: 'rawBlock',
-      attrs: { markdown: '<div data-type="callout">x</div>' },
+      attrs: { markdown: '<section class="x">x</section>' },
     });
     expect(block('[^1]: A note.\n')).toEqual({
       type: 'rawBlock',
@@ -182,7 +182,7 @@ describe('serializeMarkdownDocument', () => {
       type: 'doc',
       content: [
         {
-          type: 'callout',
+          type: 'mystery',
           content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Inside' }] }],
         },
       ],

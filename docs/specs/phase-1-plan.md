@@ -543,6 +543,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Red: corpus fixtures for each custom block and unknown HTML.
 - Accept: fixtures green.
 - Risk: toggles and blockquotes share `> `; the encoding decision must be in `08-editor.md`.
+- Note (PR 48): the encodings are recorded under EDT-005 and EDT-024 in `08-editor.md`. `markdown/html-blocks.ts` loads and writes callout, toggle, columns, embed, bookmark and captioned images; `prosemirror.ts` regroups container tags that remark splits across nodes and gives each block its source by offset. Unbalanced tags and other HTML stay `rawBlock`. One-line HTML containers and the old TipTap HTML load as the same nodes and are rewritten in the canonical form (`__fixtures__/normalized/`). Toggles never come from `> `, so the blockquote risk is closed.
 
 **PR 49 — `feat(ui): route the editor through the shared pipeline`**
 

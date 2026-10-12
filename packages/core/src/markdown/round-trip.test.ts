@@ -11,12 +11,23 @@
  *    are listed in `expected-failures.json` with the normalization they get;
  *    for those the test asserts the output still differs, so a fix turns them
  *    red until their entry is removed. Entries are removed, never added.
+ *
+ * Fixtures in `__fixtures__/normalized/` are older encodings Cept still reads
+ * (custom blocks saved as one line of HTML by the previous editor, PR 48).
+ * Saved unchanged they come back byte for byte; rewritten they become the
+ * canonical encoding in `<name>.out.md`, which parses to the same document.
  */
 import { describe, expect, it } from 'vitest';
 import { parseMarkdownDocument, serializeMarkdownDocument } from './document.js';
 import expectedFailures from './__fixtures__/round-trip/expected-failures.json';
 
 const fixtures = import.meta.glob<string>('./__fixtures__/round-trip/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+const normalized = import.meta.glob<string>('./__fixtures__/normalized/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -72,5 +83,36 @@ describe('markdown round-trip corpus', () => {
         expect(fresh(source)).toBe(source);
       });
     }
+  }
+});
+
+describe('markdown normalized encodings', () => {
+  const inputs = Object.entries(normalized)
+    .filter(([path]) => !path.endsWith('.out.md'))
+    .map(([path, source]) => ({ name: fixtureName(path), path, source }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  it('has fixtures, each with its canonical output', () => {
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const { path } of inputs) {
+      expect(normalized[path.replace(/\.md$/, '.out.md')], path).toBeTypeOf('string');
+    }
+  });
+
+  for (const { name, path, source } of inputs) {
+    const output = normalized[path.replace(/\.md$/, '.out.md')] ?? '';
+
+    it(`${name} is unchanged when loaded and saved`, () => {
+      const parsed = parseMarkdownDocument(source);
+      expect(serializeMarkdownDocument(parsed.doc, parsed)).toBe(source);
+    });
+
+    it(`${name} is written in the canonical encoding when rewritten`, () => {
+      expect(fresh(source)).toBe(output);
+    });
+
+    it(`${name} and its canonical encoding are the same document`, () => {
+      expect(parseMarkdownDocument(output).doc).toEqual(parseMarkdownDocument(source).doc);
+    });
   }
 });

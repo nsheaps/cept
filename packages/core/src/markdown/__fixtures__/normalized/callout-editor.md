@@ -1,0 +1,1 @@
+<div data-icon="💡" data-color="blue" data-type="callout" class="cept-callout"><span class="cept-callout-icon" contenteditable="false">💡</span><div class="cept-callout-content"><p>Saved by the <strong>old</strong> editor.</p></div></div>

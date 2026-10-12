@@ -21,7 +21,7 @@ import { defaultHandlers } from 'mdast-util-to-markdown';
 import type { Handle, State } from 'mdast-util-to-markdown';
 import type { Nodes, Root } from 'mdast';
 import { frontMatterPrefix } from './front-matter.js';
-import { blocksToMdast, mdastToBlocks, styleOf } from './prosemirror.js';
+import { blocksToMdast, mdastToSourcedBlocks, styleOf } from './prosemirror.js';
 import type { PmNode } from './prosemirror.js';
 
 /** A parsed page: its front matter, its document and each block's source. */
@@ -44,10 +44,11 @@ export function parseMarkdownDocument(markdown: string): MarkdownDocument {
   const frontMatter = frontMatterPrefix(markdown);
   const body = markdown.slice(frontMatter.length);
   const tree = parser.parse(body);
-  const starts = tree.children.map((node, i) => (i === 0 ? 0 : node.position!.start.offset!));
+  const blocks = mdastToSourcedBlocks(tree.children, body);
+  const starts = blocks.map((block, i) => (i === 0 ? 0 : block.start!));
   const sources = starts.map((start, i) => body.slice(start, starts[i + 1] ?? body.length));
   if (sources.length === 0 && body !== '') sources.push(body);
-  const content = mdastToBlocks(tree.children, body);
+  const content = blocks.map((block) => block.node);
   // Whitespace-only bodies have no blocks; keep the text as one raw block.
   if (content.length === 0 && body !== '') {
     content.push({ type: 'rawBlock', attrs: { markdown: body } });
@@ -113,7 +114,6 @@ function withOptions<T>(state: State, override: Record<string, unknown>, fn: () 
   }
 }
 
-/** A handler (and its `peek`, used for the neighbouring node) with per-node options. */
 /** A handler; some (emphasis, strong, link) also have a `peek` for their first character. */
 type PeekHandle = Handle & { peek?: Handle };
 

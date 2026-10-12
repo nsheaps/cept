@@ -5,8 +5,10 @@
  * ProseMirror JSON that uses the editor's (TipTap's) node and mark names, and
  * back. How a construct was written (`_` or `*`, a `~~~` fence, a `+` bullet,
  * an autolink) is kept in attributes so an edited block is written the way
- * it was. Syntax the bridge does not model yet is kept as raw Markdown in a
- * `rawBlock` or `rawInline` node, so nothing is lost.
+ * it was. Cept's custom blocks (toggles, callouts, columns, embeds, bookmarks)
+ * are HTML in the file and are modelled in `html-blocks.ts` (PR 48). Syntax
+ * the bridge does not model is kept as raw Markdown in a `rawBlock` or
+ * `rawInline` node, so nothing is lost.
  */
 
 import type {
@@ -27,6 +29,8 @@ import type {
   TableRow,
   ThematicBreak,
 } from 'mdast';
+import { containerOf, elementBlock, htmlBlockTo, structuralTokens } from './html-blocks.js';
+import type { StructuralToken } from './html-blocks.js';
 
 /** A ProseMirror mark as JSON. */
 export interface PmMark {
@@ -54,7 +58,8 @@ function sourceOf(node: Nodes, src: string): string {
 
 function pmNode(type: string, attrs?: Attrs, content?: PmNode[]): PmNode {
   const node: PmNode = { type };
-  if (attrs && Object.keys(attrs).length > 0) node.attrs = attrs;
+  const defined = attrs && Object.entries(attrs).filter(([, value]) => value !== undefined);
+  if (defined && defined.length > 0) node.attrs = Object.fromEntries(defined);
   if (content && content.length > 0) node.content = content;
   return node;
 }
@@ -63,8 +68,86 @@ function pmNode(type: string, attrs?: Attrs, content?: PmNode[]): PmNode {
 
 /** Convert top-level or nested mdast block nodes. */
 export function mdastToBlocks(nodes: readonly RootContent[], src: string): PmNode[] {
-  return nodes.map((node) => blockFrom(node, src));
+  return mdastToSourcedBlocks(nodes, src).map((block) => block.node);
 }
+
+/** A converted block and the source offset it starts at. */
+export interface SourcedBlock {
+  node: PmNode;
+  start: number | undefined;
+}
+
+/**
+ * Convert sibling mdast blocks, regrouping the blocks between a container's
+ * opening and closing tags (see `html-blocks.ts`). If the tags do not nest
+ * properly, every block is converted on its own (tags become `rawBlock`s).
+ */
+export function mdastToSourcedBlocks(nodes: readonly RootContent[], src: string): SourcedBlock[] {
+  return (
+    grouped(nodes, src) ??
+    nodes.map((node) => ({ node: blockFrom(node, src), start: node.position?.start.offset }))
+  );
+}
+
+interface Frame {
+  token: StructuralToken & { kind: 'open' };
+  container: PmNode | null;
+  items: SourcedBlock[];
+  start: number | undefined;
+}
+
+function grouped(nodes: readonly RootContent[], src: string): SourcedBlock[] | null {
+  const root: SourcedBlock[] = [];
+  const stack: Frame[] = [];
+  const items = () => stack[stack.length - 1]?.items ?? root;
+  for (const node of nodes) {
+    const base = node.position?.start.offset;
+    const tokens = node.type === 'html' ? structuralTokens(node.value) : null;
+    if (!tokens) {
+      items().push({ node: blockFrom(node, src), start: base });
+      continue;
+    }
+    for (const token of tokens) {
+      const start = base === undefined ? undefined : base + token.offset;
+      if (token.kind === 'open') {
+        stack.push({ token, container: containerOf(token), items: [], start });
+        continue;
+      }
+      const frame = stack.pop();
+      if (frame?.token.tag !== token.tag) return null;
+      const closed = closeFrame(frame, stack[stack.length - 1]);
+      if (!closed) return null;
+      items().push(...closed, ...(frame.container ? [] : [{ node: rawBlock(token.text), start }]));
+    }
+  }
+  return stack.length === 0 ? root : null;
+}
+
+const rawBlock = (markdown: string): PmNode => pmNode('rawBlock', { markdown });
+
+/** The blocks a closed container becomes, or null if it cannot be modelled here. */
+function closeFrame(frame: Frame, parent: Frame | undefined): SourcedBlock[] | null {
+  const { container } = frame;
+  // A container Cept does not model: its tags stay raw around its body.
+  if (!container) return [{ node: rawBlock(frame.token.text), start: frame.start }, ...frame.items];
+  const content = frame.items.map((item) => item.node);
+  const inColumns = parent?.container?.type === 'columns';
+  if (container.type === 'column' && !inColumns) return null;
+  if (
+    container.type === 'columns' &&
+    !(content.length >= 2 && content.every((node) => node.type === 'column'))
+  ) {
+    return null;
+  }
+  const node: PmNode = {
+    ...container,
+    content: content.length > 0 ? content : [pmNode('paragraph')],
+  };
+  return [{ node, start: frame.start }];
+}
+
+/** Convert mdast that has no source (built from HTML): style detection is skipped. */
+const sourceless = (nodes: RootContent[]) => mdastToBlocks(nodes, '');
 
 /** Container content; ProseMirror needs at least one block in it. */
 function childBlocks(nodes: readonly RootContent[], src: string): PmNode[] {
@@ -81,12 +164,12 @@ function blockFrom(node: RootContent, src: string): PmNode {
         'heading',
         {
           level: node.depth,
-          ...(sourceOf(node, src).trimStart().startsWith('#') ? {} : { setext: true }),
+          ...(/^\s*[^\s#]/.test(sourceOf(node, src)) ? { setext: true } : {}),
         },
         inlineFrom(node.children, src, []),
       );
     case 'thematicBreak':
-      return pmNode('horizontalRule', { marker: sourceOf(node, src).trim() });
+      return pmNode('horizontalRule', { marker: sourceOf(node, src).trim() || undefined });
     case 'blockquote':
       return pmNode('blockquote', {}, childBlocks(node.children, src));
     case 'code':
@@ -95,7 +178,7 @@ function blockFrom(node: RootContent, src: string): PmNode {
         {
           language: node.lang ?? null,
           ...(node.meta ? { meta: node.meta } : {}),
-          fence: /^ {0,3}(`{3,}|~{3,})/.exec(sourceOf(node, src))?.[1] ?? null,
+          fence: fenceOf(sourceOf(node, src)),
         },
         node.value ? [{ type: 'text', text: node.value }] : [],
       );
@@ -104,11 +187,17 @@ function blockFrom(node: RootContent, src: string): PmNode {
     case 'table':
       return tableFrom(node, src);
     case 'html':
-      return pmNode('rawBlock', { markdown: node.value });
+      return elementBlock(node.value, sourceless) ?? rawBlock(node.value);
     default:
       // Definitions, footnote definitions and anything else not modelled yet.
       return pmNode('rawBlock', { markdown: sourceOf(node, src) });
   }
+}
+
+/** The fence a code block was written with; null when indented, undefined without source. */
+function fenceOf(text: string): string | null | undefined {
+  if (!text) return undefined;
+  return /^ {0,3}(`{3,}|~{3,})/.exec(text)?.[1] ?? null;
 }
 
 function paragraphFrom(node: Paragraph, src: string): PmNode {
@@ -193,7 +282,7 @@ function inlineFrom(nodes: readonly PhrasingContent[], src: string, marks: PmMar
         out.push(...inlineFrom(node.children, src, [...marks, linkMark(node, text)]));
         break;
       case 'break':
-        push(pmNode('hardBreak', text.startsWith('\\') ? {} : { spaces: true }));
+        push(pmNode('hardBreak', text && !text.startsWith('\\') ? { spaces: true } : {}));
         break;
       case 'html':
         push(pmNode('rawInline', { markdown: node.value }));
@@ -213,7 +302,7 @@ function styled(type: string, text: string, alternate: string): PmMark {
 function linkMark(node: Link, text: string): PmMark {
   const attrs: Attrs = { href: node.url, title: node.title ?? null };
   if (text.startsWith('<')) attrs.autolink = 'angle';
-  else if (!text.startsWith('[')) attrs.autolink = 'literal';
+  else if (text && !text.startsWith('[')) attrs.autolink = 'literal';
   return { type: 'link', attrs };
 }
 
@@ -273,6 +362,8 @@ export function blocksToMdast(nodes: readonly PmNode[]): RootContent[] {
 
 function blockTo(node: PmNode): RootContent[] {
   const content = node.content ?? [];
+  const custom = htmlBlockTo(node, blocksToMdast);
+  if (custom) return custom;
   switch (node.type) {
     case 'paragraph':
       return [{ type: 'paragraph', children: inlineTo(content) }];
