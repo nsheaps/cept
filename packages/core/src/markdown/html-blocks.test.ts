@@ -101,6 +101,44 @@ describe('custom blocks: loading', () => {
     ]);
   });
 
+  it('recovers locally from a container that cannot load, so later ones still do', () => {
+    const source =
+      '<div data-type="column">\n\nLone column.\n\n</div>\n\n' +
+      '<details>\n<summary>S</summary>\n\nBody\n\n</details>\n';
+    expect(blocks(source)).toEqual([
+      { type: 'rawBlock', attrs: { markdown: '<div data-type="column">' } },
+      paragraph('Lone column.'),
+      { type: 'rawBlock', attrs: { markdown: '</div>' } },
+      { type: 'toggle', attrs: { summary: 'S', open: false }, content: [paragraph('Body')] },
+    ]);
+    expect(unchanged(source)).toBe(source);
+  });
+
+  it('recovers from a mismatched closing tag and an unclosed container', () => {
+    const source =
+      '<details>\n<summary>Outer</summary>\n\n<div data-type="callout">\n\nIn\n\n</details>\n\n' +
+      '<details>\n<summary>S</summary>\n\nBody\n\n</details>\n\n<div data-type="callout">\n\nEnd\n';
+    const loaded = blocks(source);
+    expect(loaded[0]).toEqual({
+      type: 'toggle',
+      attrs: { summary: 'Outer', open: false },
+      content: [
+        { type: 'rawBlock', attrs: { markdown: '<div data-type="callout">' } },
+        paragraph('In'),
+      ],
+    });
+    expect(loaded[1]).toEqual({
+      type: 'toggle',
+      attrs: { summary: 'S', open: false },
+      content: [paragraph('Body')],
+    });
+    expect(loaded.slice(2)).toEqual([
+      { type: 'rawBlock', attrs: { markdown: '<div data-type="callout">' } },
+      paragraph('End'),
+    ]);
+    expect(unchanged(source)).toBe(source);
+  });
+
   it('keeps an HTML element that is not a whole Cept element as raw', () => {
     const html = '<div data-type="callout"><p>x</p></div><p>after</p>';
     expect(blocks(`${html}\n`)).toEqual([{ type: 'rawBlock', attrs: { markdown: html } }]);
@@ -162,6 +200,27 @@ describe('custom blocks: saving', () => {
     expect(write({ type: 'imageBlock', attrs: { src: 'a.png', alt: 'A', width: '50%' } })).toBe(
       '<figure data-type="image" data-width="50%"><img src="a.png" alt="A"></figure>\n',
     );
+  });
+
+  it('keeps the title of a captioned or sized image', () => {
+    const image: PmNode = {
+      type: 'imageBlock',
+      attrs: { src: 'a.png', alt: 'A', title: 'T "q"', caption: 'Cap' },
+    };
+    const written = write(image);
+    expect(written).toBe(
+      '<figure data-type="image"><img src="a.png" alt="A" title="T &quot;q&quot;">' +
+        '<figcaption>Cap</figcaption></figure>\n',
+    );
+    expect(blocks(written)).toEqual([image]);
+  });
+
+  it('leaves out empty source and URL attributes', () => {
+    expect(write({ type: 'imageBlock', attrs: { src: '', alt: 'A', width: '50%' } })).toBe(
+      '<figure data-type="image" data-width="50%"><img alt="A"></figure>\n',
+    );
+    expect(write({ type: 'embed', attrs: { src: '' } })).not.toContain('data-src');
+    expect(write({ type: 'bookmark', attrs: { url: '' } })).not.toContain('data-url');
   });
 
   it('round-trips every written custom block to the same document', () => {

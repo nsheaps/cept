@@ -79,27 +79,19 @@ export interface SourcedBlock {
 
 /**
  * Convert sibling mdast blocks, regrouping the blocks between a container's
- * opening and closing tags (see `html-blocks.ts`). If the tags do not nest
- * properly, every block is converted on its own (tags become `rawBlock`s).
+ * opening and closing tags (see `html-blocks.ts`). Recovery is local: a tag
+ * that does not nest, or a container that cannot be modelled where it is,
+ * becomes `rawBlock`s around its body, and the containers around it still load.
  */
 export function mdastToSourcedBlocks(nodes: readonly RootContent[], src: string): SourcedBlock[] {
-  return (
-    grouped(nodes, src) ??
-    nodes.map((node) => ({ node: blockFrom(node, src), start: node.position?.start.offset }))
-  );
-}
-
-interface Frame {
-  token: StructuralToken & { kind: 'open' };
-  container: PmNode | null;
-  items: SourcedBlock[];
-  start: number | undefined;
-}
-
-function grouped(nodes: readonly RootContent[], src: string): SourcedBlock[] | null {
   const root: SourcedBlock[] = [];
   const stack: Frame[] = [];
   const items = () => stack[stack.length - 1]?.items ?? root;
+  // Give up on the innermost open container: its opening tag stays raw.
+  const unwind = () => {
+    const frame = stack.pop()!;
+    items().push({ node: rawBlock(frame.token.text), start: frame.start }, ...frame.items);
+  };
   for (const node of nodes) {
     const base = node.position?.start.offset;
     const tokens = node.type === 'html' ? structuralTokens(node.value) : null;
@@ -113,14 +105,34 @@ function grouped(nodes: readonly RootContent[], src: string): SourcedBlock[] | n
         stack.push({ token, container: containerOf(token), items: [], start });
         continue;
       }
-      const frame = stack.pop();
-      if (frame?.token.tag !== token.tag) return null;
+      const closer = { node: rawBlock(token.text), start };
+      let depth = stack.length - 1;
+      while (depth >= 0 && stack[depth]!.token.tag !== token.tag) depth--;
+      if (depth < 0) {
+        items().push(closer);
+        continue;
+      }
+      while (stack.length > depth + 1) unwind();
+      const frame = stack.pop()!;
       const closed = closeFrame(frame, stack[stack.length - 1]);
-      if (!closed) return null;
-      items().push(...closed, ...(frame.container ? [] : [{ node: rawBlock(token.text), start }]));
+      if (closed) items().push(...closed, ...(frame.container ? [] : [closer]));
+      else
+        items().push(
+          { node: rawBlock(frame.token.text), start: frame.start },
+          ...frame.items,
+          closer,
+        );
     }
   }
-  return stack.length === 0 ? root : null;
+  while (stack.length > 0) unwind();
+  return root;
+}
+
+interface Frame {
+  token: StructuralToken & { kind: 'open' };
+  container: PmNode | null;
+  items: SourcedBlock[];
+  start: number | undefined;
 }
 
 const rawBlock = (markdown: string): PmNode => pmNode('rawBlock', { markdown });

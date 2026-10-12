@@ -257,7 +257,7 @@ function imageElement(element: Element): PmNode {
     attrs: {
       src: str(imgProps.src ?? props.dataSrc),
       alt: str(imgProps.alt ?? props.dataAlt),
-      title: null,
+      title: str(imgProps.title) || null,
       ...(caption ? { caption: textOf(caption) } : {}),
       ...(width ? { width } : {}),
     },
@@ -345,7 +345,7 @@ export function htmlBlockTo(
           `<figure${attributes([
             ['data-type', 'embed'],
             ['data-provider', attr(node, 'provider') ?? 'generic'],
-            ['data-src', src],
+            ['data-src', src || null],
             ['data-width', attr(node, 'width') ?? '100%'],
             ['data-height', attr(node, 'height') ?? '400px'],
           ])}><a href="${escapeAttr(src)}">${escapeText(src)}</a></figure>`,
@@ -359,7 +359,7 @@ export function htmlBlockTo(
         html(
           `<aside${attributes([
             ['data-type', 'bookmark'],
-            ['data-url', url],
+            ['data-url', url || null],
             ['data-title', title],
             ['data-description', attr(node, 'description') ?? ''],
             ['data-favicon', attr(node, 'favicon') ?? ''],
@@ -373,8 +373,9 @@ export function htmlBlockTo(
       const width = attr(node, 'width');
       if (!caption && !width) return null;
       const img = `<img${attributes([
-        ['src', str(attr(node, 'src'))],
+        ['src', str(attr(node, 'src')) || null],
         ['alt', str(attr(node, 'alt'))],
+        ['title', str(attr(node, 'title')) || null],
       ])}>`;
       const figcaption = caption ? `<figcaption>${escapeText(str(caption))}</figcaption>` : '';
       return [
