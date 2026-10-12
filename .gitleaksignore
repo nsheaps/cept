@@ -1,0 +1,8 @@
+# Reviewed false positives, by gitleaks fingerprint (commit:file:rule:line).
+# Add one only for a deliberately fake value, with a comment saying why; never to
+# hide a real secret (rotate it instead).
+
+# Fake tokens in the registry unit test as first committed; the next commit
+# builds them at runtime so the tree is clean, but history keeps the originals.
+c89d3386abf0c7aca93890922f80fd75b76b73f9:packages/core/src/auth/registry.test.ts:github-pat:15
+c89d3386abf0c7aca93890922f80fd75b76b73f9:packages/core/src/auth/registry.test.ts:gitlab-pat:16
