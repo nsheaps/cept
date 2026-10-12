@@ -41,6 +41,10 @@ describe('parseGraphBlock', () => {
     expect(() => parseGraphBlock('not json')).toThrow(/JSON/);
     expect(() => parseGraphBlock('{}')).toThrow(/nodes/);
     expect(() => parseGraphBlock('{"nodes":[{"id":"a"}]}')).toThrow(/title/);
+    expect(() => parseGraphBlock('{"nodes":[{"id":"a","title":""}]}')).toThrow(/title/);
+    expect(() =>
+      parseGraphBlock('{"nodes":[{"id":"a","title":"A"},{"id":"a","title":"B"}]}'),
+    ).toThrow(/Duplicate node id "a"/);
     expect(() =>
       parseGraphBlock('{"nodes":[{"id":"a","title":"A"}],"links":[{"source":"a","target":"z"}]}'),
     ).toThrow(/unknown node "z"/);

@@ -49,7 +49,10 @@ export function parseGraphBlock(source: string): GraphData {
   const parsedNodes = nodes.map((node: unknown, index) => {
     const n = (node ?? {}) as Record<string, unknown>;
     if (typeof n.id !== 'string' || n.id === '') throw new Error(`Node ${index} needs an "id"`);
-    if (typeof n.title !== 'string') throw new Error(`Node "${n.id}" needs a "title"`);
+    if (typeof n.title !== 'string' || n.title === '') {
+      throw new Error(`Node "${n.id}" needs a "title"`);
+    }
+    if (ids.has(n.id)) throw new Error(`Duplicate node id "${n.id}"`);
     ids.add(n.id);
     return {
       id: n.id,
@@ -94,6 +97,7 @@ export const graphBlockPlugin: FencedBlockEditorPlugin = {
     try {
       const data = parseGraphBlock(source);
       const root = createRoot(wrapper);
+      // A fixed size that fits the editor column; the view does not measure its container.
       root.render(createElement(KnowledgeGraphView, { data, width: 640, height: 360 }));
       return () => {
         // Unmount after the current render pass; ProseMirror may be mid-update.
