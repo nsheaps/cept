@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.50.0](https://github.com/nsheaps/cept/compare/v0.49.0...v0.50.0) (2026-10-12)
+
+### Features
+
+* **ui:** backlinks panel and link-aware search ([#441](https://github.com/nsheaps/cept/issues/441)) ([9352766](https://github.com/nsheaps/cept/commit/9352766d43b907e760e92b8a305b5915763b5555))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([3ac70c4](https://github.com/nsheaps/cept/commit/3ac70c4379dc440e9c5d25b54584d67a52e0df39))
+
 ## [0.49.0](https://github.com/nsheaps/cept/compare/v0.48.0...v0.49.0) (2026-10-12)
 
 ### Features
