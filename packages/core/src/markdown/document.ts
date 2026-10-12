@@ -66,10 +66,10 @@ export function serializeMarkdownDocument(
   original?: MarkdownDocument,
   frontMatter = original?.frontMatter ?? '',
 ): string {
-  const blocks = (doc.content ?? []).filter((block) => !isEmptyParagraph(block, doc));
+  const blocks = (doc.content ?? []).filter((block) => !isEmptyParagraph(block));
   const unused = new Map<string, number[]>();
   (original?.doc.content ?? []).forEach((block, i) => {
-    const key = JSON.stringify(block);
+    const key = blockKey(block);
     unused.set(key, [...(unused.get(key) ?? []), i]);
   });
 
@@ -77,7 +77,7 @@ export function serializeMarkdownDocument(
   let previous: number | undefined;
   blocks.forEach((block, index) => {
     const last = index === blocks.length - 1;
-    const reuse = unused.get(JSON.stringify(block))?.shift();
+    const reuse = unused.get(blockKey(block))?.shift();
     let text =
       reuse !== undefined && original
         ? original.sources[reuse]!
@@ -97,9 +97,18 @@ export function serializeMarkdownDocument(
   return frontMatter + body;
 }
 
-/** An empty document is one empty paragraph in the editor; it is no text. */
-function isEmptyParagraph(block: PmNode, doc: PmNode): boolean {
-  return doc.content?.length === 1 && block.type === 'paragraph' && !block.content;
+/** An empty paragraph has no Markdown form (an empty editor holds one); it is no text. */
+function isEmptyParagraph(block: PmNode): boolean {
+  return block.type === 'paragraph' && !block.content?.length;
+}
+
+/** A block's identity for source reuse: its JSON with object keys sorted, so key order does not matter. */
+function blockKey(block: PmNode): string {
+  return JSON.stringify(block, (_key, value: unknown) =>
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : value,
+  );
 }
 
 /** Run `fn` with serializer options overridden for one node. */

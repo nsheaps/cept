@@ -189,4 +189,30 @@ describe('serializeMarkdownDocument', () => {
     };
     expect(serializeMarkdownDocument(doc)).toBe('Inside\n');
   });
+
+  it('keeps inline children held directly by an unknown node', () => {
+    const doc: PmNode = {
+      type: 'doc',
+      content: [{ type: 'mystery', content: [{ type: 'text', text: 'Loose' }] }],
+    };
+    expect(serializeMarkdownDocument(doc)).toBe('Loose\n');
+  });
+
+  it('writes no text for empty paragraphs, however they are written', () => {
+    const empty = { type: 'paragraph' };
+    expect(serializeMarkdownDocument({ type: 'doc', content: [empty, empty] })).toBe('');
+    expect(serializeMarkdownDocument({ type: 'doc', content: [{ ...empty, content: [] }] })).toBe(
+      '',
+    );
+  });
+
+  it('reuses the source of a block whose attribute keys were reordered', () => {
+    const source = '#   Title  #\n\nText\n';
+    const parsed = parseMarkdownDocument(source);
+    const [heading, paragraph] = parsed.doc.content!;
+    const reordered = { content: heading!.content, attrs: heading!.attrs, type: heading!.type };
+    expect(
+      serializeMarkdownDocument({ type: 'doc', content: [reordered, paragraph!] }, parsed),
+    ).toBe(source);
+  });
 });

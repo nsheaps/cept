@@ -419,9 +419,30 @@ function blockTo(node: PmNode): RootContent[] {
     case 'rawBlock':
       return [{ type: 'html', value: attr<string>(node, 'markdown') ?? '' }];
     default:
-      // A node type the bridge does not know: keep its content.
-      return blocksToMdast(content);
+      // A node type the bridge does not know: keep its content. Inline
+      // children held directly are wrapped in paragraphs so they are not lost.
+      return blocksToMdast(wrapInline(content));
   }
+}
+
+const INLINE_TYPES = new Set(['text', 'hardBreak', 'rawInline']);
+
+/** Group runs of inline nodes into paragraphs, leaving block nodes as they are. */
+function wrapInline(nodes: readonly PmNode[]): PmNode[] {
+  const out: PmNode[] = [];
+  let run: PmNode[] | undefined;
+  for (const node of nodes) {
+    if (!INLINE_TYPES.has(node.type)) {
+      run = undefined;
+      out.push(node);
+    } else if (run) {
+      run.push(node);
+    } else {
+      run = [node];
+      out.push({ type: 'paragraph', content: run });
+    }
+  }
+  return out;
 }
 
 function listTo(node: PmNode): List {
@@ -465,6 +486,11 @@ function tableTo(node: PmNode): Table {
   };
 }
 
+/**
+ * The marks the bridge writes, outermost first; `code` is handled separately.
+ * This is an allowlist: any other mark (highlight, underline, ...) is dropped
+ * on save until it is added here or kept as `rawInline`.
+ */
 const MARK_ORDER = ['link', 'bold', 'italic', 'strike'];
 
 function markRank(mark: PmMark): number {
