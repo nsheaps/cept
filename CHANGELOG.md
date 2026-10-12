@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.42.0](https://github.com/nsheaps/cept/compare/v0.41.0...v0.42.0) (2026-10-12)
+
+### Features
+
+* **ui:** bind each git space to the auth it was added with ([#432](https://github.com/nsheaps/cept/issues/432)) ([da2eac1](https://github.com/nsheaps/cept/commit/da2eac1ef83e353b3d4a604c9007f3707e47cdfe))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([455cfe9](https://github.com/nsheaps/cept/commit/455cfe9bc918e4729880f6fc4471179598e44bfc))
+
 ## [0.41.0](https://github.com/nsheaps/cept/compare/v0.40.0...v0.41.0) (2026-10-12)
 
 ### Features
