@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.36.0](https://github.com/nsheaps/cept/compare/v0.35.0...v0.36.0) (2026-10-12)
+
+### Features
+
+* **editor:** render mermaid as a fenced-block plugin ([#426](https://github.com/nsheaps/cept/issues/426)) ([bba790d](https://github.com/nsheaps/cept/commit/bba790d22639ddd2b47faaeac748041ff3e44629)), references [#425](https://github.com/nsheaps/cept/issues/425)
+
 ## [0.35.0](https://github.com/nsheaps/cept/compare/v0.34.1...v0.35.0) (2026-10-12)
 
 ### Features
