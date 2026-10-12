@@ -32,16 +32,21 @@ import { SPACE_PAGES_DIR, SPACE_STATE_FILE } from './space-store.js';
 import {
   addFolderPage,
   deleteFolderPage,
+  deleteForeignFile,
   duplicateFolderPage,
   initFolderSpace,
   isFolderSpace,
   moveFolderPageToRoot,
+  moveForeignFileToRoot,
+  previewMoveForeignToRootLinks,
   previewMoveToRootLinks,
+  previewRenameForeignLinks,
   previewRenameLinks,
   readFolderFile,
   readFolderPage,
   readFolderTree,
   renameFolderPage,
+  renameForeignFile,
   toPageTree,
   writeFolderPage,
 } from './folder-space.js';
@@ -1011,5 +1016,28 @@ export class SpaceManager {
 
   duplicatePage(id: string, pageId: string): Promise<FolderChange> {
     return duplicateFolderPage(this.store(id).backend, pageId);
+  }
+
+  // The same operations for files that are not pages (images, attachments),
+  // addressed by their path relative to the space root.
+
+  renameFile(id: string, path: string, title: string, updateLinks = true): Promise<FolderChange> {
+    return renameForeignFile(this.store(id).backend, path, title, updateLinks);
+  }
+
+  moveFileToRoot(id: string, path: string, updateLinks = true): Promise<FolderChange> {
+    return moveForeignFileToRoot(this.store(id).backend, path, updateLinks);
+  }
+
+  previewRenameFile(id: string, path: string, title: string): Promise<LinkRewritePreview> {
+    return previewRenameForeignLinks(this.store(id).backend, path, title);
+  }
+
+  previewMoveFileToRoot(id: string, path: string): Promise<LinkRewritePreview> {
+    return previewMoveForeignToRootLinks(this.store(id).backend, path);
+  }
+
+  deleteFile(id: string, path: string): Promise<void> {
+    return deleteForeignFile(this.store(id).backend, path);
   }
 }

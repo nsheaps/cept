@@ -215,6 +215,59 @@ describe('App folder spaces', () => {
     });
   });
 
+  describe('a file that is not a page', () => {
+    async function openWithImage(action: 'ctx-rename' | 'ctx-move-to-root' | 'ctx-delete') {
+      const folder = notesFolder();
+      folder.seedText('Welcome.md', 'Logo: ![logo](Guides/logo.png)\n');
+      folder.seedText('Guides/logo.png', 'png');
+      const { host, next } = fakeHost(new Map([['notes', folder]]));
+      next.handle = folderHandle('notes');
+      renderApp(new MemoryBackend(), host);
+      fireEvent.click(await screen.findByTestId('landing-open-folder'));
+      fireEvent.click(await screen.findByTestId('page-tree-toggle-Guides', {}, { timeout: 3000 }));
+      fireEvent.contextMenu(await screen.findByTestId('page-tree-button-Guides/logo.png'));
+      // No page-only actions for a file.
+      expect(screen.queryByTestId('ctx-duplicate')).toBeNull();
+      expect(screen.queryByTestId('ctx-toggle-favorite')).toBeNull();
+      fireEvent.click(await screen.findByTestId(action));
+      if (action === 'ctx-rename') {
+        const input = await screen.findByTestId('rename-input');
+        fireEvent.change(input, { target: { value: 'brand' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+      }
+      return folder;
+    }
+
+    it('renames it, keeping its extension, and updates the links to it', async () => {
+      const folder = await openWithImage('ctx-rename');
+      fireEvent.click(await screen.findByTestId('link-rewrite-update'));
+      await screen.findByTestId('page-tree-button-Guides/brand.png', {}, { timeout: 3000 });
+      expect(folder.hasFile('Guides/logo.png')).toBe(false);
+      expect(folder.readText('Welcome.md')).toBe('Logo: ![logo](Guides/brand.png)\n');
+    });
+
+    it('moves it to the root, leaving links alone when asked to', async () => {
+      const folder = await openWithImage('ctx-move-to-root');
+      fireEvent.click(await screen.findByTestId('link-rewrite-skip'));
+      await screen.findByTestId('page-tree-button-logo.png', {}, { timeout: 3000 });
+      expect(folder.readText('Welcome.md')).toBe('Logo: ![logo](Guides/logo.png)\n');
+    });
+
+    it('deletes it only after the user confirms', async () => {
+      const folder = await openWithImage('ctx-delete');
+      fireEvent.click(await screen.findByTestId('delete-file-cancel'));
+      await settle();
+      expect(folder.hasFile('Guides/logo.png')).toBe(true);
+
+      fireEvent.contextMenu(screen.getByTestId('page-tree-button-Guides/logo.png'));
+      fireEvent.click(await screen.findByTestId('ctx-delete'));
+      fireEvent.click(await screen.findByTestId('delete-file-confirm'));
+      await settle();
+      expect(folder.hasFile('Guides/logo.png')).toBe(false);
+      expect(screen.queryByTestId('page-tree-button-Guides/logo.png')).toBeNull();
+    });
+  });
+
   it('lists a file that is not a page and previews it read-only', async () => {
     const folder = notesFolder();
     folder.seedText('readme.txt', 'plain words');

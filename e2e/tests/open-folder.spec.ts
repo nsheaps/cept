@@ -164,4 +164,27 @@ test.describe('Open a local folder as a space', () => {
     expect(files['Guides/Install.md']).toBe(FILES['Guides/Setup.md']);
     expect(files['Guides/Setup.md']).toBeUndefined();
   });
+  test('deleting a file that is not a page asks first', async ({ page }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+
+    await page.getByTestId('landing-open-folder').click();
+    await page.getByTestId('page-tree-button-photo.txt').click({ button: 'right', timeout: 10000 });
+    await page.getByTestId('ctx-delete').click();
+
+    await expect(page.getByTestId('delete-file-dialog')).toBeVisible();
+    await captureScreenshot(page, {
+      name: 'delete-file-dialog',
+      category: 'features',
+      selector: '[data-testid="delete-file-dialog"] [role="dialog"]',
+    });
+    expect((await folderFiles(page))['photo.txt']).toBe(FILES['photo.txt']);
+
+    await page.getByTestId('delete-file-confirm').click();
+    await expect(page.getByTestId('page-tree-button-photo.txt')).toHaveCount(0, {
+      timeout: 10000,
+    });
+    expect((await folderFiles(page))['photo.txt']).toBeUndefined();
+  });
 });

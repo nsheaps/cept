@@ -19,7 +19,12 @@ export interface PageTreeItemProps {
   onSelect?: (id: string) => void;
   onToggle?: (id: string) => void;
   onAdd?: (parentId: string) => void;
-  onContextMenu?: (id: string, title: string, position: { x: number; y: number }) => void;
+  onContextMenu?: (
+    id: string,
+    title: string,
+    position: { x: number; y: number },
+    foreign?: boolean,
+  ) => void;
 }
 
 export function PageTreeItem({
@@ -62,8 +67,7 @@ export function PageTreeItem({
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (node.foreign) return;
-      onContextMenu?.(node.id, node.title, { x: e.clientX, y: e.clientY });
+      onContextMenu?.(node.id, node.title, { x: e.clientX, y: e.clientY }, node.foreign);
     },
     [node.id, node.title, node.foreign, onContextMenu],
   );

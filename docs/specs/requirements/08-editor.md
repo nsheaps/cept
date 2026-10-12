@@ -777,16 +777,19 @@ The title is `title` from front matter, else the text of the first level-1 headi
 - A link to a page that does not exist is marked broken (`data-broken`) and kept as written.
 - Relative images are read through the space's `StorageBackend` and shown from blob URLs, which are revoked when the page is closed; an image that cannot be read is marked broken.
 
-- Foreign files (folder and Git spaces) are listed in the page tree after the pages of their folder, with a paperclip icon and no page actions (no add, rename, move or delete menu yet). The space marker and `.cept.yaml` files are configuration and are not listed; ignored and hidden paths are not listed; a folder that holds only foreign files is not in the tree yet.
+- Foreign files (folder and Git spaces) are listed in the page tree after the pages of their folder, with a paperclip icon. Their context menu offers Rename, Move and Delete only (no favorites, duplicate or add). The space marker and `.cept.yaml` files are configuration and are not listed; ignored and hidden paths are not listed; a folder that holds only foreign files is not in the tree yet.
 - Opening one reads it then and shows a read-only preview: images (including SVG, through `<img>`), PDFs, and plain text (known extensions, or extensionless files with no NUL byte; the first 512 KiB), otherwise a download link. The blob URL is revoked when the file is closed. Nothing is written.
 
 - Renaming a page, moving it to the root, or turning a file page into a folder page rewrites links: links to the moved pages point at their new paths, and the relative links and images in them are rewritten for their new folder. Absolute (`/x.md`) URLs, queries and anchors are kept as written, external URLs are untouched. The app lists the pages it will change and offers update, move without updating, or cancel. All rewrites are written before the move, and restored if it fails; a Git space commits them with the move.
 
-Not yet: moving assets with their links, adding files by paste, drop or upload into `assets/`, moving, renaming or deleting a foreign file on request, marking links to missing foreign files as broken, and angle-bracket destinations written by Cept. Other spaces (browser storage) have opaque page ids and no files, so their links are not resolved.
+- Renaming a foreign file keeps its extension (`logo.png` renamed `brand` is `brand.png`) and is refused when the new name would make it a page (`.md`, `.markdown`). Renaming it or moving it to the root rewrites the links and images that point at it, with the same preview and choices as for pages. Deleting one asks first, is permanent (there is no trash for these files) and never deletes a page file; links to it are then marked broken.
+- A link to a file that is not in the space is marked broken (`data-broken`) when the space lists its files (folder and Git spaces). An open foreign-file preview reads its file again after a Git sync changed the space.
+
+Not yet: adding files by paste, drop or upload into `assets/`, a ranged read so a large attachment is not read whole to be previewed or its size shown (the backend has no ranged read), and angle-bracket destinations written by Cept. Files under a folder that is hidden or in the trash count as missing for link marking. Other spaces (browser storage) have opaque page ids and no files, so their links are not resolved.
 
 **Docs:** documented in this requirement; a guide page is still to write.
 
-**Gap:** Asset adding, move, rename and delete of foreign files, broken-link marking for foreign files, and a guide page.
+**Gap:** Asset adding by paste, drop or upload, ranged reads for large attachments, and a guide page.
 
 **Related:** [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files), [REQ-EDT-021](#req-edt-021--backlinks-panel), [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem).
 

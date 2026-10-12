@@ -5,6 +5,8 @@ export interface PageContextMenuProps {
   pageTitle: string;
   position: { x: number; y: number };
   isFavorite?: boolean;
+  /** A file that is not a page: no favorites, no duplicate. */
+  foreign?: boolean;
   onRename: (id: string, newTitle: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -18,6 +20,7 @@ export function PageContextMenu({
   pageTitle,
   position,
   isFavorite,
+  foreign = false,
   onRename,
   onDuplicate,
   onDelete,
@@ -65,7 +68,7 @@ export function PageContextMenu({
       onClick={(e) => e.stopPropagation()}
       data-testid="page-context-menu"
     >
-      {onToggleFavorite && (
+      {onToggleFavorite && !foreign && (
         <button
           className="cept-context-menu-item"
           onClick={() => {
@@ -84,16 +87,18 @@ export function PageContextMenu({
       >
         Rename
       </button>
-      <button
-        className="cept-context-menu-item"
-        onClick={() => {
-          onDuplicate(pageId);
-          onClose();
-        }}
-        data-testid="ctx-duplicate"
-      >
-        Duplicate
-      </button>
+      {!foreign && (
+        <button
+          className="cept-context-menu-item"
+          onClick={() => {
+            onDuplicate(pageId);
+            onClose();
+          }}
+          data-testid="ctx-duplicate"
+        >
+          Duplicate
+        </button>
+      )}
       <button
         className="cept-context-menu-item"
         onClick={() => {
