@@ -3,12 +3,17 @@ import { MemoryBackend } from './test-helpers.js';
 import {
   addFolderPage,
   deleteFolderPage,
+  deleteForeignFile,
   duplicateFolderPage,
   initFolderSpace,
   isFolderSpace,
   moveFolderPageToRoot,
+  moveForeignFileToRoot,
+  previewMoveForeignToRootLinks,
   previewMoveToRootLinks,
+  previewRenameForeignLinks,
   previewRenameLinks,
+  renameForeignFile,
   pageNameFromTitle,
   readFolderPage,
   readFolderTree,
@@ -187,6 +192,62 @@ describe('folder spaces', () => {
   it('makes titles safe as file names', () => {
     expect(pageNameFromTitle(' a/b\\c ')).toBe('a-b-c');
     expect(pageNameFromTitle('..hidden')).toBe('hidden');
+  });
+
+  describe('files that are not pages', () => {
+    beforeEach(() => {
+      backend.seedText('guides/setup.md', 'Logo: ![logo](logo.png) and [spec](../spec.pdf).');
+      backend.seedText('todo.md', 'See ![logo](guides/logo.png).');
+      backend.seedText('spec.pdf', 'pdf');
+    });
+
+    it('renames a file, keeping its extension, and rewrites links to it', async () => {
+      expect(await renameForeignFile(backend, 'guides/logo.png', 'brand')).toEqual({
+        pageId: 'guides/brand.png',
+        moved: [{ from: 'guides/logo.png', to: 'guides/brand.png' }],
+        rewritten: ['guides/setup.md', 'todo.md'],
+      });
+      expect(backend.hasFile('guides/logo.png')).toBe(false);
+      expect(backend.readText('guides/brand.png')).toBe('png');
+      expect(backend.readText('todo.md')).toBe('See ![logo](guides/brand.png).');
+      expect(backend.readText('guides/setup.md')).toContain('![logo](brand.png)');
+    });
+
+    it('does not turn a file into a page', async () => {
+      await expect(renameForeignFile(backend, 'guides/logo.png', 'logo.md')).rejects.toThrow(
+        /page/,
+      );
+      expect(backend.readText('guides/logo.png')).toBe('png');
+    });
+
+    it('leaves links alone when asked to', async () => {
+      await renameForeignFile(backend, 'guides/logo.png', 'brand', false);
+      expect(backend.readText('todo.md')).toBe('See ![logo](guides/logo.png).');
+    });
+
+    it('moves a file to the root and rewrites links to it', async () => {
+      const change = await moveForeignFileToRoot(backend, 'guides/logo.png');
+      expect(change.pageId).toBe('logo.png');
+      expect(backend.readText('todo.md')).toBe('See ![logo](logo.png).');
+      expect(backend.readText('guides/setup.md')).toContain('![logo](../logo.png)');
+    });
+
+    it('previews the pages a rename or move would update', async () => {
+      const rename = await previewRenameForeignLinks(backend, 'guides/logo.png', 'brand');
+      expect(rename.total).toBe(2);
+      expect(rename.pages.map((p) => p.file).sort()).toEqual(['guides/setup.md', 'todo.md']);
+      const move = await previewMoveForeignToRootLinks(backend, 'guides/logo.png');
+      expect(move.total).toBe(2);
+      expect(backend.readText('todo.md')).toBe('See ![logo](guides/logo.png).');
+    });
+
+    it('deletes only the file', async () => {
+      await deleteForeignFile(backend, 'spec.pdf');
+      expect(backend.hasFile('spec.pdf')).toBe(false);
+      await deleteForeignFile(backend, 'todo.md');
+      expect(backend.hasFile('todo.md')).toBe(true);
+      await deleteForeignFile(backend, 'missing.bin');
+    });
   });
 
   describe('links when pages move', () => {

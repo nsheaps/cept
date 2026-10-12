@@ -398,6 +398,108 @@ export async function moveFolderPageToRoot(
   });
 }
 
+/** The extension of a file name, with its dot (`.png`), or '' when it has none. */
+function extensionOf(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot > 0 ? name.slice(dot) : '';
+}
+
+/**
+ * The name a file that is not a page gets when renamed after `title`: the old
+ * extension is kept unless the title already ends in it. A title that would make
+ * the file a page (`.md`, `.markdown`) is refused.
+ */
+function foreignNameFor(path: string, title: string): string {
+  const name = pageNameFromTitle(title);
+  if (!name) return '';
+  if (isPageFile(name)) throw new Error(`Cannot rename ${path} to ${name}: it would become a page`);
+  const ext = extensionOf(baseName(path));
+  return ext && !name.toLowerCase().endsWith(ext.toLowerCase()) ? name + ext : name;
+}
+
+async function moveForeign(
+  backend: StorageBackend,
+  path: string,
+  newParent: string,
+  name: string,
+  updateLinks: boolean,
+): Promise<FolderChange> {
+  const to = join(newParent, name);
+  return withLinkRewrites(
+    backend,
+    to === path ? [] : [{ from: path, to }],
+    updateLinks,
+    async () => {
+      const { id, moved } = await movePage(
+        backend,
+        '',
+        { id: path, kind: 'file' },
+        newParent,
+        name,
+      );
+      return { pageId: id, moved };
+    },
+  );
+}
+
+/** The pages that moving the non-page file `path` to `to` would update. */
+async function previewForeignMove(
+  backend: StorageBackend,
+  path: string,
+  to: string,
+): Promise<LinkRewritePreview> {
+  if (to === path) return { total: 0, pages: [] };
+  return summarize(planLinkRewrites(await readPageTexts(backend), [{ from: path, to }]));
+}
+
+/** Rename a file that is not a page after `title`, rewriting links to it unless `updateLinks` is false. */
+export async function renameForeignFile(
+  backend: StorageBackend,
+  path: string,
+  title: string,
+  updateLinks = true,
+): Promise<FolderChange> {
+  const name = foreignNameFor(path, title);
+  return name
+    ? moveForeign(backend, path, parentOf(path), name, updateLinks)
+    : { pageId: path, moved: [] };
+}
+
+/** Move a file that is not a page to the space root, rewriting links to it unless `updateLinks` is false. */
+export function moveForeignFileToRoot(
+  backend: StorageBackend,
+  path: string,
+  updateLinks = true,
+): Promise<FolderChange> {
+  return moveForeign(backend, path, '', baseName(path), updateLinks);
+}
+
+/** The links that renaming the file `path` after `title` would update. */
+export async function previewRenameForeignLinks(
+  backend: StorageBackend,
+  path: string,
+  title: string,
+): Promise<LinkRewritePreview> {
+  const name = foreignNameFor(path, title);
+  return name
+    ? previewForeignMove(backend, path, join(parentOf(path), name))
+    : { total: 0, pages: [] };
+}
+
+/** The links that moving the file `path` to the space root would update. */
+export function previewMoveForeignToRootLinks(
+  backend: StorageBackend,
+  path: string,
+): Promise<LinkRewritePreview> {
+  return previewForeignMove(backend, path, baseName(path));
+}
+
+/** Delete a file that is not a page. Pages are never deleted here; a missing file is ignored. */
+export async function deleteForeignFile(backend: StorageBackend, path: string): Promise<void> {
+  if (isPageFile(baseName(path))) return;
+  if (await backend.exists(at(path))) await backend.deleteFile(at(path));
+}
+
 /** Copy a page's own content (not its children) to a new sibling page `<name> (copy)`. */
 export async function duplicateFolderPage(
   backend: StorageBackend,
