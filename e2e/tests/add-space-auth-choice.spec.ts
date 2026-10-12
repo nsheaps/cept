@@ -67,7 +67,16 @@ test.describe('Choosing the auth for a new space', () => {
     await page.route('https://api.github.com/**', (route) => serveApi(route));
     const credentials: string[] = [];
     await page.route(`${PROXY}/**`, (route) => {
-      const header = route.request().headers()['authorization'];
+      const request = route.request();
+      const header = request.headers()['authorization'];
+      // Like a private repository: ask for credentials, which git then sends.
+      if (request.method() !== 'OPTIONS' && !header) {
+        return route.fulfill({
+          status: 401,
+          headers: { ...corsHeaders(), 'WWW-Authenticate': 'Basic realm="git"' },
+          body: 'authentication required',
+        });
+      }
       if (header) credentials.push(Buffer.from(header.replace(/^Basic /, ''), 'base64').toString());
       return serveGit(route, root, '/github.com/e2e/notes', 'notes');
     });
