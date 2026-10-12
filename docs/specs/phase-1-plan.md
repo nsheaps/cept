@@ -681,6 +681,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: test that setting an icon updates only that key in the file.
 - Accept: tests green.
 - Risk: none notable.
+- Delivered: icon (emoji grid or typed) and cover (image URL) pickers in `PageHeader`, shown on hover and wired in `App` through `setPageMeta` (`page-header/page-meta.ts`, a thin wrapper over `setFrontMatterKey`), so setting or clearing one writes only that key's lines; the sidebar icon follows, and a page's icon and cover are read from its front matter when it loads. Invalid YAML front matter is left untouched with an error toast. Tests: `page-meta.test.ts` (only the icon key changes, byte for byte), picker tests in `PageHeader.test.tsx`, an e2e screenshot. Not in this PR: uploading a cover image, resolving a relative cover path through the space, an icon image path.
 
 **PR 60 — `feat(ui): move and reorder pages with front-matter order`**
 

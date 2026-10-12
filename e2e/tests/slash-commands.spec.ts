@@ -409,6 +409,22 @@ test.describe('Page Header', () => {
     await expect(page.getByTestId('page-menu')).toBeVisible();
     await captureScreenshot(page, { name: 'page-menu', category: 'features' });
   });
+
+  test('page icon is chosen from a picker and stored in front matter (REQ-EDT-026)', async ({
+    page,
+  }) => {
+    await openDemoEditor(page);
+    await page.getByTestId('page-icon').click();
+    await expect(page.getByTestId('icon-picker')).toBeVisible();
+    await captureScreenshot(page, {
+      name: 'page-icon-picker',
+      category: 'features',
+      selector: '[data-testid="page-header"]',
+    });
+    await page.getByLabel('Use \u{1F3AF}').click();
+    await expect(page.getByTestId('icon-picker')).toHaveCount(0);
+    await expect(page.getByTestId('page-icon')).toHaveText('\u{1F3AF}');
+  });
 });
 
 test.describe('App Menu', () => {

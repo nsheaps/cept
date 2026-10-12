@@ -10,9 +10,43 @@ export interface PageHeaderProps {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  /** Set (or, with undefined, remove) the page icon. Without it the header shows no icon picker. */
+  onIconChange?: (id: string, icon: string | undefined) => void;
+  /** Set (or, with undefined, remove) the page cover image URL or path. */
+  onCoverChange?: (id: string, cover: string | undefined) => void;
 }
 
-export function PageHeader({ pageId, title, icon, cover, onRename }: PageHeaderProps) {
+const ICON_CHOICES = [
+  '📄',
+  '📝',
+  '📚',
+  '📌',
+  '✅',
+  '💡',
+  '🚀',
+  '🎯',
+  '📅',
+  '🗂️',
+  '🔧',
+  '🧪',
+  '⭐',
+  '❤️',
+  '🏠',
+  '🌱',
+];
+
+export function PageHeader({
+  pageId,
+  title,
+  icon,
+  cover,
+  onRename,
+  onIconChange,
+  onCoverChange,
+}: PageHeaderProps) {
+  const [picker, setPicker] = useState<'icon' | 'cover' | null>(null);
+  const [iconValue, setIconValue] = useState('');
+  const [coverValue, setCoverValue] = useState(cover ?? '');
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -20,6 +54,26 @@ export function PageHeader({ pageId, title, icon, cover, onRename }: PageHeaderP
   useEffect(() => {
     setEditValue(title);
   }, [title]);
+
+  useEffect(() => {
+    setCoverValue(cover ?? '');
+  }, [cover]);
+
+  // Another page was opened: close any picker left open.
+  useEffect(() => {
+    setPicker(null);
+  }, [pageId]);
+
+  const chooseIcon = (value: string | undefined) => {
+    onIconChange?.(pageId, value);
+    setIconValue('');
+    setPicker(null);
+  };
+
+  const saveCover = (value: string | undefined) => {
+    onCoverChange?.(pageId, value);
+    setPicker(null);
+  };
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -57,8 +111,111 @@ export function PageHeader({ pageId, title, icon, cover, onRename }: PageHeaderP
           <img src={cover} alt="" className="cept-page-header-cover-img" />
         </div>
       )}
+      {onCoverChange && (
+        <div className="cept-page-header-actions">
+          {!icon && onIconChange && (
+            <button
+              className="cept-page-header-action"
+              data-testid="add-icon"
+              onClick={() => setPicker(picker === 'icon' ? null : 'icon')}
+            >
+              Add icon
+            </button>
+          )}
+          <button
+            className="cept-page-header-action"
+            data-testid="edit-cover"
+            onClick={() => setPicker(picker === 'cover' ? null : 'cover')}
+          >
+            {cover ? 'Change cover' : 'Add cover'}
+          </button>
+        </div>
+      )}
+      {picker === 'icon' && onIconChange && (
+        <div className="cept-page-header-picker" data-testid="icon-picker">
+          <div className="cept-page-header-icon-grid">
+            {ICON_CHOICES.map((emoji) => (
+              <button
+                key={emoji}
+                className="cept-page-header-icon-choice"
+                aria-label={`Use ${emoji}`}
+                onClick={() => chooseIcon(emoji)}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = iconValue.trim();
+              if (trimmed) chooseIcon(trimmed);
+            }}
+          >
+            <input
+              className="cept-page-header-picker-input"
+              data-testid="icon-input"
+              placeholder="Type or paste an emoji"
+              value={iconValue}
+              onChange={(e) => setIconValue(e.target.value)}
+            />
+          </form>
+          {icon && (
+            <button
+              className="cept-page-header-action"
+              data-testid="remove-icon"
+              onClick={() => chooseIcon(undefined)}
+            >
+              Remove icon
+            </button>
+          )}
+        </div>
+      )}
+      {picker === 'cover' && onCoverChange && (
+        <div className="cept-page-header-picker" data-testid="cover-picker">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = coverValue.trim();
+              saveCover(trimmed === '' ? undefined : trimmed);
+            }}
+          >
+            <input
+              className="cept-page-header-picker-input"
+              data-testid="cover-input"
+              placeholder="Image URL (https://…)"
+              value={coverValue}
+              onChange={(e) => setCoverValue(e.target.value)}
+            />
+          </form>
+          {cover && (
+            <button
+              className="cept-page-header-action"
+              data-testid="remove-cover"
+              onClick={() => saveCover(undefined)}
+            >
+              Remove cover
+            </button>
+          )}
+        </div>
+      )}
       <div className="cept-page-header-title-row">
-        {icon && <span className="cept-page-header-icon">{icon}</span>}
+        {icon && (
+          <span
+            className="cept-page-header-icon"
+            {...(onIconChange
+              ? {
+                  role: 'button',
+                  tabIndex: 0,
+                  title: 'Change icon',
+                  'data-testid': 'page-icon',
+                  onClick: () => setPicker(picker === 'icon' ? null : 'icon'),
+                }
+              : {})}
+          >
+            {icon}
+          </span>
+        )}
         {isEditing ? (
           <div className="cept-page-header-edit-wrapper">
             <input

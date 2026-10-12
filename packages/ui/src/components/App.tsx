@@ -13,6 +13,7 @@ import {
   findNode,
   addChild,
   findAncestorIds,
+  setNodeMeta,
 } from './sidebar/page-tree-utils.js';
 import { Breadcrumbs } from './topbar/Breadcrumbs.js';
 import { CommandPalette } from './command-palette/CommandPalette.js';
@@ -20,6 +21,8 @@ import type { CommandItem } from './command-palette/CommandPalette.js';
 import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
+import { readPageMeta, setPageMeta } from './page-header/page-meta.js';
+import type { PageMetaKey } from './page-header/page-meta.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
 import { useTheme } from './settings/useTheme.js';
@@ -1565,6 +1568,55 @@ export function App() {
     },
     [selectedPageId, flushPendingWrite, addToast],
   );
+
+  /**
+   * Set or remove a page's icon or cover. The change is one front matter key in
+   * the page's own file (REQ-EDT-026); the sidebar and header follow it.
+   */
+  const handlePageMetaChange = useCallback(
+    (id: string, key: PageMetaKey, value: string | undefined) => {
+      void (async () => {
+        const pending = pendingWriteRef.current;
+        const stored =
+          pending?.pageId === id
+            ? pending.content
+            : (pageContentsRef.current[id] ?? (await currentReadPage(id)) ?? '');
+        const next = setPageMeta(stored, key, value);
+        if (next === stored) {
+          if (readPageMeta(stored)[key] !== value)
+            addToast(
+              `Could not set the ${key}: this page's front matter is not valid YAML. Fix it in the file first.`,
+              'error',
+            );
+          return;
+        }
+        setPageContents((prev) => ({ ...prev, [id]: next }));
+        setPages((prev) => setNodeMeta(prev, id, key, value));
+        pendingWriteRef.current = { pageId: id, content: next };
+        try {
+          await flushPendingWrite();
+        } catch (err: unknown) {
+          addToast(
+            `Could not save the page: ${err instanceof Error ? err.message : String(err)}`,
+            'error',
+          );
+        }
+      })();
+    },
+    [currentReadPage, flushPendingWrite, addToast],
+  );
+
+  // A page's icon and cover come from its front matter once it is loaded, so
+  // an edit made in the file (or on another device) shows up in the sidebar.
+  const selectedContent = selectedPageId ? pageContents[selectedPageId] : undefined;
+  useEffect(() => {
+    if (!selectedPageId || selectedContent === undefined) return;
+    const meta = readPageMeta(selectedContent);
+    for (const key of ['icon', 'cover'] as const) {
+      const value = meta[key];
+      if (value !== undefined) setPages((prev) => setNodeMeta(prev, selectedPageId, key, value));
+    }
+  }, [selectedPageId, selectedContent]);
 
   // Read the space's links again after the tree, the files or a page changes.
   useEffect(() => {
@@ -3314,6 +3366,14 @@ export function App() {
                 onDuplicate={editLocked ? explainLocked : handlePageDuplicate}
                 onDelete={editLocked ? explainLocked : handlePageDelete}
                 onToggleFavorite={handleToggleFavorite}
+                onIconChange={
+                  editLocked ? explainLocked : (id, icon) => handlePageMetaChange(id, 'icon', icon)
+                }
+                onCoverChange={
+                  editLocked
+                    ? explainLocked
+                    : (id, cover) => handlePageMetaChange(id, 'cover', cover)
+                }
               />
               {contentLoaded ? (
                 <CeptEditor

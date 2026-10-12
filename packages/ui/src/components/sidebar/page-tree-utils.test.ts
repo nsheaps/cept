@@ -8,6 +8,7 @@ import {
   moveNode,
   findNode,
   addChild,
+  setNodeMeta,
 } from './page-tree-utils.js';
 import type { PageTreeNode } from './PageTreeItem.js';
 
@@ -202,5 +203,24 @@ describe('addChild', () => {
     const child: PageTreeNode = { id: 'new', title: 'New', children: [] };
     const result = addChild(tree, 'child-1', child);
     expect(result[0].children[0].children).toHaveLength(3);
+  });
+});
+
+describe('setNodeMeta', () => {
+  it('sets an icon on a nested node and leaves the others the same objects', () => {
+    const next = setNodeMeta(tree, 'grandchild-1', 'icon', '\u{1F680}');
+    expect(findNode(next, 'grandchild-1')?.icon).toBe('\u{1F680}');
+    expect(next[1]).toBe(tree[1]);
+    expect(findNode(next, 'child-2')).toBe(findNode(tree, 'child-2'));
+  });
+
+  it('clears a key', () => {
+    const next = setNodeMeta(tree, 'root-1', 'icon', undefined);
+    expect(findNode(next, 'root-1')).not.toHaveProperty('icon');
+  });
+
+  it('returns the same tree when nothing changes', () => {
+    expect(setNodeMeta(tree, 'root-1', 'icon', '\u{1F4C1}')).toBe(tree);
+    expect(setNodeMeta(tree, 'missing', 'cover', 'x')).toBe(tree);
   });
 });
