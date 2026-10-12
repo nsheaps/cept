@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.47.0](https://github.com/nsheaps/cept/compare/v0.46.0...v0.47.0) (2026-10-12)
+
+### Features
+
+* **ui:** resolve relative links and images through the backend ([9afe4e8](https://github.com/nsheaps/cept/commit/9afe4e87b55a2c4e007ade628e956d4325f3ac6a)), references [nsheaps/cept#436](https://github.com/nsheaps/cept/issues/436)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([dd3a091](https://github.com/nsheaps/cept/commit/dd3a091b5d951f6fa118cd2450e676e8c0e9552a))
+
 ## [0.46.0](https://github.com/nsheaps/cept/compare/v0.45.0...v0.46.0) (2026-10-12)
 
 ### Features
