@@ -95,6 +95,7 @@ describe('PageTreeItem', () => {
       'leaf',
       'Leaf Page',
       expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+      undefined,
     );
   });
 
@@ -107,7 +108,7 @@ describe('PageTreeItem', () => {
   describe('a file that is not a page', () => {
     const file: PageTreeNode = { id: 'logo.png', title: 'logo.png', foreign: true, children: [] };
 
-    it('is selectable but has no page actions', () => {
+    it('is selectable and opens the context menu, but has no page actions', () => {
       const onSelect = vi.fn();
       const onContextMenu = vi.fn();
       render(
@@ -122,7 +123,12 @@ describe('PageTreeItem', () => {
       fireEvent.click(screen.getByTestId('page-tree-button-logo.png'));
       expect(onSelect).toHaveBeenCalledWith('logo.png');
       fireEvent.contextMenu(screen.getByTestId('page-tree-button-logo.png'));
-      expect(onContextMenu).not.toHaveBeenCalled();
+      expect(onContextMenu).toHaveBeenCalledWith(
+        'logo.png',
+        'logo.png',
+        expect.objectContaining({ x: expect.any(Number) }),
+        true,
+      );
       expect(screen.queryByTestId('page-tree-menu-logo.png')).toBeNull();
       expect(screen.queryByTestId('page-tree-add-logo.png')).toBeNull();
       expect(screen.getByText('\u{1F4CE}')).toBeDefined();

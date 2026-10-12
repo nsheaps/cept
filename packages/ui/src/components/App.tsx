@@ -46,6 +46,7 @@ import type { ImportSource } from './import-export/ImportDialog.js';
 import { ExportDialog } from './import-export/ExportDialog.js';
 import { AddSpaceWizardModal } from './settings/AddSpaceWizardModal.js';
 import { OpenFolderDialog } from './settings/OpenFolderDialog.js';
+import { DeleteFileDialog } from './settings/DeleteFileDialog.js';
 import { LinkRewriteDialog } from './settings/LinkRewriteDialog.js';
 import type { LinkRewritePreview } from './storage/folder-space.js';
 import { Toast, useToast } from './shared/Toast.js';
@@ -265,6 +266,10 @@ export function App() {
     preview: LinkRewritePreview;
     run: (updateLinks: boolean) => void;
   } | null>(null);
+  /** A file that is not a page, waiting for the user to confirm deleting it. */
+  const [pendingFileDelete, setPendingFileDelete] = useState<{ path: string; name: string } | null>(
+    null,
+  );
   // The URL named a page or space that does not exist.
   const [notFound, setNotFound] = useState<{ path: string } | undefined>(undefined);
   const {
@@ -1296,11 +1301,20 @@ export function App() {
   const handlePageRename = useCallback(
     (id: string, title: string) => {
       if (spaces.isFolder(userSpaceId)) {
+        const foreign = findNode(pagesRef.current, id)?.foreign === true;
         void (async () => {
           await flushPendingWrite();
-          const preview = await spaces.previewRename(userSpaceId, id, title).catch(() => null);
+          const preview = await (
+            foreign
+              ? spaces.previewRenameFile(userSpaceId, id, title)
+              : spaces.previewRename(userSpaceId, id, title)
+          ).catch(() => null);
           const run = (updateLinks: boolean) =>
-            void runFolderChange(() => spaces.renamePage(userSpaceId, id, title, updateLinks));
+            void runFolderChange(() =>
+              foreign
+                ? spaces.renameFile(userSpaceId, id, title, updateLinks)
+                : spaces.renamePage(userSpaceId, id, title, updateLinks),
+            );
           if (preview && preview.total > 0)
             setPendingRewrite({
               pageTitle: findNode(pagesRef.current, id)?.title ?? title,
@@ -1322,6 +1336,11 @@ export function App() {
   const handlePageDelete = useCallback(
     (id: string) => {
       const node = findNode(pages, id);
+      if (node?.foreign) {
+        // Files that are not pages have no trash: ask, then delete for good.
+        setPendingFileDelete({ path: id, name: node.title });
+        return;
+      }
       if (node) {
         const ancestors = findAncestorIds(pages, id);
         const parentId =
@@ -1458,11 +1477,20 @@ export function App() {
   const handlePageMoveToRoot = useCallback(
     (id: string) => {
       if (spaces.isFolder(userSpaceId)) {
+        const foreign = findNode(pagesRef.current, id)?.foreign === true;
         void (async () => {
           await flushPendingWrite();
-          const preview = await spaces.previewMoveToRoot(userSpaceId, id).catch(() => null);
+          const preview = await (
+            foreign
+              ? spaces.previewMoveFileToRoot(userSpaceId, id)
+              : spaces.previewMoveToRoot(userSpaceId, id)
+          ).catch(() => null);
           const run = (updateLinks: boolean) =>
-            void runFolderChange(() => spaces.movePageToRoot(userSpaceId, id, updateLinks));
+            void runFolderChange(() =>
+              foreign
+                ? spaces.moveFileToRoot(userSpaceId, id, updateLinks)
+                : spaces.movePageToRoot(userSpaceId, id, updateLinks),
+            );
           if (preview && preview.total > 0)
             setPendingRewrite({
               pageTitle: findNode(pagesRef.current, id)?.title ?? id,
@@ -3421,6 +3449,22 @@ export function App() {
           {...(newSpaceAuthId ? { defaultAuthId: newSpaceAuthId } : {})}
           onPublish={handlePublishSpace}
           onClose={() => setPublishSpaceId(null)}
+        />
+      )}
+      {pendingFileDelete && (
+        <DeleteFileDialog
+          name={pendingFileDelete.name}
+          onConfirm={() => {
+            const { path } = pendingFileDelete;
+            setPendingFileDelete(null);
+            void runFolderChange(async () => {
+              await spaces.deleteFile(userSpaceId, path);
+              return { pageId: path, moved: [] };
+            }).then((change) => {
+              if (change) setSelectedPageId((prev) => (prev === path ? undefined : prev));
+            });
+          }}
+          onCancel={() => setPendingFileDelete(null)}
         />
       )}
       {pendingRewrite && (

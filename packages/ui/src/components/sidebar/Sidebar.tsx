@@ -80,11 +80,12 @@ export function Sidebar({
     pageId: string;
     pageTitle: string;
     position: { x: number; y: number };
+    foreign: boolean;
   } | null>(null);
 
   const handleContextMenu = useCallback(
-    (id: string, title: string, position: { x: number; y: number }) => {
-      setContextMenu({ pageId: id, pageTitle: title, position });
+    (id: string, title: string, position: { x: number; y: number }, foreign = false) => {
+      setContextMenu({ pageId: id, pageTitle: title, position, foreign });
     },
     [],
   );
@@ -467,6 +468,7 @@ export function Sidebar({
           pageId={contextMenu.pageId}
           pageTitle={contextMenu.pageTitle}
           position={contextMenu.position}
+          foreign={contextMenu.foreign}
           isFavorite={favorites.some((f) => f.id === contextMenu.pageId)}
           onRename={(id, title) => onPageRename?.(id, title)}
           onDuplicate={(id) => onPageDuplicate?.(id)}
