@@ -1,24 +1,14 @@
-export interface GraphNode {
-  id: string;
-  title: string;
-  icon?: string;
-  group?: string;
+import type { GraphData, GraphLink, GraphNode } from '@cept/core';
+
+export type { GraphData, GraphLink, GraphNode } from '@cept/core';
+
+/** A node with the layout state the force simulation adds to it. */
+export type LaidOutNode = GraphNode & {
   x?: number;
   y?: number;
   fx?: number | null;
   fy?: number | null;
-}
-
-export interface GraphLink {
-  source: string;
-  target: string;
-  type: 'parent' | 'mention' | 'backlink';
-}
-
-export interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
-}
+};
 
 export interface GraphViewOptions {
   mode: 'global' | 'local';
@@ -55,7 +45,7 @@ export function buildGraphData(
     if (page.links) {
       for (const targetId of page.links) {
         if (nodeIds.has(targetId) && targetId !== page.id) {
-          links.push({ source: page.id, target: targetId, type: 'mention' });
+          links.push({ source: page.id, target: targetId, type: 'link' });
         }
       }
     }

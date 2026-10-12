@@ -56,8 +56,8 @@ const sampleData: GraphData = {
   ],
   links: [
     { source: 'a', target: 'b', type: 'parent' },
-    { source: 'b', target: 'c', type: 'mention' },
-    { source: 'c', target: 'd', type: 'mention' },
+    { source: 'b', target: 'c', type: 'link' },
+    { source: 'c', target: 'd', type: 'link' },
   ],
 };
 
@@ -69,7 +69,7 @@ const dataWithGroups: GraphData = {
   ],
   links: [
     { source: 'a', target: 'b', type: 'parent' },
-    { source: 'b', target: 'c', type: 'mention' },
+    { source: 'b', target: 'c', type: 'link' },
   ],
 };
 
@@ -240,7 +240,7 @@ describe('KnowledgeGraphView — filters', () => {
     render(<KnowledgeGraphView data={sampleData} />);
     expect(screen.getByTestId('graph-link-filters')).toBeDefined();
     expect(screen.getByTestId('graph-filter-link-parent')).toBeDefined();
-    expect(screen.getByTestId('graph-filter-link-mention')).toBeDefined();
+    expect(screen.getByTestId('graph-filter-link-link')).toBeDefined();
   });
 
   it('toggles link type filter chip', () => {

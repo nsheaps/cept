@@ -1,5 +1,4 @@
 export {
-  convertWikiLinksToMarkdown,
   serializeFrontMatter,
   markdownToHtml,
   wrapHtmlDocument,

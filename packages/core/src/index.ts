@@ -149,13 +149,22 @@ export { CeptSearchIndex } from './search/index.js';
 // Graph
 export type {
   GraphNode,
-  GraphEdge,
+  GraphLink,
+  GraphLinkType,
   GraphData,
-  GraphNodeType,
-  GraphEdgeType,
-  GraphColorGroup,
-  GraphFilters,
-  GraphPhysics,
+  ExtractedLink,
+  ResolvedLink,
+  LinkGraph,
+  LinkGraphOptions,
+  LinkGraphPage,
+  PageReference,
+} from './graph/index.js';
+export {
+  extractLinks,
+  resolveLink,
+  buildLinkGraph,
+  backlinksOf,
+  readLinkGraph,
 } from './graph/index.js';
 
 // Templates
@@ -357,7 +366,6 @@ export type {
 
 // Exporters
 export {
-  convertWikiLinksToMarkdown,
   serializeFrontMatter,
   markdownToHtml,
   wrapHtmlDocument,

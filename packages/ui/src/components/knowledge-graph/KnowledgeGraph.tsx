@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react';
 import * as d3 from 'd3';
-import type { GraphData, GraphNode, GraphLink, GraphViewOptions } from './graph-types.js';
+import type { GraphData, GraphLink, GraphViewOptions, LaidOutNode } from './graph-types.js';
 import { filterByDepth } from './graph-types.js';
 
 export interface KnowledgeGraphProps {
@@ -61,7 +61,7 @@ export function KnowledgeGraph({
         'link',
         d3
           .forceLink(displayData.links as d3.SimulationLinkDatum<d3.SimulationNodeDatum>[])
-          .id((d) => (d as GraphNode).id)
+          .id((d) => (d as LaidOutNode).id)
           .distance(80),
       )
       .force('charge', d3.forceManyBody().strength(-200))
@@ -87,25 +87,25 @@ export function KnowledgeGraph({
             : '#93c5fd';
       })
       .attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', (d: GraphLink) => (d.type === 'mention' ? '4,4' : 'none'));
+      .attr('stroke-dasharray', (d: GraphLink) => (d.type === 'link' ? '4,4' : 'none'));
 
     // Nodes
     const node = g
       .append('g')
       .attr('class', 'cept-graph-nodes')
-      .selectAll<SVGGElement, GraphNode>('g')
+      .selectAll<SVGGElement, LaidOutNode>('g')
       .data(displayData.nodes)
       .join('g')
       .attr('class', 'cept-graph-node')
       .attr('cursor', 'pointer')
-      .on('click', (_event: MouseEvent, d: GraphNode) => {
+      .on('click', (_event: MouseEvent, d: LaidOutNode) => {
         onNodeClick?.(d.id);
       });
 
     node
       .append('circle')
-      .attr('r', (d: GraphNode) => (options.focusNodeId === d.id ? 10 : 7))
-      .attr('fill', (d: GraphNode) => {
+      .attr('r', (d: LaidOutNode) => (options.focusNodeId === d.id ? 10 : 7))
+      .attr('fill', (d: LaidOutNode) => {
         if (d.group && colorGroups[d.group]) return colorGroups[d.group];
         return colorGroups['default'] ?? '#6366f1';
       })
@@ -119,22 +119,28 @@ export function KnowledgeGraph({
         .attr('dy', 4)
         .attr('font-size', '11px')
         .attr('fill', document.documentElement.classList.contains('dark') ? '#d4d4d8' : '#374151')
-        .text((d: GraphNode) => d.title);
+        .text((d: LaidOutNode) => d.title);
     }
 
     // Drag behavior
     const drag = d3
-      .drag<SVGGElement, GraphNode>()
-      .on('start', (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-      })
-      .on('drag', (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
-        d.fx = event.x;
-        d.fy = event.y;
-      })
-      .on('end', (event: d3.D3DragEvent<SVGGElement, GraphNode, GraphNode>, d: GraphNode) => {
+      .drag<SVGGElement, LaidOutNode>()
+      .on(
+        'start',
+        (event: d3.D3DragEvent<SVGGElement, LaidOutNode, LaidOutNode>, d: LaidOutNode) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        },
+      )
+      .on(
+        'drag',
+        (event: d3.D3DragEvent<SVGGElement, LaidOutNode, LaidOutNode>, d: LaidOutNode) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        },
+      )
+      .on('end', (event: d3.D3DragEvent<SVGGElement, LaidOutNode, LaidOutNode>, d: LaidOutNode) => {
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
@@ -144,12 +150,12 @@ export function KnowledgeGraph({
 
     simulation.on('tick', () => {
       link
-        .attr('x1', (d) => (d.source as unknown as GraphNode).x ?? 0)
-        .attr('y1', (d) => (d.source as unknown as GraphNode).y ?? 0)
-        .attr('x2', (d) => (d.target as unknown as GraphNode).x ?? 0)
-        .attr('y2', (d) => (d.target as unknown as GraphNode).y ?? 0);
+        .attr('x1', (d) => (d.source as unknown as LaidOutNode).x ?? 0)
+        .attr('y1', (d) => (d.source as unknown as LaidOutNode).y ?? 0)
+        .attr('x2', (d) => (d.target as unknown as LaidOutNode).x ?? 0)
+        .attr('y2', (d) => (d.target as unknown as LaidOutNode).y ?? 0);
 
-      node.attr('transform', (d: GraphNode) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+      node.attr('transform', (d: LaidOutNode) => `translate(${d.x ?? 0},${d.y ?? 0})`);
     });
 
     return () => {

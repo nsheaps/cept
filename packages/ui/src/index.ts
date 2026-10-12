@@ -65,6 +65,7 @@ export type {
   GraphData,
   GraphViewOptions,
   GraphFilters,
+  LaidOutNode,
 } from './components/knowledge-graph/graph-types.js';
 export { KnowledgeGraphView } from './components/knowledge-graph/KnowledgeGraphView.js';
 export type { KnowledgeGraphViewProps } from './components/knowledge-graph/KnowledgeGraphView.js';

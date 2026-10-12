@@ -11,7 +11,7 @@ const nodes: TimestampedNode[] = [
 
 const links: GraphLink[] = [
   { source: 'a', target: 'b', type: 'parent' },
-  { source: 'b', target: 'c', type: 'mention' },
+  { source: 'b', target: 'c', type: 'link' },
 ];
 
 describe('buildAnimationFrames', () => {
