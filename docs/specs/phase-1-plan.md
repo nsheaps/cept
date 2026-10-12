@@ -107,6 +107,9 @@ Docs-only items `D1` to `D6` go straight to `main` and are listed in [section 7]
 | 50  | `feat(editor): add a fenced-block plugin interface`               | editor  | EDT-013, EDT-010, EDT-011                               | M    | 49                 |
 | 51  | `feat(editor): render mermaid as a fenced-block plugin`           | editor  | EDT-002, EDT-010, D-33                                  | M    | 50                 |
 | 52  | `feat(markdown): support footnotes and math`                      | editor  | EDT-012, EDT-014, EDT-015, EDT-016                      | M    | 47                 |
+| 52a | `feat(core): keep several git token auths`                        | auth    | AUTH-019, AUTH-012, AUTH-005                            | M    | —                  |
+| 52b | `feat(ui): add an auth section to settings`                       | auth    | AUTH-019, AUTH-013, AUTH-005                            | M    | 52a                |
+| 52c | `feat(ui): choose the auth for a git space`                       | auth    | AUTH-020, WS-023, WS-027                                | M    | 52b                |
 | 53  | `feat(core): extract links and build the link graph`              | links   | EDT-018, EDT-020, D-32, D-41                            | M    | 14, 47             |
 | 54  | `feat(ui): resolve relative links and assets through the backend` | links   | EDT-027 (new)                                           | M    | 20, 49, D3         |
 | 55  | `feat(ui): rewrite inbound links when a page moves`               | links   | EDT-027 (new), NTN-012                                  | M    | 53, 54             |
@@ -138,7 +141,7 @@ Docs-only items `D1` to `D6` go straight to `main` and are listed in [section 7]
 
 \* PR 5 is a large mechanical diff (Prettier output only) but S in hand-written lines; review is "did anything other than formatting change?".
 
-**Totals:** 80 PRs (M0 11, M1 15, M2 17, M3 9, M4 13, M5 15) plus 6 docs-only commits.
+**Totals:** 83 PRs (M0 11, M1 15, M2 17, M3 12, M4 13, M5 15) plus 6 docs-only commits. PRs 52a to 52c were added after PR 429 from owner feedback and come before PR 53.
 
 ## 4. Milestones
 
@@ -169,6 +172,12 @@ PRs, in order: 27, 29 (parallel) → 28, 30 → 31, 33, 35, 40 → 32, 34, 36, 4
 PRs, in order: 44 (any time) · 45 → 46, 47 → 48, 52 → 49 → 50 → 51. Needs D3 and the D-15 decision (D6).
 
 **Exit criterion:** one Markdown pipeline serves the editor and core; the round-trip corpus (GFM, footnotes, math, toggles, custom blocks, unknown HTML, Obsidian/Jekyll/Hugo front matter) is byte-for-byte lossless; mermaid renders as on GitHub and saves as a plain fence; no database entry is reachable from the UI.
+
+### M3b — Auth accounts
+
+PRs, in order: 52a → 52b → 52c. Added before M4 from owner feedback; see the M3b detail section.
+
+**Exit criterion:** Settings has an Auth section with zero or more git token auths, a token link that looks like a link and opens GitHub's token form prefilled, and a git space can use any auth for its host.
 
 ### M4 — Comments, links, graph and Notion parity
 
@@ -577,6 +586,31 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Accept: fixtures green.
 - Risk: none notable.
 - Note (PR 52): remark-math 6.0.0 is in the parser and the serializer. Math maps to the existing `inlineMath`/`mathBlock` nodes; footnotes map to new `footnoteReference`/`footnoteDefinition` nodes whose editor side is in PR 49. Prices such as `$5 and $10` stay text (Pandoc's rule) and are escaped as `\$` when rewritten. The `math` expected failure is removed; fixtures `footnotes-reuse.md` and `math-inline.md` are added.
+
+### M3b — Auth accounts (added before links and graph)
+
+Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section in settings, zero or more git token auths, a choice of auth per git space, and a prefilled token link. Decision D-50: any git host, not only GitHub; github.com tokens are checked, other hosts are stored unchecked. Decision D-51: a space found by autodiscovery uses the auth that found it.
+
+**PR 52a — `feat(core): keep several git token auths`**
+
+- Changes: `core/src/auth/registry.ts` with `GitAuthRegistry` (add, list, remove, `httpAuth(id)`, `restore`); tokens in the `TokenStore` under `cept:auth:token:<id>`, the secret-free list in a host-supplied `AuthIndexStore`; migration of the `cept:github:pat` token; `createTokenUrl()` building the prefilled GitHub link.
+- Red: unit tests: two auths for one account, other-host auth saved unchecked, removal leaves the others, migration, no token in the list or in errors, URL parameters.
+- Accept: tests green.
+- Risk: a token left behind when its index entry is lost; `restore` drops tokens without an entry.
+
+**PR 52b — `feat(ui): add an auth section to settings`**
+
+- Changes: Settings gets an Auth section (own place in the Settings tab, below Content) listing auths, an add form with host and token, removal, the link styled as a link; `GitHubAccountProvider` becomes an auths provider; web app wires the registry.
+- Red: component tests for the list, add, invalid token, remove, link `href` and styling, migration shown as one auth.
+- Accept: tests green; e2e and screenshots updated.
+- Risk: `App.tsx` calls `gitAuth()` in about a dozen places; keep a default so they work until PR 52c passes an id.
+
+**PR 52c — `feat(ui): choose the auth for a git space`**
+
+- Changes: the space manifest records `authId`; autodiscovery runs per GitHub auth; add-space dialogs and space settings get the picker; a space whose auth is gone asks for another.
+- Red: component tests: picker shown with two auths for the host, switching changes the credentials used by the next fetch, discovery lists a space once.
+- Accept: tests green.
+- Risk: commit author must follow the auth (REQ-WS-027).
 
 ### M4 — Comments, links, graph and Notion parity
 

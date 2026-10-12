@@ -55,6 +55,8 @@ This document covers how Cept connects spaces to remote storage and how it authe
 | [REQ-AUTH-016](#req-auth-016--native-oauth-for-packaged-apps)                                  | Native OAuth via system browser and redirect for packaged apps   | MUST     | stubbed     | documented-differently | stale         |
 | [REQ-AUTH-017](#req-auth-017--shared-credentials-through-the-local-daemon)                     | Shared credentials through the local daemon                      | SHOULD   | not-started | undocumented           | n/a           |
 | [REQ-AUTH-018](#req-auth-018--no-secrets-in-client-bundles-or-the-repo)                        | No secrets in client bundles or the repo                         | MUST     | partial     | documented-as-desired  | accurate      |
+| [REQ-AUTH-019](#req-auth-019--several-git-token-auths)                                         | Zero or more git token auths, each for one host or account       | MUST     | not-started | documented-as-desired  | accurate      |
+| [REQ-AUTH-020](#req-auth-020--choose-the-auth-for-a-git-space)                                 | A git space uses a chosen auth, so several accounts can be used  | MUST     | not-started | documented-as-desired  | accurate      |
 
 ## Architecture
 
@@ -249,7 +251,8 @@ flowchart LR
 
 **Acceptance criteria**
 
-- Settings, or the add-space wizard, has a PAT field. The token is validated (for example with a `GET /user` call) before it is saved.
+- Settings has an Auth section with a PAT field, and the add-space wizard can reach it. The token is validated (for example with a `GET /user` call) before it is saved.
+- The "create a token" link opens GitHub's fine-grained token form with a name, a description and the permissions Cept needs already filled in (see [REQ-AUTH-019](#req-auth-019--several-git-token-auths)), and it looks like a link (underlined, link colour, with a visible focus state).
 - The PAT is persisted through the platform TokenStore ([REQ-AUTH-012](#req-auth-012--secure-persistent-token-storage-per-platform)) and is never written to space files or logs.
 - Clone, pull and push of a private repo succeed with only a PAT configured.
 - The user can remove the PAT.
@@ -439,7 +442,7 @@ flowchart LR
 
 **Acceptance criteria**
 
-- Settings has an Accounts section that lists connected providers with user identity and avatar.
+- Settings has an Auth section (separate from Appearance, Editor and Content) that lists the connected auths with user identity and avatar. Phase 1 lists git token auths; GitHub App, Google Drive and SFTP auths join the same list in their phases (D-26).
 - Onboarding offers a "Connect a remote" path that leads into provider selection.
 - Sign-out removes the stored tokens and, where the provider supports it, revokes them.
 - E2E tests with screenshots cover the flow, per the UI evidence rule.
@@ -607,3 +610,52 @@ The owner needs to decide each of these.
 - **Engineering and CI.** The build injects client IDs and the proxy URL as `VITE_*` variables in the CD and preview workflows. A secret scanner is also needed. See [10 Engineering and CI](10-engineering-and-ci.md).
 - **Demo and docs deployment.** The demo space and read-only docs must keep working without auth (REQ-AUTH-011). See [02 Static rendering](02-static-rendering.md).
 - **Infra.** nsheaps/iac and nsheaps/cors-proxy own the Worker code, route or custom domain, allowed origins (including PR previews), and the GitHub App and Google client redirect URLs. github2 (`docs/specs/auth.md`, `relay/relay.worker.js`) is a reference implementation of the GitHub App + PKCE + relay pattern.
+
+### REQ-AUTH-019 — Several git token auths
+
+> **Scope: Phase 1.** Added from owner feedback after PR 429. Google Drive auths and GitHub App auths join the same list in later phases (D-26); the list must not assume every entry is a token.
+
+**Statement:** The user MUST be able to keep zero or more git token auths. An auth is one credential for one git host: a host (`github.com` or another host name), the username git sends, a label and the token. An account on github.com can have several auths (for example one per organisation with its own fine-grained token), and one person can hold auths for several hosts. Settings has an **Auth** section of its own, and the token form moved out of the GitHub section there.
+
+**Rationale / source:** Owner feedback (2026-10-12): "lets make the PAT a separate Auth section in settings", "You should be able to have 0+ git token auths (and later 0+ for github and google drive as well)". A fine-grained token covers one account or organisation, so one token cannot open every repository a person works in.
+
+**Acceptance criteria**
+
+- Settings has an Auth section. It lists every auth with its label, host, account (login and avatar when the host is GitHub) and what the token grants, and each auth can be removed on its own. With no auths it says so and shows the add form.
+- Adding an auth takes a host (default `github.com`), a token and, for other hosts, a username. A github.com token is checked with `GET /user` before it is saved (REQ-AUTH-005); the same account can be added twice with different tokens. Other hosts are saved unchecked and say so.
+- The token is stored only in the platform TokenStore (REQ-AUTH-012). The list of auths without their tokens (id, label, host, username, login, avatar, grants) is kept apart and holds no secret. A token never appears in the list, in errors or in logs.
+- The link to create a token opens `https://github.com/settings/personal-access-tokens/new` with `name`, `description` and the permissions Cept needs prefilled: `contents=write` (clone, fetch, push), `metadata=read`, and `administration=write` only for the option that lets Cept create repositories. GitHub cannot prefill repository selection or classic-token scopes; the form says which repositories to pick. The link opens in a new tab, is underlined, uses the link colour and has a visible focus ring.
+- A token saved by an earlier version (the single GitHub token) becomes the first auth without the user doing anything.
+- Removing an auth does not delete spaces that used it; they ask the user to pick another auth (REQ-AUTH-020).
+
+**Current state:** not-started. Today there is one GitHub token ([pat.ts](../../../packages/core/src/auth/pat.ts), [GitHubAccountSection.tsx](../../../packages/ui/src/components/settings/GitHubAccountSection.tsx)), its link is plain text styled like the rest of the paragraph, and it sits in the General tab's settings.
+
+**Docs state:** documented-as-desired, accurate.
+
+**Gap:** An auth registry in core, the Auth section, the prefilled link, migration of the single token.
+
+**Related:** REQ-AUTH-005, REQ-AUTH-012, REQ-AUTH-013, REQ-AUTH-001.
+
+### REQ-AUTH-020 — Choose the auth for a git space
+
+> **Scope: Phase 1.** Added from owner feedback after PR 429.
+
+**Statement:** Each git-backed space MUST use one chosen auth for clone, fetch and push, and the user MUST be able to change it, so a person can reach repositories of several accounts when no single account can read them all.
+
+**Rationale / source:** Owner feedback (2026-10-12): "When you have a git-backed space, you should be able to pick between auths so you can auth to multiple accounts when one account doesn't have access to the other things".
+
+**Acceptance criteria**
+
+- A space found by autodiscovery uses the auth that found it. A space added by URL uses the first auth for that host that can read the repository, or asks when none can. The add-space dialogs show an auth picker when the host has more than one auth.
+- Space settings for a git space show the auth in use and let the user switch to another auth for the same host. Switching takes effect for the next fetch or push and does not change the space's files or its commit author unless the new auth is for another account (the author then follows the auth, REQ-WS-027).
+- Autodiscovery (REQ-WS-023) runs for every GitHub auth and lists each space once, with the auths that can reach it.
+- When a space's auth is removed, or its token is rejected, the space shows that and offers the other auths for its host; nothing is pushed under a different account without the user choosing it.
+- The choice is kept in the space's entry on this device, not in the repository.
+
+**Current state:** not-started. Every git operation uses the one signed-in token (`gitAuth` in [github-account.tsx](../../../packages/ui/src/components/settings/github-account.tsx)).
+
+**Docs state:** documented-as-desired, accurate.
+
+**Gap:** Per-space auth id in the space manifest, the picker, per-auth discovery.
+
+**Related:** REQ-AUTH-010, REQ-AUTH-019, REQ-WS-023, REQ-WS-027.
