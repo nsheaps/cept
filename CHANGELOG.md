@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.34.0](https://github.com/nsheaps/cept/compare/v0.33.8...v0.34.0) (2026-10-12)
+
+### Features
+
+* **core:** bridge mdast and prosemirror with custom blocks ([#414](https://github.com/nsheaps/cept/issues/414)) ([bdaf785](https://github.com/nsheaps/cept/commit/bdaf785a16afd4df43bd2c01adae2eaf022dece9)), references [#413](https://github.com/nsheaps/cept/issues/413)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1ffe6c5](https://github.com/nsheaps/cept/commit/1ffe6c5bdb093cfca28b85487d24d755eba1ffc0))
+
 ## [0.33.8](https://github.com/nsheaps/cept/compare/v0.33.7...v0.33.8) (2026-10-12)
 
 ### Documentation
