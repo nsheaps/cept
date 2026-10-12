@@ -202,11 +202,18 @@ describe('folder spaces', () => {
       expect(preview.pages).toHaveLength(2);
       expect(preview.pages).toEqual(
         expect.arrayContaining([
-          { file: 'todo.md', count: 1 },
-          { file: 'guides/index.md', count: 1 },
+          { file: 'todo.md', count: 1, moved: false },
+          { file: 'guides/index.md', count: 1, moved: false },
         ]),
       );
       expect(backend.readText('todo.md')).toContain('guides/setup.md');
+    });
+
+    it('marks the page being moved in a preview of its own relative links', async () => {
+      const preview = await previewMoveToRootLinks(backend, 'guides/setup.md');
+      expect(preview.pages).toEqual(
+        expect.arrayContaining([expect.objectContaining({ file: 'guides/setup.md', moved: true })]),
+      );
     });
 
     it('rewrites inbound links on rename', async () => {
@@ -261,6 +268,20 @@ describe('folder spaces', () => {
       );
       expect(backend.readText('todo.md')).toBe('Do [setup](guides/setup.md#install).');
       expect(backend.hasFile('guides/Install.md')).toBe(false);
+    });
+
+    it('reports the original error when putting a page back also fails', async () => {
+      backend.seedText('guides/Install.md', 'taken');
+      const write = backend.writeFile.bind(backend);
+      let rewrites = 0;
+      backend.writeFile = async (path: string, data: Uint8Array) => {
+        // The rewrite of todo.md succeeds; putting it back afterwards does not.
+        if (path === '/todo.md' && ++rewrites === 2) throw new Error('rollback failed');
+        return write(path, data);
+      };
+      await expect(renameFolderPage(backend, 'guides/setup.md', 'Install')).rejects.toThrow(
+        /already exists/,
+      );
     });
   });
 });

@@ -42,7 +42,7 @@ export function LinkRewriteDialog({
           <ul data-testid="link-rewrite-pages">
             {preview.pages.map((page) => (
               <li key={page.file}>
-                {page.file} ({page.count})
+                {page.file} ({page.count}){page.moved ? ' — the page being moved' : ''}
               </li>
             ))}
           </ul>

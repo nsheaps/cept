@@ -146,7 +146,7 @@ describe('App folder spaces', () => {
   });
 
   describe('renaming a page that other pages link to', () => {
-    async function openLinked() {
+    async function openLinked(action: 'ctx-rename' | 'ctx-move-to-root' = 'ctx-rename') {
       const folder = notesFolder();
       folder.seedText('Welcome.md', 'See [setup](Guides/Setup.md#top).\n');
       const { host, next } = fakeHost(new Map([['notes', folder]]));
@@ -155,10 +155,12 @@ describe('App folder spaces', () => {
       fireEvent.click(await screen.findByTestId('landing-open-folder'));
       fireEvent.click(await screen.findByTestId('page-tree-toggle-Guides', {}, { timeout: 3000 }));
       fireEvent.contextMenu(await screen.findByTestId('page-tree-button-Guides/Setup.md'));
-      fireEvent.click(await screen.findByTestId('ctx-rename'));
-      const input = await screen.findByTestId('rename-input');
-      fireEvent.change(input, { target: { value: 'Install' } });
-      fireEvent.keyDown(input, { key: 'Enter' });
+      fireEvent.click(await screen.findByTestId(action));
+      if (action === 'ctx-rename') {
+        const input = await screen.findByTestId('rename-input');
+        fireEvent.change(input, { target: { value: 'Install' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+      }
       return folder;
     }
 
@@ -176,6 +178,30 @@ describe('App folder spaces', () => {
       fireEvent.click(screen.getByTestId('link-rewrite-skip'));
       await screen.findByTestId('page-tree-button-Guides/Install.md', {}, { timeout: 3000 });
       expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+    });
+
+    describe('moving the page to the root', () => {
+      it('rewrites the links when accepted', async () => {
+        const folder = await openLinked('ctx-move-to-root');
+        fireEvent.click(await screen.findByTestId('link-rewrite-update'));
+        await screen.findByTestId('page-tree-button-Setup.md', {}, { timeout: 3000 });
+        expect(folder.readText('Welcome.md')).toBe('See [setup](Setup.md#top).\n');
+      });
+
+      it('leaves the links alone when the user moves without updating', async () => {
+        const folder = await openLinked('ctx-move-to-root');
+        fireEvent.click(await screen.findByTestId('link-rewrite-skip'));
+        await screen.findByTestId('page-tree-button-Setup.md', {}, { timeout: 3000 });
+        expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+      });
+
+      it('changes nothing when the user cancels', async () => {
+        const folder = await openLinked('ctx-move-to-root');
+        fireEvent.click(await screen.findByTestId('link-rewrite-cancel'));
+        await settle();
+        expect(folder.hasFile('Guides/Setup.md')).toBe(true);
+        expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+      });
     });
 
     it('changes nothing when the user cancels', async () => {

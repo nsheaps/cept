@@ -116,6 +116,8 @@ export function extractDestinations(markdown: string): Destination[] {
   const tree = parser.parse(markdown.slice(prefix.length));
   const out: Destination[] = [];
   const visit = (node: Nodes): void => {
+    // Children first: an image inside a link is written before the link's URL.
+    if ('children' in node) node.children.forEach(visit);
     if (
       (node.type === 'link' || node.type === 'image' || node.type === 'definition') &&
       node.position
@@ -141,9 +143,9 @@ export function extractDestinations(markdown: string): Destination[] {
           end: prefix.length + from + at + node.url.length,
         });
     }
-    if ('children' in node) node.children.forEach(visit);
   };
   visit(tree);
+  out.sort((a, b) => a.start - b.start);
   return out;
 }
 
@@ -155,7 +157,7 @@ export interface ResolvedLink {
   anchor?: string;
 }
 
-const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+export const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
 function decode(text: string): string {
   try {

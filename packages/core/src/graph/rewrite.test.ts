@@ -15,11 +15,19 @@ describe('extractDestinations', () => {
 
   it('skips code, and finds an image inside a link', () => {
     const md = '`[a](x.md)`\n\n```\n[b](y.md)\n```\n\n[![i](p.png)](z.md)\n';
-    expect(extractDestinations(md).map((d) => d.url)).toEqual(['z.md', 'p.png']);
+    expect(extractDestinations(md).map((d) => d.url)).toEqual(['p.png', 'z.md']);
   });
 
   it('leaves out a destination written with escapes', () => {
     expect(extractDestinations('[a](a\\_b.md)')).toEqual([]);
+  });
+});
+
+describe('rewriteLinks with an image inside a link', () => {
+  it('rewrites both URLs when the page moves, keeping the text intact', () => {
+    const r = rewriteLinks('[![thumb](img.png)](page.md)', 'a.md', 'sub/a.md', []);
+    expect(r.text).toBe('[![thumb](../img.png)](../page.md)');
+    expect(r.count).toBe(2);
   });
 });
 

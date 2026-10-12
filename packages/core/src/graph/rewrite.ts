@@ -10,9 +10,7 @@
 
 import { joinPath, parentFolder, splitPath } from '../space/path.js';
 import { isPageFile, type Moved } from '../space/tree.js';
-import { extractDestinations, resolvePath } from './links.js';
-
-const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+import { extractDestinations, resolvePath, SCHEME } from './links.js';
 
 /**
  * Where a path (a file or a folder, relative to the space root) lives after
@@ -77,7 +75,8 @@ export function rewriteLinks(
     if (!resolved) continue;
     const target = mapPath(resolved.path, moved);
     if (target === resolved.path && newFile === file) continue;
-    const suffix = url.slice(url.search(/[?#]/) === -1 ? url.length : url.search(/[?#]/));
+    const q = url.search(/[?#]/);
+    const suffix = q === -1 ? '' : url.slice(q);
     const path = trimmed.startsWith('/')
       ? `/${target}`
       : relativePath(parentFolder(newFile) ?? '', target);

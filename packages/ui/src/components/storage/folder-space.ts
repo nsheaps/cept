@@ -243,7 +243,8 @@ async function freeName(backend: StorageBackend, folder: string, base: string): 
 /** What a move would change in other pages: which pages get links rewritten, and how many. */
 export interface LinkRewritePreview {
   total: number;
-  pages: { file: string; count: number }[];
+  /** `moved` pages are being moved themselves: their own relative links are rewritten. */
+  pages: { file: string; count: number; moved: boolean }[];
 }
 
 /** Every page file of the space (before a move) with its text. */
@@ -265,7 +266,7 @@ async function readPageTexts(backend: StorageBackend): Promise<Map<string, strin
 
 const summarize = (plan: readonly LinkRewrite[]): LinkRewritePreview => ({
   total: plan.reduce((sum, p) => sum + p.count, 0),
-  pages: plan.map(({ file, count }) => ({ file, count })),
+  pages: plan.map(({ file, newFile, count }) => ({ file, count, moved: file !== newFile })),
 });
 
 /**
@@ -293,7 +294,13 @@ async function withLinkRewrites(
       ? { ...result, rewritten: written.map((file) => mapPath(file, moves)) }
       : result;
   } catch (error) {
-    for (const file of written) await backend.writeFile(at(file), encoder.encode(texts.get(file)!));
+    for (const file of written) {
+      try {
+        await backend.writeFile(at(file), encoder.encode(texts.get(file)!));
+      } catch {
+        // Best-effort rollback; the caller still gets the original error.
+      }
+    }
     throw error;
   }
 }
