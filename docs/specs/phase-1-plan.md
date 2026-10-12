@@ -552,6 +552,7 @@ Deviation: split in two. **PR 36a** (`feat(core): git space session with auto-co
 - Accept: tests and editor e2e green.
 - Risk: touches every block; keep screenshots in the PR. It waits for PR 52 so that removing `tiptap-markdown` does not regress the existing KaTeX math blocks on `main`.
 - Note (PR 52): the pipeline now emits `footnoteReference` and `footnoteDefinition` nodes and a `meta` attribute on `mathBlock`; this PR adds the matching editor nodes (numbered references, the footnote list with back-references, EDT-015 and EDT-016) and the `meta` attribute, and registers the fenced-block plugins with `claimFencedBlocks`/`releaseFencedBlocks`.
+- Note (PR 49a): split in two. 49a adds the schema: `documentExtensions()` (the editor's document extensions, shared with tests), `MarkdownAttributes` (the pipeline's style attributes, default `undefined` and not rendered), `rawBlock`/`rawInline`, and the footnote nodes with numbering and back-reference decorations. A test loads every corpus fixture into that schema and checks it saves unchanged and writes fresh exactly as the parsed document. 49b switches `CeptEditor` to the pipeline, removes `tiptap-markdown`, retires `CeptMarkdownParser.parseBlocks`, replaces paste/copy and keeps the editor-normalized document as the save baseline.
 
 **PR 50 — `feat(editor): add a fenced-block plugin interface`**
 
