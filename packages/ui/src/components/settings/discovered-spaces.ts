@@ -1,6 +1,8 @@
 /**
- * Discovered spaces: the spaces in every repository the signed-in personal
- * access token can read (REQ-WS-023, REQ-AUTH-014, D-30).
+ * Discovered spaces: the spaces in every repository the saved GitHub tokens
+ * can read (REQ-WS-023, REQ-AUTH-014, REQ-AUTH-020, D-30). Each account is
+ * searched once, however many tokens it has; a space reachable through several
+ * tokens is listed once with all of them.
  *
  * Discovery (`autodiscoverSpaces` in `@cept/core`) only reads markers; nothing
  * is cloned until the user opens or pins a space. The last result is kept per
@@ -10,17 +12,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { autodiscoverSpaces, MemoryEtagCache } from '@cept/core';
+import { autodiscoverSpaces, GITHUB_HOST, MemoryEtagCache } from '@cept/core';
 import type {
   AutodiscoveryOptions,
   AutodiscoveryResult,
   AutodiscoveryWarning,
+  GitAuthRecord,
   LostSpace,
   RemoteSpace,
 } from '@cept/core';
 import { generateRemoteSpaceId } from '../storage/SpaceManager.js';
 import { normalizeRepoUrl } from '../storage/git-space.js';
 import { useGitHubAccount } from './github-account.js';
+import { useGitAuths } from './git-auths.js';
 
 /** One account's last discovery, as kept between starts. */
 export interface DiscoverySnapshot {
@@ -102,8 +106,10 @@ export type DiscoveryStatus = 'idle' | 'running' | 'done' | 'error';
 
 export interface DiscoveredSpacesState {
   status: DiscoveryStatus;
-  /** The latest result, or the kept one while a discovery runs; null before the first. */
+  /** The latest result (every account merged), or the kept one while a discovery runs; null before the first. */
   snapshot: DiscoverySnapshot | null;
+  /** Ids of the auths that can read each space, by `discoveredSpaceId`; the first found it first. */
+  reachedBy: Readonly<Record<string, readonly string[]>>;
   error: string | null;
   /** Discover again. */
   refresh(): void;
@@ -124,26 +130,100 @@ function etagCacheFor(login: string): MemoryEtagCache {
   return cache;
 }
 
+/** One GitHub account to search, and the saved auths that sign in as it. */
+interface Target {
+  login: string;
+  authIds: string[];
+}
+
+/** The accounts of the working GitHub auths, in the order the auths were saved. */
+function targetsOf(auths: readonly GitAuthRecord[]): Target[] {
+  const byLogin = new Map<string, Target>();
+  for (const auth of auths) {
+    if (auth.host !== GITHUB_HOST || auth.status !== 'ok' || !auth.account) continue;
+    const key = auth.account.login.toLowerCase();
+    const target = byLogin.get(key);
+    if (target) target.authIds.push(auth.id);
+    else byLogin.set(key, { login: auth.account.login, authIds: [auth.id] });
+  }
+  return [...byLogin.values()];
+}
+
+interface AccountResult {
+  status: DiscoveryStatus;
+  snapshot: DiscoverySnapshot | null;
+  error: string | null;
+}
+
+/** Every account's snapshot as one list; a space one account lost but another reads is not lost. */
+function mergeSnapshots(targets: readonly Target[], results: Record<string, AccountResult>) {
+  const spaces = new Map<string, RemoteSpace>();
+  const reachedBy: Record<string, string[]> = {};
+  const lost = new Map<string, LostSpace>();
+  const warnings: AutodiscoveryWarning[] = [];
+  const warningSeen = new Set<string>();
+  let complete = true;
+  let checkedAt = '';
+  let any = false;
+  for (const target of targets) {
+    const snapshot = results[target.login.toLowerCase()]?.snapshot;
+    if (!snapshot) continue;
+    any = true;
+    for (const space of snapshot.spaces) {
+      const id = discoveredSpaceId(space);
+      if (!spaces.has(id)) spaces.set(id, space);
+      reachedBy[id] = [...(reachedBy[id] ?? []), ...target.authIds];
+    }
+    for (const l of snapshot.lost) {
+      const id = discoveredSpaceId(l.space);
+      if (!lost.has(id)) lost.set(id, l);
+    }
+    for (const w of snapshot.warnings) {
+      const key = JSON.stringify([w.kind, 'repo' in w ? w.repo : '', w.message]);
+      if (warningSeen.has(key)) continue;
+      warningSeen.add(key);
+      warnings.push(w);
+    }
+    complete = complete && snapshot.complete;
+    if (snapshot.checkedAt > checkedAt) checkedAt = snapshot.checkedAt;
+  }
+  for (const id of spaces.keys()) lost.delete(id);
+  const merged: DiscoverySnapshot | null = any
+    ? {
+        login: targets[0]?.login ?? '',
+        spaces: [...spaces.values()],
+        lost: [...lost.values()],
+        warnings,
+        complete,
+        checkedAt,
+      }
+    : null;
+  return { merged, reachedBy };
+}
+
 /**
- * Discovered spaces for the signed-in account, or null when no account is
- * signed in. Discovery runs when the account signs in (including when a saved
- * token is restored at start) and on `refresh()`.
+ * Discovered spaces for every saved GitHub auth, or null when none works.
+ * Discovery runs when an auth is added or restored at start and on `refresh()`.
  */
 export function useDiscoveredSpaces(
   options: { discover?: Discover } = {},
 ): DiscoveredSpacesState | null {
   const github = useGitHubAccount();
+  const gitAuths = useGitAuths();
   const discover = options.discover ?? autodiscoverSpaces;
   const status = github?.status;
-  const login = status === 'signed-in' ? (github?.account?.login ?? null) : null;
-  const gitAuth = github?.gitAuth;
+  const gitAuthFor = gitAuths?.gitAuthFor;
 
-  const [state, setState] = useState<{
-    login: string | null;
-    status: DiscoveryStatus;
-    snapshot: DiscoverySnapshot | null;
-    error: string | null;
-  }>({ login: null, status: 'idle', snapshot: null, error: null });
+  const targets = useMemo(
+    () => (status === 'signed-in' && gitAuths ? targetsOf(gitAuths.auths) : []),
+    [status, gitAuths],
+  );
+  // The effect restarts when the set of accounts changes, not on every auth-list refresh.
+  const targetsKey = targets.map((t) => t.login.toLowerCase()).join('\n');
+  const targetsRef = useRef(targets);
+  targetsRef.current = targets;
+
+  const [results, setResults] = useState<Record<string, AccountResult>>({});
   const [runs, setRuns] = useState(0);
   const discoverRef = useRef(discover);
   discoverRef.current = discover;
@@ -157,49 +237,82 @@ export function useDiscoveredSpaces(
   }, [status]);
 
   useEffect(() => {
-    if (!login || !gitAuth) return;
-    const kept = loadDiscovery(login);
-    setState({ login, status: 'running', snapshot: kept, error: null });
+    if (!gitAuthFor || targetsRef.current.length === 0) return;
     const controller = new AbortController();
 
-    void (async () => {
-      try {
-        const token = (await gitAuth())?.password;
-        if (!token) throw new Error('No saved token to look for spaces with.');
-        const result = await discoverRef.current({
-          token,
-          cache: etagCacheFor(login),
-          previous: previousSpaces(kept),
-          signal: controller.signal,
-        });
-        const snapshot: DiscoverySnapshot = {
-          login,
-          spaces: result.spaces,
-          lost: result.lost,
-          warnings: result.warnings,
-          complete: result.complete,
-          checkedAt: new Date().toISOString(),
-        };
-        if (controller.signal.aborted) return;
-        saveDiscovery(snapshot);
-        setState({ login, status: 'done', snapshot, error: null });
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        const error = err instanceof Error ? err.message : 'Could not look for spaces.';
-        setState({ login, status: 'error', snapshot: kept, error });
-      }
-    })();
+    for (const target of targetsRef.current) {
+      const key = target.login.toLowerCase();
+      const kept = loadDiscovery(target.login);
+      setResults((r) => ({ ...r, [key]: { status: 'running', snapshot: kept, error: null } }));
+      void (async () => {
+        try {
+          let token: string | undefined;
+          for (const authId of target.authIds) {
+            token = (await gitAuthFor(authId))?.password;
+            if (token) break;
+          }
+          if (!token) throw new Error('No saved token to look for spaces with.');
+          const result = await discoverRef.current({
+            token,
+            cache: etagCacheFor(target.login),
+            previous: previousSpaces(kept),
+            signal: controller.signal,
+          });
+          const snapshot: DiscoverySnapshot = {
+            login: target.login,
+            spaces: result.spaces,
+            lost: result.lost,
+            warnings: result.warnings,
+            complete: result.complete,
+            checkedAt: new Date().toISOString(),
+          };
+          if (controller.signal.aborted) return;
+          saveDiscovery(snapshot);
+          setResults((r) => ({ ...r, [key]: { status: 'done', snapshot, error: null } }));
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          const error = err instanceof Error ? err.message : 'Could not look for spaces.';
+          setResults((r) => ({ ...r, [key]: { status: 'error', snapshot: kept, error } }));
+        }
+      })();
+    }
 
     return () => controller.abort();
-  }, [login, gitAuth, runs]);
+  }, [targetsKey, gitAuthFor, runs]);
 
   const refresh = useCallback(() => setRuns((n) => n + 1), []);
-  // Read once per account, not on every render, until the effect catches up.
-  const keptForLogin = useMemo(() => (login ? loadDiscovery(login) : null), [login]);
 
-  if (!login) return null;
-  // Until the effect for a new account runs, show nothing from another account.
-  if (state.login !== login)
-    return { status: 'running', snapshot: keptForLogin, error: null, refresh };
-  return { status: state.status, snapshot: state.snapshot, error: state.error, refresh };
+  // Accounts that have not started yet show their kept list and count as running.
+  const { current, view } = useMemo(() => {
+    const list = targets.map(
+      (t): AccountResult =>
+        results[t.login.toLowerCase()] ?? {
+          status: 'running',
+          snapshot: loadDiscovery(t.login),
+          error: null,
+        },
+    );
+    const byLogin: Record<string, AccountResult> = {};
+    targets.forEach((t, i) => {
+      byLogin[t.login.toLowerCase()] = list[i]!;
+    });
+    return { current: list, view: mergeSnapshots(targets, byLogin) };
+  }, [targets, results]);
+
+  if (targets.length === 0) return null;
+  const errors = current.flatMap((r, i) =>
+    r.error ? [targets.length > 1 ? `@${targets[i]!.login}: ${r.error}` : r.error] : [],
+  );
+  const aggregate: DiscoveryStatus = current.some((r) => r.status === 'running')
+    ? 'running'
+    : errors.length === targets.length
+      ? 'error'
+      : 'done';
+  return {
+    status: aggregate,
+    snapshot: view.merged,
+    reachedBy: view.reachedBy,
+    error: errors.length > 0 ? errors.join(' · ') : null,
+    refresh,
+  };
 }

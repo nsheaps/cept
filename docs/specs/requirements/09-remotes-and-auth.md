@@ -652,10 +652,10 @@ The owner needs to decide each of these.
 - When a space's auth is removed, or its token is rejected, the space shows that and offers the other auths for its host; nothing is pushed under a different account without the user choosing it.
 - The choice is kept in the space's entry on this device, not in the repository.
 
-**Current state:** partial (PR 52c-1). A remote space's entry records its `authId` ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). New spaces are bound to the first working GitHub auth; spaces added earlier have no `authId` and keep using it. [space-auth.ts](../../../packages/ui/src/components/storage/space-auth.ts) `resolveSpaceAuth()` picks the credentials for background sync, refresh, page history and the editing session, and the commit author is the account of that auth. A space whose auth was removed or rejected stays read-only with a message and is never opened as another account. Missing: the picker in the add-space dialogs and space settings, and per-auth discovery.
+**Current state:** partial (PRs 52c-1 and 52c-2a). A remote space's entry records its `authId` ([SpaceManager.ts](../../../packages/ui/src/components/storage/SpaceManager.ts)). New spaces are bound to the first working GitHub auth; spaces added earlier have no `authId` and keep using it. [space-auth.ts](../../../packages/ui/src/components/storage/space-auth.ts) `resolveSpaceAuth()` picks the credentials for background sync, refresh, page history and the editing session, and the commit author is the account of that auth. A space whose auth was removed or rejected stays read-only with a message and is never opened as another account. Autodiscovery runs for every working GitHub auth (one search per account, however many tokens it has), lists each space once, and Settings > Spaces shows a **Sign in with** menu for a space more than one auth reads; Open and Pin bind the space to the chosen auth ([discovered-spaces.ts](../../../packages/ui/src/components/settings/discovered-spaces.ts), [DiscoveredSpacesSection.tsx](../../../packages/ui/src/components/settings/DiscoveredSpacesSection.tsx)). Missing: the picker in the add-space dialogs and space settings, and the prompt for a lost auth.
 
 **Docs state:** documented-as-desired, accurate.
 
-**Gap:** The picker (add-space dialogs, space settings, the prompt for a lost auth) and per-auth discovery.
+**Gap:** The picker in the add-space dialogs and space settings, and the prompt for a lost auth.
 
 **Related:** REQ-AUTH-010, REQ-AUTH-019, REQ-WS-023, REQ-WS-027.

@@ -4,6 +4,7 @@ import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { AuthSection } from './AuthSection.js';
 import { DiscoveredSpacesSection } from './DiscoveredSpacesSection.js';
+import { useGitAuths } from './git-auths.js';
 import type { DiscoveredSpacesState } from './discovered-spaces.js';
 import { DOCS_SPACE_ID } from '../docs/docs-space-id.js';
 import { remoteWebUrl } from '../storage/git-space.js';
@@ -122,9 +123,9 @@ export interface SettingsModalProps {
   /** Spaces found in the signed-in account's repositories; null or absent when not signed in. */
   discovered?: DiscoveredSpacesState | null;
   /** Clone a discovered space, add it and switch to it. */
-  onOpenDiscovered?: (space: RemoteSpace) => void;
+  onOpenDiscovered?: (space: RemoteSpace, authId?: string) => void;
   /** Clone a discovered space and add it without switching. */
-  onPinDiscovered?: (space: RemoteSpace) => void;
+  onPinDiscovered?: (space: RemoteSpace, authId?: string) => void;
 }
 
 export function SettingsModal({
@@ -157,6 +158,7 @@ export function SettingsModal({
   onOpenDiscovered,
   onPinDiscovered,
 }: SettingsModalProps) {
+  const gitAuthRecords = useGitAuths()?.auths;
   const [activeTab, setActiveTab] = useState<'about' | 'settings' | 'spaces'>(initialTab);
   const [savedIndicator, setSavedIndicator] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -609,6 +611,7 @@ export function SettingsModal({
                   <DiscoveredSpacesSection
                     discovered={discovered}
                     addedSpaceIds={new Set(spaces.map((s) => s.id))}
+                    auths={gitAuthRecords}
                     onOpen={onOpenDiscovered}
                     onPin={onPinDiscovered}
                   />

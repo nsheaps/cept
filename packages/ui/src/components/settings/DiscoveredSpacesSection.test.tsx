@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { RemoteSpace } from '@cept/core';
+import type { GitAuthRecord, RemoteSpace } from '@cept/core';
 import { DiscoveredSpacesSection } from './DiscoveredSpacesSection.js';
 import type { DiscoveredSpacesState, DiscoverySnapshot } from './discovered-spaces.js';
 
@@ -34,7 +34,14 @@ function snapshot(extra: Partial<DiscoverySnapshot> = {}): DiscoverySnapshot {
 }
 
 function state(extra: Partial<DiscoveredSpacesState> = {}): DiscoveredSpacesState {
-  return { status: 'done', snapshot: snapshot(), error: null, refresh: vi.fn(), ...extra };
+  return {
+    status: 'done',
+    snapshot: snapshot(),
+    reachedBy: {},
+    error: null,
+    refresh: vi.fn(),
+    ...extra,
+  };
 }
 
 describe('DiscoveredSpacesSection (REQ-WS-023)', () => {
@@ -74,9 +81,9 @@ describe('DiscoveredSpacesSection (REQ-WS-023)', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('discovered-pin-github.com/ann/notes@main/docs'));
-    expect(onPin).toHaveBeenCalledWith(docs);
+    expect(onPin).toHaveBeenCalledWith(docs, undefined);
     fireEvent.click(screen.getByTestId('discovered-open-github.com/ann/notes@main/docs'));
-    expect(onOpen).toHaveBeenCalledWith(docs);
+    expect(onOpen).toHaveBeenCalledWith(docs, undefined);
   });
 
   it('leaves out spaces already on this device, matching the declared branch', () => {
@@ -181,5 +188,60 @@ describe('DiscoveredSpacesSection (REQ-WS-023)', () => {
     expect(screen.getByTestId('discovered-error').textContent).toContain('offline');
     fireEvent.click(screen.getByTestId('discovered-refresh'));
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+function auth(id: string, login: string): GitAuthRecord {
+  return {
+    id,
+    host: 'github.com',
+    username: 'x-access-token',
+    label: `@${login}`,
+    status: 'ok',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    account: { login, name: null, avatarUrl: '' },
+    grants: { kind: 'classic', scopes: ['repo'] },
+  };
+}
+
+describe('DiscoveredSpacesSection auth choice (REQ-AUTH-020)', () => {
+  const docs = remote('ann/notes', 'docs');
+  const id = 'github.com/ann/notes@main/docs';
+
+  it('opens with the only auth that reads the space, without asking', () => {
+    const onOpen = vi.fn();
+    render(
+      <DiscoveredSpacesSection
+        discovered={state({ snapshot: snapshot({ spaces: [docs] }), reachedBy: { [id]: ['a'] } })}
+        addedSpaceIds={new Set()}
+        auths={[auth('a', 'alice')]}
+        onOpen={onOpen}
+      />,
+    );
+    expect(screen.queryByTestId(`discovered-auth-${id}`)).toBeNull();
+    fireEvent.click(screen.getByTestId(`discovered-open-${id}`));
+    expect(onOpen).toHaveBeenCalledWith(docs, 'a');
+  });
+
+  it('offers the auths that read a shared space, recommending the one that found it', () => {
+    const onPin = vi.fn();
+    render(
+      <DiscoveredSpacesSection
+        discovered={state({
+          snapshot: snapshot({ spaces: [docs] }),
+          reachedBy: { [id]: ['a', 'b'] },
+        })}
+        addedSpaceIds={new Set()}
+        auths={[auth('a', 'alice'), auth('b', 'bob')]}
+        onPin={onPin}
+      />,
+    );
+    const picker = screen.getByTestId(`discovered-auth-${id}`) as HTMLSelectElement;
+    expect([...picker.options].map((o) => o.textContent)).toEqual(['@alice (Recommended)', '@bob']);
+    fireEvent.click(screen.getByTestId(`discovered-pin-${id}`));
+    expect(onPin).toHaveBeenLastCalledWith(docs, 'a');
+    fireEvent.change(picker, { target: { value: 'b' } });
+    fireEvent.click(screen.getByTestId(`discovered-pin-${id}`));
+    expect(onPin).toHaveBeenLastCalledWith(docs, 'b');
   });
 });
