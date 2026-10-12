@@ -780,11 +780,13 @@ The title is `title` from front matter, else the text of the first level-1 headi
 - Foreign files (folder and Git spaces) are listed in the page tree after the pages of their folder, with a paperclip icon and no page actions (no add, rename, move or delete menu yet). The space marker and `.cept.yaml` files are configuration and are not listed; ignored and hidden paths are not listed; a folder that holds only foreign files is not in the tree yet.
 - Opening one reads it then and shows a read-only preview: images (including SVG, through `<img>`), PDFs, and plain text (known extensions, or extensionless files with no NUL byte; the first 512 KiB), otherwise a download link. The blob URL is revoked when the file is closed. Nothing is written.
 
-Not yet: rewriting links when a page or asset moves (PR 55), adding files by paste, drop or upload into `assets/`, moving, renaming or deleting a foreign file on request, marking links to missing foreign files as broken, and angle-bracket destinations written by Cept. Other spaces (browser storage) have opaque page ids and no files, so their links are not resolved.
+- Renaming a page, moving it to the root, or turning a file page into a folder page rewrites links: links to the moved pages point at their new paths, and the relative links and images in them are rewritten for their new folder. Absolute (`/x.md`) URLs, queries and anchors are kept as written, external URLs are untouched. The app lists the pages it will change and offers update, move without updating, or cancel. All rewrites are written before the move, and restored if it fails; a Git space commits them with the move.
+
+Not yet: moving assets with their links, adding files by paste, drop or upload into `assets/`, moving, renaming or deleting a foreign file on request, marking links to missing foreign files as broken, and angle-bracket destinations written by Cept. Other spaces (browser storage) have opaque page ids and no files, so their links are not resolved.
 
 **Docs:** documented in this requirement; a guide page is still to write.
 
-**Gap:** Rewrite on move (PR 55), asset adding, move, rename and delete of foreign files, broken-link marking for foreign files, and a guide page.
+**Gap:** Asset adding, move, rename and delete of foreign files, broken-link marking for foreign files, and a guide page.
 
 **Related:** [REQ-EDT-018](#req-edt-018--graph-builder-extracts-crosslinks-from-space-files), [REQ-EDT-021](#req-edt-021--backlinks-panel), [REQ-WS-001](03-spaces-and-storage.md#req-ws-001--space-is-a-folder-in-a-filesystem).
 

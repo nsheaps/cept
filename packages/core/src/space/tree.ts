@@ -367,6 +367,22 @@ export async function movePage(
   newParent: string,
   newName: string,
 ): Promise<{ id: string; moved: Moved[] }> {
+  const id = plannedPageId(page, newParent, newName);
+  if (id === page.id) return { id, moved: [] };
+  await movePath(backend, root, page.id, id, page.kind === 'folder');
+  return { id, moved: [{ from: page.id, to: id }] };
+}
+
+/**
+ * The id {@link movePage} would give a page moved to `newParent` as `newName`,
+ * with the same checks but no writes, so a caller can plan around the move
+ * (for example the links it will break) before making it.
+ */
+export function plannedPageId(
+  page: Pick<PageNode, 'id' | 'kind'>,
+  newParent: string,
+  newName: string,
+): string {
   assertSafeName(newName);
   if (page.id === '') throw new Error('Cannot move the space root');
   const parent = normalizeFolder(newParent);
@@ -380,11 +396,13 @@ export async function movePage(
       `Cannot name a page ${JSON.stringify(newName)}: it is reserved for folder pages`,
     );
   const id = joinPath(parent, name);
-  if (id === page.id) return { id, moved: [] };
-  if (page.kind === 'folder' && (parent === page.id || parent.startsWith(`${page.id}/`)))
+  if (
+    id !== page.id &&
+    page.kind === 'folder' &&
+    (parent === page.id || parent.startsWith(`${page.id}/`))
+  )
     throw new Error(`Cannot move ${page.id} into itself`);
-  await movePath(backend, root, page.id, id, page.kind === 'folder');
-  return { id, moved: [{ from: page.id, to: id }] };
+  return id;
 }
 
 /** Apply a list of moves to a page id: the new id it lives at. */

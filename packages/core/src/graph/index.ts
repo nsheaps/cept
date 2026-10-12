@@ -5,6 +5,7 @@
 
 export type { GraphData, GraphLink, GraphLinkType, GraphNode } from './model.js';
 export {
+  extractDestinations,
   extractLinks,
   resolveLink,
   resolvePath,
@@ -12,6 +13,8 @@ export {
   pageIdForPath,
   headingSlugs,
 } from './links.js';
-export type { ExtractedLink, ResolvedLink } from './links.js';
+export type { Destination, ExtractedLink, ResolvedLink } from './links.js';
 export { buildLinkGraph, backlinksOf, readLinkGraph } from './link-graph.js';
 export type { LinkGraph, LinkGraphOptions, LinkGraphPage, PageReference } from './link-graph.js';
+export { mapPath, planLinkRewrites, rewriteLinks } from './rewrite.js';
+export type { LinkRewrite } from './rewrite.js';

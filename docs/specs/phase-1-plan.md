@@ -634,7 +634,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: component tests for tree listing and each preview kind from `MemoryBackend`.
 - Accept: tests green.
 - Risk: large binaries; read on open only, revoke blob URLs on close.
-- Delivered: listing and preview. Moving, renaming and deleting a foreign file, and broken-link marking for links to missing files, follow with PR 55 (which already rewrites links on move).
+- Delivered: listing and preview. Moving, renaming and deleting a foreign file, and broken-link marking for links to missing files, follow in PR 55b, with the refresh of an open preview after a Git sync.
 
 **PR 55 — `feat(ui): rewrite inbound links when a page moves`**
 
@@ -642,6 +642,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: unit test over a fixture space with three inbound links.
 - Accept: tests green.
 - Risk: partial failure mid-rewrite; write all files or none.
+- Delivered: renaming a page, moving it to the root and turning a file page into a folder page rewrite the links to it and the relative links and images in it (all-or-nothing, originals restored on failure). The user sees the pages to update first and can update, move without updating, or cancel. The rewritten pages are written before the move, so a Git space commits the move and the rewrites together. Also fixed: the page context menu closed on "Rename" before the input appeared. Not in this PR: foreign files (they are not moved yet).
 
 **PR 56 — `feat(ui): backlinks panel and link-aware search`**
 

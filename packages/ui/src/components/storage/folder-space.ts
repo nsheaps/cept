@@ -18,22 +18,34 @@ import {
   createPage,
   findPage,
   findSpaceMarker,
+  mapPath,
   isPageFile,
   movePage,
   NEW_FOLDER_PAGE,
   pickFolderPage,
+  planLinkRewrites,
+  plannedPageId,
   readSpaceTree,
   serializeSpaceConfig,
   SPACE_CONFIG_VERSION,
   SPACE_MARKER_YAML,
 } from '@cept/core';
-import type { ForeignFile, Moved, PageNode, SpaceTree, StorageBackend } from '@cept/core';
+import type {
+  ForeignFile,
+  LinkRewrite,
+  Moved,
+  PageNode,
+  SpaceTree,
+  StorageBackend,
+} from '@cept/core';
 import type { PageTreeNode } from '../sidebar/PageTreeItem.js';
 
 /** The result of a page operation: the page's id afterwards and the paths that moved. */
 export interface FolderChange {
   pageId: string;
   moved: Moved[];
+  /** Page files, at their paths after the move, whose links were rewritten. */
+  rewritten?: string[];
 }
 
 const encoder = new TextEncoder();
@@ -228,10 +240,100 @@ async function freeName(backend: StorageBackend, folder: string, base: string): 
   }
 }
 
+/** What a move would change in other pages: which pages get links rewritten, and how many. */
+export interface LinkRewritePreview {
+  total: number;
+  pages: { file: string; count: number }[];
+}
+
+/** Every page file of the space (before a move) with its text. */
+async function readPageTexts(backend: StorageBackend): Promise<Map<string, string>> {
+  const tree = await readSpaceTree(backend);
+  const files: string[] = [];
+  const collect = (node: PageNode) => {
+    if (node.file) files.push(node.file);
+    node.children.forEach(collect);
+  };
+  collect(tree.root);
+  const texts = new Map<string, string>();
+  for (const file of new Set(files)) {
+    const bytes = await backend.readFile(at(file));
+    if (bytes) texts.set(file, decoder.decode(bytes));
+  }
+  return texts;
+}
+
+const summarize = (plan: readonly LinkRewrite[]): LinkRewritePreview => ({
+  total: plan.reduce((sum, p) => sum + p.count, 0),
+  pages: plan.map(({ file, count }) => ({ file, count })),
+});
+
+/**
+ * Make `change` (which makes `moves`) and, when `updateLinks`, rewrite the
+ * links the moves would break (REQ-EDT-018). The rewrites are computed first
+ * and written before the move, so moved files carry their new text; if a write
+ * or the move fails, every page already written is put back as it was.
+ */
+async function withLinkRewrites(
+  backend: StorageBackend,
+  moves: readonly Moved[],
+  updateLinks: boolean,
+  change: () => Promise<FolderChange>,
+): Promise<FolderChange> {
+  if (!updateLinks || moves.length === 0) return change();
+  const texts = await readPageTexts(backend);
+  const written: string[] = [];
+  try {
+    for (const rewrite of planLinkRewrites(texts, moves)) {
+      await backend.writeFile(at(rewrite.file), encoder.encode(rewrite.text));
+      written.push(rewrite.file);
+    }
+    const result = await change();
+    return written.length > 0
+      ? { ...result, rewritten: written.map((file) => mapPath(file, moves)) }
+      : result;
+  } catch (error) {
+    for (const file of written) await backend.writeFile(at(file), encoder.encode(texts.get(file)!));
+    throw error;
+  }
+}
+
+async function previewMove(
+  backend: StorageBackend,
+  id: string,
+  newParent: string,
+  name: string,
+): Promise<LinkRewritePreview> {
+  const page = nodeFor(await readSpaceTree(backend), id);
+  const to = plannedPageId(page, newParent, name);
+  if (to === id) return { total: 0, pages: [] };
+  return summarize(planLinkRewrites(await readPageTexts(backend), [{ from: id, to }]));
+}
+
+/** The links that renaming page `id` after `title` would update. */
+export function previewRenameLinks(
+  backend: StorageBackend,
+  id: string,
+  title: string,
+): Promise<LinkRewritePreview> {
+  const name = pageNameFromTitle(title);
+  return name
+    ? previewMove(backend, id, parentOf(id), name)
+    : Promise.resolve({ total: 0, pages: [] });
+}
+
+/** The links that moving page `id` to the space root would update. */
+export function previewMoveToRootLinks(
+  backend: StorageBackend,
+  id: string,
+): Promise<LinkRewritePreview> {
+  return previewMove(backend, id, '', baseName(id));
+}
+
 /**
  * Add a page named after `title` (`Untitled` by default, numbered when taken)
  * under `parentId`, or at the root. A file page parent becomes a folder page
- * first, which the result reports as a move.
+ * first, which the result reports as a move; links to it are updated.
  */
 export async function addFolderPage(
   backend: StorageBackend,
@@ -244,31 +346,49 @@ export async function addFolderPage(
   if (parent.id === tree.root.file) parent = tree.root;
   const base = pageNameFromTitle(title) || 'Untitled';
   const name = parent.kind === 'folder' ? await freeName(backend, parent.id, base) : base;
-  const { id, moved } = await createPage(backend, '', parent, name, text);
-  return { pageId: id, moved };
+  const becomesFolder: Moved[] =
+    parent.kind === 'file'
+      ? [{ from: parent.id, to: join(parentOf(parent.id), stripExtension(baseName(parent.id))) }]
+      : [];
+  return withLinkRewrites(backend, becomesFolder, true, async () => {
+    const { id, moved } = await createPage(backend, '', parent, name, text);
+    return { pageId: id, moved };
+  });
 }
 
-/** Rename a page's file or folder after `title`. An empty title changes nothing. */
+/**
+ * Rename a page's file or folder after `title`. An empty title changes
+ * nothing. Links to the page, and its own relative links, are rewritten unless
+ * `updateLinks` is false.
+ */
 export async function renameFolderPage(
   backend: StorageBackend,
   id: string,
   title: string,
+  updateLinks = true,
 ): Promise<FolderChange> {
   const name = pageNameFromTitle(title);
   if (!name) return { pageId: id, moved: [] };
   const page = nodeFor(await readSpaceTree(backend), id);
-  const { id: pageId, moved } = await movePage(backend, '', page, parentOf(id), name);
-  return { pageId, moved };
+  const to = plannedPageId(page, parentOf(id), name);
+  return withLinkRewrites(backend, to === id ? [] : [{ from: id, to }], updateLinks, async () => {
+    const { id: pageId, moved } = await movePage(backend, '', page, parentOf(id), name);
+    return { pageId, moved };
+  });
 }
 
 /** Move a page (with everything under it) to the space root, keeping its name. */
 export async function moveFolderPageToRoot(
   backend: StorageBackend,
   id: string,
+  updateLinks = true,
 ): Promise<FolderChange> {
   const page = nodeFor(await readSpaceTree(backend), id);
-  const { id: pageId, moved } = await movePage(backend, '', page, '', baseName(id));
-  return { pageId, moved };
+  const to = plannedPageId(page, '', baseName(id));
+  return withLinkRewrites(backend, to === id ? [] : [{ from: id, to }], updateLinks, async () => {
+    const { id: pageId, moved } = await movePage(backend, '', page, '', baseName(id));
+    return { pageId, moved };
+  });
 }
 
 /** Copy a page's own content (not its children) to a new sibling page `<name> (copy)`. */

@@ -83,6 +83,70 @@ export function extractLinks(markdown: string): ExtractedLink[] {
   return links;
 }
 
+/** The destination of a link, image or reference definition, as written in the page. */
+export interface Destination {
+  /** The URL as written. */
+  url: string;
+  /** Offsets of the URL in the page text, front matter included (excluding `<>` and the title). */
+  start: number;
+  end: number;
+}
+
+/** The offset of `url` where the destination of `source` begins after `from`, or -1. */
+function destinationOffset(source: string, from: number, url: string, opener: string): number {
+  for (let at = source.indexOf(opener, from); at !== -1; at = source.indexOf(opener, at + 1)) {
+    let pos = at + opener.length;
+    while (/\s/.test(source[pos] ?? '')) pos++;
+    if (source[pos] === '<') pos++;
+    if (source.startsWith(url, pos)) return pos;
+  }
+  return -1;
+}
+
+/**
+ * Where the URL of every inline link, inline image and reference definition is
+ * written, in document order (PR 55 rewrites these when a page moves). Unlike
+ * {@link extractLinks} this includes images, and a reference link is covered by
+ * its definition. A destination whose source text differs from its URL (it has
+ * escapes or entities) is left out, so a rewrite never edits what it cannot
+ * locate exactly.
+ */
+export function extractDestinations(markdown: string): Destination[] {
+  const prefix = frontMatterPrefix(markdown);
+  const tree = parser.parse(markdown.slice(prefix.length));
+  const out: Destination[] = [];
+  const visit = (node: Nodes): void => {
+    if (
+      (node.type === 'link' || node.type === 'image' || node.type === 'definition') &&
+      node.position
+    ) {
+      const from = node.position.start.offset!;
+      const source = markdown.slice(
+        prefix.length + from,
+        prefix.length + node.position.end.offset!,
+      );
+      let search = 0;
+      if (node.type === 'link' && node.children.length > 0)
+        search = (node.children.at(-1)!.position?.end.offset ?? from) - from;
+      const at = destinationOffset(
+        source,
+        search,
+        node.url,
+        node.type === 'definition' ? ']:' : '](',
+      );
+      if (at !== -1)
+        out.push({
+          url: node.url,
+          start: prefix.length + from + at,
+          end: prefix.length + from + at + node.url.length,
+        });
+    }
+    if ('children' in node) node.children.forEach(visit);
+  };
+  visit(tree);
+  return out;
+}
+
 /** Where a link points inside the space. */
 export interface ResolvedLink {
   /** The target page file, relative to the space root (the linking page itself for `#anchor`). */

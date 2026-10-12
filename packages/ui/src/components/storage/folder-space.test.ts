@@ -7,6 +7,8 @@ import {
   initFolderSpace,
   isFolderSpace,
   moveFolderPageToRoot,
+  previewMoveToRootLinks,
+  previewRenameLinks,
   pageNameFromTitle,
   readFolderPage,
   readFolderTree,
@@ -185,5 +187,80 @@ describe('folder spaces', () => {
   it('makes titles safe as file names', () => {
     expect(pageNameFromTitle(' a/b\\c ')).toBe('a-b-c');
     expect(pageNameFromTitle('..hidden')).toBe('hidden');
+  });
+
+  describe('links when pages move', () => {
+    beforeEach(() => {
+      backend.seedText('todo.md', 'Do [setup](guides/setup.md#install).');
+      backend.seedText('guides/index.md', '[again](setup.md) and [home](../README.md)');
+      backend.seedText('guides/setup.md', '[back](../todo.md) ![logo](logo.png)');
+    });
+
+    it('previews the pages and links a rename would update', async () => {
+      const preview = await previewRenameLinks(backend, 'guides/setup.md', 'Install');
+      expect(preview.total).toBe(2);
+      expect(preview.pages).toHaveLength(2);
+      expect(preview.pages).toEqual(
+        expect.arrayContaining([
+          { file: 'todo.md', count: 1 },
+          { file: 'guides/index.md', count: 1 },
+        ]),
+      );
+      expect(backend.readText('todo.md')).toContain('guides/setup.md');
+    });
+
+    it('rewrites inbound links on rename', async () => {
+      await renameFolderPage(backend, 'guides/setup.md', 'Install');
+      expect(backend.readText('todo.md')).toBe('Do [setup](guides/Install.md#install).');
+      expect(backend.readText('guides/index.md')).toBe(
+        '[again](Install.md) and [home](../README.md)',
+      );
+      expect(backend.hasFile('guides/setup.md')).toBe(false);
+    });
+
+    it('rewrites a moved page’s own relative links and images', async () => {
+      await moveFolderPageToRoot(backend, 'guides/setup.md');
+      expect(backend.readText('setup.md')).toBe('[back](todo.md) ![logo](guides/logo.png)');
+      expect(backend.readText('guides/index.md')).toBe(
+        '[again](../setup.md) and [home](../README.md)',
+      );
+      expect((await previewMoveToRootLinks(backend, 'todo.md')).total).toBe(0);
+    });
+
+    it('leaves links alone when asked to', async () => {
+      await renameFolderPage(backend, 'guides/setup.md', 'Install', false);
+      expect(backend.readText('todo.md')).toContain('guides/setup.md#install');
+    });
+
+    it('updates links to a file page that becomes a folder page', async () => {
+      await addFolderPage(backend, 'todo.md', 'Sub');
+      expect(backend.readText('todo/index.md')).toBe('Do [setup](../guides/setup.md#install).');
+    });
+
+    it('puts every page back when the move fails', async () => {
+      backend.seedText('guides/Install.md', 'taken');
+      await expect(renameFolderPage(backend, 'guides/setup.md', 'Install')).rejects.toThrow(
+        /already exists/,
+      );
+      expect(backend.readText('todo.md')).toBe('Do [setup](guides/setup.md#install).');
+      expect(backend.readText('guides/index.md')).toBe(
+        '[again](setup.md) and [home](../README.md)',
+      );
+      expect(backend.readText('guides/setup.md')).toBe('[back](../todo.md) ![logo](logo.png)');
+    });
+
+    it('puts earlier pages back when a rewrite write fails', async () => {
+      const write = backend.writeFile.bind(backend);
+      let writes = 0;
+      backend.writeFile = async (path: string, data: Uint8Array) => {
+        if (path === '/guides/index.md' && ++writes === 1) throw new Error('disk full');
+        return write(path, data);
+      };
+      await expect(renameFolderPage(backend, 'guides/setup.md', 'Install')).rejects.toThrow(
+        /disk full/,
+      );
+      expect(backend.readText('todo.md')).toBe('Do [setup](guides/setup.md#install).');
+      expect(backend.hasFile('guides/Install.md')).toBe(false);
+    });
   });
 });

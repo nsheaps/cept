@@ -145,6 +145,50 @@ describe('App folder spaces', () => {
     expect((await host.handles.list()).map((e) => e.id)).toEqual([space?.id]);
   });
 
+  describe('renaming a page that other pages link to', () => {
+    async function openLinked() {
+      const folder = notesFolder();
+      folder.seedText('Welcome.md', 'See [setup](Guides/Setup.md#top).\n');
+      const { host, next } = fakeHost(new Map([['notes', folder]]));
+      next.handle = folderHandle('notes');
+      renderApp(new MemoryBackend(), host);
+      fireEvent.click(await screen.findByTestId('landing-open-folder'));
+      fireEvent.click(await screen.findByTestId('page-tree-toggle-Guides', {}, { timeout: 3000 }));
+      fireEvent.contextMenu(await screen.findByTestId('page-tree-button-Guides/Setup.md'));
+      fireEvent.click(await screen.findByTestId('ctx-rename'));
+      const input = await screen.findByTestId('rename-input');
+      fireEvent.change(input, { target: { value: 'Install' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      return folder;
+    }
+
+    it('shows the pages to update and rewrites their links when accepted', async () => {
+      const folder = await openLinked();
+      expect((await screen.findByTestId('link-rewrite-pages')).textContent).toContain('Welcome.md');
+      fireEvent.click(screen.getByTestId('link-rewrite-update'));
+      await screen.findByTestId('page-tree-button-Guides/Install.md', {}, { timeout: 3000 });
+      expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Install.md#top).\n');
+    });
+
+    it('leaves the links alone when the user moves without updating', async () => {
+      const folder = await openLinked();
+      await screen.findByTestId('link-rewrite-dialog');
+      fireEvent.click(screen.getByTestId('link-rewrite-skip'));
+      await screen.findByTestId('page-tree-button-Guides/Install.md', {}, { timeout: 3000 });
+      expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+    });
+
+    it('changes nothing when the user cancels', async () => {
+      const folder = await openLinked();
+      await screen.findByTestId('link-rewrite-dialog');
+      fireEvent.click(screen.getByTestId('link-rewrite-cancel'));
+      await settle();
+      expect(screen.queryByTestId('link-rewrite-dialog')).toBeNull();
+      expect(folder.hasFile('Guides/Setup.md')).toBe(true);
+      expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+    });
+  });
+
   it('lists a file that is not a page and previews it read-only', async () => {
     const folder = notesFolder();
     folder.seedText('readme.txt', 'plain words');

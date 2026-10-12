@@ -40,6 +40,7 @@ export function PageContextMenu({
       <div
         className="cept-context-menu"
         style={{ top: position.y, left: position.x }}
+        onClick={(e) => e.stopPropagation()}
         data-testid="page-rename-input"
       >
         <input
@@ -61,6 +62,7 @@ export function PageContextMenu({
     <div
       className="cept-context-menu"
       style={{ top: position.y, left: position.x }}
+      onClick={(e) => e.stopPropagation()}
       data-testid="page-context-menu"
     >
       {onToggleFavorite && (
