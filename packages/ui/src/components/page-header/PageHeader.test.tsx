@@ -71,6 +71,72 @@ describe('PageHeader', () => {
     expect(screen.queryByTestId('page-cover')).toBeNull();
   });
 
+  describe('icon and cover pickers', () => {
+    const onIconChange = vi.fn();
+    const onCoverChange = vi.fn();
+    const editable = { ...defaultProps, onIconChange, onCoverChange };
+
+    it('shows no pickers without change handlers', () => {
+      render(<PageHeader {...defaultProps} />);
+      expect(screen.queryByTestId('edit-cover')).toBeNull();
+      expect(screen.queryByTestId('add-icon')).toBeNull();
+    });
+
+    it('chooses an icon from the grid', () => {
+      const { icon: _icon, ...noIcon } = editable;
+      render(<PageHeader {...noIcon} />);
+      fireEvent.click(screen.getByTestId('add-icon'));
+      fireEvent.click(screen.getByLabelText('Use 🚀'));
+      expect(onIconChange).toHaveBeenCalledWith('test-page', '🚀');
+      expect(screen.queryByTestId('icon-picker')).toBeNull();
+    });
+
+    it('takes a typed emoji', () => {
+      render(<PageHeader {...editable} />);
+      fireEvent.click(screen.getByTestId('page-icon'));
+      fireEvent.change(screen.getByTestId('icon-input'), { target: { value: ' 🦄 ' } });
+      fireEvent.submit(screen.getByTestId('icon-input'));
+      expect(onIconChange).toHaveBeenCalledWith('test-page', '🦄');
+    });
+
+    it('rejects typed text that is not a single emoji', () => {
+      onIconChange.mockClear();
+      render(<PageHeader {...editable} />);
+      fireEvent.click(screen.getByTestId('page-icon'));
+      fireEvent.change(screen.getByTestId('icon-input'), { target: { value: 'https://x.test' } });
+      fireEvent.submit(screen.getByTestId('icon-input'));
+      expect(onIconChange).not.toHaveBeenCalled();
+      expect(screen.getByTestId('icon-error')).toBeDefined();
+    });
+
+    it('opens the icon picker from the keyboard (a real button)', () => {
+      render(<PageHeader {...editable} />);
+      expect(screen.getByTestId('page-icon').tagName).toBe('BUTTON');
+    });
+
+    it('removes the icon', () => {
+      render(<PageHeader {...editable} />);
+      fireEvent.click(screen.getByTestId('page-icon'));
+      fireEvent.click(screen.getByTestId('remove-icon'));
+      expect(onIconChange).toHaveBeenCalledWith('test-page', undefined);
+    });
+
+    it('sets and removes the cover', () => {
+      const { rerender } = render(<PageHeader {...editable} />);
+      fireEvent.click(screen.getByTestId('edit-cover'));
+      fireEvent.change(screen.getByTestId('cover-input'), {
+        target: { value: 'https://example.com/a.png' },
+      });
+      fireEvent.submit(screen.getByTestId('cover-input'));
+      expect(onCoverChange).toHaveBeenCalledWith('test-page', 'https://example.com/a.png');
+
+      rerender(<PageHeader {...editable} cover="https://example.com/a.png" />);
+      fireEvent.click(screen.getByTestId('edit-cover'));
+      fireEvent.click(screen.getByTestId('remove-cover'));
+      expect(onCoverChange).toHaveBeenLastCalledWith('test-page', undefined);
+    });
+  });
+
   it('renders icon emoji in header', () => {
     render(<PageHeader {...defaultProps} icon="\uD83D\uDE80" />);
     const header = screen.getByTestId('page-header');

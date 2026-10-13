@@ -162,3 +162,33 @@ export function getBreadcrumbs(
   }
   return null;
 }
+
+/**
+ * Set (or, with `undefined`, clear) a node's icon or cover. Nodes along the
+ * way are copied only when something below them changed.
+ */
+export function setNodeMeta(
+  nodes: PageTreeNode[],
+  id: string,
+  key: 'icon' | 'cover',
+  value: string | undefined,
+): PageTreeNode[] {
+  let changed = false;
+  const next = nodes.map((node) => {
+    if (node.id === id) {
+      if (node[key] === value) return node;
+      changed = true;
+      const { [key]: _old, ...rest } = node;
+      return value === undefined ? rest : { ...rest, [key]: value };
+    }
+    if (node.children.length > 0) {
+      const children = setNodeMeta(node.children, id, key, value);
+      if (children !== node.children) {
+        changed = true;
+        return { ...node, children };
+      }
+    }
+    return node;
+  });
+  return changed ? next : nodes;
+}

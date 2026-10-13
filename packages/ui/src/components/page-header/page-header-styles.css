@@ -383,3 +383,89 @@
 .dark .cept-trash-view-empty-btn:hover {
   background: rgba(239, 68, 68, 0.1);
 }
+
+.cept-page-header-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.cept-page-header:hover .cept-page-header-actions,
+.cept-page-header:focus-within .cept-page-header-actions {
+  opacity: 1;
+}
+.cept-page-header-action {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #787774;
+  cursor: pointer;
+}
+.cept-page-header-action:hover {
+  background: rgba(55, 53, 47, 0.08);
+}
+button.cept-page-header-icon {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.cept-page-header-picker-error {
+  font-size: 12px;
+  color: #eb5757;
+}
+.cept-page-header-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 280px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #e3e2e0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.cept-page-header-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+.cept-page-header-icon-choice {
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  padding: 4px;
+  cursor: pointer;
+}
+.cept-page-header-icon-choice:hover {
+  background: rgba(55, 53, 47, 0.08);
+}
+.cept-page-header-picker-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #e3e2e0;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.dark .cept-page-header-picker {
+  background: #2a2a2a;
+  border-color: #404040;
+}
+.dark .cept-page-header-picker-input {
+  background: #1f1f1f;
+  border-color: #404040;
+  color: #e5e5e5;
+}
+.dark .cept-page-header-action {
+  color: #a1a1aa;
+}
+.dark .cept-page-header-action:hover,
+.dark .cept-page-header-icon-choice:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
