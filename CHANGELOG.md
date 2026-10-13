@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.53.1](https://github.com/nsheaps/cept/compare/v0.53.0...v0.53.1) (2026-10-13)
+
+### Bug Fixes
+
+* **deps:** update dependency js-yaml to v5.4.2 ([#446](https://github.com/nsheaps/cept/issues/446)) ([b250e06](https://github.com/nsheaps/cept/commit/b250e067462ac9c259b4ee03897dd813f1e7b679))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([43e3050](https://github.com/nsheaps/cept/commit/43e3050ab0edf77476f8a8b86524abd42ca610a6))
+
 ## [0.53.0](https://github.com/nsheaps/cept/compare/v0.52.0...v0.53.0) (2026-10-13)
 
 ### Features
