@@ -5,6 +5,8 @@ export interface PageTreeNode {
   title: string;
   icon?: string;
   cover?: string;
+  /** Sort position among siblings, from the page's `order` front matter (REQ-NTN-012). */
+  order?: number;
   children: PageTreeNode[];
   isExpanded?: boolean;
   /** A file that is not a page (an image, a PDF): previewed read-only, no page actions. */

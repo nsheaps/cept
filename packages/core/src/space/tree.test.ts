@@ -110,6 +110,33 @@ describe.each(backends)('space folder tree on %s', (_name, make) => {
     ]);
   });
 
+  it('sorts siblings by their order front matter when asked, then by name', async () => {
+    await backend.writeFile('/guides/setup.md', enc.encode('---\norder: 1\n---\n# Setup\n'));
+    await backend.writeFile('/guides/2-basics.md', enc.encode('---\norder: 2\n---\nBasics\n'));
+    // A folder takes its order from its folder page.
+    await backend.writeFile('/journal/2026/index.md', enc.encode('---\norder: 0\n---\n'));
+    const tree = await readSpaceTree(backend, '', { order: true });
+    expect(findPage(tree, 'guides')?.children.map((c) => c.id)).toEqual([
+      'guides/setup.md',
+      'guides/2-basics.md',
+      'guides/10-advanced.md',
+      'guides/README.md',
+    ]);
+    expect(findPage(tree, 'guides/setup.md')?.order).toBe(1);
+    expect(findPage(tree, 'guides/10-advanced.md')?.order).toBeUndefined();
+    expect(findPage(tree, 'journal/2026')?.order).toBe(0);
+  });
+
+  it('ignores an order that is not a number and reads no files unless asked', async () => {
+    await backend.writeFile('/guides/setup.md', enc.encode('---\norder: first\n---\n# Setup\n'));
+    const asked = await readSpaceTree(backend, '', { order: true });
+    expect(findPage(asked, 'guides/setup.md')?.order).toBeUndefined();
+    await backend.writeFile('/guides/setup.md', enc.encode('---\norder: -5\n---\n# Setup\n'));
+    const plain = await readSpaceTree(backend);
+    expect(findPage(plain, 'guides/setup.md')?.order).toBeUndefined();
+    expect(findPage(plain, 'guides')?.children[0]?.id).toBe('guides/2-basics.md');
+  });
+
   it('lists the visible non-page files of each folder when asked', async () => {
     const tree = await readSpaceTree(backend, '', { foreignFiles: true });
     const listed = (id: string) => findPage(tree, id)?.files?.map((f) => f.path);

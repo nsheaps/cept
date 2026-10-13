@@ -424,6 +424,8 @@ export type {
 } from './space/index.js';
 
 // Space folder tree (pages as files, path-based ids)
+export { compareSiblings, planReorder, ORDER_STEP } from './space/index.js';
+export type { Orderable, OrderPatch } from './space/index.js';
 export {
   readSpaceTree,
   findPage,

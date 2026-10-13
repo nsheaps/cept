@@ -689,6 +689,8 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: `page-tree-utils.test.ts` sorts by `order`, then title.
 - Accept: tests green.
 - Risk: renumbering many siblings causes noisy commits; use sparse order values.
+- Split into **60a** (the order, no UI) and **60b** (drag, "Move to…" and the file moves).
+- Delivered (60a): `space/order.ts` in core (`compareSiblings`: `order` ascending, pages without one after, then title and id; `planReorder`: the `order` values to write for a move, only the moved page's when there is room between its neighbours, sparse steps of 1024 otherwise), `readSpaceTree(..., { order: true })` reading each page's `order` (a folder's comes from its folder page) and sorting siblings by it, and the sidebar tree of a folder space following it. Tests: `order.test.ts` (sorting, and a property check that every plan yields the requested order), tree tests, a sidebar-tree test. Not in 60a: drag and drop, the move picker, writing `order`.
 
 **PR 61 — `feat(core): parse and serialize cept:comment markers`**
 

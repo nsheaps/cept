@@ -35,6 +35,8 @@ export type {
   DiscoveryEvent,
   DiscoveryResult,
 } from './discover.js';
+export { compareSiblings, planReorder, ORDER_STEP } from './order.js';
+export type { Orderable, OrderPatch } from './order.js';
 export {
   readSpaceTree,
   findPage,
