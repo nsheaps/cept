@@ -99,6 +99,21 @@ describe('PageHeader', () => {
       expect(onIconChange).toHaveBeenCalledWith('test-page', '🦄');
     });
 
+    it('rejects typed text that is not a single emoji', () => {
+      onIconChange.mockClear();
+      render(<PageHeader {...editable} />);
+      fireEvent.click(screen.getByTestId('page-icon'));
+      fireEvent.change(screen.getByTestId('icon-input'), { target: { value: 'https://x.test' } });
+      fireEvent.submit(screen.getByTestId('icon-input'));
+      expect(onIconChange).not.toHaveBeenCalled();
+      expect(screen.getByTestId('icon-error')).toBeDefined();
+    });
+
+    it('opens the icon picker from the keyboard (a real button)', () => {
+      render(<PageHeader {...editable} />);
+      expect(screen.getByTestId('page-icon').tagName).toBe('BUTTON');
+    });
+
     it('removes the icon', () => {
       render(<PageHeader {...editable} />);
       fireEvent.click(screen.getByTestId('page-icon'));

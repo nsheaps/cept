@@ -21,7 +21,7 @@ import type { CommandItem } from './command-palette/CommandPalette.js';
 import { SearchPanel } from './search/SearchPanel.js';
 import type { SearchResult } from './search/SearchPanel.js';
 import { PageHeader } from './page-header/PageHeader.js';
-import { readPageMeta, setPageMeta } from './page-header/page-meta.js';
+import { metaSyncPatches, readPageMeta, setPageMeta } from './page-header/page-meta.js';
 import type { PageMetaKey } from './page-header/page-meta.js';
 import { SettingsModal, DEFAULT_SETTINGS } from './settings/SettingsModal.js';
 import type { CeptSettings, SpaceInfo } from './settings/SettingsModal.js';
@@ -63,6 +63,8 @@ import {
   CeptSearchIndex,
   commitIdentityFor,
   frontMatterPrefix,
+  readFrontMatter,
+  splitFrontMatter,
   GITHUB_HOST,
   MemoryBackend,
   reconnectFolder,
@@ -1608,15 +1610,26 @@ export function App() {
 
   // A page's icon and cover come from its front matter once it is loaded, so
   // an edit made in the file (or on another device) shows up in the sidebar.
-  const selectedContent = selectedPageId ? pageContents[selectedPageId] : undefined;
+  // Only the front matter block matters, so typing in the body does not re-parse it.
+  const selectedFrontMatter =
+    selectedPageId && pageContents[selectedPageId] !== undefined
+      ? splitFrontMatter(pageContents[selectedPageId]!).yaml
+      : undefined;
+  // What each page's front matter last supplied, so removing a key from the file
+  // clears the sidebar while an icon that never came from the file is left alone.
+  const syncedMetaRef = useRef(new Map<string, { icon?: string; cover?: string }>());
   useEffect(() => {
-    if (!selectedPageId || selectedContent === undefined) return;
-    const meta = readPageMeta(selectedContent);
-    for (const key of ['icon', 'cover'] as const) {
-      const value = meta[key];
-      if (value !== undefined) setPages((prev) => setNodeMeta(prev, selectedPageId, key, value));
-    }
-  }, [selectedPageId, selectedContent]);
+    if (!selectedPageId || selectedFrontMatter === undefined) return;
+    const loaded = readFrontMatter(selectedFrontMatter);
+    const meta = {
+      ...(loaded.icon !== undefined ? { icon: loaded.icon } : {}),
+      ...(loaded.cover !== undefined ? { cover: loaded.cover } : {}),
+    };
+    const synced = syncedMetaRef.current.get(selectedPageId) ?? {};
+    for (const [key, value] of metaSyncPatches(synced, meta))
+      setPages((prev) => setNodeMeta(prev, selectedPageId, key, value));
+    syncedMetaRef.current.set(selectedPageId, meta);
+  }, [selectedPageId, selectedFrontMatter]);
 
   // Read the space's links again after the tree, the files or a page changes.
   useEffect(() => {

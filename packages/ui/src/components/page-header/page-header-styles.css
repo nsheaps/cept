@@ -407,8 +407,16 @@
 .cept-page-header-action:hover {
   background: rgba(55, 53, 47, 0.08);
 }
-.cept-page-header-icon[role='button'] {
+button.cept-page-header-icon {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
   cursor: pointer;
+}
+.cept-page-header-picker-error {
+  font-size: 12px;
+  color: #eb5757;
 }
 .cept-page-header-picker {
   display: flex;

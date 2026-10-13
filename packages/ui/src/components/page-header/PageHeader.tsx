@@ -35,6 +35,16 @@ const ICON_CHOICES = [
   '🌱',
 ];
 
+/** True when the text is exactly one user-perceived character (one emoji, including ZWJ sequences). */
+function isSingleSymbol(text: string): boolean {
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    return (
+      [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].length === 1
+    );
+  }
+  return [...text].length === 1;
+}
+
 export function PageHeader({
   pageId,
   title,
@@ -46,6 +56,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   const [picker, setPicker] = useState<'icon' | 'cover' | null>(null);
   const [iconValue, setIconValue] = useState('');
+  const [iconError, setIconError] = useState(false);
   const [coverValue, setCoverValue] = useState(cover ?? '');
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
@@ -149,7 +160,12 @@ export function PageHeader({
             onSubmit={(e) => {
               e.preventDefault();
               const trimmed = iconValue.trim();
-              if (trimmed) chooseIcon(trimmed);
+              if (!trimmed) return;
+              if (!isSingleSymbol(trimmed)) {
+                setIconError(true);
+                return;
+              }
+              chooseIcon(trimmed);
             }}
           >
             <input
@@ -157,8 +173,16 @@ export function PageHeader({
               data-testid="icon-input"
               placeholder="Type or paste an emoji"
               value={iconValue}
-              onChange={(e) => setIconValue(e.target.value)}
+              onChange={(e) => {
+                setIconValue(e.target.value);
+                setIconError(false);
+              }}
             />
+            {iconError && (
+              <span className="cept-page-header-picker-error" data-testid="icon-error">
+                Enter a single emoji.
+              </span>
+            )}
           </form>
           {icon && (
             <button
@@ -200,22 +224,20 @@ export function PageHeader({
         </div>
       )}
       <div className="cept-page-header-title-row">
-        {icon && (
-          <span
-            className="cept-page-header-icon"
-            {...(onIconChange
-              ? {
-                  role: 'button',
-                  tabIndex: 0,
-                  title: 'Change icon',
-                  'data-testid': 'page-icon',
-                  onClick: () => setPicker(picker === 'icon' ? null : 'icon'),
-                }
-              : {})}
-          >
-            {icon}
-          </span>
-        )}
+        {icon &&
+          (onIconChange ? (
+            <button
+              type="button"
+              className="cept-page-header-icon"
+              title="Change icon"
+              data-testid="page-icon"
+              onClick={() => setPicker(picker === 'icon' ? null : 'icon')}
+            >
+              {icon}
+            </button>
+          ) : (
+            <span className="cept-page-header-icon">{icon}</span>
+          ))}
         {isEditing ? (
           <div className="cept-page-header-edit-wrapper">
             <input

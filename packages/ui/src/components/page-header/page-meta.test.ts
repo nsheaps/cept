@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readPageMeta, setPageMeta } from './page-meta.js';
+import { metaSyncPatches, readPageMeta, setPageMeta } from './page-meta.js';
 
 describe('setPageMeta', () => {
   it('adds an icon to a page without front matter, leaving the body alone', () => {
@@ -46,5 +46,22 @@ describe('readPageMeta', () => {
 
   it('is empty for a page without front matter', () => {
     expect(readPageMeta('Body\n')).toEqual({});
+  });
+});
+
+describe('metaSyncPatches', () => {
+  it('sets keys the file has', () => {
+    expect(metaSyncPatches({}, { icon: '🚀' })).toEqual([['icon', '🚀']]);
+  });
+
+  it('clears a key the file had and no longer has', () => {
+    expect(metaSyncPatches({ icon: '🚀', cover: 'c.png' }, { cover: 'c.png' })).toEqual([
+      ['icon', undefined],
+      ['cover', 'c.png'],
+    ]);
+  });
+
+  it('leaves a key that never came from the file alone', () => {
+    expect(metaSyncPatches({}, {})).toEqual([]);
   });
 });
