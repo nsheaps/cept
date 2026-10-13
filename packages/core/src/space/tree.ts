@@ -189,19 +189,19 @@ export async function readSpaceTree(
       return order !== undefined ? { order } : {};
     };
 
-    const children: PageNode[] = [];
-    for (const name of visibleFiles) {
-      if (name === folderPage) continue;
+    const childFiles = visibleFiles.filter((name) => name !== folderPage);
+    const fileOrders = await Promise.all(childFiles.map((name) => orderOf(joinPath(folder, name))));
+    const children: PageNode[] = childFiles.map((name, i) => {
       const id = joinPath(folder, name);
-      children.push({
+      return {
         id,
         kind: 'file',
         name: stripExtension(name),
         file: id,
         children: [],
-        ...(await orderOf(id)),
-      });
-    }
+        ...fileOrders[i],
+      };
+    });
     for (const entry of entries) {
       if (!entry.isDirectory) continue;
       const sub = joinPath(folder, entry.name);
