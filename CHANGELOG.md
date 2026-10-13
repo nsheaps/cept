@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.53.0](https://github.com/nsheaps/cept/compare/v0.52.0...v0.53.0) (2026-10-13)
+
+### Features
+
+* **ui:** set page icon and cover in front matter ([fc5590d](https://github.com/nsheaps/cept/commit/fc5590d84d68d30e476832d842e3b571451e5f7f))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([eb29cfc](https://github.com/nsheaps/cept/commit/eb29cfc67f738b8589657cf26c1b7a1ed20c81cc))
+
 ## [0.52.0](https://github.com/nsheaps/cept/compare/v0.51.0...v0.52.0) (2026-10-12)
 
 ### Features
