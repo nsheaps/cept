@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.54.0](https://github.com/nsheaps/cept/compare/v0.53.1...v0.54.0) (2026-10-14)
+
+### Features
+
+* **core:** sort sibling pages by front-matter order ([#445](https://github.com/nsheaps/cept/issues/445)) ([d110b5a](https://github.com/nsheaps/cept/commit/d110b5ae1c7542e1315c38404b9fdc405bd764dd))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([ff19478](https://github.com/nsheaps/cept/commit/ff19478968b7f1fae15862a812fb63c549fa2569))
+
 ## [0.53.1](https://github.com/nsheaps/cept/compare/v0.53.0...v0.53.1) (2026-10-13)
 
 ### Bug Fixes
