@@ -30,7 +30,8 @@ jobs:
       - name: Check whether e2e is affected
         id: e2e
         # On pull requests that cannot reach @cept/e2e, skip the browser setup and run.
-        run: mise run -q ci:affected -- @cept/e2e >> "$GITHUB_OUTPUT"
+        # A change to this workflow counts too, so the steps below run on the PR that edits them.
+        run: mise run -q ci:affected -- @cept/e2e .github/workflows/_test-e2e.yml >> "$GITHUB_OUTPUT"
 
       - name: Resolve Playwright version
         id: pw
