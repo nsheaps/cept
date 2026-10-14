@@ -26,6 +26,17 @@ declare module '@tiptap/core' {
        * the selection.
        */
       addComment: (input: { author: CommentAuthor; body: string; created?: string }) => ReturnType;
+      /** Answer a comment; the reply joins the thread of its first comment. */
+      replyToComment: (
+        id: string,
+        input: { author: CommentAuthor; body: string; created?: string },
+      ) => ReturnType;
+      /** Change a comment's text and mark it edited. */
+      editComment: (id: string, body: string, edited?: string) => ReturnType;
+      /** Delete a comment; deleting the first comment of a thread deletes its replies too. */
+      deleteComment: (id: string) => ReturnType;
+      /** Resolve or reopen the thread of a comment. */
+      setCommentStatus: (id: string, status: 'open' | 'resolved') => ReturnType;
     };
   }
 }
@@ -127,6 +138,17 @@ export function listPageComments(doc: PmModelNode): ListedComment[] {
   return listed;
 }
 
+/** Every readable comment marker with its position and size in the document. */
+function findComments(doc: PmModelNode): { comment: PageComment; pos: number; size: number }[] {
+  const found: { comment: PageComment; pos: number; size: number }[] = [];
+  doc.forEach((child, pos) => {
+    if (child.type.name !== 'comment') return;
+    const comment = commentOf(child.toJSON() as PmNode);
+    if (comment) found.push({ comment, pos, size: child.nodeSize });
+  });
+  return found;
+}
+
 function rangeOf(page: PageText, comment: PageComment): CommentRange | null {
   const match = resolveAnchor(page.text, comment.anchor!);
   if (!match) return null;
@@ -226,6 +248,87 @@ export const Comment = Node.create({
           };
           if (dispatch) {
             tr.insert(at, state.schema.nodes.comment!.create({ comment, markdown: '' }));
+            dispatch(tr);
+          }
+          return true;
+        },
+
+      replyToComment:
+        (id, { author, body, created }) =>
+        ({ state, tr, dispatch }) => {
+          const found = findComments(state.doc);
+          const target = found.find((entry) => entry.comment.id === id);
+          if (!target) return false;
+          const rootId = target.comment.replyTo ?? target.comment.id;
+          if (!found.some((entry) => entry.comment.id === rootId)) return false;
+          // After the last marker of the run of markers the thread starts in.
+          let at = target.pos + target.size;
+          let next = state.doc.nodeAt(at);
+          while (next?.type.name === 'comment') {
+            at += next.nodeSize;
+            next = state.doc.nodeAt(at);
+          }
+          const reply: PageComment = {
+            id: newCommentId(),
+            author,
+            created: created ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            body,
+            replyTo: rootId,
+          };
+          if (dispatch) {
+            tr.insert(at, state.schema.nodes.comment!.create({ comment: reply, markdown: '' }));
+            dispatch(tr);
+          }
+          return true;
+        },
+
+      editComment:
+        (id, body, edited) =>
+        ({ state, tr, dispatch }) => {
+          const target = findComments(state.doc).find((entry) => entry.comment.id === id);
+          if (!target) return false;
+          const changed: PageComment = {
+            ...target.comment,
+            body,
+            edited: edited ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+          };
+          if (dispatch) {
+            tr.setNodeMarkup(target.pos, undefined, { comment: changed, markdown: '' });
+            dispatch(tr);
+          }
+          return true;
+        },
+
+      deleteComment:
+        (id) =>
+        ({ state, tr, dispatch }) => {
+          const found = findComments(state.doc);
+          const target = found.find((entry) => entry.comment.id === id);
+          if (!target) return false;
+          if (dispatch) {
+            // Highest position first, so earlier deletions do not move later ones.
+            const doomed = found
+              .filter((entry) => entry.comment.id === id || entry.comment.replyTo === id)
+              .sort((a, b) => b.pos - a.pos);
+            for (const entry of doomed) tr.delete(entry.pos, entry.pos + entry.size);
+            dispatch(tr);
+          }
+          return true;
+        },
+
+      setCommentStatus:
+        (id, status) =>
+        ({ state, tr, dispatch }) => {
+          const found = findComments(state.doc);
+          const target = found.find((entry) => entry.comment.id === id);
+          if (!target) return false;
+          const root = found.find((entry) => entry.comment.id === (target.comment.replyTo ?? id));
+          if (!root) return false;
+          if (dispatch) {
+            tr.setNodeMarkup(root.pos, undefined, {
+              comment: { ...root.comment, status },
+              markdown: '',
+            });
             dispatch(tr);
           }
           return true;

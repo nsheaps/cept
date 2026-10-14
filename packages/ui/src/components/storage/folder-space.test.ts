@@ -475,7 +475,7 @@ describe('readFolderCommentCounts', () => {
   const marker = (id: string, extra: Partial<PageComment> = {}) =>
     formatCommentMarker({ id, author: sam, created: '2026-10-01T10:00:00Z', body: id, ...extra });
 
-  it('counts the open comments of each page, by the id the sidebar uses', async () => {
+  it('counts the open threads of each page, by the id the sidebar uses', async () => {
     const backend = fixture();
     backend.seedText('README.md', `# Notes\n\n${marker('c-aaaaaaaaaa')}\n`);
     backend.seedText(
@@ -516,6 +516,21 @@ describe('readFolderCommentCounts', () => {
       ].join('\n\n'),
     );
     expect((await readFolderCommentCounts(backend)).has('todo.md')).toBe(false);
+  });
+
+  it('counts a thread once, however many replies it has', async () => {
+    const backend = fixture();
+    backend.seedText(
+      'todo.md',
+      [
+        '# Todo',
+        marker('c-aaaaaaaaaa'),
+        marker('c-bbbbbbbbbb', { replyTo: 'c-aaaaaaaaaa' }),
+        marker('c-cccccccccc', { replyTo: 'c-aaaaaaaaaa' }),
+        '',
+      ].join('\n\n'),
+    );
+    expect((await readFolderCommentCounts(backend)).get('todo.md')).toBe(1);
   });
 
   it('does not count marker lookalikes in code, and skips unreadable markers', async () => {

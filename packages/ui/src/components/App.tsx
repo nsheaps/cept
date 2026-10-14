@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
-import type { CommentingContext } from './editor/CeptEditor.js';
+import type { CommentActions, CommentingContext } from './editor/CeptEditor.js';
 import type { ListedComment } from './editor/extensions/comment.js';
 import { CommentsPanel } from './comments/CommentsPanel.js';
 import { countNewComments, lastVisit, markVisited } from './comments/comment-visits.js';
@@ -1874,6 +1874,7 @@ export function App() {
     () => (reported && reported.pageId === selectedPageId ? reported.list : []),
     [reported, selectedPageId],
   );
+  const [commentActions, setCommentActions] = useState<CommentActions | null>(null);
   const [commentsSince, setCommentsSince] = useState<string | null>(null);
   const visitRef = useRef<{ key: string; since: string | null } | null>(null);
   useEffect(() => {
@@ -3541,6 +3542,7 @@ export function App() {
                   editable={!editLocked}
                   commenting={commenting}
                   onCommentsChange={(list) => setReported({ pageId: selectedPageId, list })}
+                  onCommentActions={setCommentActions}
                   {...(pageLinks ? { links: pageLinks } : {})}
                   {...(pendingAnchor ? { anchor: pendingAnchor } : {})}
                 />
@@ -3557,6 +3559,8 @@ export function App() {
                 lastVisit={commentsSince}
                 meId={commenting.author?.id ?? null}
                 onJump={handleJumpToComment}
+                actions={commentActions}
+                askName={commenting.author === null}
               />
               <BacklinksPanel
                 backlinks={backlinkIndex.get(selectedPageId) ?? []}

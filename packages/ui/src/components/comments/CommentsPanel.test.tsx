@@ -138,3 +138,82 @@ describe('CommentsPanel', () => {
     expect(screen.getByTestId('comment-author-c-1').textContent).toBe('Jack (agent)');
   });
 });
+
+describe('CommentsPanel threads', () => {
+  const bob = { id: 'github:bob', name: 'Bob' };
+  const actions = () => ({
+    reply: vi.fn(),
+    edit: vi.fn(),
+    remove: vi.fn(),
+    setStatus: vi.fn(),
+  });
+  const thread = [
+    item('c-1', 'anchored'),
+    item('c-2', 'page', { author: bob, replyTo: 'c-1' }),
+    item('c-3', 'anchored', { status: 'resolved' }),
+  ];
+  const panel = (a: ReturnType<typeof actions> | null, meId: string | null = nate.id) =>
+    render(
+      <CommentsPanel comments={thread} lastVisit={null} meId={meId} onJump={vi.fn()} actions={a} />,
+    );
+
+  it('shows a reply under the thread it answers, not as a page comment', () => {
+    panel(null);
+    expect(within(screen.getByTestId('thread-c-1')).getByText('Body of c-2')).toBeTruthy();
+    expect(screen.queryByTestId('comments-page')).toBeNull();
+    expect(screen.queryByTestId('thread-reply-c-1')).toBeNull();
+  });
+
+  it('replies to a thread with the typed name when none is known', () => {
+    const a = actions();
+    render(
+      <CommentsPanel
+        comments={thread}
+        lastVisit={null}
+        meId={null}
+        onJump={vi.fn()}
+        actions={a}
+        askName
+      />,
+    );
+    fireEvent.click(screen.getByTestId('thread-reply-c-1'));
+    fireEvent.change(screen.getByTestId('thread-reply-input-c-1'), { target: { value: ' Hi ' } });
+    fireEvent.click(screen.getByTestId('thread-reply-send-c-1'));
+    expect(a.reply).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByTestId('thread-reply-name-c-1'), { target: { value: 'Sam' } });
+    fireEvent.click(screen.getByTestId('thread-reply-send-c-1'));
+    expect(a.reply).toHaveBeenCalledWith('c-1', 'Hi', 'Sam');
+    expect(screen.queryByTestId('thread-reply-input-c-1')).toBeNull();
+  });
+
+  it('edits and deletes only your own comments', () => {
+    const a = actions();
+    panel(a);
+    expect(screen.queryByTestId('comment-edit-c-2')).toBeNull();
+    expect(screen.queryByTestId('comment-delete-c-2')).toBeNull();
+    fireEvent.click(screen.getByTestId('comment-edit-c-1'));
+    fireEvent.change(screen.getByTestId('comment-edit-input-c-1'), { target: { value: 'New' } });
+    fireEvent.click(screen.getByTestId('comment-edit-save-c-1'));
+    expect(a.edit).toHaveBeenCalledWith('c-1', 'New');
+    fireEvent.click(screen.getByTestId('comment-delete-c-1'));
+    expect(a.remove).toHaveBeenCalledWith('c-1');
+  });
+
+  it('resolves and reopens a thread, and filters by state', () => {
+    const a = actions();
+    panel(a);
+    fireEvent.click(screen.getByTestId('thread-status-c-1'));
+    expect(a.setStatus).toHaveBeenCalledWith('c-1', 'resolved');
+    expect(screen.getByTestId('thread-status-c-3').textContent).toBe('Reopen');
+    fireEvent.click(screen.getByTestId('thread-status-c-3'));
+    expect(a.setStatus).toHaveBeenCalledWith('c-3', 'open');
+
+    fireEvent.click(screen.getByTestId('comments-filter-open'));
+    expect(screen.queryByTestId('thread-c-3')).toBeNull();
+    expect(screen.getByTestId('thread-c-1')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('comments-filter-resolved'));
+    expect(screen.getByTestId('thread-c-3')).toBeTruthy();
+    expect(screen.queryByTestId('thread-c-1')).toBeNull();
+    expect(screen.getByTestId('thread-resolved-c-3')).toBeTruthy();
+  });
+});

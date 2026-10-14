@@ -92,7 +92,11 @@ Toggles are collapsible content sections. Type `> ` at the start of a line (like
 - **Your name** — Comments are written as the GitHub account the space is edited with. Without one, Cept asks for a name the first time and remembers it on this device
 - **Comments panel** — Under the page, a panel lists its comments: those on text (click the quoted text to jump to it), those about the whole page, and those whose text has been removed from the page
 - **New since your last visit** — The page header and the panel show how many comments other people added since you last opened the page on this device
-- **Open comments in the sidebar** — A page with open comments shows a speech bubble and their number next to its name in the sidebar (spaces kept as a folder of files). A resolved thread, and the replies to it, are not counted
+- **Threads** — Under each comment in the panel, press Reply to answer it; replies stay with the comment they answer. Edit or delete your own comments (deleting the first comment of a thread deletes its replies too). Resolve a thread when it is dealt with and reopen it later; when a page has resolved threads, filter the panel by All, Open or Resolved
+
+![A comment with a reply, shown as a thread in the comments panel](../../screenshots/features/comment-thread.png)
+
+- **Open threads in the sidebar** — A page with open comment threads shows a speech bubble and their number next to its name in the sidebar (spaces kept as a folder of files). A reply does not add to the number, and a resolved thread is not counted
 
 ![A page in the sidebar with two open comments](../../screenshots/features/sidebar-comment-count.png)
 

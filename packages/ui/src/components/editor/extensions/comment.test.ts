@@ -189,3 +189,81 @@ describe('listPageComments', () => {
     editor.destroy();
   });
 });
+
+describe('comment threads', () => {
+  const root = comment('c-aaaaaaaaaa', 'second');
+  const markdown = [
+    'First paragraph.',
+    'The second line.',
+    formatCommentMarker(root),
+    'Last.',
+  ].join('\n\n');
+  const bob = { id: 'github:bob', name: 'Bob' };
+
+  const ids = (editor: Editor) => listPageComments(editor.state.doc).map((c) => c.comment.id);
+  const saved = (save: () => string) => readPageComments(save()).comments.map((c) => c.comment);
+
+  it('adds a reply after the thread and saves it with replyTo', () => {
+    const { editor, save } = open(`${markdown}\n`);
+    expect(
+      editor.commands.replyToComment('c-aaaaaaaaaa', {
+        author: bob,
+        body: 'Agreed',
+        created: '2026-10-14T06:00:00Z',
+      }),
+    ).toBe(true);
+    const [first, reply] = saved(save);
+    expect(first!.id).toBe('c-aaaaaaaaaa');
+    expect(reply).toMatchObject({ body: 'Agreed', author: bob, replyTo: 'c-aaaaaaaaaa' });
+    // A reply to a reply joins the same thread, after the earlier reply.
+    editor.commands.replyToComment(reply!.id, { author, body: 'Thanks' });
+    const all = saved(save);
+    expect(all.map((c) => [c.body, c.replyTo])).toEqual([
+      ['About second', undefined],
+      ['Agreed', 'c-aaaaaaaaaa'],
+      ['Thanks', 'c-aaaaaaaaaa'],
+    ]);
+    editor.destroy();
+  });
+
+  it('edits the body and records when', () => {
+    const { editor, save } = open(`${markdown}\n`);
+    editor.commands.editComment('c-aaaaaaaaaa', 'Changed', '2026-10-14T07:00:00Z');
+    expect(saved(save)[0]).toMatchObject({ body: 'Changed', edited: '2026-10-14T07:00:00Z' });
+    editor.destroy();
+  });
+
+  it('resolves and reopens a thread from any of its comments', () => {
+    const { editor, save } = open(`${markdown}\n`);
+    editor.commands.replyToComment('c-aaaaaaaaaa', { author: bob, body: 'Hi' });
+    const reply = saved(save)[1]!;
+    editor.commands.setCommentStatus(reply.id, 'resolved');
+    expect(saved(save)[0]!.status).toBe('resolved');
+    expect(saved(save)[1]!.status).toBeUndefined();
+    editor.commands.setCommentStatus('c-aaaaaaaaaa', 'open');
+    expect(saved(save)[0]!.status).toBe('open');
+    editor.destroy();
+  });
+
+  it('deleting the first comment deletes its replies; deleting a reply keeps the rest', () => {
+    const { editor, save } = open(`${markdown}\n`);
+    editor.commands.replyToComment('c-aaaaaaaaaa', { author: bob, body: 'One' });
+    editor.commands.replyToComment('c-aaaaaaaaaa', { author: bob, body: 'Two' });
+    const [, one] = saved(save);
+    editor.commands.deleteComment(one!.id);
+    expect(saved(save).map((c) => c.body)).toEqual(['About second', 'Two']);
+    editor.commands.deleteComment('c-aaaaaaaaaa');
+    expect(ids(editor)).toEqual([]);
+    expect(save()).not.toContain('cept:comment');
+    editor.destroy();
+  });
+
+  it('refuses an unknown id', () => {
+    const { editor } = open(`${markdown}\n`);
+    expect(editor.commands.editComment('c-zzzzzzzzzz', 'x')).toBe(false);
+    expect(editor.commands.deleteComment('c-zzzzzzzzzz')).toBe(false);
+    expect(editor.commands.setCommentStatus('c-zzzzzzzzzz', 'resolved')).toBe(false);
+    expect(editor.commands.replyToComment('c-zzzzzzzzzz', { author: bob, body: 'x' })).toBe(false);
+    editor.destroy();
+  });
+});

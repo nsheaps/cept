@@ -81,4 +81,47 @@ test.describe('Comments', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('comment-composer')).not.toBeVisible();
   });
+
+  test('reply to a comment, edit it, resolve the thread and reopen it', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!!isMobile, 'the bubble menu needs a mouse selection');
+    await openDemoEditor(page);
+    await page.locator('.cept-editor-content p').first().click({ clickCount: 3 });
+    await page.getByTestId('toolbar-comment').click();
+    await page.getByTestId('comment-name').fill('Nate');
+    await page.getByTestId('comment-body').fill('First thought');
+    await page.getByTestId('comment-submit').click();
+
+    const panel = page.getByTestId('comments-panel');
+    await expect(panel).toContainText('First thought');
+    await panel.locator('[data-testid^="thread-reply-"]').first().click();
+    await panel.locator('textarea[aria-label="Reply"]').fill('A second thought');
+    await panel.locator('[data-testid^="thread-reply-send-"]').click();
+    await expect(page.getByTestId('comments-count')).toHaveText('2 comments');
+    await expect(panel).toContainText('A second thought');
+
+    // Edit your own comment.
+    await panel.locator('[data-testid^="comment-edit-c-"]').first().click();
+    await panel.locator('textarea[aria-label="Edit comment"]').fill('First thought, reworded');
+    await panel.locator('[data-testid^="comment-edit-save-"]').click();
+    await expect(panel).toContainText('First thought, reworded');
+    await expect(panel).toContainText('(edited)');
+    await captureScreenshot(page, {
+      name: 'comment-thread',
+      category: 'features',
+      selector: '[data-testid="comments-panel"]',
+    });
+
+    // Resolve, then reopen.
+    await panel.locator('[data-testid^="thread-status-"]').click();
+    await expect(panel.locator('[data-testid^="thread-resolved-"]')).toBeVisible();
+    await panel.locator('[data-testid^="thread-status-"]').click();
+    await expect(panel.locator('[data-testid^="thread-resolved-"]')).toHaveCount(0);
+
+    // Deleting the first comment deletes the thread, and the panel goes away.
+    await panel.locator('[data-testid^="comment-delete-c-"]').first().click();
+    await expect(page.getByTestId('comments-panel')).toHaveCount(0);
+  });
 });
