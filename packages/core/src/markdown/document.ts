@@ -38,13 +38,14 @@ export interface MarkdownDocument {
   sources: string[];
 }
 
-const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
+/** The remark parser for page bodies; also used to find top-level blocks such as comment markers. */
+export const markdownParser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 
 /** Parse a page into a ProseMirror document. */
 export function parseMarkdownDocument(markdown: string): MarkdownDocument {
   const frontMatter = frontMatterPrefix(markdown);
   const body = markdown.slice(frontMatter.length);
-  const tree = parser.parse(body);
+  const tree = markdownParser.parse(body);
   const blocks = mdastToSourcedBlocks(tree.children, body);
   const starts = blocks.map((block, i) => (i === 0 ? 0 : block.start!));
   const sources = starts.map((start, i) => body.slice(start, starts[i + 1] ?? body.length));

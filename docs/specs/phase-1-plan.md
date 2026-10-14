@@ -700,6 +700,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: corpus fixtures for anchored, page-level and malformed comments.
 - Accept: fixtures green.
 - Risk: the format must be fixed in D3 before this PR.
+- Delivered (61): `markdown/comments.ts` in core. `formatCommentMarker` writes the D3 marker (fixed key order `v, id, author, created, edited, anchor, replyTo, status, body`, then unknown fields; every `-` after a `-` written `\u002d`). `parseCommentMarker` reads one marker: an unreadable one (not JSON, not an object, version other than 1, no body or author) returns a reason; a missing `id`, `created` or `v` is repaired with a warning (the id is a stable hash of the payload, `created` falls back to the epoch or `fallbackCreated`); bad optional fields are ignored with a warning. `readPageComments` walks the top-level HTML blocks of a page (so a marker in a code fence, quote or list is not a comment), returns comments with their line and exact text, unreadable markers as problems, and warns about repeated ids. Unreadable markers stay in the page as raw HTML blocks, so saving keeps them. Tests: `comments.test.ts` and four round-trip fixtures (`cept-comment`, `-escapes`, `-malformed`, `-hand-written`). Not in 61: placement after the anchor's block, anchor matching, the editor mark and the UI (62, 63), merging by id (64).
 
 **PR 62 — `feat(editor): anchored and page-level comments with author`**
 
