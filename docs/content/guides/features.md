@@ -85,6 +85,13 @@ Toggles are collapsible content sections. Type `> ` at the start of a line (like
 - **Recent pages** — Quickly access your recently viewed pages
 - **Trash** — Deleted pages go to trash and can be restored or permanently deleted
 
+## Comments
+
+- **Comment on text** — Select text and press the speech-bubble button in the toolbar, or `Cmd/Ctrl + Alt + M`, then write the comment. The commented text is highlighted
+- **Comment on the page** — Use "Comment on page" under the page for a comment about the whole page
+- **Your name** — Comments are written as the GitHub account the space is edited with. Without one, Cept asks for a name the first time and remembers it on this device
+- **Saved with the page** — A comment is a `<!-- cept:comment ... -->` line in the page's Markdown, so it travels with the file and stays attached to its text as the page is edited
+
 ## Sidebar
 
 - **Collapsible** — Toggle with the hamburger menu or `Cmd/Ctrl + \`

@@ -167,9 +167,9 @@ stateDiagram-v2
   - After edits elsewhere in the page, the thread highlights the same text.
   - If the quoted text itself changes, the resolver accepts a close match; if none is found, the thread becomes **detached** and is listed at page level with its last quote. A detached thread can be re-attached to a new selection.
   - Overlapping threads on the same text are allowed.
-- **Current state:** **partial.** Core builds and resolves anchors (`createAnchor`, `resolveAnchor` in [comment-anchor.ts](../../../packages/core/src/markdown/comment-anchor.ts): exact, then case and white space insensitive, then a close match; null is detached). The editor holds markers as hidden `comment` nodes, highlights the quote (a dashed underline for a close match; no highlight when detached) and has an `addComment` command ([comment.ts](../../../packages/ui/src/components/editor/extensions/comment.ts)). No toolbar button or shortcut yet.
+- **Current state:** **partial.** Core builds and resolves anchors (`createAnchor`, `resolveAnchor` in [comment-anchor.ts](../../../packages/core/src/markdown/comment-anchor.ts): exact, then case and white space insensitive, then a close match; null is detached). The editor holds markers as hidden `comment` nodes, highlights the quote (a dashed underline for a close match; no highlight when detached) and has an `addComment` command ([comment.ts](../../../packages/ui/src/components/editor/extensions/comment.ts)). The inline toolbar has a Comment button and `Ctrl/Cmd+Alt+M` opens the same composer ([CommentComposer.tsx](../../../packages/ui/src/components/editor/CommentComposer.tsx), [CeptEditor.tsx](../../../packages/ui/src/components/editor/CeptEditor.tsx)); a "Comment on page" button under the page writes a page-level comment. Tested at component level and with an e2e that comments on a selection and captures `docs/screenshots/features/comment-composer.png` and `comment-highlight.png`.
 - **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §5 says "inline comments on any block" and §4.6 keys comments by page ID; neither says how anchors survive edits.
-- **Gap:** The toolbar button and `Mod-Alt-M` (PR 62c), re-attaching a detached thread, and the list of detached threads (PR 62c, 63). The heading path in the acceptance criteria is not stored: the D3 format has no field for it.
+- **Gap:** Re-attaching a detached thread, and the list of detached threads (PR 63). The heading path in the acceptance criteria is not stored: the D3 format has no field for it.
 
 ### REQ-NTN-003 — Page-level comment threads
 
@@ -236,7 +236,7 @@ stateDiagram-v2
   - Markers are HTML comments, so they stay invisible on GitHub and in other Markdown viewers.
   - A body containing `--`, `-->`, quotes, backslashes and newlines round-trips.
   - The format is documented with its version.
-- **Current state:** **partial.** Core reads and writes the marker (PR 61): `formatCommentMarker`, `parseCommentMarker` and `readPageComments` in `packages/core/src/markdown/comments.ts`. The editor loads each readable marker as a hidden node and saves it back unchanged (PR 62b), and `addComment` places a new marker after the top-level block holding the selection. The comment UI and merging by id are not built.
+- **Current state:** **partial.** Core reads and writes the marker (PR 61): `formatCommentMarker`, `parseCommentMarker` and `readPageComments` in `packages/core/src/markdown/comments.ts`. The editor loads each readable marker as a hidden node and saves it back unchanged (PR 62b), and `addComment` places a new marker after the top-level block holding the selection. The composer is built (PR 62c); the comments panel and merging by id are not.
 - **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §4.6 puts threads in `.cept/comments/<page-id>.yaml`; D-34 supersedes it.
 - **Gap:** Placing markers after the block that holds the anchor and matching anchors against the page text (PR 62), the comment UI (PRs 62 and 63), and the "deleting a page with comments asks first" prompt.
 

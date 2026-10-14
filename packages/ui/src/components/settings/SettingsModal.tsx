@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { GitAuthRecord, RemoteSpace, StorageBackend } from '@cept/core';
+import type { CommentAuthor, GitAuthRecord, RemoteSpace, StorageBackend } from '@cept/core';
 import { FileBrowser } from './FileBrowser.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { AuthSection } from './AuthSection.js';
@@ -18,6 +18,8 @@ export interface CeptSettings {
   /** When true, URLs for git-backed spaces use the shareable /g/ prefix instead of /s/. Default: true */
   redirectToGitUrl: boolean;
   themeMode: ThemeMode;
+  /** Who comments are written as when nobody is signed in: the name entered on this device (REQ-NTN-002). */
+  commentAuthor?: CommentAuthor;
 }
 
 /** Whether this build opens the demo by default (the VITE_DEMO_DEFAULT build flag). */
