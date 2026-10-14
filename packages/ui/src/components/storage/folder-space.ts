@@ -27,6 +27,8 @@ import {
   planLinkRewrites,
   plannedPageId,
   readLinkGraph,
+  readPageComments,
+  readPageText,
   readSpaceTree,
   serializeSpaceConfig,
   SPACE_CONFIG_VERSION,
@@ -220,6 +222,51 @@ export async function readFolderBacklinks(
     }
     const text = ref.text.trim();
     if (text && !entry.snippets.includes(text)) entry.snippets.push(text);
+  }
+  return out;
+}
+
+/**
+ * For each page of a folder space that has open comments, how many (REQ-NTN-008).
+ * A resolved thread, and the replies to it, do not count. Pages are keyed by the
+ * id the sidebar uses, like the backlinks.
+ */
+export async function readFolderCommentCounts(
+  backend: StorageBackend,
+): Promise<Map<string, number>> {
+  const tree = await readSpaceTree(backend);
+  const rootFile = tree.root.file;
+  const out = new Map<string, number>();
+  const stack: PageNode[] = [tree.root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    stack.push(...node.children);
+    if (node.file === null) continue;
+    const markdown = await readPageText(backend, '', node);
+    // Most pages have no comments: skip parsing them.
+    if (markdown === null || !markdown.includes('cept:comment')) continue;
+    const { comments } = readPageComments(markdown);
+    // Resolution reaches every reply under a resolved comment, however deep the chain.
+    const resolved = new Set(
+      comments
+        .filter(({ comment }) => comment.status === 'resolved')
+        .map(({ comment }) => comment.id),
+    );
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const { comment } of comments) {
+        if (
+          comment.replyTo !== undefined &&
+          resolved.has(comment.replyTo) &&
+          !resolved.has(comment.id)
+        ) {
+          resolved.add(comment.id);
+          grew = true;
+        }
+      }
+    }
+    const open = comments.filter(({ comment }) => !resolved.has(comment.id)).length;
+    if (open > 0) out.set(node.id === '' && rootFile ? rootFile : node.id, open);
   }
   return out;
 }

@@ -47,6 +47,7 @@ import {
   previewRenameForeignLinks,
   previewRenameLinks,
   readFolderBacklinks,
+  readFolderCommentCounts,
   readFolderFile,
   readFolderPage,
   readFolderTree,
@@ -979,6 +980,13 @@ export class SpaceManager {
   readBacklinks(id: string): Promise<Map<string, Backlink[]>> {
     return this.isFolder(id)
       ? readFolderBacklinks(this.store(id).backend)
+      : Promise.resolve(new Map());
+  }
+
+  /** For each page of a folder space with open comments, how many; empty for other spaces. */
+  readCommentCounts(id: string): Promise<Map<string, number>> {
+    return this.isFolder(id)
+      ? readFolderCommentCounts(this.store(id).backend)
       : Promise.resolve(new Map());
   }
 
