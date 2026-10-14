@@ -9,6 +9,7 @@ import {
   findNode,
   addChild,
   setNodeMeta,
+  siblingsOf,
 } from './page-tree-utils.js';
 import type { PageTreeNode } from './PageTreeItem.js';
 
@@ -222,5 +223,26 @@ describe('setNodeMeta', () => {
   it('returns the same tree when nothing changes', () => {
     expect(setNodeMeta(tree, 'root-1', 'icon', '\u{1F4C1}')).toBe(tree);
     expect(setNodeMeta(tree, 'missing', 'cover', 'x')).toBe(tree);
+  });
+});
+
+describe('siblingsOf', () => {
+  it('returns the siblings of a root and of a nested node, in display order', () => {
+    expect(siblingsOf(tree, 'root-2')?.map((n) => n.id)).toEqual(['root-1', 'root-2']);
+    expect(siblingsOf(tree, 'child-2')?.map((n) => n.id)).toEqual(
+      findNode(tree, 'root-1')!.children.map((n) => n.id),
+    );
+  });
+
+  it('returns null for a missing node', () => {
+    expect(siblingsOf(tree, 'missing')).toBeNull();
+  });
+
+  it('leaves out files that are not pages', () => {
+    const withFile: PageTreeNode[] = [
+      { id: 'a.md', title: 'A', children: [] },
+      { id: 'pic.png', title: 'pic.png', foreign: true, children: [] },
+    ];
+    expect(siblingsOf(withFile, 'a.md')?.map((n) => n.id)).toEqual(['a.md']);
   });
 });

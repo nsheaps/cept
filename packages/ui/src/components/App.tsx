@@ -14,6 +14,7 @@ import {
   addChild,
   findAncestorIds,
   setNodeMeta,
+  siblingsOf,
 } from './sidebar/page-tree-utils.js';
 import { Breadcrumbs } from './topbar/Breadcrumbs.js';
 import { CommandPalette } from './command-palette/CommandPalette.js';
@@ -60,6 +61,8 @@ import { authsForHost } from './settings/GitAuthPicker.js';
 import {
   applyMoves,
   pageIdForPath,
+  planReorder,
+  setFrontMatterKey,
   CeptSearchIndex,
   commitIdentityFor,
   frontMatterPrefix,
@@ -1608,6 +1611,50 @@ export function App() {
     [currentReadPage, flushPendingWrite, addToast],
   );
 
+  /**
+   * Move a page to `index` among its siblings by writing `order` front matter
+   * (REQ-NTN-012). Only the pages the plan names are rewritten, and only that
+   * one key in each; the sidebar is then read again from the files. A plan
+   * that would need a folder without a page, or a page whose front matter is
+   * not valid YAML, to hold an order is refused and nothing is written.
+   */
+  const handlePageReorder = useCallback(
+    (id: string, index: number) => {
+      const siblings = siblingsOf(pagesRef.current, id);
+      if (!siblings) return;
+      const plan = planReorder(
+        siblings.map((n) => ({ id: n.id, ...(n.order !== undefined ? { order: n.order } : {}) })),
+        id,
+        index,
+      );
+      if (plan.length === 0) return;
+      void runFolderChange(async () => {
+        const writes: Array<{ id: string; content: string }> = [];
+        for (const { id: pageId, order } of plan) {
+          const node = siblings.find((n) => n.id === pageId);
+          if (node?.noPage)
+            throw new Error(
+              `Add a page to the folder "${node.title}" first: a folder without a page cannot hold its place in the order.`,
+            );
+          const stored = pageContentsRef.current[pageId] ?? (await currentReadPage(pageId)) ?? '';
+          const next = setFrontMatterKey(stored, 'order', order);
+          if (next === stored && readFrontMatter(splitFrontMatter(stored).yaml).order !== order)
+            throw new Error(
+              `Could not reorder: the front matter of "${node?.title ?? pageId}" is not valid YAML. Fix it in the file first.`,
+            );
+          writes.push({ id: pageId, content: next });
+        }
+        for (const { id: pageId, content } of writes) {
+          await currentWritePage(pageId, content);
+          setPageContents((prev) => ({ ...prev, [pageId]: content }));
+        }
+        setLinksVersion((v) => v + 1);
+        return { pageId: id, moved: [] };
+      });
+    },
+    [runFolderChange, currentReadPage, currentWritePage],
+  );
+
   // A page's icon and cover come from its front matter once it is loaded, so
   // an edit made in the file (or on another device) shows up in the sidebar.
   // Only the front matter block matters, so typing in the body does not re-parse it.
@@ -3057,6 +3104,9 @@ export function App() {
             onPageDuplicate={editLocked ? explainLocked : handlePageDuplicate}
             onPageDelete={editLocked ? explainLocked : handlePageDelete}
             onPageMoveToRoot={editLocked ? explainLocked : handlePageMoveToRoot}
+            onPageReorder={
+              editLocked || !spaces.isFolder(userSpaceId) ? undefined : handlePageReorder
+            }
             onToggleFavorite={handleToggleFavorite}
             onRestoreFromTrash={editLocked ? explainLocked : handleRestoreFromTrash}
             onPermanentDelete={editLocked ? explainLocked : handlePermanentDelete}

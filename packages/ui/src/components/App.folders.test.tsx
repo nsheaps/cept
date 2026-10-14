@@ -4,7 +4,7 @@
  * space, reconnecting a folder after a reload, and that opening a folder
  * writes nothing to it.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { FolderHandleStore, StorageBackend } from '@cept/core';
 import { App } from './App.js';
@@ -212,6 +212,70 @@ describe('App folder spaces', () => {
       expect(screen.queryByTestId('link-rewrite-dialog')).toBeNull();
       expect(folder.hasFile('Guides/Setup.md')).toBe(true);
       expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
+    });
+  });
+
+  describe('reordering pages with Alt+ArrowUp (REQ-NTN-012)', () => {
+    async function openFolder(folder: MemoryBackend) {
+      const { host, next } = fakeHost(new Map([['notes', folder]]));
+      next.handle = folderHandle('notes');
+      renderApp(new MemoryBackend(), host);
+      fireEvent.click(await screen.findByTestId('landing-open-folder'));
+    }
+    const titles = () =>
+      screen
+        .getAllByTestId(/^page-tree-button-/)
+        .map((el) => el.getAttribute('data-testid')!.replace('page-tree-button-', ''));
+
+    it('writes only the order keys the move needs, and shows the new order', async () => {
+      const folder = new MemoryBackend();
+      folder.seedText('space.cept.yaml', 'version: 1\nname: Notes\nslug: notes\n');
+      folder.seedText('Alpha.md', '# Alpha\n');
+      folder.seedText('Welcome.md', '---\ntitle: Welcome\n---\n# Welcome\n');
+      folder.seedText('Zebra.md', '# Zebra\n');
+      await openFolder(folder);
+      const zebra = await screen.findByTestId('page-tree-button-Zebra.md', {}, { timeout: 3000 });
+      expect(titles()).toEqual(['Alpha.md', 'Welcome.md', 'Zebra.md']);
+
+      fireEvent.keyDown(zebra, { key: 'ArrowUp', altKey: true });
+      await vi.waitFor(() => expect(titles()).toEqual(['Alpha.md', 'Zebra.md', 'Welcome.md']), {
+        timeout: 3000,
+      });
+      expect(folder.readText('Alpha.md')).toBe('---\norder: 0\n---\n# Alpha\n');
+      expect(folder.readText('Zebra.md')).toBe('---\norder: 1024\n---\n# Zebra\n');
+      expect(folder.readText('Welcome.md')).toBe('---\ntitle: Welcome\n---\n# Welcome\n');
+    });
+
+    it('refuses a move that needs a folder without a page to hold an order', async () => {
+      const folder = notesFolder();
+      folder.seedText('Zebra.md', '# Zebra\n');
+      await openFolder(folder);
+      const zebra = await screen.findByTestId('page-tree-button-Zebra.md', {}, { timeout: 3000 });
+      expect(titles()).toEqual(['Guides', 'Welcome.md', 'Zebra.md']);
+
+      fireEvent.keyDown(zebra, { key: 'ArrowUp', altKey: true });
+      expect(
+        (await screen.findByText(/Add a page to the folder "Guides" first/)).textContent,
+      ).toBeTruthy();
+      expect(folder.readText('Zebra.md')).toBe('# Zebra\n');
+      expect(folder.readText('Welcome.md')).toBe('# Welcome\n\nHello from a folder.\n');
+      expect(titles()).toEqual(['Guides', 'Welcome.md', 'Zebra.md']);
+    });
+
+    it('refuses a move when a page front matter is not valid YAML, writing nothing', async () => {
+      const folder = new MemoryBackend();
+      folder.seedText('space.cept.yaml', 'version: 1\nname: Notes\nslug: notes\n');
+      folder.seedText('Alpha.md', '---\nbad: : :\n---\n# Alpha\n');
+      folder.seedText('Welcome.md', '# Welcome\n');
+      folder.seedText('Zebra.md', '# Zebra\n');
+      await openFolder(folder);
+      const zebra = await screen.findByTestId('page-tree-button-Zebra.md', {}, { timeout: 3000 });
+
+      fireEvent.keyDown(zebra, { key: 'ArrowUp', altKey: true });
+      expect((await screen.findByText(/not valid YAML/)).textContent).toBeTruthy();
+      expect(folder.readText('Alpha.md')).toBe('---\nbad: : :\n---\n# Alpha\n');
+      expect(folder.readText('Welcome.md')).toBe('# Welcome\n');
+      expect(folder.readText('Zebra.md')).toBe('# Zebra\n');
     });
   });
 

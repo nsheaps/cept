@@ -11,6 +11,8 @@ export interface PageTreeNode {
   isExpanded?: boolean;
   /** A file that is not a page (an image, a PDF): previewed read-only, no page actions. */
   foreign?: boolean;
+  /** A folder with no page of its own: it has no file to hold an `order`. */
+  noPage?: boolean;
 }
 
 export interface PageTreeItemProps {
@@ -27,6 +29,16 @@ export interface PageTreeItemProps {
     position: { x: number; y: number },
     foreign?: boolean,
   ) => void;
+  /** The page being dragged, if any, so rows can show where it would land. */
+  draggedId?: string | null;
+  /** Whether `draggedId` may be dropped next to `targetId` (same parent). */
+  canDrop?: (draggedId: string, targetId: string) => boolean;
+  onDragStartPage?: (id: string) => void;
+  onDragEndPage?: () => void;
+  /** Move `id` just before or after `targetId`, among the same siblings. */
+  onReorder?: (id: string, targetId: string, position: 'before' | 'after') => void;
+  /** Keyboard reorder: Alt+Up / Alt+Down moves `id` one place. */
+  onNudge?: (id: string, direction: -1 | 1) => void;
 }
 
 export function PageTreeItem({
@@ -38,8 +50,22 @@ export function PageTreeItem({
   onToggle,
   onAdd,
   onContextMenu,
+  draggedId,
+  canDrop,
+  onDragStartPage,
+  onDragEndPage,
+  onReorder,
+  onNudge,
 }: PageTreeItemProps) {
   const [hovered, setHovered] = useState(false);
+  const [dropAt, setDropAt] = useState<'before' | 'after' | null>(null);
+  const draggable = !readOnly && !node.foreign && !node.noPage && !!onReorder;
+  const positionOf = (e: React.DragEvent): 'before' | 'after' => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+  };
+  const droppable = (): boolean =>
+    !!draggedId && draggedId !== node.id && !!canDrop?.(draggedId, node.id);
   const hasChildren = node.children.length > 0;
   const isSelected = selectedId === node.id;
   const isExpanded = node.isExpanded ?? false;
@@ -83,6 +109,37 @@ export function PageTreeItem({
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        draggable={draggable}
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', node.id);
+          onDragStartPage?.(node.id);
+        }}
+        onDragEnd={() => {
+          setDropAt(null);
+          onDragEndPage?.();
+        }}
+        onDragOver={(e) => {
+          if (!droppable()) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDropAt(positionOf(e));
+        }}
+        onDragLeave={() => setDropAt(null)}
+        onDrop={(e) => {
+          if (!droppable() || !draggedId) return;
+          e.preventDefault();
+          const position = positionOf(e);
+          setDropAt(null);
+          onReorder?.(draggedId, node.id, position);
+        }}
+        onKeyDown={(e) => {
+          if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+          if (readOnly || node.foreign || node.noPage || !onNudge) return;
+          e.preventDefault();
+          onNudge(node.id, e.key === 'ArrowUp' ? -1 : 1);
+        }}
+        data-drop={dropAt ?? undefined}
         data-testid={`page-tree-button-${node.id}`}
       >
         <span
@@ -133,6 +190,12 @@ export function PageTreeItem({
               onToggle={onToggle}
               onAdd={onAdd}
               onContextMenu={onContextMenu}
+              draggedId={draggedId}
+              canDrop={canDrop}
+              onDragStartPage={onDragStartPage}
+              onDragEndPage={onDragEndPage}
+              onReorder={onReorder}
+              onNudge={onNudge}
             />
           ))}
         </div>

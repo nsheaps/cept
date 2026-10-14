@@ -89,6 +89,7 @@ Toggles are collapsible content sections. Type `> ` at the start of a line (like
 
 - **Collapsible** — Toggle with the hamburger menu or `Cmd/Ctrl + \`
 - **Page tree** — Hierarchical view of all your pages with expand/collapse
+- **Reorder pages** — In a folder space, drag a page above or below another page in the same folder, or press `Alt + ↑` / `Alt + ↓` on the focused page. Cept records the position in each page's `order` front matter
 - **Context menus** — Right-click or tap `...` for page actions
 - **Sections** — Favorites, recent, all pages, and trash
 
