@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.0](https://github.com/nsheaps/cept/compare/v0.63.0...v0.64.0) (2026-10-14)
+
+### Features
+
+* **sync:** merge comments by id ([#459](https://github.com/nsheaps/cept/issues/459)) ([980ab9e](https://github.com/nsheaps/cept/commit/980ab9e6801a739c9d46676e7cb76557e241a62e))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([0d283b0](https://github.com/nsheaps/cept/commit/0d283b0783494aa84a96b805d8a2e8d61ec35270))
+
 ## [0.63.0](https://github.com/nsheaps/cept/compare/v0.62.1...v0.63.0) (2026-10-14)
 
 ### Features
