@@ -26,9 +26,14 @@ describe('web app manifest (REQ-WEB PWA install)', () => {
     for (const icon of manifest.icons) expect(icon.src.startsWith('/')).toBe(false);
   });
 
-  it('keeps start_url inside scope', () => {
-    expect(manifest.scope).toBe('./');
-    expect(manifest.start_url.startsWith(manifest.scope)).toBe(true);
+  it('keeps start_url inside scope once resolved', () => {
+    // Resolve against a synthetic manifest URL, the way a browser does, so
+    // a start_url such as "./workspace" or "../" is judged by where it lands.
+    const manifestUrl = 'https://example.test/cept/app/manifest.json';
+    const scope = new URL(manifest.scope, manifestUrl);
+    const start = new URL(manifest.start_url, manifestUrl);
+    expect(scope.pathname).toBe('/cept/app/');
+    expect(start.pathname.startsWith(scope.pathname)).toBe(true);
   });
 
   it('lists icons that exist and are the size they claim', () => {

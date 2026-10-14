@@ -70,7 +70,7 @@ description = "Run Playwright end-to-end tests (skipped when NX_BASE is set and 
 run = "bun scripts/ci/nx-targets.ts test:e2e"
 
 [tasks."test:pwa"]
-description = "Build the web app at /cept/app/ and check its manifest, icons and mobile metadata in Chromium"
+description = "Build the web app at /cept/app/ and check its manifest, icons and mobile metadata in a browser"
 run = "bun run --cwd e2e test:pwa"
 
 [tasks.build]

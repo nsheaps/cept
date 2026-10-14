@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test:e2e": "playwright test --config playwright.config.ts",
-    "test:pwa": "playwright test --config playwright.pwa.config.ts",
+    "test:pwa": "VITE_BASE_PATH=/cept/app/ bun run --cwd ../packages/web build && playwright test --config playwright.pwa.config.ts",
     "test:screenshots": "playwright test --config playwright.config.ts --update-snapshots",
     "typecheck": "tsc --noEmit"
   },
