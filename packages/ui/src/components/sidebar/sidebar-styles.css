@@ -253,6 +253,31 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
+.cept-sidebar-item {
+  position: relative;
+}
+
+/* Where a dragged page would land: a line above or below the row (REQ-NTN-012). */
+.cept-sidebar-item[data-drop='before']::after,
+.cept-sidebar-item[data-drop='after']::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #2383e2;
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.cept-sidebar-item[data-drop='before']::after {
+  top: -1px;
+}
+
+.cept-sidebar-item[data-drop='after']::after {
+  bottom: -1px;
+}
+
 .cept-sidebar-item:active {
   background-color: rgba(0, 0, 0, 0.08);
 }

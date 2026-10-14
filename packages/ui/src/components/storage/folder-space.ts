@@ -121,6 +121,7 @@ export function toPageTree(
       id,
       title,
       ...(node.order !== undefined ? { order: node.order } : {}),
+      ...(node.kind === 'folder' && node.file === null ? { noPage: true } : {}),
       ...(old?.icon !== undefined ? { icon: old.icon } : {}),
       ...(old?.cover !== undefined ? { cover: old.cover } : {}),
       ...(old?.isExpanded !== undefined ? { isExpanded: old.isExpanded } : {}),

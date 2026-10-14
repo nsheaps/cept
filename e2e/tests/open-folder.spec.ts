@@ -193,6 +193,50 @@ test.describe('Open a local folder as a space', () => {
     await expect(page.locator('.cept-editor')).toContainText('Back to the', { timeout: 10000 });
   });
 
+  test('dragging a page above another reorders it by writing order front matter', async ({
+    page,
+  }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+    await page.evaluate(async () => {
+      const root = await navigator.storage.getDirectory();
+      const folder = await root.getDirectoryHandle('field-notes');
+      await folder.removeEntry('Guides', { recursive: true });
+      for (const name of ['Alpha', 'Zebra']) {
+        const file = await folder.getFileHandle(`${name}.md`, { create: true });
+        const writable = await file.createWritable();
+        await writable.write(`# ${name}\n`);
+        await writable.close();
+      }
+    });
+
+    await page.getByTestId('landing-open-folder').click();
+    const rows = page.locator('[data-testid^="page-tree-button-"]');
+    await expect(rows).toHaveCount(4, { timeout: 10000 }); // Alpha, Welcome, Zebra, photo.txt
+    const order = async () =>
+      (await rows.evaluateAll((els) => els.map((el) => el.getAttribute('data-testid'))))
+        .map((id) => id!.replace('page-tree-button-', ''))
+        .filter((id) => id.endsWith('.md'));
+    expect(await order()).toEqual(['Alpha.md', 'Welcome.md', 'Zebra.md']);
+
+    // Drop Zebra on the upper half of Alpha's row.
+    await page
+      .getByTestId('page-tree-button-Zebra.md')
+      .dragTo(page.getByTestId('page-tree-button-Alpha.md'), { targetPosition: { x: 40, y: 2 } });
+    await expect.poll(order, { timeout: 10000 }).toEqual(['Zebra.md', 'Alpha.md', 'Welcome.md']);
+
+    const files = await folderFiles(page);
+    expect(files['Zebra.md']).toBe('---\norder: 0\n---\n# Zebra\n');
+    expect(files['Alpha.md']).toBe('# Alpha\n');
+    expect(files['Welcome.md']).toBe(FILES['Welcome.md']);
+    await captureScreenshot(page, {
+      name: 'reorder-pages',
+      category: 'features',
+      selector: '[data-testid="page-tree"]',
+    });
+  });
+
   test('deleting a file that is not a page asks first', async ({ page }) => {
     await mockPicker(page);
     await page.goto('/');

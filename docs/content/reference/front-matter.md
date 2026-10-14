@@ -32,7 +32,7 @@ All keys are camelCase.
 | `description` | text                                     | A short summary.                                                        |
 | `created`     | date (`2026-01-05`) or date and time     | When the page was created.                                              |
 | `updated`     | date or date and time                    | When the page last changed in a meaningful way.                         |
-| `order`       | number                                   | Sort position among sibling pages. Pages with one come first, then the rest by title. |
+| `order`       | number                                   | Sort position among sibling pages. Pages with one come first, then the rest by title. Dragging a page in the sidebar writes it, only to the pages that need it. |
 | `id`          | text                                     | An optional stable id. Without it, a page is known by its path.         |
 
 Cept also reads `date` as `created`, and `lastmod` or `modified` as `updated`, when the main key is missing. It never writes these older names.

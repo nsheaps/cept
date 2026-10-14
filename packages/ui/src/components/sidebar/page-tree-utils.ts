@@ -192,3 +192,16 @@ export function setNodeMeta(
   });
   return changed ? next : nodes;
 }
+
+/**
+ * The pages that share a parent with `id` (itself included), in display order,
+ * or `null`. Files that are not pages are left out: they have no place in the order.
+ */
+export function siblingsOf(nodes: PageTreeNode[], id: string): PageTreeNode[] | null {
+  for (const node of nodes) {
+    if (node.id === id) return nodes.filter((n) => !n.foreign);
+    const found = siblingsOf(node.children, id);
+    if (found) return found;
+  }
+  return null;
+}

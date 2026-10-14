@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
+import { siblingsOf } from './page-tree-utils.js';
 import { PageContextMenu } from './PageContextMenu.js';
 import { ThemeToggle } from '../settings/ThemeToggle.js';
 import type { ThemeMode } from '../settings/SettingsModal.js';
@@ -24,6 +25,8 @@ export interface SidebarProps {
   onPageDuplicate?: (id: string) => void;
   onPageDelete?: (id: string) => void;
   onPageMoveToRoot?: (id: string) => void;
+  /** Move a page to `index` among its siblings (drag, or Alt+Up / Alt+Down). */
+  onPageReorder?: (id: string, index: number) => void;
   onToggleFavorite?: (id: string) => void;
   onRestoreFromTrash?: (id: string) => void;
   onPermanentDelete?: (id: string) => void;
@@ -56,6 +59,7 @@ export function Sidebar({
   onPageDuplicate,
   onPageDelete,
   onPageMoveToRoot,
+  onPageReorder,
   onToggleFavorite,
   onSearch,
   readOnly,
@@ -71,6 +75,7 @@ export function Sidebar({
   themeMode,
   onThemeModeChange,
 }: SidebarProps) {
+  const [draggedId, setDraggedId] = useState<string | null>(null);
   const [editingSpaceName, setEditingSpaceName] = useState(false);
   const [editSpaceNameValue, setEditSpaceNameValue] = useState(spaceName ?? 'Space');
   const [spaceSwitcherOpen, setSpaceSwitcherOpen] = useState(false);
@@ -111,6 +116,38 @@ export function Sidebar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [appMenuOpen]);
+
+  const canDrop = useCallback(
+    (dragged: string, target: string) => {
+      const siblings = siblingsOf(pages, dragged);
+      return !!siblings && siblings.some((n) => n.id === target);
+    },
+    [pages],
+  );
+
+  const reorderBy = useCallback(
+    (id: string, targetId: string, position: 'before' | 'after') => {
+      const siblings = siblingsOf(pages, id);
+      if (!siblings || !onPageReorder) return;
+      const rest = siblings.filter((n) => n.id !== id);
+      const at = rest.findIndex((n) => n.id === targetId);
+      if (at === -1) return;
+      onPageReorder(id, at + (position === 'after' ? 1 : 0));
+    },
+    [pages, onPageReorder],
+  );
+
+  const nudge = useCallback(
+    (id: string, direction: -1 | 1) => {
+      const siblings = siblingsOf(pages, id);
+      if (!siblings || !onPageReorder) return;
+      const at = siblings.findIndex((n) => n.id === id);
+      const to = at + direction;
+      if (to < 0 || to >= siblings.length) return;
+      onPageReorder(id, to);
+    },
+    [pages, onPageReorder],
+  );
 
   return (
     <aside className="cept-sidebar" data-testid="sidebar">
@@ -331,6 +368,19 @@ export function Sidebar({
                 onToggle={onPageToggle}
                 onAdd={(parentId) => onPageAdd?.(parentId)}
                 onContextMenu={handleContextMenu}
+                draggedId={draggedId}
+                canDrop={canDrop}
+                onDragStartPage={setDraggedId}
+                onDragEndPage={() => setDraggedId(null)}
+                onReorder={
+                  onPageReorder
+                    ? (id, targetId, position) => {
+                        setDraggedId(null);
+                        reorderBy(id, targetId, position);
+                      }
+                    : undefined
+                }
+                onNudge={onPageReorder ? nudge : undefined}
               />
             ))
           )}
