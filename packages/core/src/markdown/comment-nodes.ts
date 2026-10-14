@@ -65,7 +65,11 @@ export function releaseComments(doc: PmNode): PmNode {
   return changed ? { ...doc, content } : doc;
 }
 
-/** The loaded marker text when it still reads as exactly this comment. */
+/**
+ * The loaded marker text when it still reads as exactly this comment. Compares the
+ * canonical form of both sides on purpose: a plain string compare with `loaded` would
+ * rewrite every hand-written marker (spacing, key order) the first time the page is saved.
+ */
 function unchanged(loaded: string, comment: PageComment): string | null {
   if (loaded === '') return null;
   const parsed = parseCommentMarker(loaded);

@@ -2,8 +2,8 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import type { Node as PmModelNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import { createAnchor, newCommentId, resolveAnchor } from '@cept/core';
-import type { CommentAuthor, PageComment } from '@cept/core';
+import { commentOf, createAnchor, newCommentId, resolveAnchor } from '@cept/core';
+import type { CommentAuthor, PageComment, PmNode } from '@cept/core';
 
 /**
  * Inline comments (REQ-NTN-002, REQ-NTN-005; phase-1 plan PR 62b).
@@ -50,6 +50,12 @@ export function pageText(node: PmModelNode, base = 0): PageText {
       }
       return true;
     }
+    if (child.type.name === 'hardBreak') {
+      // A line break inside a paragraph reads as a newline, so quotes and context keep it.
+      text += '\n';
+      positions.push(-1);
+      return true;
+    }
     if (child.isText) {
       for (let i = 0; i < (child.text ?? '').length; i++) {
         text += child.text![i];
@@ -79,7 +85,7 @@ export function commentRanges(doc: PmModelNode): CommentRange[] {
       last.block = { node: child, pos: offset };
       return;
     }
-    const comment = child.attrs.comment as PageComment | undefined;
+    const comment = commentOf(child.toJSON() as PmNode);
     if (!comment?.anchor) return;
     // The block before the marker (skipping other markers) holds the quote first.
     if (last.block) {
@@ -189,6 +195,7 @@ export const Comment = Node.create({
           const comment: PageComment = {
             id: newCommentId(),
             author,
+            // Whole seconds, the form the format spec shows; the reader also accepts milliseconds.
             created: created ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
             body,
             ...(anchor ? { anchor } : {}),

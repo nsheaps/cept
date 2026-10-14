@@ -146,4 +146,12 @@ describe('addComment', () => {
     expect(highlighted().length).toBeGreaterThan(0);
     editor.destroy();
   });
+
+  it('keeps a line break inside a paragraph in the quote', () => {
+    const { editor, save } = open('Alpha one  \nbeta two.\n');
+    editor.commands.setTextSelection({ from: 7, to: 16 });
+    editor.commands.addComment({ author, body: 'break' });
+    expect(readPageComments(save()).comments[0]!.comment.anchor?.quote).toContain('\n');
+    editor.destroy();
+  });
 });
