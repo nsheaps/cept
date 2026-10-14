@@ -503,6 +503,21 @@ describe('readFolderCommentCounts', () => {
     expect((await readFolderCommentCounts(backend)).get('todo.md')).toBe(1);
   });
 
+  it('leaves out a reply to a reply under a resolved thread', async () => {
+    const backend = fixture();
+    backend.seedText(
+      'todo.md',
+      [
+        '# Todo',
+        marker('c-aaaaaaaaaa', { status: 'resolved' }),
+        marker('c-bbbbbbbbbb', { replyTo: 'c-aaaaaaaaaa' }),
+        marker('c-cccccccccc', { replyTo: 'c-bbbbbbbbbb' }),
+        '',
+      ].join('\n\n'),
+    );
+    expect((await readFolderCommentCounts(backend)).has('todo.md')).toBe(false);
+  });
+
   it('does not count marker lookalikes in code, and skips unreadable markers', async () => {
     const backend = fixture();
     backend.seedText(

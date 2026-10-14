@@ -246,16 +246,26 @@ export async function readFolderCommentCounts(
     // Most pages have no comments: skip parsing them.
     if (markdown === null || !markdown.includes('cept:comment')) continue;
     const { comments } = readPageComments(markdown);
+    // Resolution reaches every reply under a resolved comment, however deep the chain.
     const resolved = new Set(
       comments
         .filter(({ comment }) => comment.status === 'resolved')
         .map(({ comment }) => comment.id),
     );
-    const open = comments.filter(
-      ({ comment }) =>
-        !resolved.has(comment.id) &&
-        !(comment.replyTo !== undefined && resolved.has(comment.replyTo)),
-    ).length;
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const { comment } of comments) {
+        if (
+          comment.replyTo !== undefined &&
+          resolved.has(comment.replyTo) &&
+          !resolved.has(comment.id)
+        ) {
+          resolved.add(comment.id);
+          grew = true;
+        }
+      }
+    }
+    const open = comments.filter(({ comment }) => !resolved.has(comment.id)).length;
     if (open > 0) out.set(node.id === '' && rootFile ? rootFile : node.id, open);
   }
   return out;
