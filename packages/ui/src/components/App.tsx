@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
+import type { CommentingContext } from './editor/CeptEditor.js';
 import type { PageLinksContext } from './editor/page-links.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { SidebarPageRef } from './sidebar/Sidebar.js';
@@ -71,6 +72,8 @@ import {
   GITHUB_HOST,
   MemoryBackend,
   reconnectFolder,
+  githubAuthor,
+  localAuthor,
 } from '@cept/core';
 import type {
   ConflictResolution,
@@ -1817,6 +1820,21 @@ export function App() {
     [backend],
   );
 
+  // Comments are written as the account the space is edited with, or as the name chosen on this device.
+  const commenting = useMemo<CommentingContext>(
+    () => ({
+      author: userSpaceAccount
+        ? githubAuthor(userSpaceAccount.login, userSpaceAccount.name)
+        : (settings.commentAuthor ?? null),
+      chooseName: (name) => {
+        const commentAuthor = localAuthor(name);
+        handleSettingsChange({ ...settings, commentAuthor });
+        return commentAuthor;
+      },
+    }),
+    [userSpaceAccount, settings, handleSettingsChange],
+  );
+
   const handleResetSettings = useCallback(() => {
     void resetSettingsOnBackend(backend);
     setSettings({ ...DEFAULT_SETTINGS });
@@ -3460,6 +3478,7 @@ export function App() {
                   placeholder="Type '/' for commands..."
                   onUpdate={handleContentUpdate}
                   editable={!editLocked}
+                  commenting={commenting}
                   {...(pageLinks ? { links: pageLinks } : {})}
                   {...(pendingAnchor ? { anchor: pendingAnchor } : {})}
                 />

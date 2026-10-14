@@ -46,6 +46,17 @@ describe('InlineToolbar', () => {
     expect(screen.getByTestId('toolbar-link')).toBeDefined();
   });
 
+  it('shows the comment button only when commenting is on, and starts a comment', () => {
+    const editor = createMockEditor();
+    const { rerender } = render(<InlineToolbar editor={editor as never} />);
+    expect(screen.queryByTestId('toolbar-comment')).toBeNull();
+
+    const onComment = vi.fn();
+    rerender(<InlineToolbar editor={editor as never} onComment={onComment} />);
+    fireEvent.click(screen.getByTestId('toolbar-comment'));
+    expect(onComment).toHaveBeenCalledTimes(1);
+  });
+
   it('calls toggleBold when bold button clicked', () => {
     const editor = createMockEditor();
     render(<InlineToolbar editor={editor as never} />);

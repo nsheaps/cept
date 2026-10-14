@@ -4,9 +4,11 @@ import type { Editor } from '@tiptap/core';
 
 export interface InlineToolbarProps {
   editor: Editor | null;
+  /** Start a comment on the selection; the button is left out without it. */
+  onComment?: () => void;
 }
 
-export function InlineToolbar({ editor }: InlineToolbarProps) {
+export function InlineToolbar({ editor, onComment }: InlineToolbarProps) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
 
@@ -162,6 +164,16 @@ export function InlineToolbar({ editor }: InlineToolbarProps) {
             >
               {'\u{1F517}'}
             </button>
+            {onComment && (
+              <button
+                className="cept-inline-toolbar-btn"
+                onClick={onComment}
+                data-testid="toolbar-comment"
+                title="Comment (Ctrl+Alt+M)"
+              >
+                {'\u{1F4AC}'}
+              </button>
+            )}
           </>
         )}
       </div>
