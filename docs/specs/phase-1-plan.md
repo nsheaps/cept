@@ -748,6 +748,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: a Playwright check against the built bundle at `/cept/app/` that every manifest icon returns 200 and `start_url` sits under the base (fails today: icons missing).
 - Accept: check green.
 - Risk: none notable.
+- Delivered (66): the manifest's `id`, `start_url`, `scope` and icons are relative; the icons (192, 512, maskable 512, 180 Apple touch, SVG favicon) are in `packages/web/public/icons/`; `index.html` sets `viewport-fit=cover` and the Apple web-app metadata. The two shortcuts were removed because nothing handles `?action=`; they return with a router handler. Tests: `manifest.test.ts` (unit) and `e2e/pwa/manifest.pwa.spec.ts` against the built bundle at `/cept/app/` (`mise run test:pwa`, config `e2e/playwright.pwa.config.ts`). Both were mutation-checked against the old manifest and fail on it. Not in 66: running the built-bundle check in CI (PR 68).
 
 **PR 67 — `fix(web): precache built assets under the base path`**
 
