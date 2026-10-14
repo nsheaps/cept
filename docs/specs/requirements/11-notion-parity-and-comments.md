@@ -227,7 +227,7 @@ stateDiagram-v2
   | `status`  | no       | Reserved for resolving (later): `open` or `resolved` on the first comment of a thread. Phase 1 reads and keeps it.                                         |
 
 - **Placement:** an anchored comment's marker goes on its own line after the top-level block that contains its anchor, after any markers already there. Page-level comments go at the end of the file. Markers are ordered by `created` within each place.
-- **Encoding:** the payload is compact JSON on one line. Because an HTML comment cannot contain `--`, every `-` that follows another `-` in the JSON is written `-`. Unknown fields are kept when Cept rewrites a marker.
+- **Encoding:** the payload is compact JSON on one line. Because an HTML comment cannot contain `--`, every `-` that follows another `-` in the JSON is written as the JSON escape `\u002d` (a JSON parser reads it back as `-`). Unknown fields are kept when Cept rewrites a marker.
 - **Anchors:** on load, the anchor is matched against the page text by `quote`, using `prefix` and `suffix` to choose between repeats. A comment whose quote is no longer found is shown as detached and kept.
 - **Acceptance criteria:**
   - Comments round-trip on every backend that is wired (browser, local folder, git): create, reload, all fields intact.
@@ -236,9 +236,9 @@ stateDiagram-v2
   - Markers are HTML comments, so they stay invisible on GitHub and in other Markdown viewers.
   - A body containing `--`, `-->`, quotes, backslashes and newlines round-trips.
   - The format is documented with its version.
-- **Current state:** **not-started.**
+- **Current state:** **partial.** Core reads and writes the marker (PR 61): `formatCommentMarker`, `parseCommentMarker` and `readPageComments` in `packages/core/src/markdown/comments.ts`. Placement, anchor matching and the comment UI are not built.
 - **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §4.6 puts threads in `.cept/comments/<page-id>.yaml`; D-34 supersedes it.
-- **Gap:** The marker parser and serializer in core (PR 61), then the comment UI.
+- **Gap:** Placing markers after the block that holds the anchor and matching anchors against the page text (PR 62), the comment UI (PRs 62 and 63), and the "deleting a page with comments asks first" prompt.
 
 ### REQ-NTN-006 — Agent-readable comment format and workflow
 
@@ -253,9 +253,9 @@ stateDiagram-v2
   - A `cept:comment` marker that cannot be parsed is preserved verbatim and never deleted: Cept shows a warning for that page.
   - Agent authors use `id: "agent:<name>"` so the UI can mark them.
   - Later (not required now): `cept comments list|reply` in the CLI ([05](05-cli-and-daemon.md)).
-- **Current state:** **not-started.**
+- **Current state:** **partial.** `readPageComments` repairs a missing `id`, `created` or `v` with a warning, and reports a marker it cannot read with its exact text and line; the page body keeps it verbatim. No guide and no UI warning yet.
 - **Docs state:** undocumented.
-- **Gap:** Guide, lenient loader, tests with hand-edited fixtures.
+- **Gap:** The guide in `docs/content/guides/` and the per-page warning in the UI (PR 62).
 
 ### REQ-NTN-007 — Comment author identity
 
