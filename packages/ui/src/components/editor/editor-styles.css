@@ -1489,3 +1489,72 @@ button.cept-comment-quote:hover {
   background: #78350f;
   color: #fde68a;
 }
+
+.cept-comment-thread {
+  margin-bottom: 0.75rem;
+}
+.cept-comment-thread .cept-comment-item {
+  margin-bottom: 0.25rem;
+}
+.cept-comment-thread .cept-comment-item ~ .cept-comment-item {
+  margin-left: 1rem;
+}
+.cept-comment-edited {
+  font-style: italic;
+}
+.cept-comment-resolved {
+  display: inline-block;
+  margin-left: 0.75rem;
+  padding: 0 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  background: #dcfce7;
+  color: #166534;
+}
+.cept-comment-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0 0.75rem;
+}
+.cept-comment-actions button,
+.cept-comments-filter button {
+  border: 0;
+  background: none;
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
+  color: var(--cept-text-muted, #6b7280);
+  cursor: pointer;
+}
+.cept-comment-actions button:hover,
+.cept-comments-filter button:hover,
+.cept-comments-filter button[aria-pressed='true'] {
+  color: inherit;
+  text-decoration: underline;
+}
+.cept-comments-filter {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.cept-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0 0.75rem;
+}
+.cept-comment-form textarea,
+.cept-comment-form input {
+  border: 1px solid var(--cept-border, #e5e5e5);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.cept-comment-form button {
+  align-self: flex-start;
+}
+.dark .cept-comment-resolved {
+  background: #14532d;
+  color: #bbf7d0;
+}

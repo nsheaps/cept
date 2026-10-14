@@ -36,6 +36,14 @@ export interface CommentingContext {
   chooseName: (name: string) => CommentAuthor;
 }
 
+/** What the comments panel can do to the open page's comments (REQ-NTN-008). */
+export interface CommentActions {
+  reply: (id: string, body: string, name?: string) => void;
+  edit: (id: string, body: string) => void;
+  remove: (id: string) => void;
+  setStatus: (id: string, status: 'open' | 'resolved') => void;
+}
+
 interface ComposerState {
   quote: string;
   /** The selection the comment is about; null for a comment on the whole page. */
@@ -57,6 +65,8 @@ export interface CeptEditorProps {
   commenting?: CommentingContext;
   /** Called with the page's comments when the page opens and whenever they change (REQ-NTN-008). */
   onCommentsChange?: (comments: ListedComment[]) => void;
+  /** Called with the actions on the page's comments while the page can be commented on, and with null after. */
+  onCommentActions?: (actions: CommentActions | null) => void;
 }
 
 /** The popup that lists a suggestion's items under the caret, shared by `/` and `@`. */
@@ -117,6 +127,7 @@ export function CeptEditor({
   anchor,
   commenting,
   onCommentsChange,
+  onCommentActions,
 }: CeptEditorProps) {
   // The page is parsed once per mount; saves reuse the source of every block
   // that is unchanged since load (EDT-005).
@@ -247,6 +258,31 @@ export function CeptEditor({
     setComposer(null);
     editor.commands.focus();
   };
+
+  // Read through refs so the actions stay valid as the author changes.
+  const latestCommenting = useRef(commenting);
+  latestCommenting.current = commenting;
+  const latestActions = useRef(onCommentActions);
+  latestActions.current = onCommentActions;
+  useEffect(() => {
+    if (!editor || !commentable) return;
+    const authorFor = (name?: string) => {
+      const current = latestCommenting.current;
+      if (!current) return null;
+      return current.author ?? (name?.trim() ? current.chooseName(name) : null);
+    };
+    // Commands run in place: the caret and selection stay where the reader left them.
+    latestActions.current?.({
+      reply: (id, body, name) => {
+        const author = authorFor(name);
+        if (author) editor.commands.replyToComment(id, { author, body });
+      },
+      edit: (id, body) => void editor.commands.editComment(id, body),
+      remove: (id) => void editor.commands.deleteComment(id),
+      setStatus: (id, status) => void editor.commands.setCommentStatus(id, status),
+    });
+    return () => latestActions.current?.(null);
+  }, [editor, commentable]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   usePageLinks(containerRef, links, editable);

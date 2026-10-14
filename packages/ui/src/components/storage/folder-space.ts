@@ -246,6 +246,7 @@ export async function readFolderCommentCounts(
     // Most pages have no comments: skip parsing them.
     if (markdown === null || !markdown.includes('cept:comment')) continue;
     const { comments } = readPageComments(markdown);
+    // Threads, not comments: a thread is its first comment, and it is open unless resolved.
     // Resolution reaches every reply under a resolved comment, however deep the chain.
     const resolved = new Set(
       comments
@@ -265,7 +266,11 @@ export async function readFolderCommentCounts(
         }
       }
     }
-    const open = comments.filter(({ comment }) => !resolved.has(comment.id)).length;
+    const ids = new Set(comments.map(({ comment }) => comment.id));
+    const open = comments.filter(
+      ({ comment }) =>
+        (comment.replyTo === undefined || !ids.has(comment.replyTo)) && !resolved.has(comment.id),
+    ).length;
     if (open > 0) out.set(node.id === '' && rootFile ? rootFile : node.id, open);
   }
   return out;
