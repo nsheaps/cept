@@ -400,6 +400,44 @@ export async function movePage(
 }
 
 /**
+ * Move a page into `target`, keeping its name: a folder page (or the root, id
+ * `''`) takes it as a child. A file page target first becomes a folder page,
+ * as it does when a page is created under it, and the result reports that move
+ * before the page's own. Refuses to overwrite, to move a page into itself or
+ * its own subtree, or to turn the target into a folder that already exists.
+ * Every check runs before anything is written. Returns the page's new id.
+ */
+export async function movePageInto(
+  backend: TreeWriteBackend,
+  root: string,
+  page: Pick<PageNode, 'id' | 'kind'>,
+  target: Pick<PageNode, 'id' | 'kind'>,
+): Promise<{ id: string; moved: Moved[] }> {
+  if (page.id === target.id) throw new Error(`Cannot move ${page.id} into itself`);
+  const name = splitPath(page.id).at(-1) ?? '';
+  const folder =
+    target.kind === 'file'
+      ? joinPath(parentFolder(target.id) ?? '', stripExtension(splitPath(target.id).at(-1)!))
+      : normalizeFolder(target.id);
+  const id = plannedPageId(page, folder, name);
+  if (id === page.id) return { id, moved: [] };
+  if (target.kind === 'file') {
+    if (await backend.exists(toBackendPath(joinPath(root, folder))))
+      throw new Error(`Cannot turn ${target.id} into a folder page: ${folder} already exists`);
+  } else if (await backend.exists(toBackendPath(joinPath(root, id)))) {
+    throw new Error(`Cannot move ${page.id} to ${id}: ${id} already exists`);
+  }
+  const moved: Moved[] = [];
+  if (target.kind === 'file') {
+    await movePath(backend, root, target.id, joinPath(folder, NEW_FOLDER_PAGE), false);
+    moved.push({ from: target.id, to: folder });
+  }
+  await movePath(backend, root, page.id, id, page.kind === 'folder');
+  moved.push({ from: page.id, to: id });
+  return { id, moved };
+}
+
+/**
  * The id {@link movePage} would give a page moved to `newParent` as `newName`,
  * with the same checks but no writes, so a caller can plan around the move
  * (for example the links it will break) before making it.

@@ -206,7 +206,8 @@ The demo creates a workspace pre-loaded with sample pages that showcase all of C
 - **Nested pages** — Click the + on any page in the sidebar to create a sub-page
 - **Favorites** — Right-click (or tap the ... menu) on a page and choose "Add to favorites"
 - **Trash** — Deleted pages go to trash and can be restored
-- **Drag and drop** — Reorder pages by dragging them in the sidebar (coming soon)
+- **Drag and drop** — In a folder space, drag a page above or below a sibling to reorder it, or onto the middle of another page to nest it. Alt+Up / Alt+Down moves the focused page one place
+- **Move to…** — Right-click a page or file, choose "Move to…" and pick the page (or the space root) to move it into. Links to it are updated
 
 ## Keyboard Shortcuts
 
@@ -736,7 +737,7 @@ Core infrastructure and basic editing experience.
 
 | Feature | Status |
 |---------|--------|
-| Drag-and-drop page reordering | Planned |
+| Drag-and-drop page reordering and nesting | Folder spaces |
 | Undo/redo history | Planned |
 | Plugin system | Planned |
 | Theming (custom colors, fonts) | Planned |

@@ -10,6 +10,8 @@ import {
   addChild,
   setNodeMeta,
   siblingsOf,
+  canMoveInto,
+  moveTargets,
 } from './page-tree-utils.js';
 import type { PageTreeNode } from './PageTreeItem.js';
 
@@ -244,5 +246,43 @@ describe('siblingsOf', () => {
       { id: 'pic.png', title: 'pic.png', foreign: true, children: [] },
     ];
     expect(siblingsOf(withFile, 'a.md')?.map((n) => n.id)).toEqual(['a.md']);
+  });
+});
+
+describe('moving into another page', () => {
+  const nodes: PageTreeNode[] = [
+    {
+      id: 'guides',
+      title: 'Guides',
+      children: [
+        { id: 'guides/setup.md', title: 'Setup', children: [] },
+        { id: 'guides/logo.png', title: 'logo.png', foreign: true, children: [] },
+      ],
+    },
+    { id: 'todo.md', title: 'Todo', children: [] },
+  ];
+
+  it('allows a move into another page or the root', () => {
+    expect(canMoveInto(nodes, 'todo.md', 'guides')).toBe(true);
+    expect(canMoveInto(nodes, 'todo.md', 'guides/setup.md')).toBe(true);
+    expect(canMoveInto(nodes, 'guides/setup.md', '')).toBe(true);
+    expect(canMoveInto(nodes, 'guides/logo.png', 'todo.md')).toBe(true);
+  });
+
+  it('refuses itself, its own subtree, a file, its parent and an unknown page', () => {
+    expect(canMoveInto(nodes, 'todo.md', 'todo.md')).toBe(false);
+    expect(canMoveInto(nodes, 'guides', 'guides/setup.md')).toBe(false);
+    expect(canMoveInto(nodes, 'todo.md', 'guides/logo.png')).toBe(false);
+    expect(canMoveInto(nodes, 'guides/setup.md', 'guides')).toBe(false);
+    expect(canMoveInto(nodes, 'todo.md', '')).toBe(false);
+    expect(canMoveInto(nodes, 'missing.md', 'guides')).toBe(false);
+  });
+
+  it('lists the pages a page could move into, in tree order', () => {
+    expect(moveTargets(nodes, 'todo.md')).toEqual([
+      { id: 'guides', title: 'Guides', depth: 0 },
+      { id: 'guides/setup.md', title: 'Setup', depth: 1 },
+    ]);
+    expect(moveTargets(nodes, 'guides')).toEqual([{ id: 'todo.md', title: 'Todo', depth: 0 }]);
   });
 });

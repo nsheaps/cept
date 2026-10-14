@@ -9,6 +9,7 @@ import {
   findPage,
   isPageFile,
   movePage,
+  movePageInto,
   pickFolderPage,
   readPageText,
   readSpaceTree,
@@ -353,6 +354,126 @@ describe.each(backends)('space folder tree on %s', (_name, make) => {
       'space root',
     );
     expect(await snapshot(backend)).toEqual(await snapshotOf(FIXTURE, make));
+  });
+});
+
+describe.each(backends)('movePageInto on %s', (_name, make) => {
+  let backend: StorageBackend;
+  beforeEach(async () => {
+    backend = make();
+    await seed(backend, FIXTURE);
+  });
+
+  it('moves a page into a folder, keeping its name', async () => {
+    const { id, moved } = await movePageInto(
+      backend,
+      '',
+      { id: 'Changelog.markdown', kind: 'file' },
+      { id: 'journal', kind: 'folder' },
+    );
+    expect(id).toBe('journal/Changelog.markdown');
+    expect(moved).toEqual([{ from: 'Changelog.markdown', to: 'journal/Changelog.markdown' }]);
+    expect(await backend.exists('/Changelog.markdown')).toBe(false);
+  });
+
+  it('moves a page to the root', async () => {
+    const { id } = await movePageInto(
+      backend,
+      '',
+      { id: 'guides/setup.md', kind: 'file' },
+      { id: '', kind: 'folder' },
+    );
+    expect(id).toBe('setup.md');
+    expect(await backend.exists('/guides/setup.md')).toBe(false);
+  });
+
+  it('turns a file page into a folder page first, and reports both moves', async () => {
+    const { id, moved } = await movePageInto(
+      backend,
+      '',
+      { id: 'Changelog.markdown', kind: 'file' },
+      { id: 'guides/setup.md', kind: 'file' },
+    );
+    expect(id).toBe('guides/setup/Changelog.markdown');
+    expect(moved).toEqual([
+      { from: 'guides/setup.md', to: 'guides/setup' },
+      { from: 'Changelog.markdown', to: 'guides/setup/Changelog.markdown' },
+    ]);
+    expect(await backend.exists('/guides/setup/index.md')).toBe(true);
+    expect(await backend.exists('/guides/setup.md')).toBe(false);
+  });
+
+  it('moves a folder page with everything inside it', async () => {
+    const { id } = await movePageInto(
+      backend,
+      '',
+      { id: 'guides', kind: 'folder' },
+      { id: 'journal', kind: 'folder' },
+    );
+    expect(id).toBe('journal/guides');
+    expect(await backend.exists('/journal/guides/setup.md')).toBe(true);
+    expect(await backend.exists('/guides/setup.md')).toBe(false);
+  });
+
+  it('does nothing when the page is already in that folder', async () => {
+    const { id, moved } = await movePageInto(
+      backend,
+      '',
+      { id: 'guides/setup.md', kind: 'file' },
+      { id: 'guides', kind: 'folder' },
+    );
+    expect(id).toBe('guides/setup.md');
+    expect(moved).toEqual([]);
+  });
+
+  it('refuses a move into itself or its own subtree, and writes nothing', async () => {
+    const before = await snapshot(backend);
+    await expect(
+      movePageInto(
+        backend,
+        '',
+        { id: 'guides/setup.md', kind: 'file' },
+        { id: 'guides/setup.md', kind: 'file' },
+      ),
+    ).rejects.toThrow('into itself');
+    await expect(
+      movePageInto(
+        backend,
+        '',
+        { id: 'guides', kind: 'folder' },
+        { id: 'guides/setup.md', kind: 'file' },
+      ),
+    ).rejects.toThrow('into itself');
+    expect(await snapshot(backend)).toEqual(before);
+  });
+
+  it('refuses a name that is taken, before turning the target into a folder', async () => {
+    await backend.writeFile('/journal/setup.md', enc.encode('other\n'));
+    await backend.writeFile('/journal/2026/setup.md', enc.encode('taken\n'));
+    const before = await snapshot(backend);
+    await expect(
+      movePageInto(
+        backend,
+        '',
+        { id: 'journal/setup.md', kind: 'file' },
+        { id: 'journal/2026', kind: 'folder' },
+      ),
+    ).rejects.toThrow('already exists');
+    expect(await snapshot(backend)).toEqual(before);
+  });
+
+  it('refuses to turn a file page into a folder when that folder already exists', async () => {
+    await backend.writeFile('/guides/setup/extra.md', enc.encode('x\n'));
+    const before = await snapshot(backend);
+    await expect(
+      movePageInto(
+        backend,
+        '',
+        { id: 'Changelog.markdown', kind: 'file' },
+        { id: 'guides/setup.md', kind: 'file' },
+      ),
+    ).rejects.toThrow('already exists');
+    expect(await snapshot(backend)).toEqual(before);
   });
 });
 

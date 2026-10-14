@@ -44,6 +44,7 @@ export {
   writePageText,
   createPage,
   movePage,
+  movePageInto,
   plannedPageId,
   applyMoves,
   isPageFile,
