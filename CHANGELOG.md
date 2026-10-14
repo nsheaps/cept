@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.63.0](https://github.com/nsheaps/cept/compare/v0.62.1...v0.63.0) (2026-10-14)
+
+### Features
+
+* **ui:** comment threads (reply, edit, delete, resolve) ([#457](https://github.com/nsheaps/cept/issues/457)) ([4e86cb4](https://github.com/nsheaps/cept/commit/4e86cb4cd0592ba7dad641b144ec212343d0e1de))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([138ced4](https://github.com/nsheaps/cept/commit/138ced4a839e9e7c843ceaa134b2116c4d586e4d))
+
 ## [0.62.1](https://github.com/nsheaps/cept/compare/v0.62.0...v0.62.1) (2026-10-14)
 
 ### Documentation
