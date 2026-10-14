@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.3](https://github.com/nsheaps/cept/compare/v0.64.2...v0.64.3) (2026-10-14)
+
+### Bug Fixes
+
+* **web:** precache built assets under the base path ([#464](https://github.com/nsheaps/cept/issues/464)) ([208bad3](https://github.com/nsheaps/cept/commit/208bad3b2cc25c82d66c6187398393ebde114927))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([0f5981b](https://github.com/nsheaps/cept/commit/0f5981bd1dade791a8f8bcdf0d57776133afbd31))
+
 ## [0.64.2](https://github.com/nsheaps/cept/compare/v0.64.1...v0.64.2) (2026-10-14)
 
 ### Bug Fixes
