@@ -6,9 +6,15 @@
  * (`.md`) merge their front matter key by key first (`mergeFrontMatter`), so
  * two people changing different keys never conflict; the same key changed on
  * both sides is a conflict. Block-aware Markdown merging waits for the M3
- * pipeline; until then the body merges line by line.
+ * pipeline; until then the body merges line by line, except that a changed
+ * region holding only `cept:comment` markers merges by comment id
+ * (`mergeCommentRegion`, REQ-NTN-010), so two people adding comments never
+ * conflict. The merged markers keep mine's order first, then the ones only
+ * theirs holds; the line is read without markdown context, so a region of
+ * well-formed markers inside a code fence merges the same way.
  */
 
+import { parseCommentMarker, type PageComment } from '../markdown/comments.js';
 import { frontMatterKeyBlocks, type FrontMatterKeyBlock } from '../markdown/front-matter.js';
 
 /** The marker lines a conflicting hunk is wrapped in. */
@@ -101,6 +107,73 @@ function mergeRegion(
   return null;
 }
 
+interface MarkerLine {
+  line: string;
+  comment: PageComment;
+}
+
+/**
+ * The comment markers of a region, in order, or null when the region holds
+ * anything but markers and blank lines (or a marker that cannot be read, or an
+ * id twice).
+ */
+function markersOf(lines: readonly string[]): Map<string, MarkerLine> | null {
+  const found = new Map<string, MarkerLine>();
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+    const parsed = parseCommentMarker(line);
+    if (!parsed.ok || found.has(parsed.comment.id)) return null;
+    found.set(parsed.comment.id, { line, comment: parsed.comment });
+  }
+  return found;
+}
+
+/** When a comment was last written: its edit, else its creation. */
+function writtenAt(comment: PageComment): number {
+  const at = Date.parse(comment.edited ?? comment.created);
+  return Number.isNaN(at) ? 0 : at;
+}
+
+/**
+ * Merge a changed region that holds only comment markers, by comment id
+ * (REQ-NTN-010). Comments added on either side are all kept; a comment deleted
+ * on one side goes unless the other side edited it; one both sides changed
+ * keeps the later write (mine on a tie). Null when the region holds anything
+ * else, so the caller reports a conflict as before.
+ */
+function mergeCommentRegion(
+  base: readonly string[],
+  mine: readonly string[],
+  theirs: readonly string[],
+): string[] | null {
+  const [b, m, t] = [markersOf(base), markersOf(mine), markersOf(theirs)];
+  if (!b || !m || !t) return null;
+  const kept: string[] = [];
+  for (const id of new Set([...m.keys(), ...t.keys()])) {
+    const [inBase, mine1, theirs1] = [b.get(id), m.get(id), t.get(id)];
+    if (mine1 && theirs1) {
+      kept.push(writtenAt(theirs1.comment) > writtenAt(mine1.comment) ? theirs1.line : mine1.line);
+      continue;
+    }
+    const only = (mine1 ?? theirs1)!;
+    // Deleted by the other side: gone, unless this side changed it meanwhile.
+    if (inBase && inBase.line === only.line) continue;
+    kept.push(only.line);
+  }
+  // Keep the blank lines around the markers as the sides wrote them.
+  const sides = [mine, theirs].filter((lines) => lines.some((line) => line.trim() !== ''));
+  const count = (lines: readonly string[], from: 'start' | 'end') => {
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[from === 'start' ? i : lines.length - 1 - i]!.trim() !== '') return i;
+    }
+    return 0;
+  };
+  const lead = Math.max(0, ...sides.map((lines) => count(lines, 'start')));
+  const trail = Math.max(0, ...sides.map((lines) => count(lines, 'end')));
+  const body = kept.flatMap((line, index) => (index === 0 ? [line] : ['', line]));
+  return [...Array<string>(lead).fill(''), ...body, ...Array<string>(trail).fill('')];
+}
+
 /** Three-way merge of line arrays (diff3). */
 function mergeLineArrays(
   base: readonly string[],
@@ -121,6 +194,11 @@ function mergeLineArrays(
     const merged = mergeRegion(...region);
     if (merged) {
       out.push(...merged);
+      return;
+    }
+    const comments = mergeCommentRegion(...region);
+    if (comments) {
+      out.push(...comments);
       return;
     }
     clean = false;

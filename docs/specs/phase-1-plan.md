@@ -729,6 +729,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: integration test with two clones adding different comments to one page.
 - Accept: test green.
 - Risk: none notable.
+- Delivered (64): `mergeCommentRegion` in `text-merge.ts`, called when the line merge of a region fails. If every non-blank line on both sides is a readable `cept:comment` marker with a unique id, the region merges by id: the union of both sides, the later `edited` (else `created`) wins for a shared id (mine on a tie), and a comment one side deleted while the other left it unchanged is dropped. Anything else (an unreadable marker, a repeated id, other text) still conflicts. Tests: eight unit tests in `text-merge.test.ts` and a two-clone integration test; both fail with the hook disabled. Not in 64: merging when the text around the markers also conflicts.
 
 **PR 65 — `test(editor): bind editor and comment acceptance tests`**
 
