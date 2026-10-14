@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.2](https://github.com/nsheaps/cept/compare/v0.64.1...v0.64.2) (2026-10-14)
+
+### Bug Fixes
+
+* **web:** base-path-aware manifest, icons and ios metadata ([#463](https://github.com/nsheaps/cept/issues/463)) ([e0ba16f](https://github.com/nsheaps/cept/commit/e0ba16fd4d0cec812c79483e4d3e912915ad060a))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([5592115](https://github.com/nsheaps/cept/commit/5592115bee18f1a2da081ee731f8c61f7ebafe8d))
+
 ## [0.64.1](https://github.com/nsheaps/cept/compare/v0.64.0...v0.64.1) (2026-10-14)
 
 ### Documentation
