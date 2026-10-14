@@ -37,6 +37,10 @@ export interface PageTreeItemProps {
   onDragEndPage?: () => void;
   /** Move `id` just before or after `targetId`, among the same siblings. */
   onReorder?: (id: string, targetId: string, position: 'before' | 'after') => void;
+  /** Whether `draggedId` may be nested under `targetId` (dropped on the middle of its row). */
+  canNest?: (draggedId: string, targetId: string) => boolean;
+  /** Move `id` into the page `targetId`. */
+  onMoveInto?: (id: string, targetId: string) => void;
   /** Keyboard reorder: Alt+Up / Alt+Down moves `id` one place. */
   onNudge?: (id: string, direction: -1 | 1) => void;
 }
@@ -52,20 +56,33 @@ export function PageTreeItem({
   onContextMenu,
   draggedId,
   canDrop,
+  canNest,
   onDragStartPage,
   onDragEndPage,
   onReorder,
+  onMoveInto,
   onNudge,
 }: PageTreeItemProps) {
   const [hovered, setHovered] = useState(false);
-  const [dropAt, setDropAt] = useState<'before' | 'after' | null>(null);
-  const draggable = !readOnly && !node.foreign && !node.noPage && !!onReorder;
-  const positionOf = (e: React.DragEvent): 'before' | 'after' => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-  };
-  const droppable = (): boolean =>
+  const [dropAt, setDropAt] = useState<'before' | 'after' | 'into' | null>(null);
+  const draggable = !readOnly && (!!onMoveInto || (!node.foreign && !node.noPage && !!onReorder));
+  const canSort = (): boolean =>
     !!draggedId && draggedId !== node.id && !!canDrop?.(draggedId, node.id);
+  const canMove = (): boolean => !!draggedId && !!canNest?.(draggedId, node.id);
+  /**
+   * Where a drop on this row lands: the top and bottom quarters place the page
+   * before or after it (among the same siblings); the middle nests it under this
+   * page. Pages that are not siblings can only nest.
+   */
+  const dropFor = (e: React.DragEvent): 'before' | 'after' | 'into' | null => {
+    const sort = canSort();
+    const move = canMove();
+    if (!sort && !move) return null;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = (e.clientY - rect.top) / (rect.height || 1);
+    if (move && (!sort || (y >= 0.25 && y <= 0.75))) return 'into';
+    return y < 0.5 ? 'before' : 'after';
+  };
   const hasChildren = node.children.length > 0;
   const isSelected = selectedId === node.id;
   const isExpanded = node.isExpanded ?? false;
@@ -120,18 +137,20 @@ export function PageTreeItem({
           onDragEndPage?.();
         }}
         onDragOver={(e) => {
-          if (!droppable()) return;
+          const drop = dropFor(e);
+          if (!drop) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
-          setDropAt(positionOf(e));
+          setDropAt(drop);
         }}
         onDragLeave={() => setDropAt(null)}
         onDrop={(e) => {
-          if (!droppable() || !draggedId) return;
+          const drop = dropFor(e);
+          if (!drop || !draggedId) return;
           e.preventDefault();
-          const position = positionOf(e);
           setDropAt(null);
-          onReorder?.(draggedId, node.id, position);
+          if (drop === 'into') onMoveInto?.(draggedId, node.id);
+          else onReorder?.(draggedId, node.id, drop);
         }}
         onKeyDown={(e) => {
           if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
@@ -192,9 +211,11 @@ export function PageTreeItem({
               onContextMenu={onContextMenu}
               draggedId={draggedId}
               canDrop={canDrop}
+              canNest={canNest}
               onDragStartPage={onDragStartPage}
               onDragEndPage={onDragEndPage}
               onReorder={onReorder}
+              onMoveInto={onMoveInto}
               onNudge={onNudge}
             />
           ))}

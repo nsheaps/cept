@@ -445,6 +445,13 @@ export function App() {
         change = await op();
       } catch (err) {
         addToast(err instanceof Error ? err.message : String(err), 'error');
+        // An operation that failed part way may have written some files: show what is on disk.
+        try {
+          const hiddenNow = new Set(trashRef.current.map((t) => t.id));
+          setPages(await spaces.pageTree(userSpaceId, pagesRef.current, hiddenNow));
+        } catch {
+          // Keep the tree as it is; the toast already reports the failure.
+        }
         return null;
       }
       const remap = (id: string) => applyMoves(id, change.moved);
@@ -1515,34 +1522,41 @@ export function App() {
     [pageContents, currentWritePage, spaces, userSpaceId, runFolderChange],
   );
 
-  const handlePageMoveToRoot = useCallback(
-    (id: string) => {
+  /**
+   * Move a page or file into the page `targetId` ('' is the space root). In a
+   * folder space the links it would break are previewed first (REQ-EDT-018),
+   * and the page it lands in is opened so it stays in view.
+   */
+  const handlePageMove = useCallback(
+    (id: string, targetId: string) => {
       if (spaces.isFolder(userSpaceId)) {
         const foreign = findNode(pagesRef.current, id)?.foreign === true;
         void (async () => {
           await flushPendingWrite();
           const preview = await (
             foreign
-              ? spaces.previewMoveFileToRoot(userSpaceId, id)
-              : spaces.previewMoveToRoot(userSpaceId, id)
+              ? spaces.previewMoveFileTo(userSpaceId, id, targetId)
+              : spaces.previewMoveTo(userSpaceId, id, targetId)
           ).catch(() => null);
-          const run = (updateLinks: boolean) =>
-            void runFolderChange(() =>
+          const run = async (updateLinks: boolean) => {
+            const change = await runFolderChange(() =>
               foreign
-                ? spaces.moveFileToRoot(userSpaceId, id, updateLinks)
-                : spaces.movePageToRoot(userSpaceId, id, updateLinks),
+                ? spaces.moveFileTo(userSpaceId, id, targetId, updateLinks)
+                : spaces.movePageTo(userSpaceId, id, targetId, updateLinks),
             );
+            if (change) setPages((prev) => expandToNode(prev, change.pageId));
+          };
           if (preview && preview.total > 0)
             setPendingRewrite({
               pageTitle: findNode(pagesRef.current, id)?.title ?? id,
               preview,
-              run,
+              run: (updateLinks) => void run(updateLinks),
             });
-          else run(true);
+          else void run(true);
         })();
         return;
       }
-      setPages((prev) => moveNode(prev, id, undefined));
+      setPages((prev) => moveNode(prev, id, targetId || undefined));
     },
     [spaces, userSpaceId, runFolderChange, flushPendingWrite],
   );
@@ -3103,7 +3117,7 @@ export function App() {
             onPageRename={editLocked ? explainLocked : handlePageRename}
             onPageDuplicate={editLocked ? explainLocked : handlePageDuplicate}
             onPageDelete={editLocked ? explainLocked : handlePageDelete}
-            onPageMoveToRoot={editLocked ? explainLocked : handlePageMoveToRoot}
+            onPageMove={editLocked ? explainLocked : handlePageMove}
             onPageReorder={
               editLocked || !spaces.isFolder(userSpaceId) ? undefined : handlePageReorder
             }
@@ -3155,7 +3169,7 @@ export function App() {
             onPageDelete={() => {
               /* read-only */
             }}
-            onPageMoveToRoot={() => {
+            onPageMove={() => {
               /* read-only */
             }}
             onToggleFavorite={() => {

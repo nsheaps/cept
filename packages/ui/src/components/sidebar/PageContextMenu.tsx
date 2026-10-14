@@ -10,7 +10,8 @@ export interface PageContextMenuProps {
   onRename: (id: string, newTitle: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
-  onMoveToRoot: (id: string) => void;
+  /** Open the "Move to…" picker for the page. */
+  onMove: (id: string) => void;
   onToggleFavorite?: (id: string) => void;
   onClose: () => void;
 }
@@ -24,7 +25,7 @@ export function PageContextMenu({
   onRename,
   onDuplicate,
   onDelete,
-  onMoveToRoot,
+  onMove,
   onToggleFavorite,
   onClose,
 }: PageContextMenuProps) {
@@ -102,12 +103,12 @@ export function PageContextMenu({
       <button
         className="cept-context-menu-item"
         onClick={() => {
-          onMoveToRoot(pageId);
+          onMove(pageId);
           onClose();
         }}
-        data-testid="ctx-move-to-root"
+        data-testid="ctx-move-to"
       >
-        Move...
+        Move to…
       </button>
       <div className="cept-context-menu-divider" />
       <button

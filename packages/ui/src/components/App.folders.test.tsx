@@ -5,7 +5,7 @@
  * writes nothing to it.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, createEvent } from '@testing-library/react';
 import type { FolderHandleStore, StorageBackend } from '@cept/core';
 import { App } from './App.js';
 import { StorageProvider } from './storage/StorageContext.js';
@@ -146,7 +146,7 @@ describe('App folder spaces', () => {
   });
 
   describe('renaming a page that other pages link to', () => {
-    async function openLinked(action: 'ctx-rename' | 'ctx-move-to-root' = 'ctx-rename') {
+    async function openLinked(action: 'ctx-rename' | 'move-to-root' = 'ctx-rename') {
       const folder = notesFolder();
       folder.seedText('Welcome.md', 'See [setup](Guides/Setup.md#top).\n');
       const { host, next } = fakeHost(new Map([['notes', folder]]));
@@ -155,7 +155,10 @@ describe('App folder spaces', () => {
       fireEvent.click(await screen.findByTestId('landing-open-folder'));
       fireEvent.click(await screen.findByTestId('page-tree-toggle-Guides', {}, { timeout: 3000 }));
       fireEvent.contextMenu(await screen.findByTestId('page-tree-button-Guides/Setup.md'));
-      fireEvent.click(await screen.findByTestId(action));
+      if (action === 'move-to-root') {
+        fireEvent.click(await screen.findByTestId('ctx-move-to'));
+        fireEvent.click(await screen.findByTestId('move-target-root'));
+      } else fireEvent.click(await screen.findByTestId(action));
       if (action === 'ctx-rename') {
         const input = await screen.findByTestId('rename-input');
         fireEvent.change(input, { target: { value: 'Install' } });
@@ -182,21 +185,21 @@ describe('App folder spaces', () => {
 
     describe('moving the page to the root', () => {
       it('rewrites the links when accepted', async () => {
-        const folder = await openLinked('ctx-move-to-root');
+        const folder = await openLinked('move-to-root');
         fireEvent.click(await screen.findByTestId('link-rewrite-update'));
         await screen.findByTestId('page-tree-button-Setup.md', {}, { timeout: 3000 });
         expect(folder.readText('Welcome.md')).toBe('See [setup](Setup.md#top).\n');
       });
 
       it('leaves the links alone when the user moves without updating', async () => {
-        const folder = await openLinked('ctx-move-to-root');
+        const folder = await openLinked('move-to-root');
         fireEvent.click(await screen.findByTestId('link-rewrite-skip'));
         await screen.findByTestId('page-tree-button-Setup.md', {}, { timeout: 3000 });
         expect(folder.readText('Welcome.md')).toBe('See [setup](Guides/Setup.md#top).\n');
       });
 
       it('changes nothing when the user cancels', async () => {
-        const folder = await openLinked('ctx-move-to-root');
+        const folder = await openLinked('move-to-root');
         fireEvent.click(await screen.findByTestId('link-rewrite-cancel'));
         await settle();
         expect(folder.hasFile('Guides/Setup.md')).toBe(true);
@@ -279,8 +282,68 @@ describe('App folder spaces', () => {
     });
   });
 
+  describe('moving pages into other pages (REQ-NTN-012)', () => {
+    async function openFolder(folder: MemoryBackend) {
+      const { host, next } = fakeHost(new Map([['notes', folder]]));
+      next.handle = folderHandle('notes');
+      renderApp(new MemoryBackend(), host);
+      fireEvent.click(await screen.findByTestId('landing-open-folder'));
+      return screen.findByTestId('page-tree-button-Zebra.md', {}, { timeout: 3000 });
+    }
+    const moveVia = async (id: string, target: string) => {
+      fireEvent.contextMenu(await screen.findByTestId(`page-tree-button-${id}`));
+      fireEvent.click(await screen.findByTestId('ctx-move-to'));
+      fireEvent.click(await screen.findByTestId(`move-target-${target}`));
+    };
+
+    it('nests a page under a file page, which becomes a folder page, from the picker', async () => {
+      const folder = notesFolder();
+      folder.seedText('Zebra.md', '# Zebra\n');
+      await openFolder(folder);
+      await moveVia('Zebra.md', 'Welcome.md');
+      await screen.findByTestId('page-tree-button-Welcome/Zebra.md', {}, { timeout: 3000 });
+      expect(folder.readText('Welcome/Zebra.md')).toBe('# Zebra\n');
+      expect(folder.readText('Welcome/index.md')).toBe('# Welcome\n\nHello from a folder.\n');
+      expect(folder.hasFile('Welcome.md')).toBe(false);
+      expect(folder.hasFile('Zebra.md')).toBe(false);
+    });
+
+    it('nests a page dropped onto another row, asking about the links it would break', async () => {
+      const folder = notesFolder();
+      folder.seedText('Zebra.md', 'Back to [welcome](Welcome.md).\n');
+      folder.seedText('Welcome.md', 'See [zebra](Zebra.md).\n');
+      const zebra = await openFolder(folder);
+      const welcome = await screen.findByTestId('page-tree-button-Welcome.md');
+      const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
+      fireEvent.dragStart(zebra, { dataTransfer });
+      // jsdom lays nothing out and drag events have no coordinates: aim at the middle of the row.
+      for (const type of ['dragOver', 'drop'] as const) {
+        const event = createEvent[type](welcome, { dataTransfer });
+        Object.defineProperty(event, 'clientY', { value: 0.5 });
+        fireEvent(welcome, event);
+      }
+      fireEvent.click(await screen.findByTestId('link-rewrite-update'));
+      await screen.findByTestId('page-tree-button-Welcome/Zebra.md', {}, { timeout: 3000 });
+      expect(folder.readText('Welcome/index.md')).toBe('See [zebra](Zebra.md).\n');
+      expect(folder.readText('Welcome/Zebra.md')).toBe('Back to [welcome](index.md).\n');
+    });
+
+    it('shows the folder as it is on disk when a move is refused', async () => {
+      const folder = notesFolder();
+      folder.seedText('Zebra.md', '# Zebra\n');
+      folder.seedText('Guides/Zebra.md', '# Another\n');
+      await openFolder(folder);
+      folder.seedText('Added.md', '# Added\n');
+      await moveVia('Zebra.md', 'Guides');
+      expect((await screen.findByText(/already exists/)).textContent).toBeTruthy();
+      await screen.findByTestId('page-tree-button-Added.md', {}, { timeout: 3000 });
+      expect(folder.readText('Zebra.md')).toBe('# Zebra\n');
+      expect(folder.readText('Guides/Zebra.md')).toBe('# Another\n');
+    });
+  });
+
   describe('a file that is not a page', () => {
-    async function openWithImage(action: 'ctx-rename' | 'ctx-move-to-root' | 'ctx-delete') {
+    async function openWithImage(action: 'ctx-rename' | 'move-to-root' | 'ctx-delete') {
       const folder = notesFolder();
       folder.seedText('Welcome.md', 'Logo: ![logo](Guides/logo.png)\n');
       folder.seedText('Guides/logo.png', 'png');
@@ -293,7 +356,10 @@ describe('App folder spaces', () => {
       // No page-only actions for a file.
       expect(screen.queryByTestId('ctx-duplicate')).toBeNull();
       expect(screen.queryByTestId('ctx-toggle-favorite')).toBeNull();
-      fireEvent.click(await screen.findByTestId(action));
+      if (action === 'move-to-root') {
+        fireEvent.click(await screen.findByTestId('ctx-move-to'));
+        fireEvent.click(await screen.findByTestId('move-target-root'));
+      } else fireEvent.click(await screen.findByTestId(action));
       if (action === 'ctx-rename') {
         const input = await screen.findByTestId('rename-input');
         fireEvent.change(input, { target: { value: 'brand' } });
@@ -311,7 +377,7 @@ describe('App folder spaces', () => {
     });
 
     it('moves it to the root, leaving links alone when asked to', async () => {
-      const folder = await openWithImage('ctx-move-to-root');
+      const folder = await openWithImage('move-to-root');
       fireEvent.click(await screen.findByTestId('link-rewrite-skip'));
       await screen.findByTestId('page-tree-button-logo.png', {}, { timeout: 3000 });
       expect(folder.readText('Welcome.md')).toBe('Logo: ![logo](Guides/logo.png)\n');

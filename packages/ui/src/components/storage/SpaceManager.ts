@@ -36,9 +36,13 @@ import {
   duplicateFolderPage,
   initFolderSpace,
   isFolderSpace,
+  moveFolderPageInto,
   moveFolderPageToRoot,
+  moveForeignFileInto,
   moveForeignFileToRoot,
+  previewMoveForeignInto,
   previewMoveForeignToRootLinks,
+  previewMoveInto,
   previewMoveToRootLinks,
   previewRenameForeignLinks,
   previewRenameLinks,
@@ -1015,6 +1019,21 @@ export class SpaceManager {
     return moveFolderPageToRoot(this.store(id).backend, pageId, updateLinks);
   }
 
+  /** Move a page into the folder or page `targetId` ('' is the root), keeping its name. */
+  movePageTo(
+    id: string,
+    pageId: string,
+    targetId: string,
+    updateLinks = true,
+  ): Promise<FolderChange> {
+    return moveFolderPageInto(this.store(id).backend, pageId, targetId, updateLinks);
+  }
+
+  /** The links moving a page into `targetId` would rewrite, without changing anything. */
+  previewMoveTo(id: string, pageId: string, targetId: string): Promise<LinkRewritePreview> {
+    return previewMoveInto(this.store(id).backend, pageId, targetId);
+  }
+
   /** The links renaming a page would rewrite, without changing anything. */
   previewRename(id: string, pageId: string, title: string): Promise<LinkRewritePreview> {
     return previewRenameLinks(this.store(id).backend, pageId, title);
@@ -1038,6 +1057,19 @@ export class SpaceManager {
 
   moveFileToRoot(id: string, path: string, updateLinks = true): Promise<FolderChange> {
     return moveForeignFileToRoot(this.store(id).backend, path, updateLinks);
+  }
+
+  moveFileTo(
+    id: string,
+    path: string,
+    targetId: string,
+    updateLinks = true,
+  ): Promise<FolderChange> {
+    return moveForeignFileInto(this.store(id).backend, path, targetId, updateLinks);
+  }
+
+  previewMoveFileTo(id: string, path: string, targetId: string): Promise<LinkRewritePreview> {
+    return previewMoveForeignInto(this.store(id).backend, path, targetId);
   }
 
   previewRenameFile(id: string, path: string, title: string): Promise<LinkRewritePreview> {

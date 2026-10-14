@@ -9,7 +9,7 @@ const defaultProps = {
   onRename: vi.fn(),
   onDuplicate: vi.fn(),
   onDelete: vi.fn(),
-  onMoveToRoot: vi.fn(),
+  onMove: vi.fn(),
   onClose: vi.fn(),
 };
 
@@ -23,7 +23,7 @@ describe('PageContextMenu', () => {
     render(<PageContextMenu {...defaultProps} />);
     expect(screen.getByTestId('ctx-rename')).toBeDefined();
     expect(screen.getByTestId('ctx-duplicate')).toBeDefined();
-    expect(screen.getByTestId('ctx-move-to-root')).toBeDefined();
+    expect(screen.getByTestId('ctx-move-to')).toBeDefined();
     expect(screen.getByTestId('ctx-delete')).toBeDefined();
   });
 
@@ -47,13 +47,13 @@ describe('PageContextMenu', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onMoveToRoot and onClose when move to root clicked', () => {
-    const onMoveToRoot = vi.fn();
+  it('calls onMove and onClose when Move to… is clicked', () => {
+    const onMove = vi.fn();
     const onClose = vi.fn();
-    render(<PageContextMenu {...defaultProps} onMoveToRoot={onMoveToRoot} onClose={onClose} />);
+    render(<PageContextMenu {...defaultProps} onMove={onMove} onClose={onClose} />);
 
-    fireEvent.click(screen.getByTestId('ctx-move-to-root'));
-    expect(onMoveToRoot).toHaveBeenCalledWith('test-page');
+    fireEvent.click(screen.getByTestId('ctx-move-to'));
+    expect(onMove).toHaveBeenCalledWith('test-page');
     expect(onClose).toHaveBeenCalled();
   });
 

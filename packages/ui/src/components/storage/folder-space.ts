@@ -21,6 +21,7 @@ import {
   mapPath,
   isPageFile,
   movePage,
+  movePageInto,
   NEW_FOLDER_PAGE,
   pickFolderPage,
   planLinkRewrites,
@@ -379,7 +380,7 @@ export function previewMoveToRootLinks(
   backend: StorageBackend,
   id: string,
 ): Promise<LinkRewritePreview> {
-  return previewMove(backend, id, '', baseName(id));
+  return previewMoveInto(backend, id, '');
 }
 
 /**
@@ -429,18 +430,112 @@ export async function renameFolderPage(
   });
 }
 
+/**
+ * What moving `id` into the page or folder `targetId` ('' is the space root)
+ * does: the moves it makes (a file page target becomes a folder page first) and
+ * the target node for core's `movePageInto`.
+ */
+async function planMoveInto(
+  backend: StorageBackend,
+  id: string,
+  targetId: string,
+  foreign: boolean,
+): Promise<{
+  page: Pick<PageNode, 'id' | 'kind'>;
+  target: Pick<PageNode, 'id' | 'kind'>;
+  moves: Moved[];
+}> {
+  const tree = await readSpaceTree(backend);
+  const page = foreign ? { id, kind: 'file' as const } : nodeFor(tree, id);
+  let target: Pick<PageNode, 'id' | 'kind'> = { id: '', kind: 'folder' };
+  if (targetId) {
+    const node = nodeFor(tree, targetId);
+    target = node.id === tree.root.file ? { id: '', kind: 'folder' } : node;
+  }
+  const folder =
+    target.kind === 'file'
+      ? join(parentOf(target.id), stripExtension(baseName(target.id)))
+      : target.id;
+  const to = plannedPageId(page, folder, baseName(id));
+  if (to === id) return { page, target, moves: [] };
+  const becomesFolder: Moved[] = target.kind === 'file' ? [{ from: target.id, to: folder }] : [];
+  return { page, target, moves: [...becomesFolder, { from: id, to }] };
+}
+
+async function moveInto(
+  backend: StorageBackend,
+  id: string,
+  targetId: string,
+  updateLinks: boolean,
+  foreign: boolean,
+): Promise<FolderChange> {
+  const { page, target, moves } = await planMoveInto(backend, id, targetId, foreign);
+  return withLinkRewrites(backend, moves, updateLinks, async () => {
+    const { id: pageId, moved } = await movePageInto(backend, '', page, target);
+    return { pageId, moved };
+  });
+}
+
+async function previewInto(
+  backend: StorageBackend,
+  id: string,
+  targetId: string,
+  foreign: boolean,
+): Promise<LinkRewritePreview> {
+  const { moves } = await planMoveInto(backend, id, targetId, foreign);
+  if (moves.length === 0) return { total: 0, pages: [] };
+  return summarize(planLinkRewrites(await readPageTexts(backend), moves));
+}
+
+/**
+ * Move a page (with everything under it) into the folder or page `targetId`
+ * ('' is the space root), keeping its name. A file page target becomes a folder
+ * page first. Links are rewritten unless `updateLinks` is false.
+ */
+export function moveFolderPageInto(
+  backend: StorageBackend,
+  id: string,
+  targetId: string,
+  updateLinks = true,
+): Promise<FolderChange> {
+  return moveInto(backend, id, targetId, updateLinks, false);
+}
+
+/** The links that moving page `id` into `targetId` would update. */
+export function previewMoveInto(
+  backend: StorageBackend,
+  id: string,
+  targetId: string,
+): Promise<LinkRewritePreview> {
+  return previewInto(backend, id, targetId, false);
+}
+
 /** Move a page (with everything under it) to the space root, keeping its name. */
-export async function moveFolderPageToRoot(
+export function moveFolderPageToRoot(
   backend: StorageBackend,
   id: string,
   updateLinks = true,
 ): Promise<FolderChange> {
-  const page = nodeFor(await readSpaceTree(backend), id);
-  const to = plannedPageId(page, '', baseName(id));
-  return withLinkRewrites(backend, to === id ? [] : [{ from: id, to }], updateLinks, async () => {
-    const { id: pageId, moved } = await movePage(backend, '', page, '', baseName(id));
-    return { pageId, moved };
-  });
+  return moveFolderPageInto(backend, id, '', updateLinks);
+}
+
+/** Move a file that is not a page into the folder or page `targetId` ('' is the root). */
+export function moveForeignFileInto(
+  backend: StorageBackend,
+  path: string,
+  targetId: string,
+  updateLinks = true,
+): Promise<FolderChange> {
+  return moveInto(backend, path, targetId, updateLinks, true);
+}
+
+/** The links that moving the file `path` into `targetId` would update. */
+export function previewMoveForeignInto(
+  backend: StorageBackend,
+  path: string,
+  targetId: string,
+): Promise<LinkRewritePreview> {
+  return previewInto(backend, path, targetId, true);
 }
 
 /** The extension of a file name, with its dot (`.png`), or '' when it has none. */
@@ -516,7 +611,7 @@ export function moveForeignFileToRoot(
   path: string,
   updateLinks = true,
 ): Promise<FolderChange> {
-  return moveForeign(backend, path, '', baseName(path), updateLinks);
+  return moveForeignFileInto(backend, path, '', updateLinks);
 }
 
 /** The links that renaming the file `path` after `title` would update. */
@@ -536,7 +631,7 @@ export function previewMoveForeignToRootLinks(
   backend: StorageBackend,
   path: string,
 ): Promise<LinkRewritePreview> {
-  return previewForeignMove(backend, path, baseName(path));
+  return previewMoveForeignInto(backend, path, '');
 }
 
 /** Delete a file that is not a page. Pages are never deleted here; a missing file is ignored. */

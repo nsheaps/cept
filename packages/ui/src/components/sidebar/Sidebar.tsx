@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { PageTreeItem, type PageTreeNode } from './PageTreeItem.js';
-import { siblingsOf } from './page-tree-utils.js';
+import { canMoveInto, findNode, siblingsOf } from './page-tree-utils.js';
+import { MovePageDialog } from './MovePageDialog.js';
 import { PageContextMenu } from './PageContextMenu.js';
 import { ThemeToggle } from '../settings/ThemeToggle.js';
 import type { ThemeMode } from '../settings/SettingsModal.js';
@@ -24,7 +25,8 @@ export interface SidebarProps {
   onPageRename?: (id: string, title: string) => void;
   onPageDuplicate?: (id: string) => void;
   onPageDelete?: (id: string) => void;
-  onPageMoveToRoot?: (id: string) => void;
+  /** Move a page or file into the page `targetId` ('' is the space root): drag onto a page, or "Move to…". */
+  onPageMove?: (id: string, targetId: string) => void;
   /** Move a page to `index` among its siblings (drag, or Alt+Up / Alt+Down). */
   onPageReorder?: (id: string, index: number) => void;
   onToggleFavorite?: (id: string) => void;
@@ -58,7 +60,7 @@ export function Sidebar({
   onPageRename,
   onPageDuplicate,
   onPageDelete,
-  onPageMoveToRoot,
+  onPageMove,
   onPageReorder,
   onToggleFavorite,
   onSearch,
@@ -117,8 +119,17 @@ export function Sidebar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [appMenuOpen]);
 
+  const [movingPage, setMovingPage] = useState<{ id: string; title: string } | null>(null);
+
+  const canNest = useCallback(
+    (dragged: string, target: string) => canMoveInto(pages, dragged, target),
+    [pages],
+  );
+
   const canDrop = useCallback(
     (dragged: string, target: string) => {
+      const node = findNode(pages, dragged);
+      if (!node || node.foreign || node.noPage) return false;
       const siblings = siblingsOf(pages, dragged);
       return !!siblings && siblings.some((n) => n.id === target);
     },
@@ -370,6 +381,7 @@ export function Sidebar({
                 onContextMenu={handleContextMenu}
                 draggedId={draggedId}
                 canDrop={canDrop}
+                canNest={onPageMove ? canNest : undefined}
                 onDragStartPage={setDraggedId}
                 onDragEndPage={() => setDraggedId(null)}
                 onReorder={
@@ -377,6 +389,14 @@ export function Sidebar({
                     ? (id, targetId, position) => {
                         setDraggedId(null);
                         reorderBy(id, targetId, position);
+                      }
+                    : undefined
+                }
+                onMoveInto={
+                  onPageMove
+                    ? (id, targetId) => {
+                        setDraggedId(null);
+                        onPageMove(id, targetId);
                       }
                     : undefined
                 }
@@ -523,9 +543,23 @@ export function Sidebar({
           onRename={(id, title) => onPageRename?.(id, title)}
           onDuplicate={(id) => onPageDuplicate?.(id)}
           onDelete={(id) => onPageDelete?.(id)}
-          onMoveToRoot={(id) => onPageMoveToRoot?.(id)}
+          onMove={(id) =>
+            setMovingPage({ id, title: findNode(pages, id)?.title ?? contextMenu.pageTitle })
+          }
           onToggleFavorite={onToggleFavorite}
           onClose={closeContextMenu}
+        />
+      )}
+      {movingPage && (
+        <MovePageDialog
+          pages={pages}
+          pageId={movingPage.id}
+          pageTitle={movingPage.title}
+          onMove={(targetId) => {
+            onPageMove?.(movingPage.id, targetId);
+            setMovingPage(null);
+          }}
+          onCancel={() => setMovingPage(null)}
         />
       )}
     </aside>

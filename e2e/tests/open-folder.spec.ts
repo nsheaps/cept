@@ -237,6 +237,57 @@ test.describe('Open a local folder as a space', () => {
     });
   });
 
+  test('dragging a page onto another nests it, and “Move to…” picks any page', async ({ page }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+    await page.evaluate(async () => {
+      const root = await navigator.storage.getDirectory();
+      const folder = await root.getDirectoryHandle('field-notes');
+      for (const name of ['Alpha', 'Zebra']) {
+        const file = await folder.getFileHandle(`${name}.md`, { create: true });
+        const writable = await file.createWritable();
+        await writable.write(`# ${name}\n`);
+        await writable.close();
+      }
+    });
+
+    await page.getByTestId('landing-open-folder').click();
+    await expect(page.getByTestId('page-tree-button-Zebra.md')).toBeVisible({ timeout: 10000 });
+
+    // Drop Zebra on the middle of Welcome's row: it nests, and Welcome becomes a folder page.
+    await page
+      .getByTestId('page-tree-button-Zebra.md')
+      .dragTo(page.getByTestId('page-tree-button-Welcome.md'));
+    await expect(page.getByTestId('page-tree-button-Welcome/Zebra.md')).toBeVisible({
+      timeout: 10000,
+    });
+    let files = await folderFiles(page);
+    expect(files['Welcome/Zebra.md']).toBe('# Zebra\n');
+    expect(files['Welcome/index.md']).toBe(FILES['Welcome.md']);
+    expect(files['Welcome.md']).toBeUndefined();
+    await captureScreenshot(page, {
+      name: 'nest-pages',
+      category: 'features',
+      selector: '[data-testid="page-tree"]',
+    });
+
+    // The picker lists every page it can move into; pick the space root for Zebra.
+    await page.getByTestId('page-tree-button-Welcome/Zebra.md').click({ button: 'right' });
+    await page.getByTestId('ctx-move-to').click();
+    await expect(page.getByTestId('move-page-dialog')).toBeVisible();
+    await captureScreenshot(page, {
+      name: 'move-to-picker',
+      category: 'features',
+      selector: '[data-testid="move-page-dialog"] [role="dialog"]',
+    });
+    await page.getByTestId('move-target-root').click();
+    await expect(page.getByTestId('page-tree-button-Zebra.md')).toBeVisible({ timeout: 10000 });
+    files = await folderFiles(page);
+    expect(files['Zebra.md']).toBe('# Zebra\n');
+    expect(files['Welcome/Zebra.md']).toBeUndefined();
+  });
+
   test('deleting a file that is not a page asks first', async ({ page }) => {
     await mockPicker(page);
     await page.goto('/');

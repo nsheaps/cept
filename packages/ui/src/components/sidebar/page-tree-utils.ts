@@ -205,3 +205,47 @@ export function siblingsOf(nodes: PageTreeNode[], id: string): PageTreeNode[] | 
   }
   return null;
 }
+
+/** A place `id` could be moved to: a page (it nests under it) or, with `id` '', the space root. */
+export interface MoveTarget {
+  id: string;
+  title: string;
+  depth: number;
+}
+
+function findWithParent(
+  nodes: PageTreeNode[],
+  id: string,
+  parent: PageTreeNode | null = null,
+): { node: PageTreeNode; parent: PageTreeNode | null } | null {
+  for (const node of nodes) {
+    if (node.id === id) return { node, parent };
+    const found = findWithParent(node.children, id, node);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Whether `id` may be moved into `targetId` ('' is the space root): the target
+ * is a page (not a file), is not `id` or inside it, and is not where `id` already is.
+ */
+export function canMoveInto(nodes: PageTreeNode[], id: string, targetId: string): boolean {
+  const found = findWithParent(nodes, id);
+  if (!found) return false;
+  if ((found.parent?.id ?? '') === targetId) return false;
+  if (targetId === '') return true;
+  if (targetId === id) return false;
+  const target = findWithParent(nodes, targetId)?.node;
+  return !!target && !target.foreign && !findWithParent(found.node.children, targetId);
+}
+
+/** Every page `id` could be moved into, in tree order with its depth; the root is offered separately. */
+export function moveTargets(nodes: PageTreeNode[], id: string): MoveTarget[] {
+  const walk = (level: PageTreeNode[], depth: number): MoveTarget[] =>
+    level.flatMap((node) => [
+      ...(canMoveInto(nodes, id, node.id) ? [{ id: node.id, title: node.title, depth }] : []),
+      ...(node.foreign ? [] : walk(node.children, depth + 1)),
+    ]);
+  return walk(nodes, 0);
+}

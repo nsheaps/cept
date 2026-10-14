@@ -7,8 +7,12 @@ import {
   duplicateFolderPage,
   initFolderSpace,
   isFolderSpace,
+  moveFolderPageInto,
   moveFolderPageToRoot,
+  moveForeignFileInto,
   moveForeignFileToRoot,
+  previewMoveForeignInto,
+  previewMoveInto,
   previewMoveForeignToRootLinks,
   previewMoveToRootLinks,
   previewRenameForeignLinks,
@@ -181,6 +185,72 @@ describe('folder spaces', () => {
       moved: [{ from: 'guides/setup.md', to: 'setup.md' }],
     });
     expect(backend.hasFile('guides/setup.md')).toBe(false);
+  });
+
+  describe('moving into another page', () => {
+    beforeEach(() => {
+      backend.seedText('todo.md', 'Do [setup](guides/setup.md) and ![logo](guides/logo.png).');
+      backend.seedText('guides/setup.md', '[back](../todo.md)');
+      backend.seedText('guides/logo.png', 'png');
+    });
+
+    it('moves a page into a folder page, rewriting links', async () => {
+      expect(await moveFolderPageInto(backend, 'todo.md', 'guides')).toEqual({
+        pageId: 'guides/todo.md',
+        moved: [{ from: 'todo.md', to: 'guides/todo.md' }],
+        rewritten: ['guides/setup.md', 'guides/todo.md'],
+      });
+      expect(backend.hasFile('todo.md')).toBe(false);
+      expect(backend.readText('guides/setup.md')).toBe('[back](todo.md)');
+      expect(backend.readText('guides/todo.md')).toBe(
+        'Do [setup](setup.md) and ![logo](logo.png).',
+      );
+    });
+
+    it('nests a page under a file page, which becomes a folder page', async () => {
+      const change = await moveFolderPageInto(backend, 'todo.md', 'guides/setup.md');
+      expect(change.pageId).toBe('guides/setup/todo.md');
+      expect(change.moved).toEqual([
+        { from: 'guides/setup.md', to: 'guides/setup' },
+        { from: 'todo.md', to: 'guides/setup/todo.md' },
+      ]);
+      expect(backend.hasFile('guides/setup.md')).toBe(false);
+      expect(backend.readText('guides/setup/index.md')).toBe('[back](todo.md)');
+    });
+
+    it('moves a page to the root with an empty target', async () => {
+      expect((await moveFolderPageInto(backend, 'guides/setup.md', '')).pageId).toBe('setup.md');
+    });
+
+    it('previews the links a move would update without writing', async () => {
+      const preview = await previewMoveInto(backend, 'todo.md', 'guides/setup.md');
+      expect(preview.total).toBeGreaterThan(0);
+      expect(preview.pages.some((p) => p.file === 'todo.md' && p.moved)).toBe(true);
+      expect(backend.hasFile('todo.md')).toBe(true);
+      expect(backend.hasFile('guides/setup.md')).toBe(true);
+      expect((await previewMoveInto(backend, 'guides/setup.md', 'guides')).total).toBe(0);
+    });
+
+    it('refuses to move a page into itself or its own subtree', async () => {
+      await expect(moveFolderPageInto(backend, 'guides', 'guides')).rejects.toThrow();
+      await expect(moveFolderPageInto(backend, 'guides', 'guides/setup.md')).rejects.toThrow();
+      expect(backend.hasFile('guides/setup.md')).toBe(true);
+    });
+
+    it('moves a file that is not a page, rewriting links to it', async () => {
+      backend.seedText('archive/old.md', '# Old');
+      const change = await moveForeignFileInto(backend, 'guides/logo.png', 'archive');
+      expect(change.pageId).toBe('archive/logo.png');
+      expect(backend.readText('archive/logo.png')).toBe('png');
+      expect(backend.readText('todo.md')).toContain('![logo](archive/logo.png)');
+      expect((await previewMoveForeignInto(backend, 'archive/logo.png', 'guides')).total).toBe(1);
+    });
+
+    it('moves a file into a file page, which becomes a folder page', async () => {
+      const change = await moveForeignFileInto(backend, 'guides/logo.png', 'todo.md');
+      expect(change.pageId).toBe('todo/logo.png');
+      expect(backend.readText('todo/index.md')).toContain('![logo](logo.png)');
+    });
   });
 
   it('duplicates a page’s own content as a numbered copy beside it', async () => {
