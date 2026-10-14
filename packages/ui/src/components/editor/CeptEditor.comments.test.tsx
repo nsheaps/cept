@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/core';
 import { readPageComments } from '@cept/core';
 import type { CommentAuthor } from '@cept/core';
 import { CeptEditor, type CommentingContext } from './CeptEditor.js';
+import type { ListedComment } from './extensions/comment.js';
 
 const nate: CommentAuthor = { id: 'github:nsheaps', name: 'Nate' };
 
@@ -12,6 +13,7 @@ async function open(
   commenting: CommentingContext | undefined,
   onUpdate?: (markdown: string) => void,
   editable = true,
+  onCommentsChange?: (comments: ListedComment[]) => void,
 ) {
   const view = render(
     <CeptEditor
@@ -19,6 +21,7 @@ async function open(
       editable={editable}
       {...(commenting ? { commenting } : {})}
       {...(onUpdate ? { onUpdate } : {})}
+      {...(onCommentsChange ? { onCommentsChange } : {})}
     />,
   );
   const dom = await waitFor(() => {
@@ -140,5 +143,38 @@ describe('commenting in CeptEditor', () => {
     expect(second.dom.querySelector('[data-comment-id].cept-comment-highlight')?.textContent).toBe(
       'beta',
     );
+  });
+
+  it('reports the page’s comments when it opens and again when one is added', async () => {
+    const reports: ListedComment[][] = [];
+    const first = await open(
+      'Alpha beta.\n',
+      { author: nate, chooseName: vi.fn() },
+      undefined,
+      true,
+      (list) => reports.push(list),
+    );
+    expect(reports).toEqual([[]]);
+    select(first.editor, 'beta');
+    fireEvent.keyDown(first.dom, { key: 'm', code: 'KeyM', ctrlKey: true, altKey: true });
+    fireEvent.change(screen.getByTestId('comment-body'), { target: { value: 'Reported' } });
+    fireEvent.click(screen.getByTestId('comment-submit'));
+    expect(reports).toHaveLength(2);
+    expect(reports[1]!.map((c) => [c.comment.body, c.kind])).toEqual([['Reported', 'anchored']]);
+  });
+
+  it('does not report again while the comments are unchanged', async () => {
+    const reports: ListedComment[][] = [];
+    const { editor } = await open(
+      'Alpha beta.\n',
+      { author: nate, chooseName: vi.fn() },
+      undefined,
+      true,
+      (list) => reports.push(list),
+    );
+    act(() => {
+      editor.commands.insertContentAt(1, 'More ');
+    });
+    expect(reports).toHaveLength(1);
   });
 });

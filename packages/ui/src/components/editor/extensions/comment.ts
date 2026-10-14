@@ -103,6 +103,30 @@ export function commentRanges(doc: PmModelNode): CommentRange[] {
   return ranges;
 }
 
+/** How a comment sits in the page: on its quote, on the whole page, or with its quote gone. */
+export type CommentKind = 'anchored' | 'page' | 'detached';
+
+export interface ListedComment {
+  comment: PageComment;
+  kind: CommentKind;
+}
+
+/** Every comment of the page in document order, for the comments panel (REQ-NTN-008). */
+export function listPageComments(doc: PmModelNode): ListedComment[] {
+  const found = new Set(commentRanges(doc).map((range) => range.id));
+  const listed: ListedComment[] = [];
+  doc.forEach((child) => {
+    if (child.type.name !== 'comment') return;
+    const comment = commentOf(child.toJSON() as PmNode);
+    if (!comment) return;
+    listed.push({
+      comment,
+      kind: !comment.anchor ? 'page' : found.has(comment.id) ? 'anchored' : 'detached',
+    });
+  });
+  return listed;
+}
+
 function rangeOf(page: PageText, comment: PageComment): CommentRange | null {
   const match = resolveAnchor(page.text, comment.anchor!);
   if (!match) return null;

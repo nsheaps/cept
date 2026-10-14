@@ -24,6 +24,17 @@ describe('PageHeader', () => {
     expect(screen.getByText('Test Page')).toBeDefined();
   });
 
+  it('shows how many comments are new since the last visit, and nothing for none', () => {
+    const { rerender } = render(<PageHeader {...defaultProps} newComments={2} />);
+    expect(screen.getByTestId('page-new-comments').textContent).toBe('2 new comments');
+    rerender(<PageHeader {...defaultProps} newComments={1} />);
+    expect(screen.getByTestId('page-new-comments').textContent).toBe('1 new comment');
+    rerender(<PageHeader {...defaultProps} newComments={0} />);
+    expect(screen.queryByTestId('page-new-comments')).toBeNull();
+    rerender(<PageHeader {...defaultProps} />);
+    expect(screen.queryByTestId('page-new-comments')).toBeNull();
+  });
+
   it('clicking title enters edit mode', () => {
     render(<PageHeader {...defaultProps} />);
     fireEvent.click(screen.getByTestId('page-title'));

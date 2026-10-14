@@ -286,9 +286,9 @@ stateDiagram-v2
   - Users can reply, edit, delete, resolve and reopen from the panel.
   - The sidebar page tree shows a count of open threads per page.
   - Works at phone width (the panel becomes a bottom sheet) and by keyboard alone.
-- **Current state:** **not-started.**
-- **Docs state:** undocumented.
-- **Gap:** TipTap decoration plugin for highlights; panel component.
+- **Current state:** **partial.** Anchored text is highlighted (REQ-NTN-002). A panel under the page lists the comments in document order, grouped as on the text, about the whole page and detached; clicking the quote of a comment on the text scrolls to it ([CommentsPanel.tsx](../../../packages/ui/src/components/comments/CommentsPanel.tsx), `listPageComments` in [comment.ts](../../../packages/ui/src/components/editor/extensions/comment.ts)). The page header and the panel show a "new since your last visit" count: comments by others created after the page was last opened on this device ([comment-visits.ts](../../../packages/ui/src/components/comments/comment-visits.ts)). Tested with unit and component tests and an e2e that captures `docs/screenshots/features/comments-panel.png`.
+- **Docs state:** documented in the features guide.
+- **Gap:** The margin marker with a comment count; opening a thread from the highlight; open, resolved and detached filters; replying, editing, deleting, resolving and reopening (later, with threading); the open-thread count and badge in the sidebar tree; the bottom sheet at phone width; keyboard-only operation of the panel.
 
 ### REQ-NTN-009 — Comments in static and read-only views
 

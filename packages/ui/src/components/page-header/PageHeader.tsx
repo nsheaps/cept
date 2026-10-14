@@ -14,6 +14,8 @@ export interface PageHeaderProps {
   onIconChange?: (id: string, icon: string | undefined) => void;
   /** Set (or, with undefined, remove) the page cover image URL or path. */
   onCoverChange?: (id: string, cover: string | undefined) => void;
+  /** Comments by other people since this page was last opened here (REQ-NTN-008). */
+  newComments?: number;
 }
 
 const ICON_CHOICES = [
@@ -53,6 +55,7 @@ export function PageHeader({
   onRename,
   onIconChange,
   onCoverChange,
+  newComments = 0,
 }: PageHeaderProps) {
   const [picker, setPicker] = useState<'icon' | 'cover' | null>(null);
   const [iconValue, setIconValue] = useState('');
@@ -279,6 +282,11 @@ export function PageHeader({
           >
             {title || 'Untitled'}
           </h1>
+        )}
+        {newComments > 0 && (
+          <span className="cept-page-header-new-comments" data-testid="page-new-comments">
+            {newComments} new {newComments === 1 ? 'comment' : 'comments'}
+          </span>
         )}
       </div>
     </div>

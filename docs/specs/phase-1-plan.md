@@ -715,6 +715,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 
 **PR 63 — `feat(ui): comments panel and new-since-last-visit badge`**
 
+- Delivered (63a): `listPageComments` (in `extensions/comment.ts`) lists a page's comments in document order as on the text, about the whole page, or detached (the quote is gone). `CeptEditor` reports them through `onCommentsChange` when the page opens and whenever the list changes. `CommentsPanel` shows them under the page in those three groups; the quote of a comment on the text jumps to it; agent authors (`agent:` ids) are labelled. The last time each page was opened is kept on this device (`comments/comment-visits.ts`, in `localStorage` per space, not in the space); comments by other people created after it count as new, with a badge in the page header and in the panel. A page never opened here shows no badge. Tests: `listPageComments` and `CeptEditor.comments.test.tsx` (reports on open and on change, not on unrelated edits), `CommentsPanel.test.tsx`, `comment-visits.test.ts`, `PageHeader.test.tsx`, and the e2e `comments.spec.ts` with screenshot `comments-panel.png`. Not in 63a: the badge and open-thread count in the sidebar tree, filters, and replying, editing, deleting, resolving or reopening (63b and later).
 - Changes: comments panel; per-device last-visit timestamp; badge in sidebar and page header.
 - Red: component test for the badge.
 - Accept: tests green.

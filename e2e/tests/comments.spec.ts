@@ -54,6 +54,19 @@ test.describe('Comments', () => {
       selector: '.cept-editor-content > :first-child',
     });
 
+    // The panel under the page lists the comment, and its quote jumps to the text.
+    const panel = page.getByTestId('comments-panel');
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId('comments-count')).toHaveText('1 comment');
+    await expect(page.getByTestId('comments-anchored')).toContainText(
+      'Is this the wording we want?',
+    );
+    await captureScreenshot(page, {
+      name: 'comments-panel',
+      category: 'features',
+      selector: '[data-testid="comments-panel"]',
+    });
+
     // The name is remembered: the next comment does not ask again.
     await page.getByTestId('comment-on-page').click();
     await expect(page.getByTestId('comment-name')).toHaveCount(0);
