@@ -82,6 +82,19 @@ describe('CommentsPanel', () => {
     expect(screen.queryByTestId('comment-jump-c-3')).toBeNull();
   });
 
+  it('names the quote button so it reads as an action', () => {
+    render(
+      <CommentsPanel
+        comments={[item('c-1', 'anchored')]}
+        lastVisit={null}
+        meId={null}
+        onJump={vi.fn()}
+      />,
+    );
+    const quote = screen.getByTestId('comment-jump-c-1');
+    expect(quote.getAttribute('aria-label')).toBe(`Jump to “${quote.textContent}”`);
+  });
+
   it('marks comments by others since the last visit as new, and the count in the title', () => {
     render(
       <CommentsPanel

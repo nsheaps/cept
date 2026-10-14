@@ -1,5 +1,5 @@
 import type { ListedComment } from '../editor/extensions/comment.js';
-import { countNewComments } from './comment-visits.js';
+import { isNewComment } from './comment-visits.js';
 
 export interface CommentsPanelProps {
   /** The page's comments in document order. */
@@ -31,7 +31,7 @@ export function CommentsPanel({ comments, lastVisit, meId, onJump }: CommentsPan
   if (comments.length === 0) return null;
   const fresh = new Set(
     comments
-      .filter((entry) => countNewComments([entry], lastVisit, meId) > 0)
+      .filter((entry) => isNewComment(entry, lastVisit, meId))
       .map(({ comment }) => comment.id),
   );
   return (
@@ -78,6 +78,7 @@ export function CommentsPanel({ comments, lastVisit, meId, onJump }: CommentsPan
                         className="cept-comment-quote"
                         onClick={() => onJump(comment.id)}
                         data-testid={`comment-jump-${comment.id}`}
+                        aria-label={`Jump to “${comment.anchor.quote}”`}
                       >
                         {comment.anchor.quote}
                       </button>

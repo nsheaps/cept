@@ -1860,8 +1860,10 @@ export function App() {
   }, [userSpaceId, selectedPageId]);
   const newComments = countNewComments(pageComments, commentsSince, commenting.author?.id ?? null);
   const handleJumpToComment = useCallback((commentId: string) => {
+    // Ids are generated, but a hand-edited page could hold any string.
+    const id = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(commentId) : commentId;
     document
-      .querySelector(`[data-comment-id="${commentId}"].cept-comment-highlight`)
+      .querySelector(`[data-comment-id="${id}"].cept-comment-highlight`)
       ?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
   }, []);
 

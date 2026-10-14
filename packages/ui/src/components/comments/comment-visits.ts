@@ -32,17 +32,23 @@ export function markVisited(spaceId: string, pageId: string, at: string): void {
 }
 
 /**
- * Comments by other people created after `visit`. A page never opened here has
- * no badge, and `meId` keeps your own comments from counting.
+ * Whether a comment is new: written by someone else after `visit`. A page never
+ * opened here has nothing new, and `meId` keeps your own comments from counting.
  */
+export function isNewComment(
+  { comment }: ListedComment,
+  visit: string | null,
+  meId: string | null,
+): boolean {
+  if (visit === null) return false;
+  return comment.author.id !== meId && Date.parse(comment.created) > Date.parse(visit);
+}
+
+/** How many of `comments` are new since `visit`. */
 export function countNewComments(
   comments: readonly ListedComment[],
   visit: string | null,
   meId: string | null,
 ): number {
-  if (visit === null) return 0;
-  const since = Date.parse(visit);
-  return comments.filter(
-    ({ comment }) => comment.author.id !== meId && Date.parse(comment.created) > since,
-  ).length;
+  return comments.filter((entry) => isNewComment(entry, visit, meId)).length;
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PageComment } from '@cept/core';
 import type { ListedComment } from '../editor/extensions/comment.js';
-import { countNewComments, lastVisit, markVisited } from './comment-visits.js';
+import { countNewComments, isNewComment, lastVisit, markVisited } from './comment-visits.js';
 
 const me = { id: 'github:nsheaps', name: 'Nate' };
 const sam = { id: 'github:sam', name: 'Sam' };
@@ -10,6 +10,20 @@ function listed(id: string, created: string, author = sam): ListedComment {
   const comment: PageComment = { id, author, created, body: id };
   return { comment, kind: 'page' };
 }
+
+describe('isNewComment', () => {
+  const visit = '2026-10-02T00:00:00Z';
+
+  it('is new when someone else wrote it after the visit', () => {
+    expect(isNewComment(listed('c-1', '2026-10-03T10:00:00Z'), visit, me.id)).toBe(true);
+  });
+
+  it('is not new when it is yours, older than the visit, or the page was never opened', () => {
+    expect(isNewComment(listed('c-1', '2026-10-03T10:00:00Z', me), visit, me.id)).toBe(false);
+    expect(isNewComment(listed('c-1', '2026-10-01T10:00:00Z'), visit, me.id)).toBe(false);
+    expect(isNewComment(listed('c-1', '2026-10-03T10:00:00Z'), null, me.id)).toBe(false);
+  });
+});
 
 describe('countNewComments', () => {
   const comments = [
