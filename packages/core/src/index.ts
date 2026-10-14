@@ -214,6 +214,11 @@ export type {
 } from './markdown/index.js';
 export {
   ANCHOR_CONTEXT_LENGTH,
+  claimComments,
+  COMMENT_NODE,
+  commentNode,
+  commentOf,
+  releaseComments,
   COMMENT_FORMAT_VERSION,
   createAnchor,
   githubAuthor,

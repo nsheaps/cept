@@ -6,6 +6,7 @@
 export * from './front-matter.js';
 export * from './comments.js';
 export * from './comment-anchor.js';
+export * from './comment-nodes.js';
 export { parseMarkdownDocument, serializeMarkdownDocument } from './document.js';
 export type { MarkdownDocument } from './document.js';
 export { claimFencedBlocks, fencedBlockNode, releaseFencedBlocks } from './fenced-blocks.js';
