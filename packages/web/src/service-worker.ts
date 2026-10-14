@@ -39,7 +39,9 @@ const INJECTED_BUILD_ID = '__BUILD_ID__';
 
 /** Base-relative files to precache; empty when the worker runs unbuilt (tests, dev). */
 function readPrecache(raw: string): string[] {
-  return raw.startsWith('__') ? [] : raw.split(',');
+  // The build writes the list as URI-encoded JSON, which holds no quote character
+  // and survives whichever quote style the minifier gives the string.
+  return raw.startsWith('__') ? [] : (JSON.parse(decodeURIComponent(raw)) as string[]);
 }
 
 /** The worker is served from the deployment base, so its directory is the base. */

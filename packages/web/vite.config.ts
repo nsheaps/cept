@@ -62,7 +62,7 @@ function injectServiceWorkerManifest(): Plugin {
       }
       const sw = fs
         .readFileSync(swPath, 'utf-8')
-        .replace('__PRECACHE_MANIFEST__', files.join(','))
+        .replace('__PRECACHE_MANIFEST__', encodeURIComponent(JSON.stringify(files)))
         .replace('__BUILD_ID__', hash.digest('hex').slice(0, 12));
       fs.writeFileSync(swPath, sw);
     },

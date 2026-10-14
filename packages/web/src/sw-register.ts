@@ -53,14 +53,18 @@ export async function registerServiceWorker(
       const newWorker = registration.installing;
       if (!newWorker) return;
 
+      let sawInstalled = false;
       newWorker.addEventListener('statechange', () => {
-        // An install that fails (a precache file could not be fetched) ends here:
-        // the worker never activates and the previous one keeps serving.
-        if (newWorker.state === 'redundant') {
+        // An install that fails (a precache file could not be fetched) goes straight
+        // to `redundant`: the worker never activates and the previous one keeps
+        // serving. A worker that was installed and is then superseded or
+        // unregistered also ends `redundant`, and that is not a failure.
+        if (newWorker.state === 'redundant' && !sawInstalled) {
           callbacks?.onError?.(new Error('Service worker install failed'));
           return;
         }
         if (newWorker.state === 'installed') {
+          sawInstalled = true;
           if (sw.controller) {
             // New update available — activate it immediately
             callbacks?.onUpdate?.(registration);

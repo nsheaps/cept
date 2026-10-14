@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { consumeUpdateFlag, UPDATE_FLAG_KEY } from './sw-register.js';
+import { consumeUpdateFlag, registerServiceWorker, UPDATE_FLAG_KEY } from './sw-register.js';
 
 describe('consumeUpdateFlag', () => {
   beforeEach(() => {
@@ -51,5 +51,48 @@ describe('registerServiceWorker', () => {
       value: original,
       configurable: true,
     });
+  });
+});
+
+describe('registerServiceWorker install outcome', () => {
+  /** A registration whose installing worker the test drives through its states. */
+  function setup() {
+    const worker = Object.assign(new EventTarget(), { state: 'installing' });
+    const registration = Object.assign(new EventTarget(), {
+      installing: worker,
+      waiting: null,
+      active: null,
+    });
+    const container = Object.assign(new EventTarget(), {
+      controller: {},
+      register: async () => registration,
+    });
+    Object.defineProperty(navigator, 'serviceWorker', { value: container, configurable: true });
+    const move = (state: string) => {
+      worker.state = state;
+      worker.dispatchEvent(new Event('statechange'));
+    };
+    const start = async () => {
+      const errors: Error[] = [];
+      await registerServiceWorker('/sw.js', { onError: (error) => errors.push(error) });
+      registration.dispatchEvent(new Event('updatefound'));
+      return errors;
+    };
+    return { move, start };
+  }
+
+  it('reports an install that goes straight to redundant as a failure', async () => {
+    const { move, start } = setup();
+    const errors = await start();
+    move('redundant');
+    expect(errors).toHaveLength(1);
+  });
+
+  it('does not report a worker that was installed and then superseded', async () => {
+    const { move, start } = setup();
+    const errors = await start();
+    move('installed');
+    move('redundant');
+    expect(errors).toHaveLength(0);
   });
 });

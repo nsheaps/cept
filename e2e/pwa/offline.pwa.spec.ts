@@ -15,10 +15,17 @@ test.describe('offline start under the production base path', () => {
     // The build replaced both placeholders.
     expect(source).not.toContain('__PRECACHE_MANIFEST__');
     expect(source).not.toContain('__BUILD_ID__');
+    // The list is URI-encoded JSON inside a string literal, whatever its quote style.
+    const encoded = source.match(/['"`](%5B[^'"`]*)['"`]/)?.[1];
+    expect(encoded).toBeTruthy();
+    const list = JSON.parse(decodeURIComponent(encoded!)) as string[];
     // A shell, built assets and the manifest, all relative: a root-absolute
     // `/index.html` would 404 under /cept/app/ and fail the install.
-    expect(source).toMatch(/`\.\/,[^`]*assets\/[^`]*index\.html[^`]*`/);
-    expect(source).not.toMatch(/['"`]\/index\.html['"`]/);
+    expect(list[0]).toBe('./');
+    expect(list).toContain('index.html');
+    expect(list).toContain('manifest.json');
+    expect(list.some((entry) => entry.startsWith('assets/'))).toBe(true);
+    expect(list.every((entry) => !entry.startsWith('/'))).toBe(true);
   });
 
   test('loads once, then reloads and renders with the network off', async ({ page, context }) => {
