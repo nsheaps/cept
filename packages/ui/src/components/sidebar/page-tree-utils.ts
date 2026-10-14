@@ -242,10 +242,19 @@ export function canMoveInto(nodes: PageTreeNode[], id: string, targetId: string)
 
 /** Every page `id` could be moved into, in tree order with its depth; the root is offered separately. */
 export function moveTargets(nodes: PageTreeNode[], id: string): MoveTarget[] {
+  const source = findWithParent(nodes, id);
+  if (!source) return [];
+  const parentId = source.parent?.id;
   const walk = (level: PageTreeNode[], depth: number): MoveTarget[] =>
-    level.flatMap((node) => [
-      ...(canMoveInto(nodes, id, node.id) ? [{ id: node.id, title: node.title, depth }] : []),
-      ...(node.foreign ? [] : walk(node.children, depth + 1)),
-    ]);
+    level.flatMap((node) => {
+      // A page cannot move into itself or anything under it: stop at the source.
+      if (node.id === id) return [];
+      return [
+        ...(node.foreign || node.id === parentId
+          ? []
+          : [{ id: node.id, title: node.title, depth }]),
+        ...(node.foreign ? [] : walk(node.children, depth + 1)),
+      ];
+    });
   return walk(nodes, 0);
 }

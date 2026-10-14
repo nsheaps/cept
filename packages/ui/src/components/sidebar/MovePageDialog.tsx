@@ -56,12 +56,10 @@ export function MovePageDialog({
             autoFocus
             data-testid="move-page-filter"
           />
-          <div className="cept-move-list" role="listbox" aria-label="Destinations">
+          <div className="cept-move-list" role="group" aria-label="Destinations">
             {rootAllowed && (
               <button
                 className="cept-move-option"
-                role="option"
-                aria-selected={false}
                 onClick={() => onMove('')}
                 data-testid="move-target-root"
               >
@@ -72,8 +70,6 @@ export function MovePageDialog({
               <button
                 key={t.id}
                 className="cept-move-option"
-                role="option"
-                aria-selected={false}
                 style={{ paddingLeft: `${t.depth * 16 + 12}px` }}
                 onClick={() => onMove(t.id)}
                 data-testid={`move-target-${t.id}`}
