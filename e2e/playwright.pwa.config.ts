@@ -11,7 +11,12 @@ const PORT = 4173;
 export default defineConfig({
   testDir: './pwa',
   forbidOnly: !!process.env.CI,
-  reporter: process.env.CI ? [['list']] : [['html', { open: 'never' }]],
+  // Own report and output folders, so this run neither overwrites the dev-server
+  // run's traces nor leaves CI without artifacts when a PWA spec fails.
+  outputDir: './test-results-pwa',
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-pwa' }]]
+    : [['html', { open: 'never', outputFolder: 'playwright-report-pwa' }]],
   use: { baseURL: `http://localhost:${PORT}`, trace: 'on-first-retry' },
   projects: [
     {

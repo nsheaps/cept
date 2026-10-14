@@ -32,6 +32,8 @@ Thumbs.db
 coverage/
 test-results/
 playwright-report/
+test-results-pwa/
+playwright-report-pwa/
 blob-report/
 
 # Nx
