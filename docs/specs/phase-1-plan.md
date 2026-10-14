@@ -708,6 +708,8 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: add a comment, save, reload: anchor and author survive.
 - Accept: tests green.
 - Risk: anchors after heavy edits; anchor by marker position, not offsets.
+- Split into **62a** (core: anchors, ids, authors, no UI), **62b** (the editor node, highlights and the add-comment command) and **62c** (toolbar button, composer, page-level list, display-name prompt).
+- Delivered (62a): `markdown/comment-anchor.ts` in core. `createAnchor(text, from, to)` builds the quote with up to 32 characters of context either side. `resolveAnchor(text, anchor)` finds it again: an exact match (the context chooses between repeats), then a match that differs only in case and white space, then a close match within 20% edit distance for quotes of 8 to 200 characters; null means detached. `newCommentId`, `githubAuthor` (GitHub name, or the login when it has none) and `localAuthor` (`local:<random>`) give a new comment its id and author. Tests: `comment-anchor.test.ts`. Not in 62a: any editor or UI work (62b, 62c).
 
 **PR 63 — `feat(ui): comments panel and new-since-last-visit badge`**
 
