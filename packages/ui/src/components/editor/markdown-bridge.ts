@@ -1,6 +1,8 @@
 import {
+  claimComments,
   claimFencedBlocks,
   parseMarkdownDocument,
+  releaseComments,
   releaseFencedBlocks,
   serializeMarkdownDocument,
 } from '@cept/core';
@@ -13,7 +15,8 @@ import { mermaidPlugin } from './extensions/mermaid.js';
 /**
  * How the editor reads and writes a page (EDT-005): through the shared
  * Markdown pipeline in `@cept/core`, with the fenced-block plugins claiming
- * their fences on load and releasing them on save.
+ * their fences on load and releasing them on save, and `cept:comment` markers
+ * loaded as hidden `comment` nodes (REQ-NTN-005).
  */
 
 /** The fenced-block plugins the editor registers (EDT-013). */
@@ -28,7 +31,7 @@ export interface LoadedMarkdown {
 
 export function loadMarkdown(markdown: string): LoadedMarkdown {
   const parsed = parseMarkdownDocument(markdown);
-  const doc = claimFencedBlocks(parsed.doc, fencedBlockPlugins);
+  const doc = claimComments(claimFencedBlocks(parsed.doc, fencedBlockPlugins));
   if (doc.content?.length) return { parsed, doc };
   // A copy, as `claimFencedBlocks` may return `parsed.doc` itself.
   return { parsed, doc: { ...doc, content: [{ type: 'paragraph' }] } };
@@ -36,7 +39,7 @@ export function loadMarkdown(markdown: string): LoadedMarkdown {
 
 /** The editor's document as the pipeline sees it. */
 export function releaseDocument(doc: PmNode): PmNode {
-  return releaseFencedBlocks(doc, fencedBlockPlugins);
+  return releaseFencedBlocks(releaseComments(doc), fencedBlockPlugins);
 }
 
 /**

@@ -23,6 +23,7 @@ import { MathBlock, InlineMath } from './extensions/math.js';
 import { GraphBlock } from './extensions/graph-block.js';
 import { Mermaid } from './extensions/mermaid.js';
 import { MarkdownAttributes } from './extensions/markdown-attributes.js';
+import { Comment } from './extensions/comment.js';
 import { RawBlock, RawInline } from './extensions/raw-markdown.js';
 import { FootnoteReference, FootnoteDefinition } from './extensions/footnote.js';
 
@@ -82,6 +83,7 @@ export function documentExtensions(): AnyExtension[] {
     GraphBlock,
     RawBlock,
     RawInline,
+    Comment,
     FootnoteReference,
     FootnoteDefinition,
     MarkdownAttributes,

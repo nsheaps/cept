@@ -1265,3 +1265,20 @@
   color: var(--cept-danger, #c0392b);
   font-size: 0.8rem;
 }
+
+/* Comments (REQ-NTN-002): the quoted text of a comment; markers themselves are hidden. */
+.cept-editor .tiptap .cept-comment-highlight {
+  background: rgba(255, 212, 0, 0.28);
+  border-bottom: 2px solid rgba(255, 180, 0, 0.7);
+  border-radius: 2px;
+}
+.cept-editor .tiptap .cept-comment-highlight.cept-comment-approx {
+  border-bottom-style: dashed;
+}
+.dark .cept-editor .tiptap .cept-comment-highlight {
+  background: rgba(255, 212, 0, 0.22);
+  border-bottom-color: rgba(255, 200, 60, 0.7);
+}
+.cept-editor .tiptap .cept-comment-marker {
+  display: none;
+}
