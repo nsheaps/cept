@@ -596,11 +596,11 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 - `service-worker.test.ts` asserts that precache URLs are relative to the scope.
 - The same Playwright project, or a sibling one, runs the core flows under mobile device emulation (a phone-sized iPhone and a Pixel profile) and asserts the mobile usability criteria of [REQ-APP-020](07-native-apps.md#req-app-020--mobile-specific-ui-polish) (no horizontal scroll, safe-area padding, 44px touch targets, caret above the on-screen keyboard), capturing screenshots through the screenshot pipeline.
 
-**Current state:** partial. [service-worker.test.ts](../../../packages/web/src/service-worker.test.ts) checks constants only, and it asserts the buggy root-absolute `PRECACHE_URLS`. [e2e/playwright.config.ts](../../../e2e/playwright.config.ts) starts the Vite dev server at `/`.
+**Current state:** partial. The built-bundle project exists ([e2e/playwright.pwa.config.ts](../../../e2e/playwright.pwa.config.ts), specs in `e2e/pwa/`): manifest and icons, iOS metadata, the injected precache list, an offline reload and the `?no-sw` kill switch, all at `/cept/app/`. `mise run test:pwa` runs in the required `E2E Tests` CI job whenever the change affects `@cept/e2e` (web and ui changes) and on `main`. [service-worker.test.ts](../../../packages/web/src/service-worker.test.ts) and `sw-precache.test.ts` cover the list and cache ownership.
 
 **Docs state:** undocumented. SPECIFICATION lists `pwa-offline` and "Offline → Online" test scenarios that do not exist.
 
-**Gap:** Add the built-bundle e2e project (see [10-engineering-and-ci.md](10-engineering-and-ci.md)).
+**Gap:** Specs for the update toast and deep links, a run against PR previews (REQ-WEB-019), and the mobile-viewport project (PR 71; see [10-engineering-and-ci.md](10-engineering-and-ci.md)).
 
 ### REQ-WEB-023 — Browser-only local folder spaces
 

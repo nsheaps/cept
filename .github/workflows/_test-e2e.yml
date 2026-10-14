@@ -64,6 +64,12 @@ jobs:
         if: steps.e2e.outputs.affected == 'true'
         run: mise run test:e2e
 
+      - name: Run PWA tests on the built bundle
+        # Builds the web app at /cept/app/ and checks manifest, icons, the service
+        # worker and an offline reload against `vite preview` (REQ-WEB-022).
+        if: steps.e2e.outputs.affected == 'true'
+        run: mise run test:pwa
+
       - name: Upload test results
         uses: actions/upload-artifact@v7
         if: always() && steps.e2e.outputs.affected == 'true'
