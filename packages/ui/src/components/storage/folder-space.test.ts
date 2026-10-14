@@ -74,6 +74,20 @@ describe('folder spaces', () => {
     ]);
   });
 
+  it('sorts the sidebar tree by the order front matter, pages without one after', async () => {
+    backend.seedText('todo.md', '---\norder: 1\n---\n# Todo');
+    backend.seedText('guides/setup.md', '---\norder: 5\n---\n# Setup');
+    backend.seedText('guides/index.md', '---\norder: 0\n---\n# Guides');
+    const pages = toPageTree(await readFolderTree(backend));
+    // README.md is the root page and stays first; the rest follow their order.
+    expect(pages.map((p) => [p.id, p.order])).toEqual([
+      ['README.md', undefined],
+      ['guides', 0],
+      ['todo.md', 1],
+    ]);
+    expect(pages[1]?.children[0]).toMatchObject({ id: 'guides/setup.md', order: 5 });
+  });
+
   it('lists files that are not pages after the pages of their folder, and not in hidden folders', async () => {
     backend.seedText('chart.png', 'png');
     const pages = toPageTree(await readFolderTree(backend), [], new Set(['guides/logo.png']));

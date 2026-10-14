@@ -87,7 +87,7 @@ export async function initFolderSpace(backend: StorageBackend, name: string): Pr
 }
 
 export function readFolderTree(backend: StorageBackend): Promise<SpaceTree> {
-  return readSpaceTree(backend, '', { foreignFiles: true });
+  return readSpaceTree(backend, '', { foreignFiles: true, order: true });
 }
 
 function flatten(nodes: readonly PageTreeNode[], into = new Map<string, PageTreeNode>()) {
@@ -120,6 +120,7 @@ export function toPageTree(
     return {
       id,
       title,
+      ...(node.order !== undefined ? { order: node.order } : {}),
       ...(old?.icon !== undefined ? { icon: old.icon } : {}),
       ...(old?.cover !== undefined ? { cover: old.cover } : {}),
       ...(old?.isExpanded !== undefined ? { isExpanded: old.isExpanded } : {}),

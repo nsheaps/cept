@@ -18,7 +18,9 @@
  *   `ignore:` list in a `.cept.yaml` are left out (see `config.ts`). A folder
  *   holding its own `space.cept.yaml` is a separate space: it is left out and
  *   reported as a warning (nested spaces are deferred, REQ-WS-005).
- * - **Order.** Children are sorted by name, numbers compared numerically.
+ * - **Order.** Children are sorted by their `order` front matter when the tree is
+ *   read with `order` (pages without one follow), then by name, numbers compared
+ *   numerically (see `order.ts`).
  *
  * Reading only calls `listDirectory` and `readFile`, so opening a folder never
  * changes it (REQ-WS-019). Writes create or change only the page files named,
@@ -38,6 +40,8 @@ import {
   pickSpaceMarker,
   type ConfigLayer,
 } from './config.js';
+import { readFrontMatter, splitFrontMatter } from '../markdown/front-matter.js';
+import { compareSiblings } from './order.js';
 import { joinPath, normalizeFolder, parentFolder, splitPath, toBackendPath } from './path.js';
 
 /** The read-only part of a backend the reader uses. */
@@ -52,6 +56,8 @@ export interface PageNode {
   /** The file holding the page content, relative to the space root; `null` for a folder shown as a listing. */
   file: string | null;
   children: PageNode[];
+  /** The page's `order` front matter, when the tree was read with `order` and the page has one. */
+  order?: number;
   /** The visible files in this folder that are not pages; set only when read with `foreignFiles`. */
   files?: ForeignFile[];
 }
@@ -71,6 +77,11 @@ export interface ReadTreeOptions {
    * never listed. Folders holding only such files are still left out of the tree.
    */
   foreignFiles?: boolean;
+  /**
+   * Read each page's `order` front matter and sort siblings by it (REQ-NTN-012).
+   * This reads every page file, so it is off by default; without it siblings sort by name.
+   */
+  order?: boolean;
 }
 
 export interface SpaceTree {
@@ -118,10 +129,6 @@ function isConfigFile(name: string): boolean {
 }
 
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
-
-function byName(a: PageNode, b: PageNode): number {
-  return collator.compare(a.name, b.name) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-}
 
 /** UTF-8 decoding that keeps a byte-order mark, so text round-trips byte for byte. */
 const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
@@ -171,12 +178,30 @@ export async function readSpaceTree(
     );
     const folderPage = pickFolderPage(visibleFiles);
 
-    const children: PageNode[] = [];
-    for (const name of visibleFiles) {
-      if (name === folderPage) continue;
+    // A page's `order`, from its own front matter (only when asked for).
+    const orderOf = async (file: string): Promise<{ order?: number }> => {
+      if (!options.order) return {};
+      const bytes = await backend.readFile(toBackendPath(joinPath(spaceRoot, file)));
+      if (!bytes) return {};
+      const { yaml } = splitFrontMatter(decoder.decode(bytes));
+      if (yaml === null) return {};
+      const { order } = readFrontMatter(yaml);
+      return order !== undefined ? { order } : {};
+    };
+
+    const childFiles = visibleFiles.filter((name) => name !== folderPage);
+    const fileOrders = await Promise.all(childFiles.map((name) => orderOf(joinPath(folder, name))));
+    const children: PageNode[] = childFiles.map((name, i) => {
       const id = joinPath(folder, name);
-      children.push({ id, kind: 'file', name: stripExtension(name), file: id, children: [] });
-    }
+      return {
+        id,
+        kind: 'file',
+        name: stripExtension(name),
+        file: id,
+        children: [],
+        ...fileOrders[i],
+      };
+    });
     for (const entry of entries) {
       if (!entry.isDirectory) continue;
       const sub = joinPath(folder, entry.name);
@@ -184,7 +209,7 @@ export async function readSpaceTree(
       const node = await walk(sub, ownLayers);
       if (node) children.push(node);
     }
-    children.sort(byName);
+    children.sort(compareSiblings);
 
     const files: ForeignFile[] = options.foreignFiles
       ? fileNames
@@ -203,6 +228,7 @@ export async function readSpaceTree(
       name: splitPath(folder).at(-1) ?? '',
       file: folderPage ? joinPath(folder, folderPage) : null,
       children,
+      ...(folderPage ? await orderOf(joinPath(folder, folderPage)) : {}),
       ...(options.foreignFiles ? { files } : {}),
     };
   }

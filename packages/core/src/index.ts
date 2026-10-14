@@ -423,6 +423,10 @@ export type {
   IgnoreMatcher,
 } from './space/index.js';
 
+// Sibling order (REQ-NTN-012)
+export { compareSiblings, planReorder, ORDER_STEP } from './space/index.js';
+export type { Orderable, OrderPatch } from './space/index.js';
+
 // Space folder tree (pages as files, path-based ids)
 export {
   readSpaceTree,

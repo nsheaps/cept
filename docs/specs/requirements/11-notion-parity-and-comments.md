@@ -345,9 +345,9 @@ stateDiagram-v2
   - Dragging a page onto another nests it; dragging between pages reorders.
   - "Move to…" offers a searchable page picker. Keyboard users can move pages without dragging.
   - With a folder layout (D-3), moving a page moves its file and child folder (comments travel inside the page).
-- **Current state:** **partial.** The tree renders and the context menu offers "Duplicate" and "Move…" (which calls `onMoveToRoot`, so it can only move to the top level) ([PageContextMenu.tsx](../../../packages/ui/src/components/sidebar/PageContextMenu.tsx)). No drag and drop.
+- **Current state:** **partial.** The tree renders and the context menu offers "Duplicate" and "Move…" (which calls `onMoveToRoot`, so it can only move to the top level) ([PageContextMenu.tsx](../../../packages/ui/src/components/sidebar/PageContextMenu.tsx)). No drag and drop. In a folder space the tree already sorts siblings by their `order` front matter (pages without one after, then by title), and core has `planReorder` for the values a move writes ([order.ts](../../../packages/core/src/space/order.ts)).
 - **Docs state:** documented-as-desired (SPECIFICATION §5 page nesting).
-- **Gap:** Move-to picker, drag and drop, file moves.
+- **Gap:** Move-to picker, drag and drop, writing `order` on a move, file moves into other folders.
 
 ### REQ-NTN-013 — Page icon and cover can be set in the UI
 
