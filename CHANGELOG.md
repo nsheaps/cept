@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.55.0](https://github.com/nsheaps/cept/compare/v0.54.0...v0.55.0) (2026-10-14)
+
+### Features
+
+* **ui:** reorder pages by drag and keyboard ([#447](https://github.com/nsheaps/cept/issues/447)) ([9799222](https://github.com/nsheaps/cept/commit/9799222dc508cafc75caf17a01cf55b4019a7cbb))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1e439c4](https://github.com/nsheaps/cept/commit/1e439c4abc28eb2da8ae3bac9109fa06050df366))
+
 ## [0.54.0](https://github.com/nsheaps/cept/compare/v0.53.1...v0.54.0) (2026-10-14)
 
 ### Features
