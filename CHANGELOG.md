@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.56.0](https://github.com/nsheaps/cept/compare/v0.55.0...v0.56.0) (2026-10-14)
+
+### Features
+
+* **ui:** move pages into folders by drag and Move to… ([#448](https://github.com/nsheaps/cept/issues/448)) ([3d03b14](https://github.com/nsheaps/cept/commit/3d03b14fd1a2b6a8b7e555bf9a6050f819e79392)), references [#447](https://github.com/nsheaps/cept/issues/447)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([058760a](https://github.com/nsheaps/cept/commit/058760ac8fe5fb8b829bf8914aa3035816cf2265))
+
 ## [0.55.0](https://github.com/nsheaps/cept/compare/v0.54.0...v0.55.0) (2026-10-14)
 
 ### Features
