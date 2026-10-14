@@ -57,7 +57,7 @@ Cept aims to support Notion's features as far as its file-based design allows. T
 | [REQ-NTN-008](#req-ntn-008--comments-ui-in-the-editor)                   | Comments UI in the editor                   | MUST (next) | not-started | undocumented           | n/a           |
 | [REQ-NTN-009](#req-ntn-009--comments-in-static-and-read-only-views)      | Comments in static and read-only views      | SHOULD      | not-started | undocumented           | n/a           |
 | [REQ-NTN-010](#req-ntn-010--comments-sync-and-merge-cleanly)             | Comments sync and merge cleanly             | MUST (next) | not-started | undocumented           | n/a           |
-| [REQ-NTN-011](#req-ntn-011--comment-tests)                               | Comment tests                               | MUST (next) | not-started | undocumented           | n/a           |
+| [REQ-NTN-011](#req-ntn-011--comment-tests)                               | Comment tests                               | MUST (next) | partial     | undocumented           | n/a           |
 | [REQ-NTN-012](#req-ntn-012--move-and-reorder-pages-in-the-sidebar)       | Move and reorder pages in the sidebar       | SHOULD      | partial     | documented-as-desired  | n/a           |
 | [REQ-NTN-013](#req-ntn-013--page-icon-and-cover-can-be-set-in-the-ui)    | Page icon and cover can be set in the UI    | SHOULD      | partial     | documented-as-desired  | n/a           |
 | [REQ-NTN-014](#req-ntn-014--templates-usable-from-the-ui)                | Templates usable from the UI                | SHOULD      | stubbed     | documented-as-desired  | stale         |
@@ -330,9 +330,9 @@ stateDiagram-v2
   - Anchor tests cover: edits before and after the quote, a changed quote (close match), a deleted quote (detached), repeated text (prefix and suffix pick the right one).
   - Loader tests use hand-edited fixtures, including a malformed one.
   - The e2e test captures a screenshot of the comments panel for the docs.
-- **Current state:** **not-started.**
+- **Current state:** **partial.** Unit tests cover the model, anchor resolver, loader and merge. [comments.feature](../../../features/comments/comments.feature) is bound by [comments.steps.tsx](../../../features/step-definitions/comments.steps.tsx) and runs the real editor and comments panel: comment on selected text, on the whole page, reply, resolve and reopen, reload, and a comment whose text was removed becoming detached.
 - **Docs state:** undocumented.
-- **Gap:** All of it.
+- **Gap:** The browser e2e that adds, replies to, resolves and reloads a thread, with the panel screenshot for the docs.
 
 ### REQ-NTN-012 — Move and reorder pages in the sidebar
 

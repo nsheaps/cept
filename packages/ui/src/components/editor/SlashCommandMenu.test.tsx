@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { createRef } from 'react';
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import type { SlashCommandItem } from './extensions/slash-command.js';
@@ -101,5 +101,38 @@ describe('SlashCommandMenu', () => {
     render(<SlashCommandMenu items={mockItems} command={command} />);
 
     expect(screen.getByTestId('slash-command-menu')).toBeDefined();
+  });
+
+  describe('when a category is not contiguous in the items', () => {
+    // Text, Lists, Text: the menu shows both Text items first, so rows 1 and 2 are
+    // Heading 1 and Quote, and the Bullet List row is the third.
+    const split: SlashCommandItem[] = [
+      { ...mockItems[0]!, title: 'Heading 1' },
+      { ...mockItems[1]!, title: 'Bullet List' },
+      { ...mockItems[0]!, title: 'Quote', command: vi.fn() },
+    ];
+
+    it('inserts the clicked row, not the item at that position in the list', () => {
+      const command = vi.fn();
+      render(<SlashCommandMenu items={split} command={command} />);
+
+      fireEvent.click(screen.getByText('Quote'));
+      expect(command).toHaveBeenCalledWith(split[2]);
+    });
+
+    it('inserts the highlighted row on Enter after moving down', () => {
+      const command = vi.fn();
+      const ref = createRef<SlashCommandMenuRef>();
+      const { container } = render(<SlashCommandMenu ref={ref} items={split} command={command} />);
+
+      act(() => {
+        ref.current?.onKeyDown({ event: new KeyboardEvent('keydown', { key: 'ArrowDown' }) });
+      });
+      expect(container.querySelector('.is-selected')?.textContent).toContain('Quote');
+      act(() => {
+        ref.current?.onKeyDown({ event: new KeyboardEvent('keydown', { key: 'Enter' }) });
+      });
+      expect(command).toHaveBeenCalledWith(split[2]);
+    });
   });
 });
