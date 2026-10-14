@@ -34,4 +34,30 @@ describe('isAffected', () => {
     };
     expect(() => isAffected('@cept/e2e', { NX_BASE: 'abc' }, nx)).toThrow('boom');
   });
+
+  it('counts a changed also-path as affecting the project', () => {
+    const files = (): string[] => ['.github/workflows/_test-e2e.yml', 'docs/x.md'];
+    const nx = (): string => JSON.stringify([]);
+    expect(
+      isAffected('@cept/e2e', { NX_BASE: 'abc' }, nx, ['.github/workflows/_test-e2e.yml'], files),
+    ).toBe(true);
+  });
+
+  it('ignores also-paths that did not change', () => {
+    const files = (): string[] => ['docs/x.md'];
+    const nx = (): string => JSON.stringify([]);
+    expect(
+      isAffected('@cept/e2e', { NX_BASE: 'abc' }, nx, ['.github/workflows/_test-e2e.yml'], files),
+    ).toBe(false);
+  });
+
+  it('asks git for the changed files between NX_BASE and NX_HEAD', () => {
+    const seen: string[][] = [];
+    const files = (base: string, head: string): string[] => {
+      seen.push([base, head]);
+      return [];
+    };
+    isAffected('@cept/e2e', { NX_BASE: 'abc', NX_HEAD: 'def' }, () => '[]', ['w.yml'], files);
+    expect(seen).toEqual([['abc', 'def']]);
+  });
 });

@@ -30,7 +30,8 @@ jobs:
       - name: Check whether e2e is affected
         id: e2e
         # On pull requests that cannot reach @cept/e2e, skip the browser setup and run.
-        run: mise run -q ci:affected -- @cept/e2e >> "$GITHUB_OUTPUT"
+        # A change to this workflow counts too, so the steps below run on the PR that edits them.
+        run: mise run -q ci:affected -- @cept/e2e .github/workflows/_test-e2e.yml >> "$GITHUB_OUTPUT"
 
       - name: Resolve Playwright version
         id: pw
@@ -64,10 +65,19 @@ jobs:
         if: steps.e2e.outputs.affected == 'true'
         run: mise run test:e2e
 
+      - name: Run PWA tests on the built bundle
+        # Builds the web app at /cept/app/ and checks manifest, icons, the service
+        # worker and an offline reload against `vite preview` (REQ-WEB-022).
+        if: steps.e2e.outputs.affected == 'true'
+        run: mise run test:pwa
+
       - name: Upload test results
         uses: actions/upload-artifact@v7
         if: always() && steps.e2e.outputs.affected == 'true'
         with:
           name: playwright-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            e2e/playwright-report-pwa/
+            e2e/test-results-pwa/
           retention-days: 14
