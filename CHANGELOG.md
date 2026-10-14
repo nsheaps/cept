@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.60.0](https://github.com/nsheaps/cept/compare/v0.59.0...v0.60.0) (2026-10-14)
+
+### Features
+
+* **editor:** comment from the toolbar, shortcut and composer ([#452](https://github.com/nsheaps/cept/issues/452)) ([567039c](https://github.com/nsheaps/cept/commit/567039c9b11fc9e4c3d58e22e9065a5792c46cc6))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([94568ee](https://github.com/nsheaps/cept/commit/94568ee15e1e2e956ffdd82320e4e2ea51c8d2a9))
+
 ## [0.59.0](https://github.com/nsheaps/cept/compare/v0.58.0...v0.59.0) (2026-10-14)
 
 ### Features
