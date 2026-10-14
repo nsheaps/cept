@@ -19,6 +19,19 @@ describe('PageTreeItem', () => {
     expect(screen.getByText('Leaf Page')).toBeDefined();
   });
 
+  it('shows the open comment count, singular and plural, and nothing without comments', () => {
+    const { rerender } = render(<PageTreeItem node={{ ...leaf, comments: 1 }} depth={0} />);
+    const badge = screen.getByTestId('page-tree-comments-leaf');
+    expect(badge.textContent).toContain('1');
+    expect(badge.getAttribute('aria-label')).toBe('1 open comment');
+    rerender(<PageTreeItem node={{ ...leaf, comments: 3 }} depth={0} />);
+    expect(screen.getByTestId('page-tree-comments-leaf').getAttribute('aria-label')).toBe(
+      '3 open comments',
+    );
+    rerender(<PageTreeItem node={leaf} depth={0} />);
+    expect(screen.queryByTestId('page-tree-comments-leaf')).toBeNull();
+  });
+
   it('renders "Untitled" when title is empty', () => {
     const untitled: PageTreeNode = { id: 'u', title: '', children: [] };
     render(<PageTreeItem node={untitled} depth={0} />);

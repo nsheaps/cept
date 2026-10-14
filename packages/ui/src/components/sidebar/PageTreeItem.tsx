@@ -13,6 +13,8 @@ export interface PageTreeNode {
   foreign?: boolean;
   /** A folder with no page of its own: it has no file to hold an `order`. */
   noPage?: boolean;
+  /** Open comments on the page, when it has any (REQ-NTN-008). */
+  comments?: number;
 }
 
 export interface PageTreeItemProps {
@@ -172,6 +174,16 @@ export function PageTreeItem({
           {node.icon ?? (node.foreign ? '\u{1F4CE}' : '\u{1F4C4}')}
         </span>
         <span className="cept-sidebar-title">{node.title || 'Untitled'}</span>
+        {node.comments !== undefined && node.comments > 0 && (
+          <span
+            className="cept-sidebar-comments"
+            title={`${node.comments} open ${node.comments === 1 ? 'comment' : 'comments'}`}
+            aria-label={`${node.comments} open ${node.comments === 1 ? 'comment' : 'comments'}`}
+            data-testid={`page-tree-comments-${node.id}`}
+          >
+            {'\u{1F4AC}'} {node.comments}
+          </span>
+        )}
         {showActions && (
           <>
             <span

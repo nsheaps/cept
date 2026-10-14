@@ -339,6 +339,18 @@
   color: #6b7280;
 }
 
+/* Open comments on a page (REQ-NTN-008) */
+.cept-sidebar-comments {
+  color: #6b7280;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.dark .cept-sidebar-comments {
+  color: #a1a1aa;
+}
+
 .cept-sidebar-empty {
   padding: 0.75rem 0.5rem;
   font-size: 0.8125rem;

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { formatCommentMarker } from '@cept/core';
+import type { PageComment } from '@cept/core';
 import { MemoryBackend } from './test-helpers.js';
 import {
   addFolderPage,
@@ -20,6 +22,7 @@ import {
   renameForeignFile,
   pageNameFromTitle,
   readFolderBacklinks,
+  readFolderCommentCounts,
   readFolderPage,
   readFolderTree,
   renameFolderPage,
@@ -464,5 +467,48 @@ describe('backlinks', () => {
     backend.seedText('todo.md', '# Todo\n\n![logo](guides/logo.png) [gone](missing.md)\n');
     const backlinks = await readFolderBacklinks(backend);
     expect([...backlinks.keys()]).toEqual([]);
+  });
+});
+
+describe('readFolderCommentCounts', () => {
+  const sam = { id: 'github:sam', name: 'Sam' };
+  const marker = (id: string, extra: Partial<PageComment> = {}) =>
+    formatCommentMarker({ id, author: sam, created: '2026-10-01T10:00:00Z', body: id, ...extra });
+
+  it('counts the open comments of each page, by the id the sidebar uses', async () => {
+    const backend = fixture();
+    backend.seedText('README.md', `# Notes\n\n${marker('c-aaaaaaaaaa')}\n`);
+    backend.seedText(
+      'guides/setup.md',
+      `# Setup\n\n${marker('c-bbbbbbbbbb')}\n\n${marker('c-cccccccccc')}\n`,
+    );
+    const counts = await readFolderCommentCounts(backend);
+    expect(counts.get('README.md')).toBe(1);
+    expect(counts.get('guides/setup.md')).toBe(2);
+    expect(counts.has('todo.md')).toBe(false);
+  });
+
+  it('leaves out a resolved thread and the replies to it', async () => {
+    const backend = fixture();
+    backend.seedText(
+      'todo.md',
+      [
+        '# Todo',
+        marker('c-aaaaaaaaaa', { status: 'resolved' }),
+        marker('c-bbbbbbbbbb', { replyTo: 'c-aaaaaaaaaa' }),
+        marker('c-cccccccccc', { status: 'open' }),
+        '',
+      ].join('\n\n'),
+    );
+    expect((await readFolderCommentCounts(backend)).get('todo.md')).toBe(1);
+  });
+
+  it('does not count marker lookalikes in code, and skips unreadable markers', async () => {
+    const backend = fixture();
+    backend.seedText(
+      'todo.md',
+      `# Todo\n\n\`\`\`\n${marker('c-aaaaaaaaaa')}\n\`\`\`\n\n<!-- cept:comment {not json} -->\n`,
+    );
+    expect((await readFolderCommentCounts(backend)).has('todo.md')).toBe(false);
   });
 });

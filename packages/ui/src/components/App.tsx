@@ -4,6 +4,7 @@ import type { CommentingContext } from './editor/CeptEditor.js';
 import type { ListedComment } from './editor/extensions/comment.js';
 import { CommentsPanel } from './comments/CommentsPanel.js';
 import { countNewComments, lastVisit, markVisited } from './comments/comment-visits.js';
+import { withCommentCounts } from './sidebar/comment-counts.js';
 import type { PageLinksContext } from './editor/page-links.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { SidebarPageRef } from './sidebar/Sidebar.js';
@@ -390,6 +391,8 @@ export function App() {
   // Bumped when a page is written, so the backlinks are read again.
   const [linksVersion, setLinksVersion] = useState(0);
   const [backlinkIndex, setBacklinkIndex] = useState<Map<string, Backlink[]>>(() => new Map());
+  /** Open comments per page, shown in the sidebar (REQ-NTN-008). */
+  const [commentCounts, setCommentCounts] = useState<Map<string, number>>(() => new Map());
   /** Edits and commits of writable GitHub spaces not on GitHub yet, read while settings are open. */
   const [unsyncedChanges, setUnsyncedChanges] = useState<Record<string, number>>({});
   const [startRepoSpaceOpen, setStartRepoSpaceOpen] = useState(false);
@@ -1718,6 +1721,31 @@ export function App() {
       clearTimeout(timer);
     };
   }, [activeSpace, spaces, userSpaceId, pages, filesVersion, linksVersion]);
+
+  // The same for the open-comment count each page shows in the sidebar.
+  useEffect(() => {
+    if (activeSpace !== 'user' || !spaces.isFolder(userSpaceId)) {
+      setCommentCounts((prev) => (prev.size === 0 ? prev : new Map()));
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      spaces
+        .readCommentCounts(userSpaceId)
+        .then((counts) => {
+          if (!cancelled) setCommentCounts(counts);
+        })
+        .catch(() => undefined);
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeSpace, spaces, userSpaceId, pages, filesVersion, linksVersion]);
+  const sidebarPages = useMemo(
+    () => withCommentCounts(pages, commentCounts),
+    [pages, commentCounts],
+  );
 
   // Keep search index in sync with page content
   const indexedRef = useRef(new Set<string>());
@@ -3156,7 +3184,7 @@ export function App() {
         )}
         {sidebarOpen && activeSpace === 'user' && (
           <Sidebar
-            pages={pages}
+            pages={sidebarPages}
             favorites={favorites}
             recentPages={recentPages}
             trash={trash}

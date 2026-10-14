@@ -92,6 +92,10 @@ Toggles are collapsible content sections. Type `> ` at the start of a line (like
 - **Your name** — Comments are written as the GitHub account the space is edited with. Without one, Cept asks for a name the first time and remembers it on this device
 - **Comments panel** — Under the page, a panel lists its comments: those on text (click the quoted text to jump to it), those about the whole page, and those whose text has been removed from the page
 - **New since your last visit** — The page header and the panel show how many comments other people added since you last opened the page on this device
+- **Open comments in the sidebar** — A page with open comments shows a speech bubble and their number next to its name in the sidebar (spaces kept as a folder of files). A resolved thread, and the replies to it, are not counted
+
+![A page in the sidebar with two open comments](../../screenshots/features/sidebar-comment-count.png)
+
 - **Saved with the page** — A comment is a `<!-- cept:comment ... -->` line in the page's Markdown, so it travels with the file and stays attached to its text as the page is edited
 
 ## Sidebar

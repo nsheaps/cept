@@ -193,6 +193,38 @@ test.describe('Open a local folder as a space', () => {
     await expect(page.locator('.cept-editor')).toContainText('Back to the', { timeout: 10000 });
   });
 
+  test('shows the number of open comments next to a page in the sidebar', async ({ page }) => {
+    await mockPicker(page);
+    await page.goto('/');
+    await seedFolder(page);
+    const marker = (id: string, extra = '') =>
+      `<!-- cept:comment {"v":1,"id":"${id}","author":{"id":"github:sam","name":"Sam"},"created":"2026-10-01T10:00:00Z","body":"Check this"${extra}} -->`;
+    await page.evaluate(
+      async (text) => {
+        const root = await navigator.storage.getDirectory();
+        const folder = await root.getDirectoryHandle('field-notes');
+        const file = await folder.getFileHandle('Welcome.md', { create: true });
+        const writable = await file.createWritable();
+        await writable.write(text);
+        await writable.close();
+      },
+      `# Welcome\n\n${marker('c-aaaaaaaaaa')}\n\n${marker('c-bbbbbbbbbb')}\n\n${marker('c-cccccccccc', ',"status":"resolved"')}\n`,
+    );
+
+    await page.getByTestId('landing-open-folder').click();
+    const badge = page.getByTestId('page-tree-comments-Welcome.md');
+    await expect(badge).toBeVisible({ timeout: 10000 });
+    // Two open comments; the resolved one does not count.
+    await expect(badge).toHaveAttribute('aria-label', '2 open comments');
+    // A page without comments has no badge.
+    await expect(page.getByTestId('page-tree-comments-photo.txt')).toHaveCount(0);
+    await captureScreenshot(page, {
+      name: 'sidebar-comment-count',
+      category: 'features',
+      selector: '[data-testid="page-tree-item-Welcome.md"]',
+    });
+  });
+
   test('dragging a page above another reorders it by writing order front matter', async ({
     page,
   }) => {
