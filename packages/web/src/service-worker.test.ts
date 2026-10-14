@@ -8,16 +8,14 @@ import {
 } from './service-worker.js';
 
 describe('Service Worker utilities', () => {
-  it('exports cache names', () => {
-    expect(CACHE_NAME).toBe('cept-v1');
-    expect(STATIC_CACHE).toBe('cept-static-v1');
-    expect(DATA_CACHE).toBe('cept-data-v1');
+  it('versions cache names by build (unbuilt: "dev")', () => {
+    expect(CACHE_NAME).toBe('cept-dev');
+    expect(STATIC_CACHE).toBe('cept-static-dev');
+    expect(DATA_CACHE).toBe('cept-data-dev');
   });
 
-  it('has precache URLs', () => {
-    expect(PRECACHE_URLS).toContain('/');
-    expect(PRECACHE_URLS).toContain('/index.html');
-    expect(PRECACHE_URLS).toContain('/manifest.json');
+  it('has no precache list until the build injects one', () => {
+    expect(PRECACHE_URLS).toEqual([]);
   });
 
   it('matchesAny matches static asset patterns', () => {

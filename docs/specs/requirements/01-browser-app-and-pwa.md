@@ -268,13 +268,13 @@ sequenceDiagram
 - Cache names include the deployment ID and the build version, and the previous build's caches are removed on activate.
 - On a built bundle served under `/cept/app/`, the service worker reaches `activated`, and an offline reload renders the app.
 
-**Current state:** partial. [packages/web/src/service-worker.ts](../../../packages/web/src/service-worker.ts) (lines 49-53) sets `PRECACHE_URLS = ['/', '/index.html', '/manifest.json']`, which are root-absolute. In production `https://nsheaps.github.io/` and `/index.html` return 404. `cache.addAll` rejects on any non-OK response, so install most likely fails in production. This is inferred from Cache API semantics and was not observed in a browser. `STATIC_PATTERNS` of `/^\/assets\//` never matches under the base path; the extension regex still covers `.js` and `.css`. Hashed assets are cached only at runtime.
+**Current state:** partial. The build writes the precache list and a build id into `service-worker.js` (`injectServiceWorkerManifest` in [vite.config.ts](../../../packages/web/vite.config.ts); selection in [sw-precache.ts](../../../packages/web/src/sw-precache.ts)). The list is every built file except the worker, source maps, `404.html` and documentation screenshots, as paths relative to the base, resolved against the worker's own URL. Cache names carry the build id, and `activate` deletes only this deployment's caches from earlier builds. Install fetches every file and, if any fails, logs the failing paths and fails the install, so a half-filled cache never activates and the previous worker keeps serving; the page reports the failed install through `onError`. Offline navigations to the base fall back to the cached shell. Kill switch: opening the app with `?no-sw` bypasses the worker for that navigation, and the page unregisters it and clears this deployment's caches. Checked by [sw-precache.test.ts](../../../packages/web/src/sw-precache.test.ts) and, on the built bundle at `/cept/app/`, by [offline.pwa.spec.ts](../../../e2e/pwa/offline.pwa.spec.ts) (`mise run test:pwa`: list injected and relative, then load, go offline, reload, app renders).
 
-In addition, the `activate` handler (lines 83-96) deletes every cache whose name is not one of its own three, which includes the caches of other deployments on the same origin (see REQ-WEB-020). The live `service-worker.js` was fetched on 2026-10-06 and contains the same root-absolute precache list.
+Not yet: the precache is about 8 MB (the lazy diagram chunks are most of it) and is fetched at first install; splitting a small shell list from lazily cached chunks is a later refinement. The list is resolved against the worker's URL (`self.location`), which is the scope here because the worker is served from the base root. The built-bundle check does not yet run in CI (phase-1 plan PR 68).
 
 **Docs state:** documented-as-desired, stale. [platform-support.md](../../content/guides/platform-support.md) (lines 25-31) says "All features work without an internet connection". [roadmap.md](../../content/reference/roadmap.md) (line 28) says "PWA service worker | Done". TASKS T7.3 is checked.
 
-**Gap:** Generate the precache list from the build manifest, resolve it against the scope, version the caches, and add a built-bundle install test (REQ-WEB-022).
+**Gap:** Run the built-bundle check in CI (REQ-WEB-022, PR 68); decide whether to trim the precache.
 
 ### REQ-WEB-007 — Service worker handles syncing
 
@@ -553,16 +553,15 @@ Previews are live: `nsheaps.github.io/cept/pr-67/`, `pr-69/`, `pr-37/` and `pr-2
 
 - The database names, storage keys and cache names for `/cept/app/` and `/cept/pr-N/` never collide, as verified by unit tests.
 
-**Current state:** partial. The IndexedDB name and the service-worker update flag are namespaced per deployment by [packages/web/src/deploy-namespace.ts](../../../packages/web/src/deploy-namespace.ts) (tested in [deploy-namespace.test.ts](../../../packages/web/src/deploy-namespace.test.ts)), and cache names get the `getDeploymentId` prefix in [service-worker.ts](../../../packages/web/src/service-worker.ts) (lines 33-47). Two leaks remain:
+**Current state:** partial. The IndexedDB name and the service-worker update flag are namespaced per deployment by [packages/web/src/deploy-namespace.ts](../../../packages/web/src/deploy-namespace.ts) (tested in [deploy-namespace.test.ts](../../../packages/web/src/deploy-namespace.test.ts)), and cache names get the deployment prefix in [service-worker.ts](../../../packages/web/src/service-worker.ts) (`deploymentIdFor` in [sw-precache.ts](../../../packages/web/src/sw-precache.ts), kept equal to `getDeploymentId` by a test; the worker is a classic script and cannot import the app's shared chunk). Cache Storage is isolated: `activate` and the `CLEAR_CACHE` message touch only this deployment's caches (`isOwnCache`, unit-tested). One leak remains:
 
 - Web Storage: the settings key `cept-settings` is a fixed, un-namespaced `localStorage` key in [SettingsModal.tsx](../../../packages/ui/src/components/settings/SettingsModal.tsx) (line 31) and [StorageContext.tsx](../../../packages/ui/src/components/storage/StorageContext.tsx) (line 44), so production and every preview share one settings object.
-- Cache Storage: the `activate` handler in [service-worker.ts](../../../packages/web/src/service-worker.ts) (lines 83-96) deletes every cache that is not one of its own three names, so activating one deployment's worker deletes the other deployments' caches. The `CLEAR_CACHE` message (lines 165-169) deletes all caches on the origin.
 
 `namespacedCache` in `deploy-namespace.ts` is exported but unused.
 
 **Docs state:** undocumented. It is described only in code comments.
 
-**Gap:** Namespace the UI's `localStorage` keys (the host passes the namespace to `@cept/ui`), limit `activate` and `CLEAR_CACHE` to this deployment's prefix, add tests, and document it.
+**Gap:** Namespace the UI's `localStorage` keys (the host passes the namespace to `@cept/ui`) and document the scheme.
 
 ### REQ-WEB-021 — SPA deep-link fallback on Pages
 

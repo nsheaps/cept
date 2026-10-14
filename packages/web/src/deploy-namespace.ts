@@ -49,3 +49,22 @@ export function namespacedCache(basePath: string, cacheName: string): string {
   const id = getDeploymentId(basePath);
   return id ? `${id}::${cacheName}` : cacheName;
 }
+
+/**
+ * Whether a Cache Storage key belongs to the deployment with this id (`""` is
+ * production and local dev, whose cache names have no prefix). The service
+ * worker keeps its own copy in sw-precache.ts, because it is a classic script
+ * and cannot import a chunk shared with the app; a test keeps the two equal.
+ */
+export function isOwnCache(key: string, deploymentId: string): boolean {
+  if (deploymentId) return key.startsWith(`${deploymentId}::`);
+  return key.startsWith('cept-') && !key.includes('::');
+}
+
+/**
+ * The kill switch: opening the app with `?no-sw` bypasses the service worker
+ * for that navigation and makes the page remove it. Mirrored in sw-precache.ts.
+ */
+export function isKillSwitch(url: URL): boolean {
+  return url.searchParams.has('no-sw');
+}

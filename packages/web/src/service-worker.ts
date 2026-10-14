@@ -6,6 +6,8 @@
  * background sync for pending operations.
  */
 
+import { deploymentIdFor, isKillSwitch, isOwnCache, relativeToBase } from './sw-precache.js';
+
 // Service worker type declarations (this file runs in SW context, not DOM)
 interface SWExtendableEvent extends Event {
   waitUntil(p: Promise<unknown>): void;
@@ -31,51 +33,76 @@ interface SWGlobalScope {
 
 declare const self: SWGlobalScope;
 
-/**
- * Derive a deployment ID from the service worker's URL path so that preview
- * deployments on the same origin get isolated caches.
- *
- * Examples:
- *   /service-worker.js            → "" (local dev)
- *   /cept/app/service-worker.js   → "" (production)
- *   /cept/pr-42/service-worker.js → "cept-pr-42"
- */
-function getDeploymentId(): string {
-  const swPath = self.location.pathname;
-  // Strip the filename to get the base path, then slugify
-  const base = swPath.replace(/\/[^/]*$/, '');
-  const slug = base.replace(/^\/+|\/+$/g, '').replace(/\//g, '-');
-  if (!slug || slug === 'cept-app') return '';
-  return slug;
+/** Replaced by the build (see `injectServiceWorkerManifest` in vite.config.ts). */
+const INJECTED_PRECACHE = '__PRECACHE_MANIFEST__';
+const INJECTED_BUILD_ID = '__BUILD_ID__';
+
+/** Base-relative files to precache; empty when the worker runs unbuilt (tests, dev). */
+function readPrecache(raw: string): string[] {
+  // The build writes the list as URI-encoded JSON, which holds no quote character
+  // and survives whichever quote style the minifier gives the string.
+  return raw.startsWith('__') ? [] : (JSON.parse(decodeURIComponent(raw)) as string[]);
 }
 
-const DEPLOY_ID = getDeploymentId();
+/** The worker is served from the deployment base, so its directory is the base. */
+const BASE_PATH = new URL('./', self.location.href).pathname;
+
+/** Isolates preview deployments sharing the origin (REQ-WEB-020). */
+const DEPLOY_ID = deploymentIdFor(BASE_PATH);
 const CACHE_PREFIX = DEPLOY_ID ? `${DEPLOY_ID}::` : '';
+const BUILD_ID = INJECTED_BUILD_ID.startsWith('__') ? 'dev' : INJECTED_BUILD_ID;
 
-const CACHE_NAME = `${CACHE_PREFIX}cept-v1`;
-const STATIC_CACHE = `${CACHE_PREFIX}cept-static-v1`;
-const DATA_CACHE = `${CACHE_PREFIX}cept-data-v1`;
+/** Versioned by build, so a new build never reads the previous build's assets. */
+const CACHE_NAME = `${CACHE_PREFIX}cept-${BUILD_ID}`;
+const STATIC_CACHE = `${CACHE_PREFIX}cept-static-${BUILD_ID}`;
+const DATA_CACHE = `${CACHE_PREFIX}cept-data-${BUILD_ID}`;
 
-/** Static assets to precache on install */
-const PRECACHE_URLS = ['/', '/index.html', '/manifest.json'];
+/** Static assets to precache on install, as base-relative paths. */
+const PRECACHE_URLS = readPrecache(INJECTED_PRECACHE);
 
-/** URL patterns that should use cache-first strategy */
-const STATIC_PATTERNS = [/\.(js|css|woff2?|png|jpg|svg|ico)$/, /^\/assets\//, /^\/icons\//];
+/** Base-relative path patterns that use the cache-first strategy. */
+const STATIC_PATTERNS = [/\.(js|css|woff2?|png|jpg|svg|ico)$/, /^assets\//, /^icons\//];
 
-/** URL patterns that should use network-first strategy */
-const NETWORK_FIRST_PATTERNS = [/^\/api\//];
+/** Base-relative path patterns that use the network-first strategy. */
+const NETWORK_FIRST_PATTERNS = [/^api\//];
 
-/** Check if a URL matches any of the given patterns */
-function matchesAny(url: string, patterns: RegExp[]): boolean {
-  return patterns.some((p) => p.test(url));
+/** Check if a path matches any of the given patterns */
+function matchesAny(path: string, patterns: RegExp[]): boolean {
+  return patterns.some((p) => p.test(path));
 }
 
-/** Install event — precache static assets (do NOT auto-skipWaiting; let the client decide) */
+/** Install event — precache the build (do NOT auto-skipWaiting; let the client decide) */
 self.addEventListener('install', (event: SWExtendableEvent) => {
-  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
+  event.waitUntil(precache());
 });
 
-/** Activate event — clean up old caches */
+/**
+ * Fetch every precache URL into the static cache. A failure is logged with the
+ * URLs that failed and rethrown, so a half-filled cache never activates and the
+ * previous worker keeps serving until the next attempt.
+ */
+async function precache(): Promise<void> {
+  const cache = await caches.open(STATIC_CACHE);
+  const failed: string[] = [];
+  await Promise.all(
+    PRECACHE_URLS.map(async (path) => {
+      const url = new URL(path, self.location.href);
+      try {
+        const response = await fetch(url.href, { cache: 'reload' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await cache.put(url.href, response);
+      } catch {
+        failed.push(path);
+      }
+    }),
+  );
+  if (failed.length > 0) {
+    console.error(`[cept-sw] precache failed for ${failed.length} file(s): ${failed.join(', ')}`);
+    throw new Error('Service worker precache failed');
+  }
+}
+
+/** Activate event — delete this deployment's caches from earlier builds */
 self.addEventListener('activate', (event: SWExtendableEvent) => {
   event.waitUntil(
     caches
@@ -83,7 +110,13 @@ self.addEventListener('activate', (event: SWExtendableEvent) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== STATIC_CACHE && key !== DATA_CACHE && key !== CACHE_NAME)
+            .filter(
+              (key) =>
+                isOwnCache(key, DEPLOY_ID) &&
+                key !== STATIC_CACHE &&
+                key !== DATA_CACHE &&
+                key !== CACHE_NAME,
+            )
             .map((key) => caches.delete(key)),
         ),
       )
@@ -101,9 +134,16 @@ self.addEventListener('fetch', (event: SWFetchEvent) => {
   // Skip cross-origin requests
   if (url.origin !== self.location.origin) return;
 
-  if (matchesAny(url.pathname, STATIC_PATTERNS)) {
+  // Kill switch: let the network answer, so a broken cached shell cannot trap the page
+  if (isKillSwitch(url)) return;
+
+  // Only requests under this deployment's base are ours
+  const path = relativeToBase(BASE_PATH, url.pathname);
+  if (path === null) return;
+
+  if (matchesAny(path, STATIC_PATTERNS)) {
     event.respondWith(cacheFirst(event.request, STATIC_CACHE));
-  } else if (matchesAny(url.pathname, NETWORK_FIRST_PATTERNS)) {
+  } else if (matchesAny(path, NETWORK_FIRST_PATTERNS)) {
     event.respondWith(networkFirst(event.request, DATA_CACHE));
   } else {
     // Default: network first for HTML, cache first for everything else
@@ -141,8 +181,10 @@ async function networkFirst(request: Request, cacheName: string): Promise<Respon
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    // Return offline page for HTML requests
+    // Offline navigation to a path the app handles itself: serve the cached shell
     if (request.headers.get('accept')?.includes('text/html')) {
+      const shell = await caches.match(new URL('./', self.location.href).href);
+      if (shell) return shell;
       return new Response(
         '<!DOCTYPE html><html><body><h1>Offline</h1><p>You are currently offline. Your changes will sync when reconnected.</p></body></html>',
         { headers: { 'Content-Type': 'text/html' } },
@@ -159,7 +201,13 @@ self.addEventListener('message', (event: SWMessageEvent) => {
     self.skipWaiting();
   }
   if (event.data?.type === 'CLEAR_CACHE') {
-    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
+    event.waitUntil(
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(keys.filter((k) => isOwnCache(k, DEPLOY_ID)).map((k) => caches.delete(k))),
+        ),
+    );
   }
 });
 
