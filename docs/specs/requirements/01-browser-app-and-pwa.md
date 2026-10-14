@@ -336,11 +336,11 @@ In addition, the `activate` handler (lines 83-96) deletes every cache whose name
 - A Lighthouse or equivalent installability audit passes in CI on the preview build.
 - The manifest sets `display: standalone` and a `theme_color`, includes the maskable icon, and the page sets `viewport-fit=cover` and Apple touch-icon and web-app-capable metadata, so the app installs and launches full-screen on iOS and Android phones. The installed app is usable at phone sizes (REQ-APP-020 in [07-native-apps.md](07-native-apps.md#req-app-020--mobile-specific-ui-polish)).
 
-**Current state:** partial. [packages/web/public/manifest.json](../../../packages/web/public/manifest.json) has `start_url: "/"`, no `scope`, and icons at `/icons/icon-192.png` and `/icons/icon-512.png`. `packages/web/public` has no `icons/` folder, and the live icon URL returns 404. The shortcuts `/?action=new-page` and `/?action=search` have no handler (the only `URLSearchParams` use in `packages/ui/src` is the `?route=` restore in [router.ts](../../../packages/ui/src/router.ts) line 299), and their root-absolute URLs point outside `/cept/app/`. The manifest link in [index.html](../../../packages/web/index.html) is correctly rewritten to `/cept/app/manifest.json`.
+**Current state:** partial. [packages/web/public/manifest.json](../../../packages/web/public/manifest.json) sets `id`, `start_url` and `scope` to `./` and lists its icons relative to the manifest, so they resolve under any deploy base (`/cept/app/`, a PR preview, or `/`). The 192 px, 512 px and maskable 512 px icons, the 180 px Apple touch icon and an SVG favicon are in `packages/web/public/icons/`. [index.html](../../../packages/web/index.html) sets `viewport-fit=cover` and the Apple web-app-capable metadata and links the touch icon. The two shortcuts (`?action=new-page`, `?action=search`) had no handler anywhere in the app, so they were removed rather than shipped dead. Checked by a unit test over the files ([manifest.test.ts](../../../packages/web/src/manifest.test.ts)) and by a Playwright check against the built bundle at `/cept/app/` (`mise run test:pwa`: manifest and every icon return 200, `start_url` and `scope` sit under the base). Not yet: that check runs locally, not in CI (PR 68), and there is no installability audit.
 
 **Docs state:** documented-as-desired, stale. [platform-support.md](../../content/guides/platform-support.md) (line 29) promises "Install as app".
 
-**Gap:** Add the icons, make the paths relative, handle or remove the shortcuts, and add an installability audit.
+**Gap:** Run the built-bundle check in CI (PR 68) and add an installability audit. Shortcuts return only with a router handler.
 
 ### REQ-WEB-010 — PWA shares local daemon when present
 

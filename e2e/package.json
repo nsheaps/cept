@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:e2e": "playwright test --config playwright.config.ts",
+    "test:pwa": "playwright test --config playwright.pwa.config.ts",
     "test:screenshots": "playwright test --config playwright.config.ts --update-snapshots",
     "typecheck": "tsc --noEmit"
   },
