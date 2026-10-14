@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  inLinkCounts,
+  nodeRadius,
   buildGraphData,
   filterByDepth,
   getGroups,
@@ -208,5 +210,40 @@ describe('filterGraph', () => {
     });
     expect(result.nodes).toHaveLength(3); // a, c, d
     expect(result.links).toHaveLength(1); // c->d link
+  });
+});
+
+describe('inLinkCounts and nodeRadius', () => {
+  const data: GraphData = {
+    nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, title: id })),
+    links: [
+      { source: 'a', target: 'd', type: 'link' },
+      { source: 'b', target: 'd', type: 'link' },
+      { source: 'c', target: 'd', type: 'link' },
+      { source: 'a', target: 'b', type: 'link' },
+      { source: 'a', target: 'c', type: 'parent' },
+    ],
+  };
+
+  it('counts incoming links, ignoring the page tree', () => {
+    const counts = inLinkCounts(data);
+    expect(counts.get('d')).toBe(3);
+    expect(counts.get('b')).toBe(1);
+    expect(counts.get('c')).toBeUndefined();
+  });
+
+  it('reads link ends after the simulation turned them into node objects', () => {
+    const laidOut = {
+      ...data,
+      links: [{ source: data.nodes[0]!, target: data.nodes[3]!, type: 'link' as const }],
+    } as unknown as GraphData;
+    expect(inLinkCounts(laidOut).get('d')).toBe(1);
+  });
+
+  it('grows with incoming links, caps, and enlarges the focused node', () => {
+    expect(nodeRadius(5)).toBeGreaterThan(nodeRadius(1));
+    expect(nodeRadius(1)).toBeGreaterThan(nodeRadius(0));
+    expect(nodeRadius(10_000)).toBe(16);
+    expect(nodeRadius(0, true)).toBeGreaterThan(nodeRadius(0));
   });
 });

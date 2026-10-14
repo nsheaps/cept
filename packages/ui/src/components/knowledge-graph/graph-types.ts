@@ -114,6 +114,25 @@ export function getLinkTypes(data: GraphData): Array<GraphLink['type']> {
   return [...types].sort();
 }
 
+const endId = (end: unknown): string => (typeof end === 'string' ? end : (end as GraphNode).id);
+
+/** How many pages link to each page (Markdown links only; the page tree is not a reference). */
+export function inLinkCounts(data: GraphData): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const link of data.links) {
+    if (link.type !== 'link') continue;
+    const target = endId(link.target);
+    counts.set(target, (counts.get(target) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** A node's drawn radius: grows with its incoming links, up to a cap; the focused node is larger. */
+export function nodeRadius(inLinks: number, focused = false): number {
+  const base = 6 + Math.min(Math.sqrt(inLinks) * 2.5, 10);
+  return focused ? base + 3 : base;
+}
+
 export interface GraphFilters {
   groups?: Set<string>;
   linkTypes?: Set<GraphLink['type']>;
