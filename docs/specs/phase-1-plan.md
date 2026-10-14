@@ -730,8 +730,9 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Accept: test green.
 - Risk: none notable.
 - Delivered (64): `mergeCommentRegion` in `text-merge.ts`, called when the line merge of a region fails. If every non-blank line on both sides is a readable `cept:comment` marker with a unique id, the region merges by id: the union of both sides, the later `edited` (else `created`) wins for a shared id (mine on a tie), and a comment one side deleted while the other left it unchanged is dropped. Anything else (an unreadable marker, a repeated id, other text) still conflicts. Tests: eight unit tests in `text-merge.test.ts` and a two-clone integration test; both fail with the hook disabled. Not in 64: merging when the text around the markers also conflicts.
+- Delivered (65a): the slash-menu and comments `.feature` files are bound to step definitions that drive the real `CeptEditor`, slash menu and `CommentsPanel` (`features/step-definitions/slash-commands.steps.tsx`, `comments.steps.tsx`) and run in the integration project (`vitest.config.ts` now includes every `*.steps.ts(x)` there). `comments.feature` is new: comment on text and on the whole page, reply, resolve and reopen, reload, and a removed quote becoming detached. `@cept/ui` now exports `CommentsPanel` and the comment types. Tests are mutation-checked (a resolve that always reopens fails the resolve scenario). Not in 65a: the graph, sidebar and browser-storage features (65b), and the browser e2e for comments (REQ-NTN-011).
 
-**PR 65 — `test(editor): bind editor and comment acceptance tests`**
+**PR 65 — `test(editor): bind editor and comment acceptance tests`** (65a: slash menu and comments; 65b: graph, sidebar, browser storage)
 
 - Changes: bind the editor-area and comment `.feature` files to step definitions; drop wiki-link scenarios; database steps marked Phase 2; update the Notion parity table (NTN-001).
 - Red: unbound steps fail the integration project.

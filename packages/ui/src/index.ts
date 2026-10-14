@@ -24,7 +24,14 @@ export type {
 export { GitAuthsProvider, useGitAuths } from './components/settings/git-auths.js';
 export type { GitAuths, GitAuthsState, GitAuthsStatus } from './components/settings/git-auths.js';
 export { CeptEditor } from './components/editor/index.js';
-export type { CeptEditorProps } from './components/editor/index.js';
+export type {
+  CeptEditorProps,
+  CommentActions,
+  CommentingContext,
+  ListedComment,
+} from './components/editor/index.js';
+export { CommentsPanel } from './components/comments/CommentsPanel.js';
+export type { CommentsPanelProps } from './components/comments/CommentsPanel.js';
 export { Sidebar } from './components/sidebar/Sidebar.js';
 export type { SidebarProps } from './components/sidebar/Sidebar.js';
 export { PageTreeItem } from './components/sidebar/PageTreeItem.js';

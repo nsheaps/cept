@@ -39,7 +39,7 @@ export default defineConfig({
         test: {
           name: 'integration',
           include: [
-            'features/step-definitions/**/*.steps.ts',
+            'features/step-definitions/**/*.steps.{ts,tsx}',
             'tools/**/*.integration.test.ts',
             'scripts/**/*.integration.test.ts',
             'packages/*/src/**/*.integration.test.ts',
