@@ -25,7 +25,11 @@ export interface AnchorMatch {
   exact: boolean;
 }
 
-/** The anchor for `text.slice(from, to)`, with its surrounding context. */
+/**
+ * The anchor for `text.slice(from, to)`, with its surrounding context.
+ * Requires `0 <= from <= to <= text.length`; the caller (the editor) passes
+ * offsets it took from `text`.
+ */
 export function createAnchor(text: string, from: number, to: number): CommentAnchor {
   const quote = text.slice(from, to);
   const prefix = text.slice(Math.max(0, from - ANCHOR_CONTEXT_LENGTH), from);
@@ -199,11 +203,18 @@ function fuzzyMatch(text: string, quote: string): AnchorMatch | null {
 
 const ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-/** A comment id: `c-` and 10 lowercase letters and digits. */
+/**
+ * A comment id: `c-` and 10 lowercase letters and digits. Bytes of 252 or more
+ * are skipped so every character is equally likely (256 is not a multiple of 36).
+ */
 export function newCommentId(random: (length: number) => Uint8Array = randomBytes): string {
-  const bytes = random(10);
+  const limit = 256 - (256 % ID_ALPHABET.length);
   let id = 'c-';
-  for (const byte of bytes) id += ID_ALPHABET[byte % ID_ALPHABET.length];
+  while (id.length < 12) {
+    for (const byte of random(10)) {
+      if (byte < limit && id.length < 12) id += ID_ALPHABET[byte % ID_ALPHABET.length];
+    }
+  }
   return id;
 }
 

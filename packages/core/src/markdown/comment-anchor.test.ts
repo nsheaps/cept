@@ -102,6 +102,11 @@ describe('newCommentId', () => {
     expect(newCommentId(() => new Uint8Array(10).fill(35))).toBe('c-9999999999');
   });
 
+  it('skips biased bytes (252 and above) and draws again', () => {
+    const draws = [new Uint8Array(10).fill(255), new Uint8Array(10).fill(1)];
+    expect(newCommentId(() => draws.shift()!)).toBe('c-bbbbbbbbbb');
+  });
+
   it('differs between calls', () => {
     expect(newCommentId()).not.toBe(newCommentId());
   });
