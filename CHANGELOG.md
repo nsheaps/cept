@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.58.0](https://github.com/nsheaps/cept/compare/v0.57.0...v0.58.0) (2026-10-14)
+
+### Features
+
+* **core:** create and resolve comment anchors ([#450](https://github.com/nsheaps/cept/issues/450)) ([fa79659](https://github.com/nsheaps/cept/commit/fa7965950537d78ff0da39e169369a301dd66e39))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([375f1d4](https://github.com/nsheaps/cept/commit/375f1d4eafc8fed3a63e397631b60325f97ce39d))
+
 ## [0.57.0](https://github.com/nsheaps/cept/compare/v0.56.0...v0.57.0) (2026-10-14)
 
 ### Features
