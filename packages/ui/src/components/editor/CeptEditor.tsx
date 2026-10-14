@@ -204,7 +204,8 @@ export function CeptEditor({
     try {
       const at = editor.view.coordsAtPos(onSelection ? to : from);
       position = {
-        top: at.bottom + 8,
+        // Keep the submit button on screen for a selection near the bottom.
+        top: Math.max(8, Math.min(at.bottom + 8, window.innerHeight - 240)),
         left: Math.max(8, Math.min(at.left, window.innerWidth - 336)),
       };
     } catch {

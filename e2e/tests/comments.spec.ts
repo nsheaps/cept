@@ -46,8 +46,8 @@ test.describe('Comments', () => {
     await expect(
       page.locator('.cept-editor-content .cept-comment-highlight').first(),
     ).toBeVisible();
-    // Move the caret away so the selection does not cover the highlight.
-    await page.getByRole('heading', { name: 'Getting Started' }).click();
+    // Collapse the selection so it does not cover the highlight.
+    await page.keyboard.press('ArrowRight');
     await captureScreenshot(page, {
       name: 'comment-highlight',
       category: 'features',

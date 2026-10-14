@@ -69,6 +69,7 @@ export function CommentComposer({
         placeholder={'Add a comment…'}
         rows={3}
         data-testid="comment-body"
+        aria-label="Comment"
         autoFocus
       />
       <div className="cept-comment-composer-actions">
