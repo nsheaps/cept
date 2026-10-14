@@ -226,6 +226,27 @@ describe('comment threads', () => {
     editor.destroy();
   });
 
+  it('keeps a reply next to its own thread when another thread sits beside it', () => {
+    const other = comment('c-bbbbbbbbbb', 'second');
+    const { editor, save } = open(
+      [
+        'First paragraph.',
+        'The second line.',
+        formatCommentMarker(root),
+        formatCommentMarker(other),
+        'Last.',
+        '',
+      ].join('\n\n'),
+    );
+    editor.commands.replyToComment('c-aaaaaaaaaa', { author: bob, body: 'Reply' });
+    expect(saved(save).map((c) => [c.id, c.replyTo])).toEqual([
+      ['c-aaaaaaaaaa', undefined],
+      [expect.stringMatching(/^c-/), 'c-aaaaaaaaaa'],
+      ['c-bbbbbbbbbb', undefined],
+    ]);
+    editor.destroy();
+  });
+
   it('edits the body and records when', () => {
     const { editor, save } = open(`${markdown}\n`);
     editor.commands.editComment('c-aaaaaaaaaa', 'Changed', '2026-10-14T07:00:00Z');

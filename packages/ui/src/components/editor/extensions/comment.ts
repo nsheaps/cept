@@ -261,10 +261,13 @@ export const Comment = Node.create({
           if (!target) return false;
           const rootId = target.comment.replyTo ?? target.comment.id;
           if (!found.some((entry) => entry.comment.id === rootId)) return false;
-          // After the last marker of the run of markers the thread starts in.
-          let at = target.pos + target.size;
+          // After the last marker of this thread, so a sibling thread's markers stay apart.
+          const root = found.find((entry) => entry.comment.id === rootId)!;
+          let at = root.pos + root.size;
           let next = state.doc.nodeAt(at);
           while (next?.type.name === 'comment') {
+            const neighbour = commentOf(next.toJSON() as PmNode);
+            if (!neighbour || neighbour.replyTo !== rootId) break;
             at += next.nodeSize;
             next = state.doc.nodeAt(at);
           }

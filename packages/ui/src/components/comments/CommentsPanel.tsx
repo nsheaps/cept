@@ -38,28 +38,27 @@ interface Thread {
 }
 
 function threadsOf(comments: readonly ListedComment[]): Thread[] {
-  const ids = new Set(comments.map(({ comment }) => comment.id));
+  const byId = new Map(comments.map((entry) => [entry.comment.id, entry]));
+  const rootIdOf = (id: string): string => {
+    let current = id;
+    for (let hops = 0; hops < comments.length; hops++) {
+      const parent = byId.get(current)?.comment.replyTo;
+      if (!parent || !byId.has(parent)) return current;
+      current = parent;
+    }
+    return current;
+  };
   const threads = new Map<string, Thread>();
   for (const entry of comments) {
     const parent = entry.comment.replyTo;
     // A reply whose first comment is gone stands as a comment of its own.
-    if (!parent || !ids.has(parent)) threads.set(entry.comment.id, { root: entry, replies: [] });
+    if (!parent || !byId.has(parent)) threads.set(entry.comment.id, { root: entry, replies: [] });
   }
   for (const entry of comments) {
     const parent = entry.comment.replyTo;
-    if (parent && ids.has(parent)) threads.get(rootIdOf(parent, comments))?.replies.push(entry);
+    if (parent && byId.has(parent)) threads.get(rootIdOf(parent))?.replies.push(entry);
   }
   return [...threads.values()];
-}
-
-function rootIdOf(id: string, comments: readonly ListedComment[]): string {
-  let current = id;
-  for (let hops = 0; hops < comments.length; hops++) {
-    const next = comments.find(({ comment }) => comment.id === current)?.comment.replyTo;
-    if (!next || !comments.some(({ comment }) => comment.id === next)) return current;
-    current = next;
-  }
-  return current;
 }
 
 /**
@@ -109,7 +108,11 @@ export function CommentsPanel({
             : comment.author.name}
         </span>
         <time dateTime={comment.created}>{when(comment.created)}</time>
-        {comment.edited && <span className="cept-comment-edited">(edited)</span>}
+        {comment.edited && (
+          <span className="cept-comment-edited" title={`Edited ${when(comment.edited)}`}>
+            (edited)
+          </span>
+        )}
         {fresh.has(comment.id) && (
           <span className="cept-comment-new" data-testid={`comment-new-${comment.id}`}>
             New
