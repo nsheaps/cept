@@ -4,11 +4,7 @@ import type { Editor } from '@tiptap/core';
 import { expect } from 'vitest';
 import { CeptEditor, CommentsPanel, type CommentActions, type ListedComment } from '@cept/ui';
 
-// Steps of one scenario run as separate tests, so Testing Library must not unmount
-// the editor between them; AfterEachScenario below cleans up instead.
-process.env.RTL_SKIP_AUTO_CLEANUP = 'true';
-const { act, cleanup, fireEvent, render, screen, waitFor, within } =
-  await import('@testing-library/react');
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // jsdom has no layout; ProseMirror asks ranges for rectangles when it scrolls to the caret.
 const noRects = { length: 0, item: () => null, [Symbol.iterator]: [][Symbol.iterator] };
@@ -103,7 +99,7 @@ describeFeature(feature, ({ Background, Scenario, AfterEachScenario }) => {
   /** The page's first thread and its comment id. */
   const firstThread = async () => {
     const element = await waitFor(() => {
-      const found = document.querySelector<HTMLElement>('.cept-comment-thread');
+      const found = document.querySelector<HTMLElement>('[data-testid^="thread-"]');
       if (!found) throw new Error('no thread');
       return found;
     });

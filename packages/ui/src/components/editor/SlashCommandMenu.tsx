@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState, useCallback } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState, useCallback } from 'react';
 import type { SlashCommandItem } from './extensions/slash-command.js';
 
 export interface SlashCommandMenuProps {
@@ -18,14 +18,26 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
       setSelectedIndex(0);
     }, [items]);
 
+    // The menu lists items grouped by category, and a category's items need not be
+    // contiguous in `items`; the highlight and the click index follow the grouped order.
+    const { grouped, ordered } = useMemo(() => {
+      const byCategory = new Map<string, SlashCommandItem[]>();
+      for (const item of items) {
+        const list = byCategory.get(item.category) ?? [];
+        list.push(item);
+        byCategory.set(item.category, list);
+      }
+      return { grouped: byCategory, ordered: Array.from(byCategory.values()).flat() };
+    }, [items]);
+
     const selectItem = useCallback(
       (index: number) => {
-        const item = items[index];
+        const item = ordered[index];
         if (item) {
           command(item);
         }
       },
-      [items, command],
+      [ordered, command],
     );
 
     useImperativeHandle(ref, () => ({
@@ -57,14 +69,6 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
           <div className="cept-slash-menu-empty">No results</div>
         </div>
       );
-    }
-
-    // Group items by category
-    const grouped = new Map<string, SlashCommandItem[]>();
-    for (const item of items) {
-      const list = grouped.get(item.category) ?? [];
-      list.push(item);
-      grouped.set(item.category, list);
     }
 
     let flatIndex = 0;

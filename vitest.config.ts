@@ -38,6 +38,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'integration',
+          setupFiles: ['features/step-definitions/rtl-no-auto-cleanup.ts'],
           include: [
             'features/step-definitions/**/*.steps.{ts,tsx}',
             'tools/**/*.integration.test.ts',

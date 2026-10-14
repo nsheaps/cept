@@ -3,10 +3,7 @@ import type { Editor } from '@tiptap/core';
 import { expect } from 'vitest';
 import { CeptEditor } from '@cept/ui';
 
-// Steps of one scenario run as separate tests, so Testing Library must not unmount
-// the editor between them; AfterEachScenario below cleans up instead.
-process.env.RTL_SKIP_AUTO_CLEANUP = 'true';
-const { act, cleanup, render, screen, waitFor } = await import('@testing-library/react');
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 
 const feature = await loadFeature('features/editor/slash-commands.feature');
 
@@ -82,7 +79,7 @@ describeFeature(feature, ({ Background, Scenario, AfterEachScenario }) => {
 
     And('only matching items should be visible', async () => {
       const items = await screen.findAllByTestId(/^slash-item-/);
-      expect(items.length).toBeLessThan(5);
+      expect(items.length).toBeGreaterThan(0);
       for (const item of items) expect(item.textContent?.toLowerCase()).toContain('mer');
     });
   });
@@ -135,12 +132,13 @@ describeFeature(feature, ({ Background, Scenario, AfterEachScenario }) => {
     And('I press Enter', () => press(editor, 'Enter'));
 
     Then('the third item in the menu should be inserted', async () => {
-      // Three presses from the first item lands on the fourth entry; the
-      // scenario's "third item" counts the moves, not the starting row.
-      expect(titles.length).toBeGreaterThanOrEqual(4);
+      // Three presses from the first row land on the fourth entry; the scenario's
+      // "third item" counts the moves, not the starting row. Pin that entry and prove
+      // it is the one that ran, so a 2- or 4-step bug fails here.
+      expect(titles[3]).toBe('Code Block');
       await waitFor(() => expect(menu()).toBeNull());
       expect(editor.getText()).not.toContain('/');
-      expect(editor.getHTML()).not.toBe('<p></p>');
+      expect(editor.getHTML()).toContain('<pre');
     });
   });
 
