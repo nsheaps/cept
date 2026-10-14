@@ -59,10 +59,11 @@ describeFeature(feature, ({ Scenario, AfterEachScenario }) => {
 
   Scenario('Click node to navigate', ({ Given, When, Then }) => {
     // A plain recorder: each step is its own test, and a vi.fn() history does not carry over.
-    const opened: string[] = [];
+    let opened: string[] = [];
     const onNodeClick = (id: string) => opened.push(id);
 
     Given('I am viewing the global graph', () => {
+      opened = [];
       viewGraph(
         [
           { id: 'home.md', title: 'Home', links: ['roadmap.md'] },
