@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.4](https://github.com/nsheaps/cept/compare/v0.64.3...v0.64.4) (2026-10-14)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([3abe452](https://github.com/nsheaps/cept/commit/3abe452315e6870b18a78f79b5c4720034d6eff0))
+
+### Tests
+
+* **e2e:** run the built-bundle pwa tests in ci ([#465](https://github.com/nsheaps/cept/issues/465)) ([edc2f78](https://github.com/nsheaps/cept/commit/edc2f781ce329a196ca8707d64a0d24841b72cd0))
+
 ## [0.64.3](https://github.com/nsheaps/cept/compare/v0.64.2...v0.64.3) (2026-10-14)
 
 ### Bug Fixes
