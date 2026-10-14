@@ -202,6 +202,7 @@ export type {
   MarkdownDocument,
   PmMark,
   PmNode,
+  AnchorMatch,
   CommentAnchor,
   CommentAuthor,
   CommentProblem,
@@ -212,7 +213,13 @@ export type {
   ParsedCommentMarker,
 } from './markdown/index.js';
 export {
+  ANCHOR_CONTEXT_LENGTH,
   COMMENT_FORMAT_VERSION,
+  createAnchor,
+  githubAuthor,
+  localAuthor,
+  newCommentId,
+  resolveAnchor,
   RESERVED_FRONT_MATTER_KEYS,
   formatCommentMarker,
   isCommentMarker,

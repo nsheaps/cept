@@ -167,9 +167,9 @@ stateDiagram-v2
   - After edits elsewhere in the page, the thread highlights the same text.
   - If the quoted text itself changes, the resolver accepts a close match; if none is found, the thread becomes **detached** and is listed at page level with its last quote. A detached thread can be re-attached to a new selection.
   - Overlapping threads on the same text are allowed.
-- **Current state:** **not-started.** No comment code exists in [packages/core](../../../packages/core/src) or [packages/ui](../../../packages/ui/src) (only Markdown HTML-comment handling in the parser).
+- **Current state:** **partial.** Core builds and resolves anchors (`createAnchor`, `resolveAnchor` in [comment-anchor.ts](../../../packages/core/src/markdown/comment-anchor.ts): exact, then case and white space insensitive, then a close match; null is detached). No editor or UI code yet.
 - **Docs state:** documented-differently, stale. [SPECIFICATION.md](../../SPECIFICATION.md) §5 says "inline comments on any block" and §4.6 keys comments by page ID; neither says how anchors survive edits.
-- **Gap:** Comment model and anchor resolver in core; selection command in the editor.
+- **Gap:** The selection command, highlights and re-attaching a detached thread in the editor (PR 62b, 62c). The heading path in the acceptance criteria is not stored: the D3 format has no field for it.
 
 ### REQ-NTN-003 — Page-level comment threads
 
