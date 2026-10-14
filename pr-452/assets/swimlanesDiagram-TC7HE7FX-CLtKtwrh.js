@@ -1,0 +1,9 @@
+import"./chunk-ZIGJFQKS-Dc5FsOVv.js";import{n as e}from"./chunk-Y2CYZVJY-DsF7k-Jl.js";import"./chunk-X3CZISLH-BNkW7B6y.js";import"./chunk-O7XYJQB3-DaIGH0q7.js";import"./chunk-742MDFTN-jflc7U6U.js";import"./chunk-MBY4JIJT-CGW4L0XS.js";import"./chunk-7PRAP22T-DXBspY0H.js";import"./chunk-7INBJB4K-BE5DUi5B.js";import"./chunk-5DYCD2WN-GOWVQfpy.js";import"./chunk-Z7XXMR3K-Va5nw_yR.js";import"./chunk-GWA4HPMP-LUI5qPKO.js";import"./chunk-XXDRQBXY-DGklQhx5.js";import"./chunk-WEXAMYUT-CV-ztALh.js";import"./chunk-UA2S7LBM-DLoCLgs1.js";import{r as t,t as n}from"./chunk-7M6MHVWA-Bwp2dRR5.js";import"./mermaid.core-BFwhwref.js";var r=n({styles:e(e=>`${t(e)}
+  .swimlane.cluster:not([data-color-id]) rect {
+    stroke: ${e.clusterBorder} !important;
+  }
+  [data-look="neo"].cluster rect {
+    filter: none;
+  }
+`,`getStyles`)});export{r as diagram};
+//# sourceMappingURL=swimlanesDiagram-TC7HE7FX-CLtKtwrh.js.map
