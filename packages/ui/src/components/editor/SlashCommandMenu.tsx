@@ -43,12 +43,12 @@ export const SlashCommandMenu = forwardRef<SlashCommandMenuRef, SlashCommandMenu
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ event }: { event: KeyboardEvent }) => {
         if (event.key === 'ArrowUp') {
-          setSelectedIndex((prev) => (prev <= 0 ? items.length - 1 : prev - 1));
+          setSelectedIndex((prev) => (prev <= 0 ? ordered.length - 1 : prev - 1));
           return true;
         }
 
         if (event.key === 'ArrowDown') {
-          setSelectedIndex((prev) => (prev >= items.length - 1 ? 0 : prev + 1));
+          setSelectedIndex((prev) => (prev >= ordered.length - 1 ? 0 : prev + 1));
           return true;
         }
 

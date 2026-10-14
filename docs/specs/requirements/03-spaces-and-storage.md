@@ -461,7 +461,8 @@ branch: docs # optional (D-30)
 **Current state: implemented.**
 
 - `BrowserFsBackend` (lightning-fs on IndexedDB) is wired at [packages/web/src/main.tsx](../../../packages/web/src/main.tsx) line 15, with the DB name namespaced per deployment ([packages/web/src/deploy-namespace.ts](../../../packages/web/src/deploy-namespace.ts), ~lines 30-33). TASKS P2.3 and P2.4 are checked.
-- Test gaps against the acceptance criteria: [features/storage/browser-backend.feature](../../../features/storage/browser-backend.feature) has no step definitions (only [features/step-definitions/example.steps.ts](../../../features/step-definitions/example.steps.ts), which loads `features/example.feature`), so it never executes. No Playwright spec in `e2e/tests/` reloads the page to assert persistence. Persistence is covered only by unit tests ([packages/core/src/storage/browser-fs.test.ts](../../../packages/core/src/storage/browser-fs.test.ts)).
+- [features/storage/browser-backend.feature](../../../features/storage/browser-backend.feature) is bound by [browser-backend.steps.tsx](../../../features/step-definitions/browser-backend.steps.tsx) (PR 65b): it runs the real `App` on a `BrowserFsBackend` over `fake-indexeddb`, clicks "Start writing", checks `space.cept.yaml` and `Welcome.md` with a second connection to the database, edits the page, closes the tab and reopens the app on the same database, and checks the capability flags. "A blank page" is the starter page, which holds only the prompt `Start typing here...`.
+- Test gaps against the acceptance criteria: the steps use `fake-indexeddb`, not a browser. No Playwright spec in `e2e/tests/` reloads the page to assert persistence. Persistence is covered only by unit tests ([packages/core/src/storage/browser-fs.test.ts](../../../packages/core/src/storage/browser-fs.test.ts)).
 
 **Docs state: documented-as-desired, stale.** README.md line 15 and introduction.md line 27 correctly say IndexedDB. quick-start.md line 11, features.md line 112 and roadmap.md line 12 wrongly say localStorage.
 
@@ -954,7 +955,6 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 - [docs/specs/storage-backends.md](../storage-backends.md)
   - It is still marked Draft and covers only three backends.
   - Its test plan references `features/storage/local-folder.feature`, which does not exist.
-  - [features/storage/browser-backend.feature](../../../features/storage/browser-backend.feature) has no step definitions.
 - [docs/SPECIFICATION.md](../../SPECIFICATION.md)
   - §4.6 lists `comments/`, `styles/` and `plugins/`, none of which are implemented. It omits `spaces.json`, `workspace-state.json`, `settings.json`, `spaces/` and `git-clones/`, and shows a nested `pages/` tree the code does not produce.
   - Appendix F's config schema does not match what `initialize()` writes, and no code reads the file.

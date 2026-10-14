@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import * as d3 from 'd3';
 import type { GraphData, GraphLink, GraphViewOptions, LaidOutNode } from './graph-types.js';
-import { filterByDepth } from './graph-types.js';
+import { filterByDepth, inLinkCounts, nodeRadius } from './graph-types.js';
 
 export interface KnowledgeGraphProps {
   data: GraphData;
@@ -45,6 +45,8 @@ export function KnowledgeGraph({
     svg.selectAll('*').remove();
 
     const g = svg.append('g');
+    // Counted before the simulation replaces each link's ends with node objects.
+    const inLinks = inLinkCounts(displayData);
 
     // Zoom behavior
     const zoom = d3
@@ -104,7 +106,9 @@ export function KnowledgeGraph({
 
     node
       .append('circle')
-      .attr('r', (d: LaidOutNode) => (options.focusNodeId === d.id ? 10 : 7))
+      .attr('r', (d: LaidOutNode) =>
+        nodeRadius(inLinks.get(d.id) ?? 0, options.focusNodeId === d.id),
+      )
       .attr('fill', (d: LaidOutNode) => {
         if (d.group && colorGroups[d.group]) return colorGroups[d.group];
         return colorGroups['default'] ?? '#6366f1';
