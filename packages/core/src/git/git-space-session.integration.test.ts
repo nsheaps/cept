@@ -13,6 +13,8 @@ import 'fake-indexeddb/auto';
 import { BrowserFsBackend } from '../storage/browser-fs.js';
 import type { GitFs, GitHttp } from '../storage/git-backend.js';
 import { countUnpushedCommits, remoteCloneDir, syncRemoteClone } from '../storage/git-clone.js';
+import { formatCommentMarker } from '../markdown/comments.js';
+import type { PageComment } from '../markdown/comments.js';
 import { GitSpaceSession } from './git-space-session.js';
 import { listPageHistory, pageVersionContent, pageVersionDiff } from './page-history.js';
 import type { GitSpaceSessionOptions } from './git-space-session.js';
@@ -461,6 +463,39 @@ describe('GitSpaceSession conflicts (REQ-WS-026)', () => {
     const merged = page(['title: Plan', 'status: done', 'owner: sam'], 'ONE\ntwo\nTHREE\n');
     expect(decode(await session.backend.readFile('plan.md'))).toBe(merged);
     expect(git(bare, 'show', 'main:plan.md')).toBe(merged.trimEnd());
+    expect(git(bare, 'log', '-1', '--format=%P', 'main').split(' ')).toHaveLength(2);
+  });
+
+  it('merges comments added on two devices next to the same paragraph (REQ-NTN-010)', async () => {
+    const note = (id: string, who: string): PageComment => ({
+      v: 1,
+      id,
+      author: { id: who, name: who },
+      created: '2026-01-01T00:00:00.000Z',
+      body: `from ${who}`,
+      status: 'open',
+    });
+    const mine = formatCommentMarker(note('c-aaaaaaaaaa', 'me'));
+    const theirs = formatCommentMarker(note('c-bbbbbbbbbb', 'sam'));
+    const { work, bare } = makeRepo('comments');
+    writeFileSync(path.join(work, 'plan.md'), 'Intro\n\nOne paragraph.\n\nOutro\n');
+    commitAll(work, 'plan');
+    git(work, 'push', '-q', 'origin', 'main');
+    const { session } = await openSession('comments');
+
+    pushFromElsewhere(work, 'plan.md', `Intro\n\nOne paragraph.\n\n${theirs}\n\nOutro\n`);
+    await session.backend.writeFile(
+      'plan.md',
+      encode(`Intro\n\nOne paragraph.\n\n${mine}\n\nOutro\n`),
+    );
+    const { status } = await session.syncNow();
+    await session.dispose();
+
+    expect(status.state).toBe('synced');
+    const merged = git(bare, 'show', 'main:plan.md');
+    expect(merged).not.toContain('<<<<<<<');
+    expect(merged).toContain(mine);
+    expect(merged).toContain(theirs);
     expect(git(bare, 'log', '-1', '--format=%P', 'main').split(' ')).toHaveLength(2);
   });
 

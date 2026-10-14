@@ -315,9 +315,9 @@ stateDiagram-v2
   - Writes are append-friendly: new threads and comments are added at the end of their list, and every item has its own ID, so two people appending at once produce a simple git merge.
   - When a git sync hits a conflict in a page that contains comment markers, Cept merges the markers by comment ID (union; for the same comment the later `edited` wins) instead of asking the user.
   - With co-editing, thread changes go through the same session as page edits.
-- **Current state:** **not-started.** Sync itself is not wired yet (see [REQ-WS-014](03-spaces-and-storage.md#req-ws-014--git-backed-space-write-commit-pushpull-sync)).
-- **Docs state:** undocumented.
-- **Gap:** ID-based merge function in core; hook into sync conflict handling.
+- **Current state:** **partial.** File sync and merge are done (PR 64). When the line merge of a page hits a region that holds only comment markers on both sides, `mergeCommentRegion` in `packages/core/src/git/text-merge.ts` merges them by comment id: the union of both sides; for an id on both sides the later `edited` (or `created`) wins, mine on a tie; a comment one side deleted and the other left unchanged is dropped, and one the other side edited is kept. A region with an unreadable marker, a repeated id, or any other text still reports a conflict. Covered by unit tests in `text-merge.test.ts` and a two-clone integration test in `git-space-session.integration.test.ts`. Live updates wait for co-editing.
+- **Docs state:** documented-differently (the rule is in this requirement and [REQ-WS-026](03-spaces-and-storage.md); no user guide page yet).
+- **Gap:** Live updates (co-editing, later). Comments next to text that both sides also changed still conflict, because the surrounding text is the conflict.
 
 ### REQ-NTN-011 — Comment tests
 

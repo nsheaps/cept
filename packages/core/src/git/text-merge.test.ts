@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { formatCommentMarker, type PageComment } from '../markdown/comments.js';
 import {
   CONFLICT_MARKERS,
   hasConflictMarkers,
@@ -168,5 +169,90 @@ describe('mergeText (REQ-WS-026)', () => {
       merged: 'mine\n',
     });
     expect(mergeText('new.md', null, 'mine\n', 'theirs\n').clean).toBe(false);
+  });
+});
+
+describe('mergeText with comments (REQ-NTN-010)', () => {
+  const comment = (id: string, body: string, extra: Partial<PageComment> = {}): PageComment => ({
+    id,
+    author: { id: 'github:sam', name: 'Sam' },
+    created: '2026-10-14T06:00:00Z',
+    body,
+    ...extra,
+  });
+  const marker = (id: string, body: string, extra: Partial<PageComment> = {}) =>
+    formatCommentMarker(comment(id, body, extra));
+  const page = (...parts: string[]) => parts.join('\n\n') + '\n';
+  const A = 'c-aaaaaaaaaa';
+  const B = 'c-bbbbbbbbbb';
+  const C = 'c-cccccccccc';
+  const merge = (base: string, mine: string, theirs: string) =>
+    mergeText('plan.md', base, mine, theirs);
+
+  it('keeps comments added on both sides of the same paragraph', () => {
+    const base = page('# Plan', 'Ship it.', 'End.');
+    const mine = page('# Plan', 'Ship it.', marker(A, 'mine'), 'End.');
+    const theirs = page('# Plan', 'Ship it.', marker(B, 'theirs'), 'End.');
+    expect(merge(base, mine, theirs)).toEqual({
+      clean: true,
+      merged: page('# Plan', 'Ship it.', marker(A, 'mine'), marker(B, 'theirs'), 'End.'),
+    });
+  });
+
+  it('keeps comments both sides appended at the end of the page', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const mine = page('# Plan', marker(A, 'first'), marker(B, 'mine'));
+    const theirs = page('# Plan', marker(A, 'first'), marker(C, 'theirs'));
+    expect(merge(base, mine, theirs)).toEqual({
+      clean: true,
+      merged: page('# Plan', marker(A, 'first'), marker(B, 'mine'), marker(C, 'theirs')),
+    });
+  });
+
+  it('keeps the later edit of a comment both sides changed', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const mine = page('# Plan', marker(A, 'mine', { edited: '2026-10-14T07:00:00Z' }));
+    const theirs = page('# Plan', marker(A, 'theirs', { edited: '2026-10-14T08:00:00Z' }));
+    expect(merge(base, mine, theirs)).toEqual({ clean: true, merged: theirs });
+    expect(merge(base, theirs, mine)).toEqual({ clean: true, merged: theirs });
+  });
+
+  it('keeps mine when both edits carry the same time', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const at = { edited: '2026-10-14T07:00:00Z' };
+    const mine = page('# Plan', marker(A, 'mine', at));
+    const theirs = page('# Plan', marker(A, 'theirs', at));
+    expect(merge(base, mine, theirs)).toEqual({ clean: true, merged: mine });
+  });
+
+  it('drops a comment deleted on one side and untouched on the other', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const mine = page('# Plan');
+    const theirs = page('# Plan', marker(A, 'first'), marker(B, 'new'));
+    expect(merge(base, mine, theirs)).toEqual({
+      clean: true,
+      merged: page('# Plan', marker(B, 'new')),
+    });
+  });
+
+  it('keeps a comment one side deleted and the other edited', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const mine = page('# Plan');
+    const theirs = page('# Plan', marker(A, 'changed', { edited: '2026-10-14T07:00:00Z' }));
+    expect(merge(base, mine, theirs)).toEqual({ clean: true, merged: theirs });
+  });
+
+  it('still reports a conflict when the text around the markers changed on both sides', () => {
+    const base = page('# Plan', marker(A, 'first'));
+    const mine = page('# Plan', 'Mine.', marker(A, 'first'));
+    const theirs = page('# Plan', 'Theirs.', marker(A, 'first'));
+    expect(merge(base, mine, theirs).clean).toBe(false);
+  });
+
+  it('still reports a conflict for a marker it cannot read', () => {
+    const base = page('# Plan', 'Text.');
+    const mine = page('# Plan', 'Text.', '<!-- cept:comment {not json} -->');
+    const theirs = page('# Plan', 'Text.', marker(B, 'theirs'));
+    expect(merge(base, mine, theirs).clean).toBe(false);
   });
 });

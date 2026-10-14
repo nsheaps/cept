@@ -830,7 +830,7 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 
 ### REQ-WS-026 — Git sync conflict resolution
 
-> **Scope: Phase 1 (D-30, D-37).** Phase 1 plan PR 37; merging comment blocks by id is PR 64.
+> **Scope: Phase 1 (D-30, D-37).** Phase 1 plan PR 37; merging comment blocks by id is PR 64 (done).
 
 **Statement.** When local and remote changes to a Git-backed space diverge, Cept MUST merge what it can without asking, and MUST show every remaining conflict per file so the user can resolve it. Conflict markers MUST never be committed into pages, and neither side's version MUST be lost.
 
@@ -839,7 +839,7 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 **Acceptance criteria**
 
 - Changes that do not overlap merge automatically with a three-way merge against the common ancestor.
-- Front matter merges key by key; the same key changed on both sides is a conflict. `cept:comment` blocks merge by comment id (PR 64).
+- Front matter merges key by key; the same key changed on both sides is a conflict. `cept:comment` blocks merge by comment id: concurrent comments on one page are all kept, the later edit of a shared comment wins, and a deletion one side made is honoured when the other left the comment unchanged (PR 64).
 - A per-file conflict view offers **Keep mine**, **Keep theirs** and **Edit merged**. Until every conflict in a space is resolved, that space does not push; editing other pages carries on.
 - The version not chosen is kept as a conflict copy the user can open, not discarded.
 - A file deleted on one side and changed on the other keeps the changed file and asks whether to delete it.
@@ -852,11 +852,12 @@ The Discovered list (PR 34): `useDiscoveredSpaces` in [discovered-spaces.ts](../
 - [packages/core/src/git/tree-merge.ts](../../../packages/core/src/git/tree-merge.ts) plans the merge of two commits file by file: a file changed on one side takes that side; one changed on both merges as text; overlapping edits, add/add, delete/modify and binary files are conflicts. A resolution takes mine, theirs or merged content; keeping one side writes the other next to the file as `Name (their version <sha>).md` or `Name (my version <sha>).md`. Merged content that still holds conflict markers is refused.
 - `GitBackend.pull` fetches and merges with that plan (fast-forwarding when it can), and on a conflict leaves the branch and the working files untouched and reports each file's versions; `SyncEngine` holds the push until `GitSpaceSession.resolveConflicts` finishes the merge commit. `GitSpaceSession.pushToNewBranch` pushes the local work to `cept/<login>/<date>-<short-sha>` (`fallbackBranchName`) and resets the space to its tracked branch.
 - In the app, the sync indicator offers **Resolve conflicts** on a conflict and **Push to a new branch** when the remote refused the push; the conflict view ([ConflictResolver.tsx](../../../packages/ui/src/components/git/ConflictResolver.tsx)) offers Keep mine / Keep theirs / Edit merged per file (Keep the file / Delete it for a file deleted on one side; no editing for binary files) and the same fallback.
+- Comment markers (`cept:comment`) merge by comment id (PR 64, `mergeCommentRegion`).
 - Integration tests run against local bare repos: auto-merge of front matter and body, a held conflict resolved each way with its copy, delete/modify, and a protected branch refusing the push.
 
 **Docs state: documented** in [Managing spaces](../../content/guides/managing-spaces.md#when-a-sync-meets-a-conflict).
 
-**Gap.** Block-aware Markdown merging (waits for the M3 pipeline; the body merges line by line until then) and merging `cept:comment` blocks by id (PR 64). Choosing an edited merge, or deleting a file, keeps no copy (both versions stay in the history). Pushing to a new branch while offline fails with the push error rather than queuing.
+**Gap.** Block-aware Markdown merging (waits for the M3 pipeline; the body merges line by line until then) and merging comment markers when the text around them also conflicts. Choosing an edited merge, or deleting a file, keeps no copy (both versions stay in the history). Pushing to a new branch while offline fails with the push error rather than queuing.
 
 **Related:** REQ-WS-014, REQ-WS-027, D-30, D-37.
 
