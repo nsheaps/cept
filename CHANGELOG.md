@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.57.0](https://github.com/nsheaps/cept/compare/v0.56.0...v0.57.0) (2026-10-14)
+
+### Features
+
+* **core:** parse and serialize cept:comment markers ([#449](https://github.com/nsheaps/cept/issues/449)) ([1fb58c0](https://github.com/nsheaps/cept/commit/1fb58c0b2bbd5c2372f301af2690743b1e8d3f2e))
+
 ## [0.56.0](https://github.com/nsheaps/cept/compare/v0.55.0...v0.56.0) (2026-10-14)
 
 ### Features
