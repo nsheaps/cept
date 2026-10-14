@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.61.0](https://github.com/nsheaps/cept/compare/v0.60.0...v0.61.0) (2026-10-14)
+
+### Features
+
+* **ui:** comments panel and new-since-last-visit badge ([#453](https://github.com/nsheaps/cept/issues/453)) ([e37f0a9](https://github.com/nsheaps/cept/commit/e37f0a94dac591cfd40c39b3207553cfc5d6da46))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([168e0ab](https://github.com/nsheaps/cept/commit/168e0abfa85ac9583bedea207325bf41742581e9))
+
 ## [0.60.0](https://github.com/nsheaps/cept/compare/v0.59.0...v0.60.0) (2026-10-14)
 
 ### Features
