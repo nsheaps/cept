@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { createRequire } from 'module';
+import { selectPrecache } from './src/sw-precache';
 
 const require = createRequire(import.meta.url);
 const rootPkg = require('../../package.json') as { version: string };
@@ -30,8 +32,45 @@ function inject404BasePath(): Plugin {
   };
 }
 
+/** Every file under `dir`, as `/`-separated paths relative to it. */
+function listFiles(dir: string, prefix = ''): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const rel = prefix + entry.name;
+    return entry.isDirectory() ? listFiles(path.join(dir, entry.name), `${rel}/`) : [rel];
+  });
+}
+
+/**
+ * Post-build plugin that writes the precache list and a build id into
+ * `service-worker.js`. The list is every built file the app needs to start
+ * offline, relative to the base, so it works under any deploy path. The build
+ * id hashes those files, so any change yields a new worker and a new cache name.
+ */
+function injectServiceWorkerManifest(): Plugin {
+  return {
+    name: 'inject-service-worker-manifest',
+    apply: 'build',
+    closeBundle() {
+      const dist = path.resolve(__dirname, 'dist');
+      const swPath = path.join(dist, 'service-worker.js');
+      if (!fs.existsSync(swPath)) return;
+      const files = selectPrecache(listFiles(dist));
+      const hash = crypto.createHash('sha256');
+      for (const file of files) {
+        hash.update(file);
+        if (file !== './') hash.update(fs.readFileSync(path.join(dist, file)));
+      }
+      const sw = fs
+        .readFileSync(swPath, 'utf-8')
+        .replace('__PRECACHE_MANIFEST__', files.join(','))
+        .replace('__BUILD_ID__', hash.digest('hex').slice(0, 12));
+      fs.writeFileSync(swPath, sw);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [tailwindcss(), react(), inject404BasePath()],
+  plugins: [tailwindcss(), react(), inject404BasePath(), injectServiceWorkerManifest()],
   base: process.env.VITE_BASE_PATH || '/',
   define: {
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || rootPkg.version),

@@ -7,10 +7,14 @@ import ReactDOM from 'react-dom/client';
 import { App, FolderHostProvider, GitAuthsProvider, StorageProvider } from '@cept/ui';
 import { BrowserFsBackend, GitAuthRegistry } from '@cept/core';
 import '@cept/ui/styles/globals.css';
-import { registerServiceWorker, consumeUpdateFlag } from './sw-register.js';
+import {
+  registerServiceWorker,
+  consumeUpdateFlag,
+  unregisterServiceWorker,
+} from './sw-register.js';
 import { UpdateToast } from './UpdateToast.js';
 import { PreviewToast } from './PreviewToast.js';
-import { getDbName } from './deploy-namespace.js';
+import { getDbName, isKillSwitch } from './deploy-namespace.js';
 import { createFolderHost } from './folder-host.js';
 import { LocalStorageAuthIndexStore } from './auth-index-store.js';
 import { EncryptedTokenStore } from './token-store.js';
@@ -37,6 +41,12 @@ function Root() {
     // Check if we just reloaded after a SW update
     if (consumeUpdateFlag()) {
       setShowUpdateToast(true);
+    }
+
+    // `?no-sw` is the way out of a broken worker: remove it instead of registering it
+    if (isKillSwitch(new URL(window.location.href))) {
+      void unregisterServiceWorker(import.meta.env.BASE_URL);
+      return;
     }
 
     // Register the service worker (import.meta.env.BASE_URL includes trailing slash)

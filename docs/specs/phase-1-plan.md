@@ -756,6 +756,7 @@ Owner feedback after PR 429 (2026-10-12): a clearer token link, an Auth section 
 - Red: unit test of the generated list; built-bundle test that load, go offline, reload still renders (fails today under `/cept/app/`).
 - Accept: tests green.
 - Risk: a broken SW strands users; ship with a kill-switch path in the update flow.
+- Delivered (67): the build injects a base-relative precache list and a build id into `service-worker.js`; cache names are versioned by build; `activate` and `CLEAR_CACHE` touch only this deployment's caches; a failed install is logged, fails the install and reaches `onError`; offline navigations fall back to the cached shell; `?no-sw` is the kill switch (bypass, unregister, clear caches). Unit tests of the list and cache ownership; built-bundle `offline.pwa.spec.ts` (injection, then load, offline reload renders), failing on the old worker. Not delivered: CI wiring (PR 68); precache is about 8 MB.
 
 **PR 68 — `test(e2e): add a built-bundle pwa project`**
 

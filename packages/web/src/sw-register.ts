@@ -5,7 +5,7 @@
  * user always sees the latest content.
  */
 
-import { namespacedKey } from './deploy-namespace.js';
+import { getDeploymentId, isOwnCache, namespacedKey } from './deploy-namespace.js';
 
 /** Key used in sessionStorage to signal a post-update reload */
 export const UPDATE_FLAG_KEY = namespacedKey(import.meta.env.BASE_URL, 'cept-sw-updated');
@@ -54,6 +54,12 @@ export async function registerServiceWorker(
       if (!newWorker) return;
 
       newWorker.addEventListener('statechange', () => {
+        // An install that fails (a precache file could not be fetched) ends here:
+        // the worker never activates and the previous one keeps serving.
+        if (newWorker.state === 'redundant') {
+          callbacks?.onError?.(new Error('Service worker install failed'));
+          return;
+        }
         if (newWorker.state === 'installed') {
           if (sw.controller) {
             // New update available — activate it immediately
@@ -89,4 +95,22 @@ export function consumeUpdateFlag(): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * Remove this deployment's service worker registrations and caches (the page
+ * side of the `?no-sw` kill switch, see `isKillSwitch`). Other deployments on
+ * the origin are left alone.
+ */
+export async function unregisterServiceWorker(basePath: string): Promise<void> {
+  if ('serviceWorker' in navigator && navigator.serviceWorker) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const scope = new URL(basePath, window.location.origin).href;
+    await Promise.all(registrations.filter((r) => r.scope === scope).map((r) => r.unregister()));
+  }
+  if ('caches' in window) {
+    const id = getDeploymentId(basePath);
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => isOwnCache(key, id)).map((key) => caches.delete(key)));
+  }
 }
