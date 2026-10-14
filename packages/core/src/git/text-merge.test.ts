@@ -225,6 +225,22 @@ describe('mergeText with comments (REQ-NTN-010)', () => {
     expect(merge(base, mine, theirs)).toEqual({ clean: true, merged: mine });
   });
 
+  it('lists mine first, then the comments only theirs holds', () => {
+    const base = page('# Plan', 'Ship it.');
+    const mine = page('# Plan', 'Ship it.', marker(B, 'mine two'), marker(A, 'mine one'));
+    const theirs = page('# Plan', 'Ship it.', marker(C, 'theirs'));
+    expect(merge(base, mine, theirs)).toEqual({
+      clean: true,
+      merged: page(
+        '# Plan',
+        'Ship it.',
+        marker(B, 'mine two'),
+        marker(A, 'mine one'),
+        marker(C, 'theirs'),
+      ),
+    });
+  });
+
   it('drops a comment deleted on one side and untouched on the other', () => {
     const base = page('# Plan', marker(A, 'first'));
     const mine = page('# Plan');

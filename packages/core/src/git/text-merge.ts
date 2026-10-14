@@ -9,7 +9,9 @@
  * pipeline; until then the body merges line by line, except that a changed
  * region holding only `cept:comment` markers merges by comment id
  * (`mergeCommentRegion`, REQ-NTN-010), so two people adding comments never
- * conflict.
+ * conflict. The merged markers keep mine's order first, then the ones only
+ * theirs holds; the line is read without markdown context, so a region of
+ * well-formed markers inside a code fence merges the same way.
  */
 
 import { parseCommentMarker, type PageComment } from '../markdown/comments.js';
@@ -161,9 +163,10 @@ function mergeCommentRegion(
   // Keep the blank lines around the markers as the sides wrote them.
   const sides = [mine, theirs].filter((lines) => lines.some((line) => line.trim() !== ''));
   const count = (lines: readonly string[], from: 'start' | 'end') => {
-    const ordered = from === 'start' ? lines : [...lines].reverse();
-    const first = ordered.findIndex((line) => line.trim() !== '');
-    return first === -1 ? 0 : first;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[from === 'start' ? i : lines.length - 1 - i]!.trim() !== '') return i;
+    }
+    return 0;
   };
   const lead = Math.max(0, ...sides.map((lines) => count(lines, 'start')));
   const trail = Math.max(0, ...sides.map((lines) => count(lines, 'end')));
