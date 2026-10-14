@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.62.1](https://github.com/nsheaps/cept/compare/v0.62.0...v0.62.1) (2026-10-14)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([03d7b3a](https://github.com/nsheaps/cept/commit/03d7b3a9ad60802ebbadcd88890d315c49ca3bea))
+
+### Chores
+
+* **deps:** update dependency @release-it/conventional-changelog to v12.0.2 ([#456](https://github.com/nsheaps/cept/issues/456)) ([8118ee8](https://github.com/nsheaps/cept/commit/8118ee89ece5734a80a6e8e6f7d64c32352ee5de)), references [#8203](https://github.com/nsheaps/cept/issues/8203)
+
 ## [0.62.0](https://github.com/nsheaps/cept/compare/v0.61.1...v0.62.0) (2026-10-14)
 
 ### Features
