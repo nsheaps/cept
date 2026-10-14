@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.59.0](https://github.com/nsheaps/cept/compare/v0.58.0...v0.59.0) (2026-10-14)
+
+### Features
+
+* **editor:** hold comments as hidden nodes with anchor highlights ([#451](https://github.com/nsheaps/cept/issues/451)) ([bb736af](https://github.com/nsheaps/cept/commit/bb736af57fd4f0672ee0e3f955b5e1063db0560f))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([ae8772f](https://github.com/nsheaps/cept/commit/ae8772f8a596ba0588b69789d0fcbc1e5062f02a))
+
 ## [0.58.0](https://github.com/nsheaps/cept/compare/v0.57.0...v0.58.0) (2026-10-14)
 
 ### Features
