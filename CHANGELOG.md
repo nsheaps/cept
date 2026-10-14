@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.62.0](https://github.com/nsheaps/cept/compare/v0.61.1...v0.62.0) (2026-10-14)
+
+### Features
+
+* **ui:** sidebar open-comment count ([#455](https://github.com/nsheaps/cept/issues/455)) ([36e5c26](https://github.com/nsheaps/cept/commit/36e5c26941f16b325e5e1dcd374746d5fd7b968d))
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([e2a37e5](https://github.com/nsheaps/cept/commit/e2a37e52566a08dcdd2891189dd2e5017df92aa4))
+
 ## [0.61.1](https://github.com/nsheaps/cept/compare/v0.61.0...v0.61.1) (2026-10-14)
 
 ### Documentation
