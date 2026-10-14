@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { Editor } from '@tiptap/core';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import type { CommentAuthor, MarkdownDocument, PmNode } from '@cept/core';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -23,6 +24,7 @@ import {
 import { SlashCommandMenu, type SlashCommandMenuRef } from './SlashCommandMenu.js';
 import { InlineToolbar } from './InlineToolbar.js';
 import { CommentComposer } from './CommentComposer.js';
+import { listPageComments, type ListedComment } from './extensions/comment.js';
 import { usePageLinks, scrollToHeading, type PageLinksContext } from './page-links.js';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 
@@ -53,6 +55,8 @@ export interface CeptEditorProps {
   anchor?: string;
   /** Turns on commenting (REQ-NTN-002): the toolbar button, Ctrl/Cmd+Alt+M and "Comment on page". */
   commenting?: CommentingContext;
+  /** Called with the page's comments when the page opens and whenever they change (REQ-NTN-008). */
+  onCommentsChange?: (comments: ListedComment[]) => void;
 }
 
 /** The popup that lists a suggestion's items under the caret, shared by `/` and `@`. */
@@ -112,6 +116,7 @@ export function CeptEditor({
   links,
   anchor,
   commenting,
+  onCommentsChange,
 }: CeptEditorProps) {
   // The page is parsed once per mount; saves reuse the source of every block
   // that is unchanged since load (EDT-005).
@@ -122,6 +127,18 @@ export function CeptEditor({
   latestLinks.current = links;
   // The shortcut is registered once, so it reaches the composer through a ref too.
   const openComposerRef = useRef<(() => void) | null>(null);
+  // Also read through a ref, and only reported when the list differs from the last one.
+  const commentsChange = useRef(onCommentsChange);
+  commentsChange.current = onCommentsChange;
+  const lastComments = useRef('');
+  const reportComments = (ed: Editor) => {
+    if (!commentsChange.current) return;
+    const listed = listPageComments(ed.state.doc);
+    const signature = JSON.stringify(listed);
+    if (signature === lastComments.current) return;
+    lastComments.current = signature;
+    commentsChange.current(listed);
+  };
   const [composer, setComposer] = useState<ComposerState | null>(null);
   const editor = useEditor({
     extensions: [
@@ -164,8 +181,10 @@ export function CeptEditor({
     editable,
     onCreate: ({ editor: ed }) => {
       baseline.current = editorBaseline(loaded.parsed, ed.getJSON() as PmNode);
+      reportComments(ed);
     },
     onUpdate: ({ editor: ed }) => {
+      reportComments(ed);
       if (!onUpdate || !baseline.current) return;
       onUpdate(saveMarkdown(ed.getJSON() as PmNode, baseline.current));
     },

@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CeptEditor } from './editor/CeptEditor.js';
 import type { CommentingContext } from './editor/CeptEditor.js';
+import type { ListedComment } from './editor/extensions/comment.js';
+import { CommentsPanel } from './comments/CommentsPanel.js';
+import { countNewComments, lastVisit, markVisited } from './comments/comment-visits.js';
 import type { PageLinksContext } from './editor/page-links.js';
 import { Sidebar } from './sidebar/Sidebar.js';
 import type { SidebarPageRef } from './sidebar/Sidebar.js';
@@ -1835,6 +1838,35 @@ export function App() {
     [userSpaceAccount, settings, handleSettingsChange],
   );
 
+  // The open page's comments, and when the page was last opened on this device,
+  // for the comments panel and the new-comments badge (REQ-NTN-008).
+  // Tagged with their page, so the previous page's comments never show on the next one.
+  const [reported, setReported] = useState<{ pageId: string; list: ListedComment[] } | null>(null);
+  const pageComments = useMemo(
+    () => (reported && reported.pageId === selectedPageId ? reported.list : []),
+    [reported, selectedPageId],
+  );
+  const [commentsSince, setCommentsSince] = useState<string | null>(null);
+  const visitRef = useRef<{ key: string; since: string | null } | null>(null);
+  useEffect(() => {
+    if (!selectedPageId) return;
+    const key = `${userSpaceId}\u0000${selectedPageId}`;
+    // Strict mode runs this twice in a row: keep the first reading, not the visit just recorded.
+    if (visitRef.current?.key !== key) {
+      visitRef.current = { key, since: lastVisit(userSpaceId, selectedPageId) };
+    }
+    setCommentsSince(visitRef.current.since);
+    return () => markVisited(userSpaceId, selectedPageId, new Date().toISOString());
+  }, [userSpaceId, selectedPageId]);
+  const newComments = countNewComments(pageComments, commentsSince, commenting.author?.id ?? null);
+  const handleJumpToComment = useCallback((commentId: string) => {
+    // Ids are generated, but a hand-edited page could hold any string.
+    const id = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(commentId) : commentId;
+    document
+      .querySelector(`[data-comment-id="${id}"].cept-comment-highlight`)
+      ?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  }, []);
+
   const handleResetSettings = useCallback(() => {
     void resetSettingsOnBackend(backend);
     setSettings({ ...DEFAULT_SETTINGS });
@@ -3457,6 +3489,7 @@ export function App() {
                 icon={selectedNode.icon}
                 cover={selectedNode.cover}
                 isFavorite={favorites.some((f) => f.id === selectedPageId)}
+                newComments={newComments}
                 onRename={editLocked ? explainLocked : handlePageRename}
                 onDuplicate={editLocked ? explainLocked : handlePageDuplicate}
                 onDelete={editLocked ? explainLocked : handlePageDelete}
@@ -3479,6 +3512,7 @@ export function App() {
                   onUpdate={handleContentUpdate}
                   editable={!editLocked}
                   commenting={commenting}
+                  onCommentsChange={(list) => setReported({ pageId: selectedPageId, list })}
                   {...(pageLinks ? { links: pageLinks } : {})}
                   {...(pendingAnchor ? { anchor: pendingAnchor } : {})}
                 />
@@ -3490,6 +3524,12 @@ export function App() {
               {selectedNode.children.length > 0 && (
                 <FolderView children={selectedNode.children} onPageSelect={handlePageSelect} />
               )}
+              <CommentsPanel
+                comments={pageComments}
+                lastVisit={commentsSince}
+                meId={commenting.author?.id ?? null}
+                onJump={handleJumpToComment}
+              />
               <BacklinksPanel
                 backlinks={backlinkIndex.get(selectedPageId) ?? []}
                 onNavigate={handleLinkNavigate}

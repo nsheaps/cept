@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Editor } from '@tiptap/core';
 import { formatCommentMarker, readPageComments } from '@cept/core';
 import type { PageComment, PmNode } from '@cept/core';
+import { listPageComments } from './comment.js';
 import { documentExtensions } from '../document-extensions.js';
 import { editorBaseline, loadMarkdown, saveMarkdown } from '../markdown-bridge.js';
 
@@ -152,6 +153,39 @@ describe('addComment', () => {
     editor.commands.setTextSelection({ from: 7, to: 16 });
     editor.commands.addComment({ author, body: 'break' });
     expect(readPageComments(save()).comments[0]!.comment.anchor?.quote).toContain('\n');
+    editor.destroy();
+  });
+});
+
+describe('listPageComments', () => {
+  const pageLevel = comment('c-bbbbbbbbbb', 'x', { anchor: undefined, body: 'About it all' });
+  const gone = comment('c-cccccccccc', 'vanished text');
+  const markdown = [
+    'First paragraph.',
+    'The second line.',
+    formatCommentMarker(comment('c-aaaaaaaaaa', 'second')),
+    formatCommentMarker(gone),
+    formatCommentMarker(pageLevel),
+  ].join('\n\n');
+
+  it('lists the comments in page order, as anchored, detached or page-level', () => {
+    const { editor } = open(`${markdown}\n`);
+    expect(listPageComments(editor.state.doc).map((c) => [c.comment.id, c.kind])).toEqual([
+      ['c-aaaaaaaaaa', 'anchored'],
+      ['c-cccccccccc', 'detached'],
+      ['c-bbbbbbbbbb', 'page'],
+    ]);
+    editor.destroy();
+  });
+
+  it('follows an edit that removes the quoted text', () => {
+    const { editor } = open(`${markdown}\n`);
+    editor.commands.setTextSelection({ from: 23, to: 29 });
+    editor.commands.deleteSelection();
+    expect(listPageComments(editor.state.doc)[0]).toMatchObject({
+      comment: { id: 'c-aaaaaaaaaa' },
+      kind: 'detached',
+    });
     editor.destroy();
   });
 });

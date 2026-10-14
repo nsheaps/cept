@@ -1395,3 +1395,97 @@
 .dark .cept-comment-page-button:hover {
   color: #a5b4fc;
 }
+
+/* Comments panel under the page (REQ-NTN-008). */
+.cept-comments {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cept-border, #e5e5e5);
+}
+.cept-comments-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cept-text-muted, #6b7280);
+  margin-bottom: 0.5rem;
+}
+.cept-comments-new-badge,
+.cept-comment-new,
+.cept-page-header-new-comments {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #78350f;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cept-comments-group {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cept-text-muted, #6b7280);
+}
+.cept-comments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cept-comment-item {
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border-left: 3px solid var(--cept-border, #e5e5e5);
+  margin-bottom: 0.5rem;
+}
+.cept-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--cept-text-muted, #6b7280);
+}
+.cept-comment-author {
+  font-weight: 600;
+  color: inherit;
+}
+.cept-comment-quote {
+  display: block;
+  max-width: 100%;
+  margin: 0.25rem 0;
+  padding: 0 0.5rem;
+  border: 0;
+  border-left: 2px solid rgba(255, 180, 0, 0.7);
+  background: none;
+  color: var(--cept-text-muted, #6b7280);
+  font-size: 0.85rem;
+  font-style: italic;
+  text-align: left;
+}
+button.cept-comment-quote {
+  cursor: pointer;
+}
+button.cept-comment-quote:hover {
+  background: var(--cept-hover, rgba(0, 0, 0, 0.05));
+}
+.cept-comment-detached-note {
+  margin: 0.125rem 0;
+  font-size: 0.8rem;
+  color: var(--cept-text-muted, #6b7280);
+}
+.cept-comment-body {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
+.cept-page-header-new-comments {
+  align-self: center;
+  margin-left: 0.75rem;
+}
+.dark .cept-comments-new-badge,
+.dark .cept-comment-new,
+.dark .cept-page-header-new-comments {
+  background: #78350f;
+  color: #fde68a;
+}
