@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.1](https://github.com/nsheaps/cept/compare/v0.64.0...v0.64.1) (2026-10-14)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([a5b388c](https://github.com/nsheaps/cept/commit/a5b388cab2827c9760141be1467fc0b627ea96cb))
+
+### Tests
+
+* **graph:** bind graph, sidebar and browser-storage features ([#462](https://github.com/nsheaps/cept/issues/462)) ([b8c9adb](https://github.com/nsheaps/cept/commit/b8c9adbf0ae4f270ab5cdb5c778d6afabf03f711)), references [#460](https://github.com/nsheaps/cept/issues/460)
+
 ## [0.64.0](https://github.com/nsheaps/cept/compare/v0.63.0...v0.64.0) (2026-10-14)
 
 ### Features
