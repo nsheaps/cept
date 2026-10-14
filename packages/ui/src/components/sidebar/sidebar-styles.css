@@ -257,7 +257,8 @@
   position: relative;
 }
 
-/* Where a dragged page would land: a line above or below the row (REQ-NTN-012). */
+/* Where a dragged page would land: a line above or below the row (REQ-NTN-012).
+   The blue matches the selection colour and reads on both themes, so there is no .dark pairing. */
 .cept-sidebar-item[data-drop='before']::after,
 .cept-sidebar-item[data-drop='after']::after {
   content: '';

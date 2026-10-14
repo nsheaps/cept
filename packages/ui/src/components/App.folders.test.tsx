@@ -261,6 +261,22 @@ describe('App folder spaces', () => {
       expect(folder.readText('Welcome.md')).toBe('# Welcome\n\nHello from a folder.\n');
       expect(titles()).toEqual(['Guides', 'Welcome.md', 'Zebra.md']);
     });
+
+    it('refuses a move when a page front matter is not valid YAML, writing nothing', async () => {
+      const folder = new MemoryBackend();
+      folder.seedText('space.cept.yaml', 'version: 1\nname: Notes\nslug: notes\n');
+      folder.seedText('Alpha.md', '---\nbad: : :\n---\n# Alpha\n');
+      folder.seedText('Welcome.md', '# Welcome\n');
+      folder.seedText('Zebra.md', '# Zebra\n');
+      await openFolder(folder);
+      const zebra = await screen.findByTestId('page-tree-button-Zebra.md', {}, { timeout: 3000 });
+
+      fireEvent.keyDown(zebra, { key: 'ArrowUp', altKey: true });
+      expect((await screen.findByText(/not valid YAML/)).textContent).toBeTruthy();
+      expect(folder.readText('Alpha.md')).toBe('---\nbad: : :\n---\n# Alpha\n');
+      expect(folder.readText('Welcome.md')).toBe('# Welcome\n');
+      expect(folder.readText('Zebra.md')).toBe('# Zebra\n');
+    });
   });
 
   describe('a file that is not a page', () => {
