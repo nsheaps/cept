@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@isomorphic-git/lightning-fs": "4.7.0",
+    "@isomorphic-git/lightning-fs": "4.8.0",
     "hast-util-from-html": "2.0.3",
     "hast-util-to-mdast": "10.1.2",
     "ignore": "7.0.9",
