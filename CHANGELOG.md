@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.7](https://github.com/nsheaps/cept/compare/v0.64.6...v0.64.7) (2026-10-15)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1bd04f7](https://github.com/nsheaps/cept/commit/1bd04f7155a0ce43bc2a64734a7e7011459a4a04))
+
+### Chores
+
+* **deps:** update dependency ip-address to v10.7.2 ([#470](https://github.com/nsheaps/cept/issues/470)) ([47942e2](https://github.com/nsheaps/cept/commit/47942e2ae60b91c32bc379af650799ddb7de203a))
+
 ## [0.64.6](https://github.com/nsheaps/cept/compare/v0.64.5...v0.64.6) (2026-10-15)
 
 ### Bug Fixes
