@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.64.9](https://github.com/nsheaps/cept/compare/v0.64.8...v0.64.9) (2026-10-16)
+
+### Chores
+
+* **deps:** update dependency prettier to v3.9.7 ([#472](https://github.com/nsheaps/cept/issues/472)) ([1ab2724](https://github.com/nsheaps/cept/commit/1ab272417381b6ddd1e304a5c0dc537bfed104cd))
+
 ## [0.64.8](https://github.com/nsheaps/cept/compare/v0.64.7...v0.64.8) (2026-10-16)
 
 ### Documentation
