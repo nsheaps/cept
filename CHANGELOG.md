@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.8](https://github.com/nsheaps/cept/compare/v0.64.7...v0.64.8) (2026-10-16)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([1080e56](https://github.com/nsheaps/cept/commit/1080e56639f7d2810c319352b131eb1eea028f1d))
+
+### Chores
+
+* **deps:** update dependency @types/node to v26.6.1 ([#471](https://github.com/nsheaps/cept/issues/471)) ([ca2a6e7](https://github.com/nsheaps/cept/commit/ca2a6e778b8ba63d9f0cb290008123676a5f7941))
+
 ## [0.64.7](https://github.com/nsheaps/cept/compare/v0.64.6...v0.64.7) (2026-10-15)
 
 ### Documentation
