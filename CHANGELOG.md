@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.64.11](https://github.com/nsheaps/cept/compare/v0.64.10...v0.64.11) (2026-10-18)
+
+### Chores
+
+* **deps:** update dependency prosemirror-view to v1.42.4 ([#476](https://github.com/nsheaps/cept/issues/476)) ([346cf11](https://github.com/nsheaps/cept/commit/346cf117cecafa2c55482ef3db0424ab47bb7de7))
+
 ## [0.64.10](https://github.com/nsheaps/cept/compare/v0.64.9...v0.64.10) (2026-10-18)
 
 ### Documentation
