@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.10](https://github.com/nsheaps/cept/compare/v0.64.9...v0.64.10) (2026-10-18)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([b550ed0](https://github.com/nsheaps/cept/commit/b550ed0e3407d9fd18e9872fea7569d28ae4ceb4))
+
+### Chores
+
+* **deps:** update dependency prettier to v3.9.8 ([#474](https://github.com/nsheaps/cept/issues/474)) ([f37d499](https://github.com/nsheaps/cept/commit/f37d499eedc14aefdb693b1f1ecc8e3f8833ff6a))
+
 ## [0.64.9](https://github.com/nsheaps/cept/compare/v0.64.8...v0.64.9) (2026-10-16)
 
 ### Chores
