@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.64.12](https://github.com/nsheaps/cept/compare/v0.64.11...v0.64.12) (2026-10-19)
+
+### Chores
+
+* **deps:** update dependency @types/node to v26.6.2 ([#478](https://github.com/nsheaps/cept/issues/478)) ([bc3eb57](https://github.com/nsheaps/cept/commit/bc3eb5733db983e988065a7d090d6001e8d2d6df))
+
 ## [0.64.11](https://github.com/nsheaps/cept/compare/v0.64.10...v0.64.11) (2026-10-18)
 
 ### Chores
