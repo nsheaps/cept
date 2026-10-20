@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.64.13](https://github.com/nsheaps/cept/compare/v0.64.12...v0.64.13) (2026-10-20)
+
+### Bug Fixes
+
+* **deps:** update dependency @isomorphic-git/lightning-fs to v4.9.0 ([#479](https://github.com/nsheaps/cept/issues/479)) ([18be099](https://github.com/nsheaps/cept/commit/18be099df1c012d87d3a20c46fc7a281416a10a1)), references [#8203](https://github.com/nsheaps/cept/issues/8203)
+
+### Documentation
+
+* **screenshots:** update feature screenshots [skip ci] ([a99cd75](https://github.com/nsheaps/cept/commit/a99cd75686a93134064f5aa63477d1d3b884c297))
+
 ## [0.64.12](https://github.com/nsheaps/cept/compare/v0.64.11...v0.64.12) (2026-10-19)
 
 ### Chores
