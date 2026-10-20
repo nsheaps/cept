@@ -49,7 +49,7 @@
       "name": "@cept/core",
       "version": "0.1.0",
       "dependencies": {
-        "@isomorphic-git/lightning-fs": "4.8.0",
+        "@isomorphic-git/lightning-fs": "4.9.0",
         "hast-util-from-html": "2.0.3",
         "hast-util-to-mdast": "10.1.2",
         "ignore": "7.0.9",
@@ -505,7 +505,7 @@
 
     "@isomorphic-git/idb-keyval": ["@isomorphic-git/idb-keyval@3.3.2", "", {}, "sha512-r8/AdpiS0/WJCNR/t/gsgL+M8NMVj/ek7s60uz3LmpCaTF2mEVlZJlB01ZzalgYzRLXwSPC92o+pdzjM7PN/pA=="],
 
-    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.8.0", "", { "dependencies": { "@isomorphic-git/idb-keyval": "3.3.2", "isomorphic-textencoder": "1.0.1", "just-debounce-it": "1.1.0", "just-once": "1.1.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-GhlX6UofzMw/h6+AUG9rfHB0FPyC1sdopT99TFlYH3NT+hlmYLqU4uf6hLpPtiO6Jv9zDIz8BhPJucYhplNqnA=="],
+    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.9.0", "", { "dependencies": { "@isomorphic-git/idb-keyval": "3.3.2", "isomorphic-textencoder": "1.0.1", "just-debounce-it": "1.1.0", "just-once": "1.1.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-nN16T4Sh43fgV+pT57q53EAwxzSuyE8pfXqA2HZodFaqzCx5LnOxrQBOM7aLclwiPOCgPilvg3reQMCUjngF0A=="],
 
     "@jest/diff-sequences": ["@jest/diff-sequences@30.0.1", "", {}, "sha512-n5H8QLDJ47QqbCNn5SuFjCRDrOLEZ0h8vAHCK5RL9Ls7Xa8AQLa/YxAc9UjFqoEDM48muwtBGjtMY5cr0PLDCw=="],
 
