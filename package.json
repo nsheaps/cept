@@ -70,7 +70,7 @@
     "ip-address": "10.7.2",
     "linkify-it": "6.1.0",
     "lodash-es": "4.18.1",
-    "markdown-it": "15.0.2",
+    "markdown-it": "15.0.3",
     "prosemirror-model": "1.25.11",
     "prosemirror-transform": "1.12.1",
     "prosemirror-view": "1.42.4",
