@@ -66,7 +66,7 @@
     "@humanfs/node": "0.17.0",
     "axios": "1.20.0",
     "brace-expansion": "5.0.12",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "ip-address": "10.7.2",
     "linkify-it": "6.1.0",
     "lodash-es": "4.18.1",
