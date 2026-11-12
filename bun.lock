@@ -49,7 +49,7 @@
       "name": "@cept/core",
       "version": "0.1.0",
       "dependencies": {
-        "@isomorphic-git/lightning-fs": "4.9.0",
+        "@isomorphic-git/lightning-fs": "4.10.3",
         "hast-util-from-html": "2.0.3",
         "hast-util-to-mdast": "10.1.2",
         "ignore": "7.0.9",
@@ -505,7 +505,7 @@
 
     "@isomorphic-git/idb-keyval": ["@isomorphic-git/idb-keyval@3.3.2", "", {}, "sha512-r8/AdpiS0/WJCNR/t/gsgL+M8NMVj/ek7s60uz3LmpCaTF2mEVlZJlB01ZzalgYzRLXwSPC92o+pdzjM7PN/pA=="],
 
-    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.9.0", "", { "dependencies": { "@isomorphic-git/idb-keyval": "3.3.2", "isomorphic-textencoder": "1.0.1", "just-debounce-it": "1.1.0", "just-once": "1.1.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-nN16T4Sh43fgV+pT57q53EAwxzSuyE8pfXqA2HZodFaqzCx5LnOxrQBOM7aLclwiPOCgPilvg3reQMCUjngF0A=="],
+    "@isomorphic-git/lightning-fs": ["@isomorphic-git/lightning-fs@4.10.3", "", { "dependencies": { "@isomorphic-git/idb-keyval": "^3.3.2", "isomorphic-textencoder": "^1.0.1", "just-debounce-it": "^3.2.0", "just-once": "^2.2.0" }, "bin": { "superblocktxt": "src/superblocktxt.js" } }, "sha512-A6U3yD1v29XaARaYwVbnqRo0L2St+OfXn/CKPwtNlIrL8sGYsFMyQlDnbZ7JYgf2VHFqR1CJeWOjZygUKnQuxA=="],
 
     "@jest/diff-sequences": ["@jest/diff-sequences@30.0.1", "", {}, "sha512-n5H8QLDJ47QqbCNn5SuFjCRDrOLEZ0h8vAHCK5RL9Ls7Xa8AQLa/YxAc9UjFqoEDM48muwtBGjtMY5cr0PLDCw=="],
 
@@ -1521,9 +1521,9 @@
 
     "jsonc-parser": ["jsonc-parser@3.3.1", "", {}, "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ=="],
 
-    "just-debounce-it": ["just-debounce-it@1.1.0", "", {}, "sha512-87Nnc0qZKgBZuhFZjYVjSraic0x7zwjhaTMrCKlj0QYKH6lh0KbFzVnfu6LHan03NO7J8ygjeBeD0epejn5Zcg=="],
+    "just-debounce-it": ["just-debounce-it@3.2.0", "", {}, "sha512-WXzwLL0745uNuedrCsCs3rpmfD6DBaf7uuVwaq98/8dafURfgQaBsSpjiPp5+CW6Vjltwy9cOGI6qE71b3T8iQ=="],
 
-    "just-once": ["just-once@1.1.0", "", {}, "sha512-+rZVpl+6VyTilK7vB/svlMPil4pxqIJZkbnN7DKZTOzyXfun6ZiFeq2Pk4EtCEHZ0VU4EkdFzG8ZK5F3PErcDw=="],
+    "just-once": ["just-once@2.2.0", "", {}, "sha512-Wo547FgUOUZ98jbrZ1KX8nRezdEdtgIlC2NK1u1RvR1oZ/WoU++FjprP8J8hRbaox776MHyeMZZED4DvhhHVjg=="],
 
     "katex": ["katex@0.18.7", "", { "dependencies": { "commander": "^15.0.0" }, "bin": { "katex": "cli.js" } }, "sha512-h+UCwkZ+4Jz8WQ7MLGfj7UVFrRCizGb912fwF4luGdYsC5paYG1vx+jy+KRcC/XkpjGva/P7nAWuxNnPzRvzHw=="],
 
