@@ -15,8 +15,8 @@
     "@cept/core": "workspace:*",
     "@cept/ui": "workspace:*",
     "buffer": "6.0.3",
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {},
   "nx": {
